@@ -6293,6 +6293,7 @@ function init(){
   const flip = new THREE.Group();          // decúbito supino / prono
   patientPivot.add(flip);
   let bodyH = 0.29;                        // espesor del cuerpo (se recalcula con el GLB)
+  let patientVisual = null;                 // malla activa, para comprobar su apoyo en la camilla
 
   const dummy = new THREE.Group();         // maniquí de respaldo (siempre disponible)
   const dummyArms = [];                    // pivotes de hombro, para poder subir los brazos
@@ -6317,6 +6318,7 @@ function init(){
     dummy.traverse(o=>{ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
   })();
   flip.add(dummy);
+  patientVisual = dummy;
 
   /* Caja exacta de la pose visible. Box3.setFromObject() usa en algunos modelos
      la caja de la geometría en pose de enlace (brazos en T); para el interlock
@@ -6349,8 +6351,15 @@ function init(){
     model.traverse(o=>{ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
     flip.add(model);
 
-    // asienta el modelo: pies en el origen del pivote y espalda apoyada en el pallet
+    // Asienta el modelo en coordenadas NEUTRAS del paciente. La carga del GLB es
+    // asíncrona y el usuario puede haber invertido ya cabeza/pies; medir con ese
+    // pivote girado mezcla ejes locales y mundiales y desplazaba el cuerpo fuera
+    // del tablero, dejándolo visualmente suspendido junto al gantry.
+    const pivotPosition = patientPivot.position.clone();
+    const pivotQuaternion = patientPivot.quaternion.clone();
     const rx = flip.rotation.x, fy = flip.position.y;
+    patientPivot.position.set(0,0,0);
+    patientPivot.quaternion.identity();
     flip.rotation.x = 0; flip.position.y = 0;
     scene.updateMatrixWorld(true);
     const pw = new THREE.Vector3(); patientPivot.getWorldPosition(pw);
@@ -6359,7 +6368,10 @@ function init(){
     model.position.y -= (b.min.y - pw.y);
     model.position.z -= ((b.min.z + b.max.z)/2 - pw.z);
     bodyH = Math.max(.12, b.max.y - b.min.y);
+    patientPivot.position.copy(pivotPosition);
+    patientPivot.quaternion.copy(pivotQuaternion);
     flip.rotation.x = rx; flip.position.y = fy;
+    scene.updateMatrixWorld(true);
 
     buildEnvelope(model);          // envolvente real ANTES de tocar la pose
 
@@ -6378,6 +6390,7 @@ function init(){
     }
 
     flip.remove(dummy);
+    patientVisual = model;
     /* La malla llega de forma asíncrona y puede ser más ancha que el maniquí de
        respaldo. Se recalcula el interlock inmediatamente para no dejar un
        cabezal dentro del paciente si el operador ya movió la camilla. */
@@ -6597,6 +6610,22 @@ function init(){
                                   : 'CRÁNEO A ' + dVertex.toFixed(0) + ' cm DEL CAMPO');
     if(txt !== lastHud){ lastHud = txt; hudEl.innerHTML = txt; }
   }
+
+  /* Diagnóstico geométrico: el paciente debe tocar la cara superior del
+     tablero y quedar contenido longitudinalmente sobre él en ambas posiciones. */
+  function patientPlacement(){
+    scene.updateMatrixWorld(true);
+    const patientBox = patientVisual ? posedBounds(patientVisual) : new THREE.Box3();
+    const palletBox = new THREE.Box3().setFromObject(pallet);
+    const gapCm = patientBox.isEmpty() ? null : (patientBox.min.y - palletBox.max.y) * 100;
+    return {
+      source:patientVisual===dummy ? 'dummy' : 'glb',
+      gapCm,
+      supportedX:!patientBox.isEmpty() && patientBox.min.x >= palletBox.min.x-.01 && patientBox.max.x <= palletBox.max.x+.01,
+      patientX:patientBox.isEmpty() ? null : [patientBox.min.x,patientBox.max.x],
+      palletX:[palletBox.min.x,palletBox.max.x]
+    };
+  }
   if(posSel) posSel.addEventListener('change', ()=>apply(null));
 
   /* ---------- cámaras predefinidas ---------- */
@@ -6629,7 +6658,7 @@ function init(){
   function resume(){ if(running) return; running = true; resize(); renderer.setAnimationLoop(frame); }
   function pause(){ if(!running) return; running = false; renderer.setAnimationLoop(null); }
 
-  window.GANTRY3D = {update:apply, view, resume, pause, resize, limits:limitsFor, orbitLimit};
+  window.GANTRY3D = {update:apply, view, resume, pause, resize, limits:limitsFor, orbitLimit, patientPlacement};
   msgEl.style.display = 'none';
   view('iso');
   apply(window.GANTRY ? window.GANTRY.G : null);
