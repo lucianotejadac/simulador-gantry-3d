@@ -1,0 +1,39 @@
+SIMULADOR GANTRY 3D — RESERVA DE DERECHOS
+
+Copyright © 2026 Luciano Tejada Castro
+Contacto: lucianotejada@uchile.cl
+Todos los derechos reservados.
+
+El simulador, su código original, diseño de interfaz, lógica de funcionamiento,
+atlas gammagráficos y material gráfico original constituyen una obra protegida
+por la Ley N.º 17.336 sobre Propiedad Intelectual de Chile y por los tratados
+internacionales aplicables.
+
+La publicación de este repositorio no constituye una cesión de derechos ni
+concede una licencia de uso. Salvo las excepciones expresamente previstas por
+la ley, queda prohibida la copia, reproducción, distribución, comunicación
+pública, adaptación, modificación, traducción, explotación comercial o
+incorporación total o parcial de la obra en otra obra sin autorización previa
+y escrita del titular.
+
+No se autoriza la eliminación o alteración de los avisos de autoría, copyright,
+licencia o atribución incorporados en el repositorio o en el archivo HTML.
+
+COMPONENTES DE TERCEROS
+
+Esta reserva no modifica las licencias de los componentes de terceros:
+
+1. Three.js v0.185.1, Copyright © 2010-2026 three.js authors, licencia MIT.
+2. Modelo humano «Man» de Quaternius, CC0 1.0 Universal.
+
+Consulte THIRD_PARTY_NOTICES.md y los avisos incluidos en index.html. Las
+marcas o nombres de terceros se mencionan sólo con fines descriptivos y no
+implican afiliación, patrocinio ni aprobación.
+
+LIMITACIÓN DE RESPONSABILIDAD
+
+Este software es una simulación educativa. No es un dispositivo médico y no
+sustituye protocolos institucionales, formación profesional, juicio clínico
+ni instrucciones del fabricante. Se proporciona sin garantía, expresa o
+implícita, sobre su idoneidad para decisiones clínicas o asistenciales.
+

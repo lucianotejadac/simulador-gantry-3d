@@ -29,16 +29,20 @@
   (arts. 17 y 18). Los derechos morales de paternidad e integridad de la
   obra son inalienables e irrenunciables (art. 14).
 
-  Cualquier reproducción, adaptación o comunicación pública distinta del uso
-  personal requiere autorización escrita del autor.
+  Salvo las excepciones expresamente previstas por la ley, cualquier copia,
+  reproducción, distribución, comunicación pública, adaptación, modificación,
+  traducción, explotación comercial o incorporación total o parcial en otra
+  obra requiere autorización previa y escrita del autor. La publicación de
+  este archivo en Internet no implica cesión de derechos ni licencia de uso.
 
   ── Componentes de terceros ───────────────────────────────────────────────
-  La vista 3D usa three.js v0.185.1, © 2010-2025 three.js authors, bajo
-  licencia MIT, cargado desde CDN (no se incrusta aquí). El paciente es el
-  modelo «Man» de Quaternius, dominio público (CC0 1.0), descargado como GLB
-  externo; si no está disponible se usa un maniquí interno propio. Esos
-  componentes se rigen por sus propias licencias y no quedan comprendidos en
-  la reserva de derechos anterior.
+  La vista 3D usa three.js v0.185.1, © 2010-2026 three.js authors, bajo
+  licencia MIT. El paciente es el modelo «Man» de Quaternius, ofrecido bajo
+  CC0 1.0 Universal. En la versión autocontenida ambos recursos se incorporan
+  en este HTML. Esos componentes conservan sus licencias originales y no
+  quedan comprendidos en la reserva de derechos anterior. Las marcas o nombres
+  de terceros se mencionan sólo con fines descriptivos y no implican afiliación,
+  patrocinio ni aprobación.
   ═══════════════════════════════════════════════════════════════════════════
 -->
 <html lang="es">
@@ -48,6 +52,9 @@
 <title>Posicionamiento del gantry · SPECT/CT — control remoto 3D</title>
 <meta name="author" content="Luciano Tejada Castro">
 <meta name="copyright" content="© 2026 Luciano Tejada Castro. Todos los derechos reservados. Ley N° 17.336 (Chile).">
+<meta name="rights" content="Obra propietaria. No se concede licencia sobre el simulador, su código, interfaz, atlas ni material gráfico, salvo autorización previa y escrita del autor.">
+<meta name="license" content="Todos los derechos reservados; los componentes de terceros conservan sus licencias MIT y CC0 1.0 indicadas en el documento.">
+<meta name="contact" content="lucianotejada@uchile.cl">
 <meta name="description" content="Control remoto de posicionamiento del gantry de una gammacámara SPECT/CT con vista 3D: distancia de los detectores, rotación del equipo, altura y eje Z de la camilla, brazos del paciente e interlock antichoque.">
 
 <!-- motor 3D del control remoto de posicionamiento del gantry -->
@@ -383,6 +390,20 @@
   .dropdown .has-submenu:hover>.submenu,.dropdown .has-submenu:focus-within>.submenu{display:block}
   .dropdown .menu-choice.selected::before{content:'\2713';position:absolute;left:8px;font-weight:700}
   .dropdown .menu-separator{height:1px;margin:3px 4px;background:#808080;border-bottom:1px solid #fff}
+  .rights-trigger{padding:2px 7px;border:0;background:transparent;font:13px var(--sans);color:#000;cursor:pointer}
+  .rights-trigger:hover,.rights-trigger:focus{background:#000080;color:#fff;outline:none}
+  .rights-dialog{width:min(690px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;
+    padding:0;background:#c0c0c0;color:#000;border:2px solid;border-color:#fff #000 #000 #fff;
+    box-shadow:2px 2px 0 #000;font:13px/1.45 var(--sans)}
+  .rights-dialog::backdrop{background:#0008}
+  .rights-title{display:flex;justify-content:space-between;align-items:center;padding:4px 5px;
+    background:#000080;color:#fff;font-weight:700}
+  .rights-close-x{width:22px;height:20px;padding:0;background:#c0c0c0;color:#000;font-weight:700;
+    border:2px solid;border-color:#fff #000 #000 #fff;cursor:pointer}
+  .rights-body{margin:8px;padding:10px;background:#fff;border:2px solid;
+    border-color:#808080 #fff #fff #808080}
+  .rights-body h2{margin:0 0 6px;font-size:16px}.rights-body h3{margin:13px 0 4px;font-size:13px}
+  .rights-body p{margin:5px 0}.rights-body a{color:#000080}.rights-actions{text-align:right;padding:0 8px 8px}
   /* rail lateral: pasos como botones grises con bisel */
   .rail{background:var(--w95-face);border-right:2px solid;
     border-right-color:var(--w95-shadow)}
@@ -486,7 +507,28 @@
           </div>
         </div>
       </div>
+      <button class="rights-trigger" id="copyrightOpen" type="button"><u>D</u>erechos de autor</button>
     </div>
+    <dialog class="rights-dialog" id="copyrightDialog" aria-labelledby="copyrightTitle">
+      <div class="rights-title">
+        <span id="copyrightTitle">Derechos de autor y licencias</span>
+        <button class="rights-close-x" id="copyrightCloseX" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div class="rights-body">
+        <h2>© 2026 Luciano Tejada Castro</h2>
+        <p><strong>Todos los derechos reservados.</strong> Contacto: <a href="mailto:lucianotejada@uchile.cl">lucianotejada@uchile.cl</a>.</p>
+        <p>El simulador, su código original, diseño de interfaz, lógica de funcionamiento, atlas gammagráficos y material gráfico original están protegidos por la Ley N.º 17.336 sobre Propiedad Intelectual de Chile y por los tratados aplicables.</p>
+        <p>Salvo las excepciones expresamente previstas por la ley, no se autoriza su copia, reproducción, distribución, comunicación pública, adaptación, modificación, traducción, explotación comercial ni incorporación total o parcial en otra obra sin autorización previa y escrita del autor. La disponibilidad pública de este archivo o repositorio no constituye cesión de derechos ni otorga una licencia de uso.</p>
+        <p>Se mantienen los derechos morales de paternidad e integridad de la obra. No deben suprimirse ni alterarse este aviso, los metadatos de autoría o los avisos de terceros.</p>
+        <h3>Componentes de terceros</h3>
+        <p><strong>Three.js v0.185.1</strong> — © 2010–2026 three.js authors; distribuido bajo <a href="https://opensource.org/license/mit" target="_blank" rel="noopener noreferrer">licencia MIT</a>.</p>
+        <p><strong>Modelo humano «Man» de Quaternius</strong> — distribuido bajo <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener noreferrer">CC0 1.0 Universal</a>.</p>
+        <p>Esos componentes conservan sus condiciones originales y no quedan sometidos a la reserva de derechos del simulador. Las marcas o nombres de terceros se mencionan sólo con fines descriptivos y no implican afiliación, patrocinio ni aprobación.</p>
+        <h3>Uso educativo y limitación de responsabilidad</h3>
+        <p>Este software es una simulación educativa y no es un dispositivo médico ni sustituye protocolos institucionales, formación profesional, juicio clínico o instrucciones del fabricante. Se proporciona sin garantía sobre su idoneidad para decisiones clínicas o asistenciales.</p>
+      </div>
+      <div class="rights-actions"><button class="btn" id="copyrightClose" type="button">Cerrar</button></div>
+    </dialog>
     <div style="display:flex;gap:14px;padding:12px;height:calc(100% - 52px);box-sizing:border-box;background:#e9edf3">
       <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">
         <div id="g3dStage" style="flex:1;background:#0b0f14;border:1px solid #2a3a52;border-radius:4px;position:relative;min-height:0;overflow:hidden">
@@ -976,6 +1018,25 @@
     document.addEventListener('keydown',event=>{ if(event.key==='Escape') closeAcquisitionMenu(); });
   }
   syncAcquisitionControls();
+
+  /* ---- aviso visible de autoria, reserva de derechos y terceros ---------- */
+  const copyrightDialog=document.getElementById('copyrightDialog');
+  const copyrightOpen=document.getElementById('copyrightOpen');
+  const closeCopyright=()=>{
+    if(!copyrightDialog) return;
+    if(typeof copyrightDialog.close==='function') copyrightDialog.close();
+    else copyrightDialog.removeAttribute('open');
+  };
+  if(copyrightOpen) copyrightOpen.addEventListener('click',()=>{
+    closeAcquisitionMenu();
+    if(!copyrightDialog) return;
+    if(typeof copyrightDialog.showModal==='function') copyrightDialog.showModal();
+    else copyrightDialog.setAttribute('open','');
+  });
+  ['copyrightClose','copyrightCloseX'].forEach(id=>{
+    const control=document.getElementById(id);
+    if(control) control.addEventListener('click',closeCopyright);
+  });
 
   /* ---- interlock antichoque -------------------------------------------------
      El gantry es RÍGIDO: el cabezal conserva su distancia al girar, no se aparta
