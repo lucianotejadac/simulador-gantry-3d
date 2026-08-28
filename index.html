@@ -6323,10 +6323,13 @@ function init(){
   /* Caja exacta de la pose visible. Box3.setFromObject() usa en algunos modelos
      la caja de la geometría en pose de enlace (brazos en T); para el interlock
      necesitamos los vértices ya deformados por el esqueleto. */
-  function posedBounds(model){
+  function posedBounds(model, relativeTo){
     const box=new THREE.Box3(); box.makeEmpty();
     const v=new THREE.Vector3();
     scene.updateMatrixWorld(true);
+    const toRelative = relativeTo
+      ? new THREE.Matrix4().copy(relativeTo.matrixWorld).invert()
+      : null;
     model.traverse(o=>{
       const g=o.isMesh && o.geometry, pos=g && g.attributes.position;
       if(!pos) return;
@@ -6334,7 +6337,9 @@ function init(){
       for(let i=0;i<pos.count;i++){
         if(o.getVertexPosition) o.getVertexPosition(i,v);
         else v.fromBufferAttribute(pos,i);
-        box.expandByPoint(v.applyMatrix4(o.matrixWorld));
+        v.applyMatrix4(o.matrixWorld);
+        if(toRelative) v.applyMatrix4(toRelative);
+        box.expandByPoint(v);
       }
     });
     return box;
@@ -6351,27 +6356,18 @@ function init(){
     model.traverse(o=>{ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
     flip.add(model);
 
-    // Asienta el modelo en coordenadas NEUTRAS del paciente. La carga del GLB es
-    // asíncrona y el usuario puede haber invertido ya cabeza/pies; medir con ese
-    // pivote girado mezcla ejes locales y mundiales y desplazaba el cuerpo fuera
-    // del tablero, dejándolo visualmente suspendido junto al gantry.
-    const pivotPosition = patientPivot.position.clone();
-    const pivotQuaternion = patientPivot.quaternion.clone();
-    const rx = flip.rotation.x, fy = flip.position.y;
-    patientPivot.position.set(0,0,0);
-    patientPivot.quaternion.identity();
-    flip.rotation.x = 0; flip.position.y = 0;
+    // Asienta el modelo enteramente en el espacio LOCAL de «flip». Así la carga
+    // asíncrona es independiente de que el pivote cabeza/pies ya esté girado en
+    // el mundo. El extremo de los pies queda en X=0, la espalda en Y=0 y el
+    // cuerpo centrado en Z sobre la cara superior del tablero.
     scene.updateMatrixWorld(true);
-    const pw = new THREE.Vector3(); patientPivot.getWorldPosition(pw);
-    const b = posedBounds(model);
-    model.position.x -= (b.max.x - pw.x);
-    model.position.y -= (b.min.y - pw.y);
-    model.position.z -= ((b.min.z + b.max.z)/2 - pw.z);
-    bodyH = Math.max(.12, b.max.y - b.min.y);
-    patientPivot.position.copy(pivotPosition);
-    patientPivot.quaternion.copy(pivotQuaternion);
-    flip.rotation.x = rx; flip.position.y = fy;
+    const b = posedBounds(model, flip);
+    model.position.x -= b.max.x;
+    model.position.y -= b.min.y;
+    model.position.z -= (b.min.z + b.max.z)/2;
     scene.updateMatrixWorld(true);
+    const seated = posedBounds(model, flip);
+    bodyH = Math.max(.12, seated.max.y - seated.min.y);
 
     buildEnvelope(model);          // envolvente real ANTES de tocar la pose
 
