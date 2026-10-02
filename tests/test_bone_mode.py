@@ -71,7 +71,38 @@ with sync_playwright() as playwright:
         page.select_option("#liveStudy", study)
         page.wait_for_function("GANTRY_LIVE.ready")
         state = page.evaluate("({study:GANTRY_LIVE.settings.study, count:GANTRY_LIVE.angles.length})")
-        assert state == {"study": study, "count": 16 if study == "bone" else 40}, state
+        assert state == {"study": study, "count": 16 if study in ["bone", "exploration"] else 40}, state
+        if study == 'exploration':
+            page.evaluate("""() => {
+              const live=GANTRY_LIVE;
+              if(live.settings.photopeak!==364 || live.settings.recommendedCollimator!=='HE')
+                throw new Error('Exploration acquisition profile changed');
+              const saved=live.settings;
+              live.setEnergyCenter(364); live.setCollimator('HE');live.setZoom(1);
+              const state={...GANTRY.G,arms:'down',tableZ:145,tableH:92,rot:0};
+              const views=[];
+              for(let angle=0;angle<360;angle+=22.5){
+                live.update({...state,rot:angle});
+                const pair=live.state.d1.pair;
+                if(Math.abs(pair.a0+(pair.a1-pair.a0)*pair.mix-angle)>1e-8)
+                  throw new Error('Wrong exploration projection '+angle);
+                if(live.state.d2.rawAngle!==(angle+180)%360)
+                  throw new Error('Exploration detectors are not opposed');
+                for(const n of [1,2]){
+                  const canvas=document.getElementById('liveD'+n);
+                  const pixels=canvas.getContext('2d').getImageData(2,2,252,252).data;
+                  if(!pixels.some((v,i)=>i%4===0 && v>30))
+                    throw new Error('Empty exploration projection '+angle+' detector '+n);
+                }
+                views.push(document.getElementById('liveD1').toDataURL());
+              }
+              if(new Set(views).size!==16) throw new Error('Repeated exploration views');
+              live.update({...state,rot:360});
+              if(document.getElementById('liveD1').toDataURL()!==views[0])
+                throw new Error('Exploration does not close at 360 degrees');
+              live.setEnergyCenter(saved.energyCenter);live.setCollimator(saved.collimator);
+              live.setZoom(saved.zoom);live.setMatrix(saved.matrix);
+            }""")
     page.evaluate("""() => {
       Object.assign(GANTRY.G,{arms:'down',rot:0,tableZ:195,tableH:92,detDist1:35,detDist2:35});
       GANTRY_LIVE.setZoom(1); GANTRY_LIVE.setMatrix(256); GANTRY.render();

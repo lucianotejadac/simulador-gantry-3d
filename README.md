@@ -41,6 +41,19 @@ Para regenerar el atlas incrustado, instale Pillow y ejecute
 `python scripts/build_bone_atlas.py`. El usuario del simulador sólo necesita
 `index.html`, que sigue funcionando sin conexión.
 
+## Imágenes de Exploración
+
+El estudio **Exploración** utiliza las imágenes de `assets/exploracion.png`,
+con 16 direcciones únicas cada 22,5° e interpolación circular. La referencia
+de 360° se conserva en el montaje original y equivale a 0° en el simulador.
+Ambos detectores siguen el ángulo del gantry y el recorte de la camilla.
+Se mantiene el perfil de adquisición existente de Exploración (I-131 / HE).
+
+Para regenerar este atlas incrustado ejecute
+`python scripts/build_exploration_atlas.py` (requiere Pillow). La preparación
+separa los paneles, elimina marcos y rótulos y conserva las proporciones.
+El montaje original permanece intacto y `index.html` funciona sin conexión.
+
 ## Derechos de autor
 
 Copyright © 2026 Luciano Tejada Castro. Todos los derechos reservados.
