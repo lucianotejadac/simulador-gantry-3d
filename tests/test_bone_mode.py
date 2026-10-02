@@ -72,6 +72,34 @@ with sync_playwright() as playwright:
         page.wait_for_function("GANTRY_LIVE.ready")
         state = page.evaluate("({study:GANTRY_LIVE.settings.study, count:GANTRY_LIVE.angles.length})")
         assert state == {"study": study, "count": 16 if study == "bone" else 40}, state
+    page.evaluate("""() => {
+      Object.assign(GANTRY.G,{arms:'down',rot:0,tableZ:195,tableH:92,detDist1:35,detDist2:35});
+      GANTRY_LIVE.setZoom(1); GANTRY_LIVE.setMatrix(256); GANTRY.render();
+      window.beforeArms=[1,2].map(n=>document.getElementById('liveD'+n).toDataURL());
+    }""")
+    page.click('[data-arms="up"]')
+    page.wait_for_function("GANTRY_LIVE.ready && GANTRY_LIVE.state.d1.arms==='up'")
+    assert page.locator('[data-arms="up"]').get_attribute('aria-pressed') == 'true'
+    page.evaluate("""() => {
+      if(GANTRY.G.arms!=='up') throw new Error('Button did not raise the patient arms');
+      for(const n of [1,2]){
+        if(document.getElementById('liveD'+n).toDataURL()===beforeArms[n-1])
+          throw new Error('Detector '+n+' did not switch to the raised-arm atlas');
+      }
+      for(let rot=0;rot<360;rot+=22.5){
+        GANTRY_LIVE.update({...GANTRY.G,rot});
+        if(GANTRY_LIVE.state.d1.rawAngle!==rot || GANTRY_LIVE.state.d2.rawAngle!==(rot+180)%360)
+          throw new Error('Incorrect arms-up projection direction');
+      }
+      // A field above the skull must contain raised hands, not a cropped atlas edge.
+      GANTRY_LIVE.update({...GANTRY.G,rot:0,tableZ:210});
+      const canvas=document.getElementById('liveD1');
+      const pixels=canvas.getContext('2d').getImageData(2,2,canvas.width-4,canvas.height/2-4).data;
+      if(!pixels.some((v,i)=>i%4===0 && v>40)) throw new Error('Raised hands were clipped');
+    }""")
+    page.click('[data-arms="down"]')
+    page.wait_for_function("GANTRY_LIVE.ready && GANTRY_LIVE.state.d1.arms==='down'")
+    assert page.evaluate("[1,2].every(n=>document.getElementById('liveD'+n).toDataURL()===beforeArms[n-1])")
     assert not errors, errors
     browser.close()
     print(result)

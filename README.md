@@ -19,6 +19,14 @@ Los ajustes existentes se conservan al cambiar de estudio. Para visualizar
 el modo óseo con su perfil de referencia: LEHR, 140 keV, ancho 20% y zoom 1×.
 Introduzca la camilla en el campo de los detectores para ver al paciente.
 
+Use **Brazos: Arriba / Al costado**, debajo de la vista 3D, para cambiar la
+postura del paciente. En el modo óseo, ambos detectores cambian automáticamente
+entre el atlas original y el montaje de brazos elevados. Las manos se conservan
+por encima de la cabeza, manteniendo la referencia de cabeza a pies al mover la
+camilla. El montaje original se conserva en
+`assets/cintigrama-oseo-brazos-arriba.png` y también se incrusta en `index.html`
+como atlas, por lo que no requiere conexión ni archivos adicionales al abrirlo.
+
 El atlas contiene 16 direcciones únicas cada 22,5°, con interpolación entre
 vistas y cierre circular de 337,5° a 0°. La imagen adicional de 360° repite
 la dirección de 0°; se conserva en el ZIP original junto con las otras 16.
