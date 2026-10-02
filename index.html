@@ -6349,11 +6349,14 @@ function init(){
     [1,-1].forEach(s=>{                    // brazo: cuelga hacia +X (pies) con el pivote sin girar
       const pivot = new THREE.Group();
       pivot.position.set(-1.32,.15,.17*s);
-      const limb = new THREE.Mesh(new THREE.CapsuleGeometry(.052,.46,5,12), M.skin);
-      limb.rotation.z = Math.PI/2; limb.position.x = .29; pivot.add(limb);
+      const limb = new THREE.Mesh(new THREE.CapsuleGeometry(.052,.19,5,12), M.skin);
+      limb.rotation.z = Math.PI/2; limb.position.x = .145; pivot.add(limb);
+      const elbow = new THREE.Group(); elbow.position.x=.29; pivot.add(elbow);
+      const forearm = new THREE.Mesh(new THREE.CapsuleGeometry(.045,.20,5,12), M.skin);
+      forearm.rotation.z=Math.PI/2; forearm.position.x=.145; elbow.add(forearm);
       const hand = new THREE.Mesh(new THREE.SphereGeometry(.055,14,10), M.skin);
-      hand.position.x = .60; pivot.add(hand);
-      dummy.add(pivot); dummyArms.push({g:pivot, s});
+      hand.position.x = .31; elbow.add(hand);
+      dummy.add(pivot); dummyArms.push({g:pivot, elbow, hand, s});
     });
     dummy.traverse(o=>{ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
   })();
@@ -6421,7 +6424,9 @@ function init(){
     if(bn.upperarml && bn.lowerarml && bn.upperarmr && bn.lowerarmr){
       rig.pairs = ['l','r'].map(sfx=>{
         const up = bn['upperarm'+sfx], lo = bn['lowerarm'+sfx];
-        return {upper:up, lower:lo, q0u:up.quaternion.clone(), q0l:lo.quaternion.clone()};
+        const shoulder=flip.worldToLocal(up.getWorldPosition(new THREE.Vector3()));
+        return {upper:up, lower:lo, side:Math.sign(shoulder.z) || 1,
+          q0u:up.quaternion.clone(), q0l:lo.quaternion.clone()};
       });
     }
 
@@ -6499,8 +6504,9 @@ function init(){
   }
 
   /* ---------- brazos del paciente: al costado ↔ por encima de la cabeza ----------
-     El eje craneal del paciente es −X en el mundo (entra de pies hacia +X), así que
-     «arriba» = apuntar el brazo hacia −X, abriéndolo un poco hacia su propio lado.  */
+     Pose del atlas óseo: húmeros hacia el cráneo y afuera; antebrazos hacia
+     dentro, con codos flexionados y manos sobre la cabeza. Las direcciones se
+     definen en el paciente para conservar la pose al invertir cabeza/pies. */
   const rig = {};
   const _mi = new THREE.Matrix4();
   const _t  = new THREE.Vector3(), _a = new THREE.Vector3(), _p = new THREE.Vector3(), _dir = new THREE.Vector3();
@@ -6516,7 +6522,12 @@ function init(){
   }
 
   function setArms(up){
-    dummyArms.forEach(a=>{ a.g.rotation.y = up ? Math.PI + .22*a.s : 0; });   // maniquí de respaldo
+    const upperAngle=Math.atan2(.60,-.80);
+    const lowerAngle=Math.atan2(-.60,-.80);
+    dummyArms.forEach(a=>{
+      a.g.rotation.y=up ? -upperAngle*a.s : 0;
+      a.elbow.rotation.y=up ? (upperAngle-lowerAngle)*a.s : 0;
+    });
     if(!rig.pairs) return;
     scene.updateMatrixWorld(true);
     rig.pairs.forEach(p=>{
@@ -6525,11 +6536,10 @@ function init(){
         p.upper.updateMatrixWorld(true);
         return;
       }
-      p.upper.getWorldPosition(_p);
-      const s = Math.sign(_p.z) || 1;                        // cada brazo abre hacia su lado (vale en prono)
-      _dir.set(-1, 0, .26*s).normalize();
+      _dir.set(-.80, 0, .60*p.side).transformDirection(flip.matrixWorld);
       aimBone(p.upper, _dir);
-      aimBone(p.lower, _dir);                                // codo extendido
+      _dir.set(-.80, 0, -.60*p.side).transformDirection(flip.matrixWorld);
+      aimBone(p.lower, _dir);
     });
   }
 
@@ -6606,7 +6616,7 @@ function init(){
     pedestal.scale.y  = Math.max(.05, tableTop - .14);
     pedTop.position.y = tableTop - .095;
     slide.position.set(slideX, tableTop, 0);
-    // con los brazos arriba las manos sobresalen 41 cm del cráneo: el tablero saca más cola
+    // Reserva de tablero para las manos por encima del cráneo.
     const armsUp = st.arms === 'up';
     setPalletLength(Math.max(PAL_MIN + (armsUp ? .30 : 0), (slideX + PAL_FRONT) - PAL_TAIL_X));
 
@@ -6654,8 +6664,16 @@ function init(){
     const patientBox = patientVisual ? posedBounds(patientVisual) : new THREE.Box3();
     const palletBox = new THREE.Box3().setFromObject(pallet);
     const gapCm = patientBox.isEmpty() ? null : (patientBox.min.y - palletBox.max.y) * 100;
+    const localPoint=node=>flip.worldToLocal(node.getWorldPosition(new THREE.Vector3())).toArray();
+    const arms=rig.pairs ? rig.pairs.map(p=>({
+      shoulder:localPoint(p.upper),elbow:localPoint(p.lower),
+      wrist:localPoint(p.lower.children.find(child=>child.isBone))
+    })) : dummyArms.map(p=>({
+      shoulder:localPoint(p.g),elbow:localPoint(p.elbow),wrist:localPoint(p.hand)
+    }));
     return {
       source:patientVisual===dummy ? 'dummy' : 'glb',
+      arms,
       gapCm,
       supportedX:!patientBox.isEmpty() && patientBox.min.x >= palletBox.min.x-.01 && patientBox.max.x <= palletBox.max.x+.01,
       patientX:patientBox.isEmpty() ? null : [patientBox.min.x,patientBox.max.x],

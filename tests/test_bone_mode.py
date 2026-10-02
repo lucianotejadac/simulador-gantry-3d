@@ -100,7 +100,29 @@ with sync_playwright() as playwright:
     page.click('[data-arms="down"]')
     page.wait_for_function("GANTRY_LIVE.ready && GANTRY_LIVE.state.d1.arms==='down'")
     assert page.evaluate("[1,2].every(n=>document.getElementById('liveD'+n).toDataURL()===beforeArms[n-1])")
+    page.wait_for_function("GANTRY3D.patientPlacement().source==='glb'")
+    resting_arms = page.evaluate("GANTRY3D.patientPlacement().arms")
+    page.click('[data-arms="up"]')
+    raised_arms = page.evaluate("GANTRY3D.patientPlacement().arms")
+    for arm in raised_arms:
+        shoulder, elbow, wrist = (arm[key] for key in ['shoulder', 'elbow', 'wrist'])
+        assert wrist[0] < elbow[0] < shoulder[0], 'Hands must point beyond the head'
+        assert abs(elbow[2]) > abs(shoulder[2]), 'Elbows must open outwards'
+        assert abs(wrist[2]) < abs(elbow[2]), 'Forearms must converge inwards'
+        assert wrist[0] < -1.75, 'Wrists must reach above the skull'
+    page.click('#changePatientPosition')
+    reversed_arms = page.evaluate("GANTRY3D.patientPlacement().arms")
+    for initial, reversed_arm in zip(raised_arms, reversed_arms):
+        for joint in ['shoulder', 'elbow', 'wrist']:
+            assert all(abs(a-b)<1e-6 for a,b in zip(initial[joint],reversed_arm[joint])), 'Patient reversal changed the arm pose'
+    page.click('#changePatientPosition')
+    page.click('[data-arms="down"]')
+    restored_arms = page.evaluate("GANTRY3D.patientPlacement().arms")
+    for initial, restored in zip(resting_arms, restored_arms):
+        for joint in ['shoulder', 'elbow', 'wrist']:
+            assert all(abs(a-b)<1e-6 for a,b in zip(initial[joint],restored[joint])), 'Resting pose was not restored'
     assert not errors, errors
     browser.close()
     print(result)
     print("Existing studies and study switching OK; no JavaScript errors.")
+    print("3D pose: bent elbows, hands above skull, patient reversal and resting pose OK.")

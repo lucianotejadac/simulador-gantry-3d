@@ -22,6 +22,9 @@ Introduzca la camilla en el campo de los detectores para ver al paciente.
 Use **Brazos: Arriba / Al costado**, debajo de la vista 3D, para cambiar la
 postura del paciente. En el modo óseo, ambos detectores cambian automáticamente
 entre el atlas original y el montaje de brazos elevados. Las manos se conservan
+en la postura 3D con codos abiertos y flexionados, y antebrazos hacia dentro,
+como en el montaje óseo. Esta postura se mantiene al invertir cabeza y pies.
+En las imágenes, las manos se conservan
 por encima de la cabeza, manteniendo la referencia de cabeza a pies al mover la
 camilla. El montaje original se conserva en
 `assets/cintigrama-oseo-brazos-arriba.png` y también se incrusta en `index.html`
