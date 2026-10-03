@@ -61,10 +61,9 @@ El montaje original permanece intacto y `index.html` funciona sin conexión.
 
 ## Derechos de autor
 
-Copyright © 2026 Luciano Tejada Castro. Todos los derechos reservados.
+Copyright © 2026 Luciano Tejada Castro. Distribuido bajo licencia [MIT](LICENSE).
 
-La publicación del repositorio no concede una licencia sobre el simulador.
-Consulte [LICENSE](LICENSE), el aviso visible «Derechos de autor» dentro de
+Consulte también el aviso visible «Derechos de autor» dentro de
 `index.html` y [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Contacto: lucianotejada@uchile.cl
