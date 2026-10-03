@@ -11,7 +11,7 @@ a Internet.
 
 ## Cintigrama óseo
 
-En **ESTUDIO**, seleccione **Cintigrama óseo**. Las proyecciones del ZIP
+En **ESTUDIO**, seleccione **Cintigrama óseo**. Las proyecciones del montaje
 aportado se muestran en ambos detectores según la rotación del gantry, con
 180° de separación. El desplazamiento de la camilla recorre las regiones del
 cuerpo y siguen disponibles zoom, matriz, colimador y ventana energética.
@@ -21,7 +21,7 @@ Introduzca la camilla en el campo de los detectores para ver al paciente.
 
 Use **Brazos: Arriba / Al costado**, debajo de la vista 3D, para cambiar la
 postura del paciente. En el modo óseo, ambos detectores cambian automáticamente
-entre el atlas original y el montaje de brazos elevados. Las manos se conservan
+entre el montaje de brazos al costado y el de brazos elevados. Las manos se conservan
 en la postura 3D con codos abiertos y flexionados, y antebrazos hacia dentro,
 como en el montaje óseo. Esta postura se mantiene al invertir cabeza y pies.
 En las imágenes, las manos se conservan
@@ -30,14 +30,19 @@ camilla. El montaje original se conserva en
 `assets/cintigrama-oseo-brazos-arriba.png` y también se incrusta en `index.html`
 como atlas, por lo que no requiere conexión ni archivos adicionales al abrirlo.
 
-El atlas contiene 16 direcciones únicas cada 22,5°, con interpolación entre
-vistas y cierre circular de 337,5° a 0°. La imagen adicional de 360° repite
-la dirección de 0°; se conserva en el ZIP original junto con las otras 16.
+El atlas de brazos al costado contiene 14 direcciones rotuladas en el nuevo
+montaje: 0°, 22,5°, 45°, 67,5°, 90°, 112,5°, 157,5°, 180°, 202,5°, 247,5°,
+270°, 292,5°, 315° y 337,5°. Las posiciones ausentes de 135° y 225° se
+interpolan entre sus vistas vecinas. El atlas de brazos arriba mantiene sus
+16 direcciones cada 22,5°. Ambos cierran circularmente de 337,5° a 0°.
+El panel rotulado 360° del nuevo montaje presenta una apariencia distinta de
+0°: se conserva en el original, pero no se utiliza como dirección adicional.
 El atlas elimina marco y rótulos, convierte el fondo blanco a negro y mantiene
 las proporciones de cada imagen. Las imágenes originales no se modifican.
 
-El ZIP fuente está en `assets/cintigrama_0_a_360_cada_22_5_grados.zip`.
-Para regenerar el atlas incrustado, instale Pillow y ejecute
+El montaje actual está en `assets/cintigrama-oseo-al-costado.jpg`.
+El ZIP anterior se conserva como referencia histórica y ya no se usa para
+generar este atlas. Para regenerar ambos atlas, instale Pillow y ejecute
 `python scripts/build_bone_atlas.py`. El usuario del simulador sólo necesita
 `index.html`, que sigue funcionando sin conexión.
 

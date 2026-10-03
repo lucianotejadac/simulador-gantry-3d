@@ -1,39 +1,44 @@
 """Embed the supplied bone projections; requires Python and Pillow.
 
-Run from any directory. The original ZIP is retained without modifications.
-0 and 360 degrees represent the same direction: use 0 at the circular seam.
+Run from any directory. The original montages are retained without modifications.
+Use the labelled angles: the arms-down montage omits 135 and 225 degrees.
+Use 0 at the circular seam; the supplied 360 panel is retained in the source.
 """
 from pathlib import Path
 from PIL import Image, ImageOps, ImageDraw
 import base64
 import io
 import re
-import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "assets/cintigrama_0_a_360_cada_22_5_grados.zip"
+SOURCE = ROOT / "assets/cintigrama-oseo-al-costado.jpg"
+BONE_ANGLES = [0,22.5,45,67.5,90,112.5,157.5,180,202.5,247.5,270,292.5,315,337.5]
 FRAME_W, FRAME_H, COLS = 480, 960, 8
 UP_FRAME_H, UP_OFFSET = 1080, 120
 
 
 def build_atlas():
     atlas = Image.new("L", (FRAME_W * COLS, FRAME_H * 2))
-    with zipfile.ZipFile(SOURCE) as archive:
-        for index in range(16):
-            angle = format(index * 22.5, "g").replace(".", "_")
-            with Image.open(io.BytesIO(archive.read(f"{angle}_grados.png"))) as original:
-                # Shared vertical bounds preserve registration across projections.
-                # Remove the frame and angle label without stretching the anatomy.
-                projection = original.convert("L").crop((5, 33, original.width - 6, 502))
-                projection = ImageOps.invert(projection)
-                # Suppress only the near-white paper background, retaining counts.
-                projection = projection.point(lambda value: max(0, value - 12) * 255 // 243)
-                width = round(projection.width * FRAME_H / projection.height)
-                projection = projection.resize((width, FRAME_H), Image.Resampling.LANCZOS)
-                atlas.paste(projection, (
-                    index % COLS * FRAME_W + (FRAME_W - width) // 2,
-                    index // COLS * FRAME_H,
-                ))
+    columns = [0,153,307,462,617,770]
+    rows = [(9,337),(353,681),(697,1021)]
+    with Image.open(SOURCE) as original:
+        if original.size != (770,1024):
+            raise ValueError('Unexpected montage size; recheck panel bounds')
+        for index, angle in enumerate(BONE_ANGLES):
+            row, column = divmod(index,5)
+            top,bottom = rows[row]
+            projection = original.convert('L').crop(
+                (columns[column]+3,top,columns[column+1]-3,bottom))
+            # Captions occupy the upper RIGHT corner in this montage.
+            caption_width = 9 + sum(5 if c=='.' else 10 for c in format(angle,'g'))
+            ImageDraw.Draw(projection).rectangle(
+                (projection.width-caption_width-3,0,projection.width,18),fill=255)
+            projection = ImageOps.invert(projection)
+            projection = projection.point(lambda value:max(0,value-12)*255//243)
+            width = round(projection.width*FRAME_H/projection.height)
+            projection = projection.resize((width,FRAME_H),Image.Resampling.LANCZOS)
+            atlas.paste(projection,(index%COLS*FRAME_W+(FRAME_W-width)//2,
+                                    index//COLS*FRAME_H))
     data = io.BytesIO()
     atlas.save(data, format="PNG", optimize=True)
     return base64.b64encode(data.getvalue()).decode("ascii")
@@ -94,4 +99,4 @@ if __name__ == "__main__":
     html = embed(html, 'cintigrama oseo brazos arriba', 'GANTRY_LIVE_ATLAS_OSEO_UP',
                  build_arms_up_atlas())
     path.write_text(html, encoding="utf-8", newline="\n")
-    print("Embedded 16 bone views per arm position; 360 wraps to 0.")
+    print("Embedded 14 arms-down and 16 arms-up views; 360 wraps to 0.")
