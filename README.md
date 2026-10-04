@@ -46,6 +46,20 @@ generar este atlas. Para regenerar ambos atlas, instale Pillow y ejecute
 `python scripts/build_bone_atlas.py`. El usuario del simulador sólo necesita
 `index.html`, que sigue funcionando sin conexión.
 
+## Calidad de imagen y distancia
+
+La resolución (PSF) y las cuentas de cada detector dependen de la distancia entre
+la cara del cabezal y el paciente, no de la distancia al isocentro. El motor 3D
+mide esa distancia a la piel (o al tablero, si el paciente aún no entró al
+campo) en la dirección de cada cabezal. Por eso subir la camilla acerca al
+paciente al detector superior y lo aleja del inferior, exactamente igual que
+acercar o retirar el propio cabezal; de lado, la altura no cambia la distancia.
+La PSF crece de forma lineal desde el contacto, de modo que cada centímetro
+cuenta. El rótulo de cada imagen muestra las dos distancias: al isocentro y a la
+piel. Sin motor 3D se conserva la distancia al isocentro.
+
+`python tests/test_table_distance.py` comprueba esa equivalencia.
+
 ## Imágenes de Exploración
 
 El estudio **Exploración** utiliza las imágenes de `assets/exploracion.png`,

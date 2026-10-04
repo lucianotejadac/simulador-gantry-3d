@@ -5400,6 +5400,11 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
   const COUNT_REFERENCE = 162418;
   const DIST_REFERENCE_CM = 14.24;
   const COUNT_DECAY = Math.log(162418 / 125733) / (24 - DIST_REFERENCE_CM);
+  /* PSF en px de pantalla segun la distancia cabezal–piel: resolucion intrinseca
+     en contacto y degradacion lineal con la distancia, como en un colimador de
+     orificios paralelos. A 50 cm coincide con el maximo anterior (3,9 px). */
+  const BLUR_AT_CONTACT = 0.15;
+  const BLUR_PER_CM = 0.075;
   const PEAK_COUNTS = 192;
   const LEGACY_DISPLAY_WIDTH = 240;
   const ZOOM_MAGNIFICATION = {1:1,2:1.7};
@@ -5634,7 +5639,7 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
       Math.exp(-COUNT_DECAY * (distanceCm-DIST_REFERENCE_CM));
     const counts=Math.round(baseCounts*profile.sensitivity*energy.eventFactor);
     const countFactor=counts/COUNT_REFERENCE;
-    const baseBlur=clamp(0.35+(distanceCm-DIST_REFERENCE_CM)*0.10,0.15,4.2);
+    const baseBlur=clamp(BLUR_AT_CONTACT+BLUR_PER_CM*distanceCm,BLUR_AT_CONTACT,4.2);
     const blur=clamp(baseBlur*profile.blurMultiplier+profile.extraBlur+
       energy.extraBlur,0.15,10.5);
     return Object.assign({},profile,{counts,countFactor,blur,baseBlur,
@@ -5765,9 +5770,17 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
     const pair=framePair(rawAngle);
     const baseProgress=(SCAN_TOP-G.tableZ)/(SCAN_TOP-SCAN_BOTTOM);
     const progress=physical.headFirst ? 1-baseProgress : baseProgress;
-    const distance=target.n===1 ? G.detDist1 : G.detDist2;
-    const metrics=distanceMetrics(distance,acquisition.study,acquisition.collimator,
-      acquisition.energyCenter,acquisition.windowWidth);
+    const distance=target.n===1 ? G.detDist1 : G.detDist2;      // cabezal–isocentro
+    // La resolucion y las cuentas dependen de la distancia cabezal–paciente (o
+    // cabezal–tablero), no de la distancia al isocentro: subir la camilla acerca al
+    // paciente a un cabezal y lo aleja del opuesto, igual que mover el cabezal.
+    // Sin motor 3D (sin conexion) se conserva la distancia al isocentro.
+    const gaps=(window.GANTRY3D && window.GANTRY3D.surfaceGaps) ?
+      window.GANTRY3D.surfaceGaps(G) : null;
+    const gap=gaps ? (target.n===1 ? gaps.d1 : gaps.d2) : null;
+    const effectiveDistance=(gap && gap.cm!=null) ? Math.max(0,gap.cm) : distance;
+    const metrics=distanceMetrics(effectiveDistance,acquisition.study,
+      acquisition.collimator,acquisition.energyCenter,acquisition.windowWidth);
 
     // Recorte anatomico exacto del atlas. Al pasar de 1x a 2x, tanto el alto
     // como el ancho del campo se reducen a la mitad alrededor del mismo punto;
@@ -5839,7 +5852,8 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
 
     const segment=segmentAt(progress);
     const meta={detector:target.n,angle:displayAngle,rawAngle,pair,progress,distance,
-      counts:metrics.counts,blur:metrics.blur,segment,view:viewName(displayAngle),
+      counts:metrics.counts,blur:metrics.blur,isoDistance:distance,effectiveDistance,
+      gapSurface:gap ? gap.surface : null,segment,view:viewName(displayAngle),
       zoom:acquisition.zoom,magnification,matrix:acquisition.matrix,
       study:acquisition.study,studyLabel:activeStudy().label,arms:G.arms,
       collimator:acquisition.collimator,
@@ -5865,7 +5879,8 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA
     target.info.innerHTML='<b>DETECTOR '+target.n+'</b>'+
       '<span class="accent">'+meta.view+'</span><br>'+
       segment+'<br>'+
-      'D-isocentro: '+distance.toFixed(0)+' cm<br>'+
+      'D-isocentro: '+distance.toFixed(0)+' cm · '+
+        (gap && gap.cm!=null ? 'a '+gap.surface+': '+effectiveDistance.toFixed(0)+' cm' : 'campo libre')+'<br>'+
       'Cuentas: '+metrics.counts.toLocaleString('es-CL')+'<br>'+
       'PSF '+metrics.blur.toFixed(1)+'px · '+acquisition.collimator+'<br>'+
       'Zoom '+acquisition.zoom.toFixed(0)+'x · M'+acquisition.matrix+'<br>'+
@@ -6566,8 +6581,26 @@ function init(){
     const supBody = enB ? bodySupport(uY, uZ, prone, armsUp) + (tableTop - ISO_Y)*uY : -1e9;
     const supPal  = enP ? PAL_HW*Math.abs(uZ) + (PAL_T/2)*Math.abs(uY) + ((tableTop - PAL_T/2) - ISO_Y)*uY : -1e9;
     const sup = Math.max(supBody, supPal);
-    if(sup < -1e8) return {r: DET_MIN_R, skin: Infinity};      // nada bajo el campo
-    return {r: sup + MARGIN, skin: supBody < -1e8 ? Infinity : supBody};
+    if(sup < -1e8) return {r: DET_MIN_R, skin: Infinity, pallet: Infinity};      // nada bajo el campo
+    return {r: sup + MARGIN, skin: supBody < -1e8 ? Infinity : supBody,
+            pallet: supPal < -1e8 ? Infinity : supPal};
+  }
+  /* Distancia real entre la cara de cada cabezal y lo que tiene delante (la piel
+     o, si el paciente aún no entró, el tablero) para un estado candidato. Es la
+     distancia que gobierna la calidad de imagen: se acorta tanto acercando el
+     cabezal como acercando la camilla hacia él, y se alarga con la lógica inversa.
+     En cm; cm = null cuando no hay nada bajo el campo. */
+  function surfaceGaps(g){
+    const s = Object.assign({}, st, g||{});
+    const tt = s.tableH/100, th = s.rot*Math.PI/180, prone = isProne(), up = s.arms==='up';
+    const z = bajoElCampo(s.tableZ);
+    const one = (theta, distCm) => {
+      const m = minRadius(theta, tt, prone, up, z);
+      if(isFinite(m.skin))   return {cm: distCm - m.skin*100,   surface:'piel'};
+      if(isFinite(m.pallet)) return {cm: distCm - m.pallet*100, surface:'tablero'};
+      return {cm:null, surface:null};
+    };
+    return { d1: one(th, s.detDist1), d2: one(th + Math.PI, s.detDist2) };
   }
   function limitsFor(g){                     // topes en cm enteros para un estado candidato
     const s = Object.assign({}, st, g||{});
@@ -6704,7 +6737,7 @@ function init(){
   function resume(){ if(running) return; running = true; resize(); renderer.setAnimationLoop(frame); }
   function pause(){ if(!running) return; running = false; renderer.setAnimationLoop(null); }
 
-  window.GANTRY3D = {update:apply, view, resume, pause, resize, limits:limitsFor, orbitLimit, patientPlacement};
+  window.GANTRY3D = {update:apply, view, resume, pause, resize, limits:limitsFor, orbitLimit, patientPlacement, surfaceGaps};
   msgEl.style.display = 'none';
   view('iso');
   apply(window.GANTRY ? window.GANTRY.G : null);
