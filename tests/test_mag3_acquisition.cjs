@@ -1,16 +1,16 @@
 /* Offline runtime tests: genuine compressed data and sampling engine, mocked UI.
- * Does not claim browser popup/CSS verification. */
+ * Does not claim browser layout/CSS verification. */
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
 const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/\r\n/g,'\n');
 const packed=JSON.parse(html.match(/window.GANTRY_MAG3_DATA=(.*?);\n/)[1]);
-let now=0,blocked=false,opened=0,lastPopup;const intervals=[],errors=[],elements=new Map(),events={};
-function element(id){return {value:({gain:'1',frame:'current',speed:'1'})[id]||'',disabled:false,checked:false,width:512,height:512,
+let now=0;const intervals=[],errors=[],elements=new Map(),events={};
+function element(id){return {id,hidden:false,style:{},attributes:{},setAttribute(k,v){this.attributes[k]=v;},focus(){},addEventListener(){},insertAdjacentElement(where,e){elements.set(e.id,e);},attachShadow(){return this.shadowRoot=doc();},value:({gain:'1',frame:'current',speed:'1'})[id]||'',disabled:false,checked:false,width:512,height:512,
  options:id==='frame'?[{}]:[],textContent:'',children:[],getContext(){return {createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){},drawImage(){}};},
- append(e){this.options.push(e);},click(){},toDataURL(){return 'data:image/png;base64,';}};}
+ append(e){this.children.push(e);this.options.push(e);elements.set(e.id,e);},click(){},toDataURL(){return 'data:image/png;base64,';}};}
 function doc(){const els=new Map();return {getElementById(id){if(!els.has(id))els.set(id,element(id));return els.get(id);},createElement:id=>element(id),open(){},write(){},close(){}};}
 const document=doc(),window={GANTRY_MAG3_DATA:packed,GANTRY_ICRP_DATA:{},GANTRY:{G:{arms:'down',rot:0,tableZ:140,tableH:92,detDist1:35,detDist2:35}},
  addEventListener:(n,fn)=>events[n]=fn,dispatchEvent:e=>events[e.type]?.(),
- open(){if(blocked)return null;opened++;const d=doc();return lastPopup={document:d,closed:false,focus(){},close(){this.closed=true;this.unload?.();},addEventListener(n,fn){if(n==='beforeunload')this.unload=fn;}};}};
+ open(){throw Error('MAG3 must not open a browser window');}};
 const ctx=vm.createContext({window,document,Uint8Array,Uint16Array,Uint32Array,Float32Array,Float64Array,Uint8ClampedArray,
  Blob,Response,DecompressionStream,atob,URL,Event,performance:{now:()=>now},setTimeout,
  setInterval:fn=>intervals.push(fn),console:{error:e=>errors.push(e)}});
@@ -44,25 +44,30 @@ function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;
  s.geometry=geometry;api.accumulate(s,1200);assert(s.finished);assert.equal(s.frames.length,84);
  const sum=new Uint32Array(s.counts.length);for(const f of s.frames)for(let i=0;i<sum.length;i++)sum[i]+=f.counts[i];assert.deepEqual(sum,s.counts);
  assert.equal(s.counts.reduce((a,b)=>a+b,0),s.total);assert(Math.abs(s.total-s.expectedTotal)<7*Math.sqrt(s.expectedTotal));
- // Popup blocked must not inject or start a clock.
- blocked=true;api.inject();assert.equal(api.state,null);blocked=false;api.inject();assert.equal(api.state.detector,2);assert.equal(opened,1);
- now=5000;intervals.at(-1)();assert(api.state.time>=5);const once=api.state.total;api.inject();assert.equal(opened,1);assert(api.state.total>=once);
- const controls=lastPopup.document;controls.getElementById('pause').onclick();const paused={...api.state};
+ api.inject();assert.equal(api.state.detector,2);
+ const panel=elements.get('mag3Screen'),view=elements.get('viewMAG3');assert(panel);assert.equal(panel.hidden,false);
+ now=5000;intervals.at(-1)();assert(api.state.time>=5);const once=api.state.total;api.inject();assert(api.state.total>=once);
+ const controls=panel.shadowRoot;controls.getElementById('back').onclick();assert(panel.hidden);
+ now=6000;intervals.at(-1)();assert.equal(api.state.time,6);assert(api.state.total>=once);
+ view.onclick();assert.equal(panel.hidden,false);assert.equal(api.state.time,6);
+ controls.getElementById('pause').onclick();const paused={...api.state};
  now=15000;intervals.at(-1)();assert.equal(api.state.time,paused.time);assert.equal(api.state.total,paused.total);
  controls.getElementById('pause').onclick();controls.getElementById('speed').onchange({target:{value:'10'}});
- now=16000;intervals.at(-1)();assert.equal(api.state.time,15);
+ now=16000;intervals.at(-1)();assert.equal(api.state.time,16);
  controls.getElementById('finish').onclick();const finished={...api.state};now=17000;intervals.at(-1)();assert.equal(api.state.total,finished.total);assert.equal(api.state.time,finished.time);
- // A new prone acquisition uses D1; closing it ends acquisition.
- vm.runInContext('physical.prone=true;declared.prone=true;',ctx);api.inject();assert.equal(opened,2);assert.equal(api.state.detector,1);assert.equal(api.state.time,0);
- now=18000;intervals.at(-1)();lastPopup.close();assert(api.state.finished);const closed={...api.state};now=20000;intervals.at(-1)();assert.equal(api.state.total,closed.total);
+ // A completed acquisition stays viewable; a new injection starts afresh.
+ controls.getElementById('back').onclick();view.onclick();assert.equal(api.state.total,finished.total);assert(api.state.finished);
+ vm.runInContext('physical.prone=true;declared.prone=true;',ctx);api.inject();assert.equal(api.state.detector,1);assert.equal(api.state.time,0);
+ assert.equal(elements.get('mag3Screen'),panel,'Duplicate acquisition panels');
+ now=18000;intervals.at(-1)();assert.equal(api.state.time,1);
  const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter(m=>!m[1].includes('type="module"')&&!m[1].includes('application/json'));
  for(const script of scripts)new vm.Script(script[2]);
  assert(html.includes(fs.readFileSync(path.join(root,'scripts/mag3_acquisition.js'),'utf8').replace(/\r\n/g,'\n').trim()),'Embedded engine is stale');
  const report={result:'OK',data:'Basal only, 20 min, two arm poses, 36 angles',
    accumulation:'All pixels; movement preserves previous counts; no counts in empty field; extra-renal acquisition verified',
    dynamic_frames:84,frame_sum_equals_total:true,poisson_expected_agreement:true,
-   popup_block_does_not_inject:true,repeat_button_does_not_reset:true,selected_posterior_detector:2,
-   pause_speed_finish_close:true,prone_selects_detector_1:true,inline_scripts_parse:true,embedded_engine_current:true,
+   embedded_screen_no_popup:true,hide_keeps_acquiring:true,reopen_preserves_counts:true,repeat_button_does_not_reset:true,selected_posterior_detector:2,
+   pause_speed_finish:true,prone_selects_detector_1:true,inline_scripts_parse:true,embedded_engine_current:true,
    browser_ui:'Not exercised: offline numerical/runtime test with mocked DOM'};
  fs.writeFileSync(path.join(root,'assets/icrp145/mag3-verificacion.json'),JSON.stringify(report,null,2));
  assert(!errors.length,String(errors));console.log(JSON.stringify(report,null,2));

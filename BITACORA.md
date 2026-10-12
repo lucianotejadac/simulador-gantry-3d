@@ -82,3 +82,11 @@ pruebas numéricas y DOM simulado. Se verificaron suma de cuadros, movimiento,
 campo vacío, captación extrarrenal, Poisson, selección posterior, pausa,
 velocidad, finalización y cierre. Sintaxis de scripts comprobada. La interfaz
 de la ventana no se verificó visualmente en un navegador.
+
+## 2026-10-12 - Pantalla MAG3 dentro del gantry
+
+La adquisición se muestra en el área de visualización del simulador, con el
+mando accesible. Se elimina la ventana emergente. Volver a 3D y reabrir la
+pantalla conserva la adquisición en marcha y sus cuentas; los resultados
+finalizados también pueden consultarse. Las pruebas de ejecución verifican
+que no se abra otra ventana, la continuidad al ocultar y la reapertura.

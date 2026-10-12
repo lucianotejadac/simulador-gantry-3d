@@ -122,21 +122,25 @@ Para regenerar este atlas incrustado ejecute
 separa los paneles, elimina marcos y rótulos y conserva las proporciones.
 El montaje original permanece intacto y `index.html` funciona sin conexión.
 
-## MAG3 basal: adquisición en ventana independiente
+## MAG3 basal: pantalla dentro del gantry
 
-Pulsa **inyectar MAG3** para iniciar un basal de 20 minutos. Se abre una ventana
-con la suma acumulada y los cuadros dinámicos. El cabezal más próximo a posterior
+Pulsa **inyectar MAG3** para iniciar un basal de 20 minutos. Se muestra una pantalla
+dentro del simulador con la suma acumulada y los cuadros dinámicos. El mando del
+gantry sigue accesible. El cabezal más próximo a posterior
 al inyectar queda vinculado a esa adquisición (D2 en decúbito supino a 0°).
 La suma incluye todo el campo visible, sin ROI renal. Mover camilla o gantry,
 cambiar brazos, zoom o ajustes de detección modifica las cuentas siguientes;
 las anteriores permanecen en las coordenadas del detector, sin corrección de
 movimiento. La matriz queda fijada al inyectar.
 
-La ventana permite pausar, acelerar el tiempo, finalizar, revisar cuadros y
-guardar la suma PNG o las cuentas y geometrías en JSON. Cerrar la ventana detiene
-la adquisición; pulsar otra vez durante un basal activo enfoca la misma ventana.
+La pantalla permite pausar, acelerar el tiempo, finalizar, revisar cuadros y
+guardar la suma PNG o las cuentas y geometrías en JSON. **Volver a vista 3D**
+oculta la pantalla y mantiene la adquisición activa. **Ver adquisición MAG3**
+la vuelve a mostrar conservando las cuentas, incluso después de finalizar.
+Pulsar **inyectar MAG3** durante un basal activo muestra la misma adquisición;
+después de finalizar inicia una nueva.
 Se guardan 30 cuadros de 2 s, 24 de 10 s y 30 de 30 s. Sólo se incluye el basal.
-Los paneles del simulador muestran señal esperada; la ventana acumula eventos
+Los paneles del simulador muestran señal esperada; la pantalla acumula eventos
 con estadística de Poisson. La ganancia de visualización no altera las cuentas.
 
 Las bases emisoras derivadas de ICRP 145 contienen diez componentes anatómicos,
