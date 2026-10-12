@@ -73,3 +73,10 @@ Se usa como referencia de tiempos y comportamiento; no se distribuyen sus
 imágenes ni datos clínicos originales. El título se refiere a la respuesta al
 captopril, no a una función renal global normal. No implica aprobación de los
 autores ni validación clínica del modelo.
+
+El primer paso MAG3 incorpora etiquetas vasculares originales ICRP 145 del
+tronco y las extremidades, antes ausentes en la caché de órganos. Su tránsito
+temporal es sintético y conserva la actividad total. La referencia para la
+adquisición vascular rápida es la guía SNMMI/EANM:
+https://pmc.ncbi.nlm.nih.gov/articles/PMC6020824/
+No se atribuyen a esa guía los tiempos concretos elegidos para la simulación.

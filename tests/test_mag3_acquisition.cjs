@@ -40,7 +40,7 @@ function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;
  const angular=api.mix(api.fields({...geometry,rawAngle:180},128,{}),api.coefficients(120));
  const lateral=api.mix(api.fields({...geometry,rawAngle:90},128,{}),api.coefficients(120));assert(angular.some((v,i)=>v!==lateral[i]));
  const zero=api.fields({...geometry,rawAngle:0},128,{}),close=api.fields({...geometry,rawAngle:360},128,{});assert.deepEqual(zero,close);
- const up=api.fields({...geometry,arms:'up'},128,{});assert(up.length===10);
+ const up=api.fields({...geometry,arms:'up'},128,{});assert.equal(up.length,15);
  s.geometry=geometry;api.accumulate(s,1200);assert(s.finished);assert.equal(s.frames.length,84);
  const sum=new Uint32Array(s.counts.length);for(const f of s.frames)for(let i=0;i<sum.length;i++)sum[i]+=f.counts[i];assert.deepEqual(sum,s.counts);
  assert.equal(s.counts.reduce((a,b)=>a+b,0),s.total);assert(Math.abs(s.total-s.expectedTotal)<7*Math.sqrt(s.expectedTotal));

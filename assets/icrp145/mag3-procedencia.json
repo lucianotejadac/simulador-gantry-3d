@@ -51,7 +51,12 @@
       6.899700366602701e-08,
       9.601552442006778e-09,
       8.006708629437753e-10,
-      1.1674387678795028e-08
+      1.1674387678795028e-08,
+      2.670099163992745e-08,
+      1.2494886014735584e-08,
+      6.382403938687276e-08,
+      3.576315776854244e-08,
+      2.6022803467640188e-08
     ],
     "up": [
       6.352951231747284e-08,
@@ -63,8 +68,68 @@
       6.899700366602701e-08,
       9.601552442006778e-09,
       8.006708629437753e-10,
-      1.1674387678795028e-08
+      1.1674387678795028e-08,
+      2.670099163992745e-08,
+      1.2494886014735584e-08,
+      6.382403938687276e-08,
+      3.576315776854244e-08,
+      2.6022803467640188e-08
     ]
+  },
+  "components": [
+    "cortex_i",
+    "pelvis_i",
+    "cortex_d",
+    "pelvis_d",
+    "ureter_i",
+    "ureter_d",
+    "bladder",
+    "blood",
+    "background",
+    "liver",
+    "central_blood",
+    "lungs",
+    "upper_arteries",
+    "abdominal_arteries",
+    "leg_arteries"
+  ],
+  "arterial": {
+    "method": "Mass-conserving redistribution of circulating activity; synthetic transit, not measured haemodynamics",
+    "routes": [
+      "central_blood",
+      "lungs",
+      "upper_arteries",
+      "abdominal_arteries",
+      "renal_perfusion",
+      "leg_arteries"
+    ],
+    "nominal_peak_s": [
+      4.0,
+      7.0,
+      10.0,
+      12.0,
+      15.0,
+      18.0
+    ],
+    "width_s": [
+      2.5,
+      2.5,
+      2.5,
+      2.5,
+      3.0,
+      3.5
+    ],
+    "actual_peak_s": [
+      4.5,
+      7.5,
+      9.5,
+      12.0,
+      15.75,
+      18.0
+    ],
+    "end_s": 60,
+    "mass_balance_max_error": 3.3306690738754696e-16,
+    "reference": "https://pmc.ncbi.nlm.nih.gov/articles/PMC6020824/"
   },
   "headRow": 84.49215499999998,
   "footRow": 377.8333333333333,
@@ -160,5 +225,20 @@
   "source": "ICRP 145 · MAG3 basal · 20 min",
   "reference": "https://radiopaedia.org/cases/normal-captopril-renal-mag3-nuclear-study",
   "sha256_basal": "3f6ea052722c563d2c134da30952168c94f87d74bfd63535d4c20377b3d4e888",
-  "method": "Organ projections at 10 degrees, interpolated linearly, 6 mm grid and 9 mm PSF; two arm poses. Basal cumulative kinetics integrated at 0.25 s. Full detector counts; no renal mask."
+  "method": "Organ projections at 10 degrees, interpolated linearly, 6 mm grid and 9 mm PSF; two arm poses. Basal cumulative kinetics integrated at 0.25 s. Full detector counts; no renal mask.",
+  "arterial_anatomy": {
+    "labels": [
+      900,
+      1000,
+      1010,
+      1100,
+      1200,
+      8800,
+      9700,
+      9900
+    ],
+    "trunk_split_z_mm": 386.6309914930014,
+    "sha256_vascular_cache": "b3909d40a0d05dd435dc33f4ccfe032577849c24d7130a82e19aa65ed783a96f",
+    "limitation": "Lung and renal vascular activity uses organ masks; cardiac chambers and individual renal arteries are not resolved."
+  }
 }

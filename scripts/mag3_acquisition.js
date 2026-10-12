@@ -3,12 +3,12 @@
   'use strict';
   const data=window.GANTRY_MAG3_DATA,poses={},button=document.getElementById('injectMAG3');
   let session=null,panel=null,ready=false;
-  const pixels=data.width*data.height;
+  const pixels=data.width*data.height,componentCount=data.scales.down.length;
   const loading=Promise.all(['down','up'].map(async name=>{
     const bytes=Uint8Array.from(atob(data.packed[name]),c=>c.charCodeAt(0));
     const buffer=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
-    const values=new Uint16Array(buffer);if(values.length!==10*data.angles.length*pixels)throw Error('Serie MAG3 incompleta');
-    poses[name]=Array.from({length:10},(_,c)=>({width:data.width,height:data.height,scale:data.scales[name][c],window:1,
+    const values=new Uint16Array(buffer);if(values.length!==componentCount*data.angles.length*pixels)throw Error('Serie MAG3 incompleta');
+    poses[name]=Array.from({length:componentCount},(_,c)=>({width:data.width,height:data.height,scale:data.scales[name][c],window:1,
       frames:data.angles.map((_,a)=>values.subarray((c*data.angles.length+a)*pixels,(c*data.angles.length+a+1)*pixels))}));
   })).then(()=>{ready=true;button.disabled=false;button.title='Iniciar basal de 20 minutos desde la posición actual';window.dispatchEvent(new Event('mag3ready'));})
     .catch(e=>{button.title='No se pudo cargar MAG3: '+e.message;console.error(e);});
@@ -21,7 +21,7 @@
     cache.key=key;cache.fields=poses[geometry.arms==='up'?'up':'down'].map(p=>window.GANTRY_ICRP.field(p,pair,geometry.crop,n,n,geometry.flipX,geometry.flipY,geometry.metrics,geometry.blur*n/240).values);
     return cache.fields;
   }
-  function mix(bases,weights){const out=new Float32Array(bases[0].length);for(let c=0;c<10;c++)if(weights[c]>0)for(let i=0;i<out.length;i++)out[i]+=bases[c][i]*weights[c];return out;}
+  function mix(bases,weights){const out=new Float32Array(bases[0].length);for(let c=0;c<bases.length;c++)if(weights[c]>0)for(let i=0;i<out.length;i++)out[i]+=bases[c][i]*weights[c];return out;}
   function draw(canvas,values,n,gain=1){
     if(!canvas)return;const ctx=canvas.getContext('2d'),small=document.createElement('canvas');small.width=small.height=n;
     const sc=small.getContext('2d'),im=sc.createImageData(n,n),nonzero=Array.from(values).filter(v=>v>0).sort((a,b)=>a-b);
@@ -71,18 +71,19 @@
   <span id="detector"></span></div>
   <div class="grid"><article><h2>MAG3 BASAL · SUMA ACUMULADA</h2><canvas id="sum" width="512" height="512" aria-label="Suma acumulada MAG3"></canvas><small id="stats"></small></article>
   <article><h2>MAG3 BASAL · CUADRO DINÁMICO</h2><canvas id="current" width="512" height="512" aria-label="Cuadro dinámico MAG3"></canvas><small id="frameStatus"></small></article></div>`;
+  function phase(t){return t<60?'Fase vascular / arterial':'Captación y excreción';}
   function labelTime(t){return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');}
   function refresh(){
     syncPanel();if(!session||!panel||panel.hidden)return;const s=session,d=panel.shadowRoot,g=s.geometry,gain=Number(d.getElementById('gain').value);
-    d.getElementById('stats').textContent=labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
+    d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
     d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';d.getElementById('pause').disabled=s.finished;
     d.getElementById('detector').textContent='Cabezal '+s.detector+' · posterior al inicio · matriz '+s.n+' × '+s.n;
     const select=d.getElementById('frame');while(select.options.length<s.frames.length+1){const i=select.options.length-1,o=document.createElement('option');o.value=i;o.textContent=(i+1)+' · '+labelTime(s.frames[i].start)+'–'+labelTime(s.frames[i].end);select.append(o);}
     const f=select.value==='current'?null:s.frames[Number(select.value)];
     draw(d.getElementById('sum'),s.counts,s.n,gain);draw(d.getElementById('current'),f?f.counts:s.frameCounts,s.n,gain);
-    d.getElementById('frameStatus').textContent=f?'Cuadro guardado sin corrección de movimiento':s.finished?'Adquisición terminada; selecciona un cuadro guardado':'Cuadro '+(s.frameIndex+1)+' en curso';
+    d.getElementById('frameStatus').textContent=f?phase(f.start)+' · '+labelTime(f.start)+'–'+labelTime(f.end):s.finished?'Adquisición terminada; selecciona un cuadro guardado':phase(s.time)+' · cuadro '+(s.frameIndex+1)+' en curso';
   }
-  function saveJSON(){const s=session,object={tracer:'99mTc-MAG3',study:'basal',duration:s.time,detector:s.detector,matrix:s.n,total:s.total,
+  function saveJSON(){const s=session,object={tracer:'99mTc-MAG3',study:'basal',arterialModel:data.arterial,duration:s.time,detector:s.detector,matrix:s.n,total:s.total,
     sum:Array.from(s.counts),frames:s.frames.map(f=>({...f,counts:Array.from(f.counts)})),partial:{start:data.edges[s.frameIndex],end:s.time,counts:Array.from(s.frameCounts)},
     geometryHistory:s.history,coordinateSystem:'Detector pixels, no motion correction',reference:data.reference};
     const url=URL.createObjectURL(new Blob([JSON.stringify(object)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='mag3_basal_adquisicion.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}

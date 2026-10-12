@@ -101,3 +101,20 @@ la barra Imagen en vivo. Se retira la pantalla sobre la vista 3D y el botón
 Ver adquisición. El cambio de estudio restaura los detectores habituales;
 volver a MAG3 recupera la adquisición y sus cuentas. Pruebas aprobadas para
 ubicación dentro de gantryLive, vista 3D intacta, cambio de estudio y controles.
+
+## 2026-10-12 - Primer paso arterial MAG3
+
+El fondo sanguíneo difuso no mostraba el paso arterial. Se añaden cinco bases
+proyectadas: sangre central, pulmones, arterias superiores, arterias abdominales
+y arterias de las piernas. Las etiquetas vasculares originales se voxelizan
+desde MRCP_AM y se proyectan para ambas posturas y 36 ángulos. Se añade también
+un componente vascular renal transitorio dentro de las máscaras renales.
+
+La actividad circulante se redistribuye entre estos componentes mediante un
+tránsito sintético secuencial, conservando la actividad total. A partir de 60 s
+las actividades instantáneas coinciden con el modelo basal anterior. La barra
+identifica la fase vascular y permite revisar los cuadros iniciales de 2 s.
+
+test_mag3_arterial.py y test_mag3_acquisition.cjs aprobados. El montaje de cuentas
+esperadas confirma el tránsito vascular antes del predominio renal. Los tiempos
+son ilustrativos y no una calibración hemodinámica al caso clínico.

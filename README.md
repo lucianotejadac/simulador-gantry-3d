@@ -143,12 +143,26 @@ Se guardan 30 cuadros de 2 s, 24 de 10 s y 30 de 30 s. Sólo se incluye el basal
 Antes de inyectar se muestra la señal esperada; al inyectar, los recuadros
 muestran las cuentas acumuladas con estadística de Poisson. La ganancia de visualización no altera las cuentas.
 
-Las bases emisoras derivadas de ICRP 145 contienen diez componentes anatómicos,
+Las bases emisoras derivadas de ICRP 145 contienen quince componentes anatómicos,
 36 ángulos cada 10°, ambas posturas de brazos y píxeles de 6 mm. La cinética es
 sintética y conserva la del proyecto local `../icrp145-mag3-cuerpo-entero`.
 La referencia basal es el caso de Craig Hacking en
 [Radiopaedia](https://radiopaedia.org/cases/normal-captopril-renal-mag3-nuclear-study),
 sin incorporar imágenes clínicas ni representar una calibración absoluta.
+
+El primer minuto incluye una **fase vascular / arterial** en cuadros de 2 s:
+tránsito central, pulmonar, arterial y perfusión renal. Los grandes vasos del
+tronco y las extremidades se voxelizan de las etiquetas originales de ICRP 145.
+El bolo redistribuye la actividad circulante sin aumentar la dosis simulada;
+después de 60 s se conserva la cinética basal anterior. Sus tiempos de tránsito
+son supuestos docentes, no mediciones del estudio de referencia. La perfusión
+pulmonar y renal usa máscaras de órgano; no resuelve microvasculatura.
+
+Puedes revisar los primeros cuadros con **Cuadro** en la misma barra. La suma
+acumulada conserva también los eventos de esta fase. Verificación adicional:
+`python tests/test_mag3_arterial.py`. El montaje de cuentas esperadas está en
+`assets/icrp145/mag3-fase-arterial.png` y los resultados numéricos en
+`assets/icrp145/mag3-arterial-verificacion.json`.
 
 Regeneración: `python scripts/build_mag3_assets.py` (requiere los volúmenes
 locales originales, NumPy, SciPy y Numba). Para cambios sólo del motor:
