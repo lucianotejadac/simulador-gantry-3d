@@ -122,26 +122,26 @@ Para regenerar este atlas incrustado ejecute
 separa los paneles, elimina marcos y rótulos y conserva las proporciones.
 El montaje original permanece intacto y `index.html` funciona sin conexión.
 
-## MAG3 basal: pantalla dentro del gantry
+## MAG3 basal: integrado en Imagen en vivo
 
-Pulsa **inyectar MAG3** para iniciar un basal de 20 minutos. Se muestra una pantalla
-dentro del simulador con la suma acumulada y los cuadros dinámicos. El mando del
-gantry sigue accesible. El cabezal más próximo a posterior
-al inyectar queda vinculado a esa adquisición (D2 en decúbito supino a 0°).
-La suma incluye todo el campo visible, sin ROI renal. Mover camilla o gantry,
-cambiar brazos, zoom o ajustes de detección modifica las cuentas siguientes;
-las anteriores permanecen en las coordenadas del detector, sin corrección de
-movimiento. La matriz queda fijada al inyectar.
+Pulsa **inyectar MAG3** para iniciar un basal de 20 minutos. La suma acumulada
+y el cuadro dinámico se muestran en los dos recuadros de **Imagen en vivo**,
+con pausa, finalización, velocidad, ganancia, selección de cuadro y exportación
+PNG/JSON en la misma barra. La vista 3D y el mando permanecen accesibles.
 
-La pantalla permite pausar, acelerar el tiempo, finalizar, revisar cuadros y
-guardar la suma PNG o las cuentas y geometrías en JSON. **Volver a vista 3D**
-oculta la pantalla y mantiene la adquisición activa. **Ver adquisición MAG3**
-la vuelve a mostrar conservando las cuentas, incluso después de finalizar.
-Pulsar **inyectar MAG3** durante un basal activo muestra la misma adquisición;
+El cabezal más próximo a posterior al inyectar queda vinculado a la adquisición
+(D2 en decúbito supino a 0°). La suma incluye todo el campo visible, sin ROI
+renal. Mover camilla o gantry, cambiar brazos, zoom o ajustes modifica las
+cuentas siguientes; las anteriores permanecen en coordenadas del detector,
+sin corrección de movimiento. La matriz queda fijada al inyectar.
+
+Cambiar de estudio muestra sus detectores y mantiene el basal en marcha.
+Seleccionar **MAG3 basal** recupera las cuentas y controles, también al finalizar.
+Pulsar **inyectar MAG3** durante un basal activo conserva la misma adquisición;
 después de finalizar inicia una nueva.
 Se guardan 30 cuadros de 2 s, 24 de 10 s y 30 de 30 s. Sólo se incluye el basal.
-Los paneles del simulador muestran señal esperada; la pantalla acumula eventos
-con estadística de Poisson. La ganancia de visualización no altera las cuentas.
+Antes de inyectar se muestra la señal esperada; al inyectar, los recuadros
+muestran las cuentas acumuladas con estadística de Poisson. La ganancia de visualización no altera las cuentas.
 
 Las bases emisoras derivadas de ICRP 145 contienen diez componentes anatómicos,
 36 ángulos cada 10°, ambas posturas de brazos y píxeles de 6 mm. La cinética es

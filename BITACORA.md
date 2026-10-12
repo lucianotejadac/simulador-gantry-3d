@@ -93,3 +93,11 @@ que no se abra otra ventana, la continuidad al ocultar y la reapertura.
 Comprobación adicional en Chrome sobre GitHub Pages: pantalla interna visible,
 mando accesible y temporizador conservado al volver a 3D y reabrir. Se compactan
 cabecera e imágenes para aprovechar el área disponible.
+
+## 2026-10-12 - MAG3 en la barra Imagen en vivo
+
+La suma, el cuadro dinámico y todos los controles se integran directamente en
+la barra Imagen en vivo. Se retira la pantalla sobre la vista 3D y el botón
+Ver adquisición. El cambio de estudio restaura los detectores habituales;
+volver a MAG3 recupera la adquisición y sus cuentas. Pruebas aprobadas para
+ubicación dentro de gantryLive, vista 3D intacta, cambio de estudio y controles.
