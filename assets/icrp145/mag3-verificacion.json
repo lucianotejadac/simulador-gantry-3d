@@ -1,0 +1,16 @@
+{
+  "result": "OK",
+  "data": "Basal only, 20 min, two arm poses, 36 angles",
+  "accumulation": "All pixels; movement preserves previous counts; no counts in empty field; extra-renal acquisition verified",
+  "dynamic_frames": 84,
+  "frame_sum_equals_total": true,
+  "poisson_expected_agreement": true,
+  "popup_block_does_not_inject": true,
+  "repeat_button_does_not_reset": true,
+  "selected_posterior_detector": 2,
+  "pause_speed_finish_close": true,
+  "prone_selects_detector_1": true,
+  "inline_scripts_parse": true,
+  "embedded_engine_current": true,
+  "browser_ui": "Not exercised: offline numerical/runtime test with mocked DOM"
+}

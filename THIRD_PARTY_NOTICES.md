@@ -38,3 +38,38 @@ CC0 no afecta derechos de marcas, imagen, privacidad u otros derechos que
 pudieran resultar aplicables. No debe sugerirse que Quaternius o los autores
 de Three.js patrocinan o aprueban este simulador.
 
+## Anatomía ICRP Publication 145
+
+ICRP, 2020. *Adult mesh-type reference computational phantoms*. ICRP
+Publication 145. Ann. ICRP 49(3). Fuente anatómica: fantoma masculino MRCP_AM.
+Referencia: https://www.icrp.org/publication.asp?id=ICRP+Publication+145
+
+Las imágenes óseas incluidas son proyecciones calculadas localmente a partir
+de una voxelización a 3 mm, con actividad sintética y atenuación aproximada.
+La postura de brazos arriba es una rearticulación docente derivada, no una
+postura oficial ni certificada por ICRP. No se incorporan las mallas originales
+al HTML. La licencia MIT del código no cambia los derechos de la anatomía
+de terceros ni implica patrocinio o aprobación de ICRP.
+
+`assets/icrp145/procedencia.json` documenta fuentes, huellas SHA-256,
+articulaciones, error de cuantización y limitaciones de las series.
+
+
+La serie MIBI incorpora 72 proyecciones del fantoma derivado con brazos arriba.
+El ventrículo izquierdo es un modelo emisor sintético, ampliado un 25 % y
+desplazado 6 mm hacia abajo, con captación heterogénea. No representa una
+segmentación ventricular original ICRP ni una reconstrucción SPECT clínica.
+La referencia visual aportada no se incluye como imagen clínica en el HTML.
+
+La adquisición MAG3 basal utiliza proyecciones de órganos derivados del mismo
+fantoma ICRP 145, con captación y cinética sintéticas. Las posturas de brazos y
+la atenuación son aproximaciones docentes. `assets/icrp145/mag3-procedencia.json`
+documenta la preparación y las fuentes locales.
+
+Referencia de la dinámica basal: Craig Hacking, *Normal captopril renal MAG3
+nuclear study*, Radiopaedia:
+https://radiopaedia.org/cases/normal-captopril-renal-mag3-nuclear-study
+Se usa como referencia de tiempos y comportamiento; no se distribuyen sus
+imágenes ni datos clínicos originales. El título se refiere a la respuesta al
+captopril, no a una función renal global normal. No implica aprobación de los
+autores ni validación clínica del modelo.

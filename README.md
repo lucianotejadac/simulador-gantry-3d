@@ -9,42 +9,91 @@ encuentran incorporados en un solo archivo: `index.html`.
 Descargue `index.html` y ábralo en un navegador moderno. No requiere conexión
 a Internet.
 
-## Cintigrama óseo
+## MIBI cardíaco · brazos arriba
 
-En **ESTUDIO**, seleccione **Cintigrama óseo**. Las proyecciones del montaje
-aportado se muestran en ambos detectores según la rotación del gantry, con
-180° de separación. El desplazamiento de la camilla recorre las regiones del
-cuerpo y siguen disponibles zoom, matriz, colimador y ventana energética.
-Los ajustes existentes se conservan al cambiar de estudio. Para visualizar
-el modo óseo con su perfil de referencia: LEHR, 140 keV, ancho 20% y zoom 1×.
-Introduzca la camilla en el campo de los detectores para ver al paciente.
+Seleccione **MIBI cardíaco · brazos arriba** en ESTUDIO, o abra
+`index.html?demo=mibi-brazos-arriba` para centrar la región del corazón y el
+hígado con LEHR, 140 keV y ventana del 20 %.
 
-Use **Brazos: Arriba / Al costado**, debajo de la vista 3D, para cambiar la
-postura del paciente. En el modo óseo, ambos detectores cambian automáticamente
-entre el montaje de brazos al costado y el de brazos elevados. Las manos se conservan
-en la postura 3D con codos abiertos y flexionados, y antebrazos hacia dentro,
-como en el montaje óseo. Esta postura se mantiene al invertir cabeza y pies.
-En las imágenes, las manos se conservan
-por encima de la cabeza, manteniendo la referencia de cabeza a pies al mover la
-camilla. El montaje original se conserva en
-`assets/cintigrama-oseo-brazos-arriba.png` y también se incrusta en `index.html`
-como atlas, por lo que no requiere conexión ni archivos adicionales al abrirlo.
+Se integran 72 proyecciones a pasos de 5° del fantoma derivado ICRP 145,
+con el VI sintético ampliado un 25 %, desplazado 6 mm hacia abajo y con
+captación heterogénea. Esta serie corresponde a brazos arriba: al seleccionarla
+se eleva el muñeco y se deshabilita «Al costado» hasta cambiar de estudio.
+Los dos detectores comparten los controles **En vivo / Sin ruido**, cuentas/s,
+persistencia, congelación y limpieza. La señal utiliza cuentas esperadas;
+el motor genera eventos nuevos, sin reutilizar imágenes con ruido fijo.
 
-El atlas de brazos al costado contiene 14 direcciones rotuladas en el nuevo
-montaje: 0°, 22,5°, 45°, 67,5°, 90°, 112,5°, 157,5°, 180°, 202,5°, 247,5°,
-270°, 292,5°, 315° y 337,5°. Las posiciones ausentes de 135° y 225° se
-interpolan entre sus vistas vecinas. El atlas de brazos arriba mantiene sus
-16 direcciones cada 22,5°. Ambos cierran circularmente de 337,5° a 0°.
-El panel rotulado 360° del nuevo montaje presenta una apariencia distinta de
-0°: se conserva en el original, pero no se utiliza como dirección adicional.
-El atlas elimina marco y rótulos, convierte el fondo blanco a negro y mantiene
-las proporciones de cada imagen. Las imágenes originales no se modifican.
+La forma ventricular y la captación son sintéticas; no constituyen una
+segmentación ventricular original ICRP ni una reconstrucción SPECT validada.
+Se conserva la actividad cardíaca total del modelo local y la atenuación original.
+Las proyecciones se normalizan a la referencia de 2 millones de cuentas ANT
+del motor, junto con su ventana, para mantener la tasa seleccionada en cuentas/s.
 
-El montaje actual está en `assets/cintigrama-oseo-al-costado.jpg`.
-El ZIP anterior se conserva como referencia histórica y ya no se usa para
-generar este atlas. Para regenerar ambos atlas, instale Pillow y ejecute
-`python scripts/build_bone_atlas.py`. El usuario del simulador sólo necesita
-`index.html`, que sigue funcionando sin conexión.
+Al empaquetar, `scripts/build_icrp_assets.py` también lee
+`../icrp145-multitrazador-ap-pa/mibi-360-brazos-arriba` (configurable mediante
+`--mibi-source`). Prueba específica: `python tests/test_mibi_mode.py`.
+
+## Cintigrama óseo · ICRP 145
+
+Seleccione **Cintigrama óseo** en ESTUDIO. El selector **Brazos: Arriba /
+Al costado** cambia simultáneamente el muñeco y las proyecciones de ambos
+cabezales. Cada postura contiene 80 vistas calculadas: cada 5° y las oblicuas
+adicionales cada 22,5°. Se interpola la intensidad lineal entre vistas vecinas,
+con cierre circular y 180° de separación entre detectores.
+
+La señal ósea se genera desde datos lineales derivados del fantoma ICRP 145
+MRCP_AM. Los brazos elevados se obtienen articulando en 3D los húmeros y los
+antebrazos/manos antes de recalcular emisión y atenuación. El cuerpo conserva
+su referencia de cráneo a plantas; las manos pueden verse por encima del cráneo
+al avanzar la camilla. La postura es una aproximación docente: clavículas y
+escápulas permanecen en su posición original. La captación es sintética.
+
+**En vivo** genera eventos nuevos de Poisson incluso con el gantry quieto.
+La ventana móvil conserva únicamente los últimos **0,25 a 5 segundos** y
+se actualiza aproximadamente a 10 Hz. Menos cuentas/s o menor persistencia
+producen más grano. La tasa elegida corresponde al cuerpo completo anterior;
+el campo del detector recibe una fracción según el recorte y los ajustes.
+
+- **Congelar / Reanudar** detiene o continúa el reloj de adquisición.
+- **Limpiar** vacía las dos ventanas.
+- **Sin ruido** permite inspeccionar la captación esperada.
+- El movimiento del gantry y la camilla conserva la estela temporal.
+- Cambiar postura, estudio, matriz, zoom, colimador o ventana energética
+  limpia la persistencia para no mezclar configuraciones.
+- Una pestaña oculta suspende la adquisición.
+
+Se mantienen zoom, matriz, distancia a la piel, colimador, ventana energética
+y corrección de orientación. Como punto de partida: LEHR, 140 keV, 20%,
+zoom 1×, matriz 256, 4.000 cuentas/s y 0,75 s. Introduzca la camilla en el
+campo. Para abrir directamente la demostración local con los brazos elevados,
+añada `?demo=oseo-brazos-arriba` a la dirección de `index.html`.
+
+Todos los datos lineales están comprimidos e incrustados en el HTML, que
+funciona sin servidor ni red en Chrome/Edge modernos (DecompressionStream).
+El montaje de 16 vistas está en `assets/icrp145/montaje-brazos-arriba.jpg`.
+Las imágenes de referencia anteriores se conservan en `assets/` como material
+histórico; ya no alimentan el estudio óseo.
+
+### Regeneración y comprobaciones
+
+La preparación requiere los archivos locales originales y derivados de ICRP;
+no se distribuyen las mallas ni los volúmenes grandes en el repositorio.
+Con la carpeta de trabajo `../icrp145-oseo-360`, que contiene el proyector,
+las mallas en caché, la corrección de huesos largos y la serie al costado:
+
+```powershell
+# Python con numpy, scipy, numba y Pillow:
+python scripts/generate_icrp_arms_up.py --source ../icrp145-oseo-360
+# Incrustar ambas series y el motor temporal:
+python scripts/build_icrp_assets.py --source ../icrp145-oseo-360
+# Python con playwright y Chrome instalado:
+python tests/test_bone_mode.py
+python tests/test_table_distance.py
+python tests/test_icrp_live.py
+```
+
+La procedencia, parámetros y limitaciones se conservan en
+`assets/icrp145/procedencia.json`. Véase también `THIRD_PARTY_NOTICES.md`.
 
 ## Calidad de imagen y distancia
 
@@ -72,6 +121,39 @@ Para regenerar este atlas incrustado ejecute
 `python scripts/build_exploration_atlas.py` (requiere Pillow). La preparación
 separa los paneles, elimina marcos y rótulos y conserva las proporciones.
 El montaje original permanece intacto y `index.html` funciona sin conexión.
+
+## MAG3 basal: adquisición en ventana independiente
+
+Pulsa **inyectar MAG3** para iniciar un basal de 20 minutos. Se abre una ventana
+con la suma acumulada y los cuadros dinámicos. El cabezal más próximo a posterior
+al inyectar queda vinculado a esa adquisición (D2 en decúbito supino a 0°).
+La suma incluye todo el campo visible, sin ROI renal. Mover camilla o gantry,
+cambiar brazos, zoom o ajustes de detección modifica las cuentas siguientes;
+las anteriores permanecen en las coordenadas del detector, sin corrección de
+movimiento. La matriz queda fijada al inyectar.
+
+La ventana permite pausar, acelerar el tiempo, finalizar, revisar cuadros y
+guardar la suma PNG o las cuentas y geometrías en JSON. Cerrar la ventana detiene
+la adquisición; pulsar otra vez durante un basal activo enfoca la misma ventana.
+Se guardan 30 cuadros de 2 s, 24 de 10 s y 30 de 30 s. Sólo se incluye el basal.
+Los paneles del simulador muestran señal esperada; la ventana acumula eventos
+con estadística de Poisson. La ganancia de visualización no altera las cuentas.
+
+Las bases emisoras derivadas de ICRP 145 contienen diez componentes anatómicos,
+36 ángulos cada 10°, ambas posturas de brazos y píxeles de 6 mm. La cinética es
+sintética y conserva la del proyecto local `../icrp145-mag3-cuerpo-entero`.
+La referencia basal es el caso de Craig Hacking en
+[Radiopaedia](https://radiopaedia.org/cases/normal-captopril-renal-mag3-nuclear-study),
+sin incorporar imágenes clínicas ni representar una calibración absoluta.
+
+Regeneración: `python scripts/build_mag3_assets.py` (requiere los volúmenes
+locales originales, NumPy, SciPy y Numba). Para cambios sólo del motor:
+`python scripts/embed_mag3_engine.py`.
+Verificación: `node tests/test_mag3_acquisition.cjs`; comprueba conservación de
+cuentas, campo vacío, actividad extrarrenal, rotación, cuadros y controles con
+DOM simulado. No sustituye una comprobación visual del navegador.
+Procedencia y resultados: `assets/icrp145/mag3-procedencia.json` y
+`assets/icrp145/mag3-verificacion.json`.
 
 ## Derechos de autor
 

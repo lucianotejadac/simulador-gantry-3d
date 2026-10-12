@@ -18,12 +18,13 @@ with sync_playwright() as playwright:
     page.wait_for_function("window.GANTRY_LIVE && window.GANTRY3D && GANTRY_LIVE.ready")
     page.select_option("#liveStudy", "bone")
     page.wait_for_function("GANTRY_LIVE.ready")
+    page.evaluate("GANTRY_LIVE.setSignalMode('reference')")
     result = page.evaluate("""() => {
       const live=GANTRY_LIVE;
       function check(ok,message){if(!ok) throw new Error(message);}
       check(live.settings.study==='bone','UI must select bone mode');
-      check(live.angles.length===14,'Arms-down atlas has 14 labelled directions');
-      for(const [angle,lo,hi] of [[135,112.5,157.5],[225,202.5,247.5]]){
+      check(live.angles.length===80,'ICRP arms-down series has 80 directions');
+      for(const [angle,lo,hi] of [[132.5,130,135],[222.5,220,225]]){
         const pair=live.framePair(angle);
         check(pair.a0===lo && pair.a1===hi && pair.mix===0.5,'Missing view must interpolate its labelled neighbours');
       }
@@ -32,11 +33,11 @@ with sync_playwright() as playwright:
         check(Math.abs(pair.a0+(pair.a1-pair.a0)*pair.mix-angle)<1e-8,
           'Incorrect atlas direction '+angle);
       }
-      const seam=live.framePair(348.75);
-      check(seam.lo===13 && seam.hi===0 && seam.mix===0.5,'Circular interpolation');
+      const seam=live.framePair(357.5);
+      check(seam.lo===79 && seam.hi===0 && seam.mix===0.5,'Circular interpolation');
       check(JSON.stringify(live.framePair(0))===JSON.stringify(live.framePair(360)),
         '0 and 360 must produce the same frame');
-      check(JSON.stringify(live.framePair(-11.25))===JSON.stringify(seam),
+      check(JSON.stringify(live.framePair(-2.5))===JSON.stringify(seam),
         'Negative rotation wraps');
       GANTRY_PATIENT3D.headFirst=false;
       GANTRY_ACQUISITION.headFirst=false;
@@ -75,7 +76,7 @@ with sync_playwright() as playwright:
         page.select_option("#liveStudy", study)
         page.wait_for_function("GANTRY_LIVE.ready")
         state = page.evaluate("({study:GANTRY_LIVE.settings.study, count:GANTRY_LIVE.angles.length})")
-        assert state == {"study": study, "count": 14 if study == 'bone' else 16 if study == 'exploration' else 40}, state
+        assert state == {"study": study, "count": 80 if study == 'bone' else 16 if study == 'exploration' else 40}, state
         if study == 'exploration':
             page.evaluate("""() => {
               const live=GANTRY_LIVE;
@@ -117,7 +118,7 @@ with sync_playwright() as playwright:
     assert page.locator('[data-arms="up"]').get_attribute('aria-pressed') == 'true'
     page.evaluate("""() => {
       if(GANTRY.G.arms!=='up') throw new Error('Button did not raise the patient arms');
-      if(GANTRY_LIVE.angles.length!==16) throw new Error('Raised arms must retain all 16 directions');
+      if(GANTRY_LIVE.angles.length!==80) throw new Error('Raised arms must have 80 calculated directions');
       const exact135=GANTRY_LIVE.framePair(135);
       if(exact135.a0!==135 && exact135.a1!==135) throw new Error('Raised-arm 135 view was lost');
       for(const n of [1,2]){
@@ -137,7 +138,7 @@ with sync_playwright() as playwright:
     }""")
     page.click('[data-arms="down"]')
     page.wait_for_function("GANTRY_LIVE.ready && GANTRY_LIVE.state.d1.arms==='down'")
-    assert page.evaluate('GANTRY_LIVE.angles.length') == 14
+    assert page.evaluate('GANTRY_LIVE.angles.length') == 80
     assert page.evaluate("[1,2].every(n=>document.getElementById('liveD'+n).toDataURL()===beforeArms[n-1])")
     page.wait_for_function("GANTRY3D.patientPlacement().source==='glb'")
     resting_arms = page.evaluate("GANTRY3D.patientPlacement().arms")

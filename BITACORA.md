@@ -1,5 +1,27 @@
 # Bitácora de decisiones
 
+## 2026-10-12 · Óseo ICRP 145 articulado y persistencia
+
+Se sustituyen los montajes óseos del visor por dos series de 80 proyecciones
+lineales calculadas desde el volumen ICRP 145 local: postura original y brazos
+elevados. La versión elevada rota húmeros y antebrazos/manos en 3D antes de
+proyectar emisión y atenuación. La postura es docente y aproximada; no mueve
+clavículas ni escápulas. El muñeco y ambos detectores comparten el selector
+de brazos. Los montajes anteriores permanecen como fuentes históricas.
+
+Los datos lineales uint16 comprimidos y el motor temporal quedan incrustados
+en el HTML. Se generan eventos de Poisson nuevos a unos 10 Hz; una ventana
+móvil de 0,25–5 s conserva la estela durante movimientos del gantry/camilla.
+Cambiar configuración limpia la historia. La tasa se refiere a cuerpo
+completo anterior y el recorte conserva el área física por píxel al cambiar
+matriz. Se mantienen los efectos de distancia a piel, colimador y energía.
+
+Validación: `test_bone_mode.py`, `test_table_distance.py` y
+`test_icrp_live.py` pasan sin conexión. Se verifican pose del muñeco, 160
+proyecciones, giro/oposición, ruido temporal, congelación, vaciado, expiración,
+conservación de cuentas entre matrices y encuadre completo de los canvas.
+La modificación se integra localmente; no se publica en GitHub en este paso.
+
 ## 2026-10-04 · La calidad de imagen sigue la distancia cabezal–paciente
 
 **Contexto.** La PSF y las cuentas se calculaban con la distancia del cabezal al
@@ -27,3 +49,36 @@ físicamente imposible; el interlock lo impide al operar, pero las pruebas que
 fijan estados a mano deben respetar `GANTRY3D.limits`. El rótulo de cada imagen
 muestra «D-isocentro» y «a piel». `tests/test_table_distance.py` verifica que
 subir la camilla 8 cm equivale a acercar el cabezal superior 8 cm.
+
+## 2026-10-12 - MIBI cardíaco integrado
+
+Nuevo estudio local MIBI con 72 vistas cada 5 grados, brazos arriba y VI
+ampliado 25 %, descendido 6 mm y captación heterogénea. El empaquetador
+incrusta cuentas lineales y normaliza la referencia ANT a 2 millones junto
+con la ventana. Se reutiliza la adquisición temporal de Poisson.
+La caché de campos incluye el estudio para evitar mezclar MIBI y hueso.
+Al elegir MIBI se elevan los brazos; la opción al costado se habilita de nuevo
+al cambiar de estudio. Enlace local: index.html?demo=mibi-brazos-arriba.
+
+Verificación: test_mibi_mode.py, test_icrp_live.py, test_bone_mode.py y
+test_table_distance.py aprobados, incluida fidelidad de datos, funcionamiento
+sin red, persistencia, dos detectores y cambio de estudio.
+
+## 2026-10-12 - MAG3 basal integrado
+
+Botón «inyectar MAG3» y ventana independiente de adquisición de 20 minutos.
+Se elige el cabezal posterior al inicio y se acumulan eventos Poisson de todo
+su campo, integrando la cinética durante cada intervalo y conservando las
+cuentas anteriores cuando cambia la geometría. Se guardan 84 cuadros y la
+historia de posiciones. Incluye pausa, velocidad y exportación PNG/JSON.
+No se incorpora la fase poscaptopril.
+
+Las proyecciones se calculan desde las bases anatómicas del proyecto MAG3 de
+cuerpo entero, para 36 ángulos y ambas posturas de brazos. Los datos lineales
+comprimidos y el motor quedan incrustados en el HTML para uso local.
+
+Verificación: test_mag3_acquisition.cjs aprobado con datos reales incrustados,
+pruebas numéricas y DOM simulado. Se verificaron suma de cuadros, movimiento,
+campo vacío, captación extrarrenal, Poisson, selección posterior, pausa,
+velocidad, finalización y cierre. Sintaxis de scripts comprobada. La interfaz
+de la ventana no se verificó visualmente en un navegador.

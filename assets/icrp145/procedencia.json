@@ -1,0 +1,1574 @@
+{
+  "down": {
+    "modelo": "ICRP 145 MRCP_AM, masculino adulto, postura original con brazos al costado",
+    "fuente_volumen": "C:\\Users\\lucia\\Documents\\simulador-renograma-mc\\salida_osea\\cuerpo.npz",
+    "sha256_volumen": "3559086d50328d939cb59960639946a46eb15fa5817e895e80bfddc11a6ef7db",
+    "procedencia": "Voxelizado local por simulador-renograma-mc/src/osea_fantoma.py desde MRCP_AM.node y MRCP_AM.ele",
+    "correccion_anatomica": "Se recuperaron por voxelizacion directa de la malla original los IDs 1600,1800,3100,3300 omitidos en la cache; materiales confirmados en MRCP_AM.material del ejemplo GEANT4 oficial",
+    "forma_zyx": [
+      594,
+      104,
+      193
+    ],
+    "voxel_mm": 3.0,
+    "origen_lps_mm": [
+      -296.95757000000003,
+      -146.02846,
+      -888.60229
+    ],
+    "ancho_alto_pixeles_nativos": [
+      256,
+      640
+    ],
+    "ancho_alto_pixeles_png": [
+      512,
+      1280
+    ],
+    "fov_mm": [
+      768.0,
+      1920.0
+    ],
+    "angulos": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      22.5,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      67.5,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      112.5,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      157.5,
+      160,
+      165,
+      170,
+      175,
+      180,
+      185,
+      190,
+      195,
+      200,
+      202.5,
+      205,
+      210,
+      215,
+      220,
+      225,
+      230,
+      235,
+      240,
+      245,
+      247.5,
+      250,
+      255,
+      260,
+      265,
+      270,
+      275,
+      280,
+      285,
+      290,
+      292.5,
+      295,
+      300,
+      305,
+      310,
+      315,
+      320,
+      325,
+      330,
+      335,
+      337.5,
+      340,
+      345,
+      350,
+      355
+    ],
+    "numero_vistas": 80,
+    "actividad_relativa_por_etiqueta": {
+      "0": 0,
+      "1": 0.006,
+      "2": 0.5,
+      "3": 1.0,
+      "4": 0.05,
+      "5": 0.002,
+      "6": 0.22,
+      "7": 2.5,
+      "8": 0.012,
+      "9": 0.009,
+      "10": 0.009
+    },
+    "captacion": "Sintetica, fija en espacio 3D; no procede de ICRP ni de un paciente",
+    "transporte": "Proyeccion paralela con atenuacion exponencial, mu del volumen local a 140 keV; sin dispersion ni transporte Monte Carlo",
+    "psf_fwhm_mm": 6.0,
+    "cuentas_esperadas_vista_0": 2000000,
+    "semilla_ruido": 1452026,
+    "ventana_comun_cuentas": 222.35995483398438,
+    "gamma_visualizacion": 0.72,
+    "limites": [
+      "Resolucion anatomica del volumen: 3 mm; PNG ampliado por interpolacion",
+      "Captacion y PSF son supuestos de demostracion, no valores certificados por ICRP",
+      "Sin movimiento, dispersion, respuesta energetica ni PSF dependiente de profundidad",
+      "Se eliminaron las etiquetas de lesion artificial del caso derivado restaurando el tejido por densidad"
+    ],
+    "referencia": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145",
+    "vistas": [
+      {
+        "angulo": 0,
+        "archivo": "oseo_000_0.png",
+        "opuesta": 40
+      },
+      {
+        "angulo": 5,
+        "archivo": "oseo_005_0.png",
+        "opuesta": 41
+      },
+      {
+        "angulo": 10,
+        "archivo": "oseo_010_0.png",
+        "opuesta": 42
+      },
+      {
+        "angulo": 15,
+        "archivo": "oseo_015_0.png",
+        "opuesta": 43
+      },
+      {
+        "angulo": 20,
+        "archivo": "oseo_020_0.png",
+        "opuesta": 44
+      },
+      {
+        "angulo": 22.5,
+        "archivo": "oseo_022_5.png",
+        "opuesta": 45
+      },
+      {
+        "angulo": 25,
+        "archivo": "oseo_025_0.png",
+        "opuesta": 46
+      },
+      {
+        "angulo": 30,
+        "archivo": "oseo_030_0.png",
+        "opuesta": 47
+      },
+      {
+        "angulo": 35,
+        "archivo": "oseo_035_0.png",
+        "opuesta": 48
+      },
+      {
+        "angulo": 40,
+        "archivo": "oseo_040_0.png",
+        "opuesta": 49
+      },
+      {
+        "angulo": 45,
+        "archivo": "oseo_045_0.png",
+        "opuesta": 50
+      },
+      {
+        "angulo": 50,
+        "archivo": "oseo_050_0.png",
+        "opuesta": 51
+      },
+      {
+        "angulo": 55,
+        "archivo": "oseo_055_0.png",
+        "opuesta": 52
+      },
+      {
+        "angulo": 60,
+        "archivo": "oseo_060_0.png",
+        "opuesta": 53
+      },
+      {
+        "angulo": 65,
+        "archivo": "oseo_065_0.png",
+        "opuesta": 54
+      },
+      {
+        "angulo": 67.5,
+        "archivo": "oseo_067_5.png",
+        "opuesta": 55
+      },
+      {
+        "angulo": 70,
+        "archivo": "oseo_070_0.png",
+        "opuesta": 56
+      },
+      {
+        "angulo": 75,
+        "archivo": "oseo_075_0.png",
+        "opuesta": 57
+      },
+      {
+        "angulo": 80,
+        "archivo": "oseo_080_0.png",
+        "opuesta": 58
+      },
+      {
+        "angulo": 85,
+        "archivo": "oseo_085_0.png",
+        "opuesta": 59
+      },
+      {
+        "angulo": 90,
+        "archivo": "oseo_090_0.png",
+        "opuesta": 60
+      },
+      {
+        "angulo": 95,
+        "archivo": "oseo_095_0.png",
+        "opuesta": 61
+      },
+      {
+        "angulo": 100,
+        "archivo": "oseo_100_0.png",
+        "opuesta": 62
+      },
+      {
+        "angulo": 105,
+        "archivo": "oseo_105_0.png",
+        "opuesta": 63
+      },
+      {
+        "angulo": 110,
+        "archivo": "oseo_110_0.png",
+        "opuesta": 64
+      },
+      {
+        "angulo": 112.5,
+        "archivo": "oseo_112_5.png",
+        "opuesta": 65
+      },
+      {
+        "angulo": 115,
+        "archivo": "oseo_115_0.png",
+        "opuesta": 66
+      },
+      {
+        "angulo": 120,
+        "archivo": "oseo_120_0.png",
+        "opuesta": 67
+      },
+      {
+        "angulo": 125,
+        "archivo": "oseo_125_0.png",
+        "opuesta": 68
+      },
+      {
+        "angulo": 130,
+        "archivo": "oseo_130_0.png",
+        "opuesta": 69
+      },
+      {
+        "angulo": 135,
+        "archivo": "oseo_135_0.png",
+        "opuesta": 70
+      },
+      {
+        "angulo": 140,
+        "archivo": "oseo_140_0.png",
+        "opuesta": 71
+      },
+      {
+        "angulo": 145,
+        "archivo": "oseo_145_0.png",
+        "opuesta": 72
+      },
+      {
+        "angulo": 150,
+        "archivo": "oseo_150_0.png",
+        "opuesta": 73
+      },
+      {
+        "angulo": 155,
+        "archivo": "oseo_155_0.png",
+        "opuesta": 74
+      },
+      {
+        "angulo": 157.5,
+        "archivo": "oseo_157_5.png",
+        "opuesta": 75
+      },
+      {
+        "angulo": 160,
+        "archivo": "oseo_160_0.png",
+        "opuesta": 76
+      },
+      {
+        "angulo": 165,
+        "archivo": "oseo_165_0.png",
+        "opuesta": 77
+      },
+      {
+        "angulo": 170,
+        "archivo": "oseo_170_0.png",
+        "opuesta": 78
+      },
+      {
+        "angulo": 175,
+        "archivo": "oseo_175_0.png",
+        "opuesta": 79
+      },
+      {
+        "angulo": 180,
+        "archivo": "oseo_180_0.png",
+        "opuesta": 0
+      },
+      {
+        "angulo": 185,
+        "archivo": "oseo_185_0.png",
+        "opuesta": 1
+      },
+      {
+        "angulo": 190,
+        "archivo": "oseo_190_0.png",
+        "opuesta": 2
+      },
+      {
+        "angulo": 195,
+        "archivo": "oseo_195_0.png",
+        "opuesta": 3
+      },
+      {
+        "angulo": 200,
+        "archivo": "oseo_200_0.png",
+        "opuesta": 4
+      },
+      {
+        "angulo": 202.5,
+        "archivo": "oseo_202_5.png",
+        "opuesta": 5
+      },
+      {
+        "angulo": 205,
+        "archivo": "oseo_205_0.png",
+        "opuesta": 6
+      },
+      {
+        "angulo": 210,
+        "archivo": "oseo_210_0.png",
+        "opuesta": 7
+      },
+      {
+        "angulo": 215,
+        "archivo": "oseo_215_0.png",
+        "opuesta": 8
+      },
+      {
+        "angulo": 220,
+        "archivo": "oseo_220_0.png",
+        "opuesta": 9
+      },
+      {
+        "angulo": 225,
+        "archivo": "oseo_225_0.png",
+        "opuesta": 10
+      },
+      {
+        "angulo": 230,
+        "archivo": "oseo_230_0.png",
+        "opuesta": 11
+      },
+      {
+        "angulo": 235,
+        "archivo": "oseo_235_0.png",
+        "opuesta": 12
+      },
+      {
+        "angulo": 240,
+        "archivo": "oseo_240_0.png",
+        "opuesta": 13
+      },
+      {
+        "angulo": 245,
+        "archivo": "oseo_245_0.png",
+        "opuesta": 14
+      },
+      {
+        "angulo": 247.5,
+        "archivo": "oseo_247_5.png",
+        "opuesta": 15
+      },
+      {
+        "angulo": 250,
+        "archivo": "oseo_250_0.png",
+        "opuesta": 16
+      },
+      {
+        "angulo": 255,
+        "archivo": "oseo_255_0.png",
+        "opuesta": 17
+      },
+      {
+        "angulo": 260,
+        "archivo": "oseo_260_0.png",
+        "opuesta": 18
+      },
+      {
+        "angulo": 265,
+        "archivo": "oseo_265_0.png",
+        "opuesta": 19
+      },
+      {
+        "angulo": 270,
+        "archivo": "oseo_270_0.png",
+        "opuesta": 20
+      },
+      {
+        "angulo": 275,
+        "archivo": "oseo_275_0.png",
+        "opuesta": 21
+      },
+      {
+        "angulo": 280,
+        "archivo": "oseo_280_0.png",
+        "opuesta": 22
+      },
+      {
+        "angulo": 285,
+        "archivo": "oseo_285_0.png",
+        "opuesta": 23
+      },
+      {
+        "angulo": 290,
+        "archivo": "oseo_290_0.png",
+        "opuesta": 24
+      },
+      {
+        "angulo": 292.5,
+        "archivo": "oseo_292_5.png",
+        "opuesta": 25
+      },
+      {
+        "angulo": 295,
+        "archivo": "oseo_295_0.png",
+        "opuesta": 26
+      },
+      {
+        "angulo": 300,
+        "archivo": "oseo_300_0.png",
+        "opuesta": 27
+      },
+      {
+        "angulo": 305,
+        "archivo": "oseo_305_0.png",
+        "opuesta": 28
+      },
+      {
+        "angulo": 310,
+        "archivo": "oseo_310_0.png",
+        "opuesta": 29
+      },
+      {
+        "angulo": 315,
+        "archivo": "oseo_315_0.png",
+        "opuesta": 30
+      },
+      {
+        "angulo": 320,
+        "archivo": "oseo_320_0.png",
+        "opuesta": 31
+      },
+      {
+        "angulo": 325,
+        "archivo": "oseo_325_0.png",
+        "opuesta": 32
+      },
+      {
+        "angulo": 330,
+        "archivo": "oseo_330_0.png",
+        "opuesta": 33
+      },
+      {
+        "angulo": 335,
+        "archivo": "oseo_335_0.png",
+        "opuesta": 34
+      },
+      {
+        "angulo": 337.5,
+        "archivo": "oseo_337_5.png",
+        "opuesta": 35
+      },
+      {
+        "angulo": 340,
+        "archivo": "oseo_340_0.png",
+        "opuesta": 36
+      },
+      {
+        "angulo": 345,
+        "archivo": "oseo_345_0.png",
+        "opuesta": 37
+      },
+      {
+        "angulo": 350,
+        "archivo": "oseo_350_0.png",
+        "opuesta": 38
+      },
+      {
+        "angulo": 355,
+        "archivo": "oseo_355_0.png",
+        "opuesta": 39
+      }
+    ],
+    "sha256_proyecciones_lineales": "f261dd03e5be2eb52e6584197563a866eadd93551da644a1a9c8080bf06260dd",
+    "error_maximo_cuantizacion": 0.0037672137581093354
+  },
+  "up": {
+    "modelo": "ICRP 145 MRCP_AM derivado; brazos elevados mediante articulación sintética 3D",
+    "postura_oficial_icrp": false,
+    "voxel_mm": 3,
+    "ancho_alto_pixeles_nativos": [
+      320,
+      768
+    ],
+    "angulos": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      22.5,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      67.5,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      112.5,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      157.5,
+      160,
+      165,
+      170,
+      175,
+      180,
+      185,
+      190,
+      195,
+      200,
+      202.5,
+      205,
+      210,
+      215,
+      220,
+      225,
+      230,
+      235,
+      240,
+      245,
+      247.5,
+      250,
+      255,
+      260,
+      265,
+      270,
+      275,
+      280,
+      285,
+      290,
+      292.5,
+      295,
+      300,
+      305,
+      310,
+      315,
+      320,
+      325,
+      330,
+      335,
+      337.5,
+      340,
+      345,
+      350,
+      355
+    ],
+    "ventana_comun_cuentas": 215.846435546875,
+    "gamma_visualizacion": 0.72,
+    "cuentas_esperadas_vista_0": 2000000,
+    "origen_lps_mm": [
+      -485.95757000000003,
+      -146.02846,
+      -888.60229
+    ],
+    "borde_superior_proyeccion_z_mm": 1388.39771,
+    "craneo_fila": 168.98430999999997,
+    "planta_fila": 755.6666666666666,
+    "articulaciones": [
+      {
+        "lado": -1,
+        "hombro_mm": [
+          -184.0,
+          20.0,
+          570.0
+        ],
+        "codo_mm": [
+          -356.6447219002075,
+          19.999999999999986,
+          800.1929625336101
+        ],
+        "muneca_mm": [
+          -199.01249169331092,
+          19.999999999999986,
+          1010.3692694761386
+        ],
+        "codo_original_mm": [
+          -211.0,
+          85.0,
+          291.0
+        ]
+      },
+      {
+        "lado": 1,
+        "hombro_mm": [
+          190.0,
+          20.0,
+          574.0
+        ],
+        "codo_mm": [
+          364.0403401513569,
+          19.999999999999996,
+          806.0537868684758
+        ],
+        "muneca_mm": [
+          206.59434941167498,
+          19.999999999999996,
+          1015.981774521385
+        ],
+        "codo_original_mm": [
+          199.0,
+          83.0,
+          291.0
+        ]
+      }
+    ],
+    "conservacion_hueso": [
+      {
+        "lado": -1,
+        "segmento": "humero",
+        "voxeles_oseos_antes": 7143,
+        "despues": 7146
+      },
+      {
+        "lado": -1,
+        "segmento": "antebrazo_mano",
+        "voxeles_oseos_antes": 9303,
+        "despues": 9318
+      },
+      {
+        "lado": 1,
+        "segmento": "humero",
+        "voxeles_oseos_antes": 6807,
+        "despues": 6806
+      },
+      {
+        "lado": 1,
+        "segmento": "antebrazo_mano",
+        "voxeles_oseos_antes": 9429,
+        "despues": 9423
+      }
+    ],
+    "metodo_postura": "Rotación rígida 3D por húmero y antebrazo/mano; codos compartidos. Tejido blando asignado al hueso más cercano. Clavículas y escápulas quedan en posición original.",
+    "limites": [
+      "Rearticulación docente aproximada: no simula biomecánica escapulohumeral ni deformación muscular.",
+      "Remuestreo a 3 mm; captación sintética, atenuación paralela y PSF fija de 6 mm.",
+      "No son datos de pacientes ni una postura validada/certificada por ICRP."
+    ],
+    "referencia": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145",
+    "sha256_proyecciones_lineales": "1d7275db47e8d87d0736d47e637481327506be64b26c2d3528cc7422f7dee497",
+    "error_maximo_cuantizacion": 0.003732915883971232
+  },
+  "mibi_up": {
+    "trazador": "99mTc-MIBI",
+    "tiempo": "60 min · reposo",
+    "anatomia": "ICRP 145 MRCP_AM · brazos arriba, postura derivada",
+    "postura": {
+      "postura_oficial_icrp": false,
+      "metodo": "Rearticulación sintética 3D de húmero y antebrazo/mano; tejidos, actividad MIBI y atenuación se trasladan juntos",
+      "articulaciones": [
+        {
+          "lado": -1,
+          "hombro_mm": [
+            -184.0,
+            20.0,
+            570.0
+          ],
+          "codo_mm": [
+            -356.6447219002075,
+            19.999999999999986,
+            800.1929625336101
+          ],
+          "muneca_mm": [
+            -199.01249169331092,
+            19.999999999999986,
+            1010.3692694761386
+          ]
+        },
+        {
+          "lado": 1,
+          "hombro_mm": [
+            190.0,
+            20.0,
+            574.0
+          ],
+          "codo_mm": [
+            364.0403401513569,
+            19.999999999999996,
+            806.0537868684758
+          ],
+          "muneca_mm": [
+            206.59434941167498,
+            19.999999999999996,
+            1015.981774521385
+          ]
+        }
+      ],
+      "conservacion_por_segmento": [
+        {
+          "lado": -1,
+          "segmento": "humero",
+          "actividad_antes": 1569.506928354269,
+          "actividad_depositada": 1569.506844899559,
+          "correccion_remuestreo": 1.0430140859175814,
+          "voxeles_antes": 70955,
+          "voxeles_depositados": 69726
+        },
+        {
+          "lado": -1,
+          "segmento": "antebrazo_mano",
+          "actividad_antes": 1415.851327661192,
+          "actividad_depositada": 1415.851277747075,
+          "correccion_remuestreo": 1.0437786946358931,
+          "voxeles_antes": 67737,
+          "voxeles_depositados": 66452
+        },
+        {
+          "lado": 1,
+          "segmento": "humero",
+          "actividad_antes": 1545.2400880584028,
+          "actividad_depositada": 1545.2401011865586,
+          "correccion_remuestreo": 1.037707468288494,
+          "voxeles_antes": 67627,
+          "voxeles_depositados": 66560
+        },
+        {
+          "lado": 1,
+          "segmento": "antebrazo_mano",
+          "actividad_antes": 1337.0127672732342,
+          "actividad_depositada": 1337.012759789999,
+          "correccion_remuestreo": 1.0460175424089297,
+          "voxeles_antes": 64935,
+          "voxeles_depositados": 63696
+        }
+      ],
+      "correccion_final_solapamiento_solo_brazos": 1.0048464073675243,
+      "actividad_total_antes": 162438.4005937,
+      "actividad_total_despues": 162438.4008970086,
+      "organos_centrales_captacion_atenuacion_identicas": true,
+      "origen_lps_mm": [
+        -485.95757000000003,
+        -146.02846,
+        -888.60229
+      ],
+      "dimensiones_zyx": [
+        750,
+        104,
+        319
+      ],
+      "limite": "Postura docente aproximada; clavículas y escápulas conservadas, sin biomecánica ni deformación muscular."
+    },
+    "width": 320,
+    "height": 768,
+    "pixel_mm": 3,
+    "fwhm_mm": 15,
+    "gamma": 0.72,
+    "angulos": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      160,
+      165,
+      170,
+      175,
+      180,
+      185,
+      190,
+      195,
+      200,
+      205,
+      210,
+      215,
+      220,
+      225,
+      230,
+      235,
+      240,
+      245,
+      250,
+      255,
+      260,
+      265,
+      270,
+      275,
+      280,
+      285,
+      290,
+      295,
+      300,
+      305,
+      310,
+      315,
+      320,
+      325,
+      330,
+      335,
+      340,
+      345,
+      350,
+      355
+    ],
+    "paso_grados": 5,
+    "numero_proyecciones_unicas": 72,
+    "cierre_360": "Copia exacta de 0 grados",
+    "convencion": "0 anterior, 90 lateral derecha del paciente, 180 posterior, 270 lateral izquierda; giro hacia la derecha del paciente desde anterior",
+    "ventana": 44.01988220214844,
+    "scale": 0.0009058646081813987,
+    "roi_corazon": [
+      [
+        125,
+        273,
+        90,
+        90
+      ],
+      [
+        126,
+        273,
+        90,
+        90
+      ],
+      [
+        126,
+        273,
+        90,
+        90
+      ],
+      [
+        126,
+        273,
+        90,
+        90
+      ],
+      [
+        127,
+        273,
+        90,
+        90
+      ],
+      [
+        127,
+        273,
+        90,
+        90
+      ],
+      [
+        127,
+        273,
+        90,
+        90
+      ],
+      [
+        127,
+        273,
+        90,
+        90
+      ],
+      [
+        127,
+        273,
+        90,
+        90
+      ],
+      [
+        126,
+        273,
+        90,
+        90
+      ],
+      [
+        126,
+        273,
+        90,
+        90
+      ],
+      [
+        126,
+        273,
+        90,
+        90
+      ],
+      [
+        125,
+        273,
+        90,
+        90
+      ],
+      [
+        124,
+        273,
+        90,
+        90
+      ],
+      [
+        124,
+        273,
+        90,
+        90
+      ],
+      [
+        123,
+        273,
+        90,
+        90
+      ],
+      [
+        122,
+        273,
+        90,
+        90
+      ],
+      [
+        121,
+        273,
+        90,
+        90
+      ],
+      [
+        120,
+        273,
+        90,
+        90
+      ],
+      [
+        119,
+        273,
+        90,
+        90
+      ],
+      [
+        118,
+        273,
+        90,
+        90
+      ],
+      [
+        117,
+        273,
+        90,
+        90
+      ],
+      [
+        116,
+        273,
+        90,
+        90
+      ],
+      [
+        115,
+        273,
+        90,
+        90
+      ],
+      [
+        114,
+        273,
+        90,
+        90
+      ],
+      [
+        113,
+        273,
+        90,
+        90
+      ],
+      [
+        112,
+        273,
+        90,
+        90
+      ],
+      [
+        111,
+        273,
+        90,
+        90
+      ],
+      [
+        109,
+        273,
+        90,
+        90
+      ],
+      [
+        108,
+        273,
+        90,
+        90
+      ],
+      [
+        107,
+        273,
+        90,
+        90
+      ],
+      [
+        107,
+        273,
+        90,
+        90
+      ],
+      [
+        106,
+        273,
+        90,
+        90
+      ],
+      [
+        105,
+        273,
+        90,
+        90
+      ],
+      [
+        104,
+        273,
+        90,
+        90
+      ],
+      [
+        103,
+        273,
+        90,
+        90
+      ],
+      [
+        103,
+        273,
+        90,
+        90
+      ],
+      [
+        102,
+        273,
+        90,
+        90
+      ],
+      [
+        102,
+        273,
+        90,
+        90
+      ],
+      [
+        102,
+        273,
+        90,
+        90
+      ],
+      [
+        101,
+        273,
+        90,
+        90
+      ],
+      [
+        101,
+        273,
+        90,
+        90
+      ],
+      [
+        101,
+        273,
+        90,
+        90
+      ],
+      [
+        101,
+        273,
+        90,
+        90
+      ],
+      [
+        101,
+        273,
+        90,
+        90
+      ],
+      [
+        102,
+        273,
+        90,
+        90
+      ],
+      [
+        102,
+        273,
+        90,
+        90
+      ],
+      [
+        102,
+        273,
+        90,
+        90
+      ],
+      [
+        103,
+        273,
+        90,
+        90
+      ],
+      [
+        104,
+        273,
+        90,
+        90
+      ],
+      [
+        104,
+        273,
+        90,
+        90
+      ],
+      [
+        105,
+        273,
+        90,
+        90
+      ],
+      [
+        106,
+        273,
+        90,
+        90
+      ],
+      [
+        107,
+        273,
+        90,
+        90
+      ],
+      [
+        108,
+        273,
+        90,
+        90
+      ],
+      [
+        109,
+        273,
+        90,
+        90
+      ],
+      [
+        110,
+        273,
+        90,
+        90
+      ],
+      [
+        111,
+        273,
+        90,
+        90
+      ],
+      [
+        112,
+        273,
+        90,
+        90
+      ],
+      [
+        113,
+        273,
+        90,
+        90
+      ],
+      [
+        114,
+        273,
+        90,
+        90
+      ],
+      [
+        115,
+        273,
+        90,
+        90
+      ],
+      [
+        116,
+        273,
+        90,
+        90
+      ],
+      [
+        117,
+        273,
+        90,
+        90
+      ],
+      [
+        119,
+        273,
+        90,
+        90
+      ],
+      [
+        120,
+        273,
+        90,
+        90
+      ],
+      [
+        121,
+        273,
+        90,
+        90
+      ],
+      [
+        121,
+        273,
+        90,
+        90
+      ],
+      [
+        122,
+        273,
+        90,
+        90
+      ],
+      [
+        123,
+        273,
+        90,
+        90
+      ],
+      [
+        124,
+        273,
+        90,
+        90
+      ],
+      [
+        125,
+        273,
+        90,
+        90
+      ]
+    ],
+    "exposicion": "250000 cuentas esperadas en anterior; un único factor para toda la serie, sin normalizar cada ángulo",
+    "cuentas_por_proyeccion": [
+      249999.96875,
+      252593.484375,
+      254548.625,
+      255872.28125,
+      256359.4375,
+      255774.75,
+      254315.65625,
+      251929.859375,
+      248507.0625,
+      243895.984375,
+      238302.21875,
+      231845.578125,
+      224654.0,
+      217311.3125,
+      210100.1875,
+      202843.40625,
+      195789.90625,
+      189194.6875,
+      180090.296875,
+      177313.90625,
+      179226.21875,
+      183021.46875,
+      188141.8125,
+      193539.34375,
+      197787.421875,
+      200344.78125,
+      202166.984375,
+      203755.421875,
+      205151.140625,
+      206369.5625,
+      207464.171875,
+      208528.34375,
+      209694.796875,
+      210822.75,
+      211620.125,
+      211785.515625,
+      211016.96875,
+      209559.5,
+      207175.734375,
+      204196.21875,
+      200910.046875,
+      197275.515625,
+      193197.234375,
+      188609.8125,
+      183456.75,
+      177774.28125,
+      171674.25,
+      165307.953125,
+      158240.421875,
+      150887.890625,
+      143021.34375,
+      135014.25,
+      129165.625,
+      126064.7734375,
+      127749.640625,
+      136327.109375,
+      143163.59375,
+      151205.9375,
+      160535.484375,
+      170408.40625,
+      180515.328125,
+      190339.96875,
+      199450.921875,
+      207808.546875,
+      215389.96875,
+      221956.4375,
+      227630.015625,
+      232757.125,
+      237131.671875,
+      240883.0,
+      244280.453125,
+      247406.234375
+    ],
+    "ruido_png": {
+      "modelo": "Poisson por píxel del detector",
+      "factor_exposicion": 0.16,
+      "cuentas_esperadas_anterior": 40000.0,
+      "reescala_visual": 6.25
+    },
+    "transporte": "Rayos paralelos de paso 3 mm, interpolación bilineal, atenuación a 140 keV y PSF de 15 mm; sin dispersión ni Monte Carlo",
+    "region_vi_aproximada": {
+      "modelo_3d": "Ventrículo asimétrico de pared variable, base abierta y ápex curvado",
+      "tipo": "Geometría de emisión ventricular sintética dentro de la envolvente cardíaca ICRP",
+      "soporte_etiquetas_icrp": [
+        8700,
+        8800
+      ],
+      "base_xyz_voxel_original": [
+        105.0,
+        46.0,
+        448.0
+      ],
+      "iso_mm": 3,
+      "eje_largo_xyz": [
+        0.8068188894866839,
+        -0.23994613813730373,
+        -0.5398788108089334
+      ],
+      "eje_horizontal_xyz": [
+        0.28505874987003066,
+        0.9585100464379783,
+        -0.0
+      ],
+      "eje_vertical_xyz": [
+        0.5174792640193513,
+        -0.15389717889051335,
+        0.841742757402481
+      ],
+      "semiejes_externos_h_v_l_mm": [
+        37.5,
+        32.5,
+        87.5
+      ],
+      "semiejes_internos_h_v_l_mm": [
+        25.0,
+        20.0,
+        72.5
+      ],
+      "escala_lineal_vi": 1.25,
+      "desplazamiento_inferior_mm": 6,
+      "paredes_aprox_mm": [
+        12.5,
+        12.5
+      ],
+      "espesor_apical_mm": 15.0,
+      "asimetria": {
+        "curvatura_eje_mm": [
+          3.125,
+          -2.0
+        ],
+        "deriva_eje_por_mm": [
+          0.035,
+          0.015
+        ],
+        "modulaciones_radio_exterior": [
+          0.055,
+          0.035,
+          0.02
+        ],
+        "modulaciones_radio_interior": [
+          0.095,
+          0.035
+        ],
+        "descentrado_cavidad_mm": [
+          1.5,
+          -1.0
+        ],
+        "variacion_borde_basal_mm": [
+          1.125,
+          0.75
+        ],
+        "captacion_relativa_pre_normalizacion": [
+          0.732146582570776,
+          1.2224023373974569
+        ],
+        "modulaciones_captacion": [
+          0.17,
+          0.1,
+          0.07
+        ],
+        "reduccion_apical_fraccion": 0.06,
+        "captacion": "Heterogeneidad suave fija en coordenadas ventriculares, renormalizada a la actividad cardíaca previa; ajuste visual ilustrativo, sin copiar defectos clínicos",
+        "aleatoriedad": false
+      },
+      "etiquetas_derivadas": {
+        "18700": "Miocardio VI sintético",
+        "18800": "Cavidad VI sintética"
+      },
+      "volumen_miocardico_sintetico_ml": 147.2759999999999,
+      "actividad_cardiaca_integrada": 10270.934008389711,
+      "actividad_previa": 10270.934004772455,
+      "actividad_componente_miocardico": 9175.364004772455,
+      "fondo_cardiaco_por_voxel": 0.035,
+      "fwhm_global_mm": 15,
+      "supersampling_subvoxeles": 27,
+      "cavidad": "Hueca para el componente miocárdico; fondo sanguíneo bajo",
+      "limite": "Reemplazo sintético local del VI en la envolvente cardíaca; no segmentación ventricular original ICRP ni anatomía validada. Captación y etiquetas derivadas actualizadas; atenuación de tejidos blandos original conservada.",
+      "fuente_orientacion": "https://tech.snmjournals.org/content/48/2/139",
+      "convencion_presentacion": "Como la referencia aportada: ápex inferior en HLA y a la derecha en VLA. Es una elección de presentación, distinta de la convención indicada en la fuente.",
+      "distancia_minima_centros_voxel_vi_higado_mm": 19.209372712298546,
+      "solapamiento_vi_higado_voxeles": 0,
+      "distancia_previa_centros_voxel_vi_higado_mm": 33.67491648096547
+    },
+    "fuentes": {
+      "icrp": {
+        "titulo": "ICRP Publication 145 · anatomía MRCP_AM",
+        "url": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145"
+      },
+      "mibi": {
+        "titulo": "DailyMed · 99mTc-sestamibi · distribución y eliminación",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87"
+      },
+      "mibi_imagenes": {
+        "titulo": "O. Kraft · FN Ostrava · MIBI corporal ANT/POST, figuras 2 y 3",
+        "url": "https://www.kcsolid.cz/zdravotnictvi/klinicka_kapitola/onk/onk-238/onk-238-text.htm"
+      },
+      "pertecnetato": {
+        "titulo": "DailyMed · pertecnetato · farmacología",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=98947d99-5be5-461e-ad36-7425d3646389"
+      },
+      "dmsa": {
+        "titulo": "DailyMed · NEPHROSCAN · captación cortical renal",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ddd90c4a-5792-49c9-837f-710d1a604742"
+      },
+      "i131": {
+        "titulo": "DailyMed · yoduro de sodio I-131 · administración oral y distribución",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=380e8e26-0625-4233-b36e-afb9f66e8a77"
+      },
+      "i131_tiempo": {
+        "titulo": "SNMMI · rastreo post terapia, intervalo de adquisición",
+        "url": "https://tech.snmjournals.org/content/48/3/202"
+      },
+      "maa": {
+        "titulo": "DailyMed · PULMOTECH MAA · distribución pulmonar",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=a8b7adf0-2c6b-4acd-96d3-a099306951a0"
+      }
+    },
+    "sha256_organos": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
+    "sha256_proyecciones_lineales": "8ed2acdb0c746bb58225b47e10176056d8fa9139b89d5d49d2b77883e4d976e7",
+    "factor_referencia_motor": 8.000000534188343,
+    "error_maximo_cuantizacion": 0.003623458898393988,
+    "ruido_motor": "Eventos de Poisson nuevos a partir de cuentas esperadas; no se importan PNG ruidosos"
+  }
+}
