@@ -90,3 +90,6 @@ mando accesible. Se elimina la ventana emergente. Volver a 3D y reabrir la
 pantalla conserva la adquisición en marcha y sus cuentas; los resultados
 finalizados también pueden consultarse. Las pruebas de ejecución verifican
 que no se abra otra ventana, la continuidad al ocultar y la reapertura.
+Comprobación adicional en Chrome sobre GitHub Pages: pantalla interna visible,
+mando accesible y temporizador conservado al volver a 3D y reabrir. Se compactan
+cabecera e imágenes para aprovechar el área disponible.
