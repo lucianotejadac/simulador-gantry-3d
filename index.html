@@ -493,6 +493,10 @@
 #boneAcqCacheStatus{color:#b7c9d9;font-size:9px}.bone-acquisition .bone-card-title{overflow:hidden;text-overflow:ellipsis}
 #boneAcqSetup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-basis:100%;padding:4px 0}
 #boneAcqSetupError{color:#ffc282}#boneAcqStatus{color:#8ee6bd}
+#boneAcqPosition{color:#ffc282;flex-basis:100%}#boneAcqPosition:empty{display:none}
+.gantry-live.bone-acquisition.bone-whole-body{height:clamp(570px,76vh,790px)}
+.bone-whole-body .bone-acq-card canvas{object-fit:contain;aspect-ratio:1/3.5;max-height:100%;width:100%}
+.bone-whole-body .live-card:not(.bone-acq-card) canvas{max-height:100%;width:100%;height:auto;object-fit:contain}
 .gantry-live.bone-acquisition{height:clamp(355px,48vh,430px)}
 .bone-acquisition .gantry-live-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 .bone-acquisition .live-card{grid-template-columns:1fr;grid-template-rows:18px minmax(0,1fr) 35px}
@@ -504,6 +508,8 @@
 @media(max-width:900px){
  .gantry-live.bone-acquisition{height:clamp(460px,66vh,580px)}
  .bone-acquisition .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+ .gantry-live.bone-acquisition.bone-whole-body{height:1040px}
+ .bone-whole-body .gantry-live-grid{grid-template-rows:260px minmax(0,1fr)}
 }
 /* BONE_ACQ_CSS_END */
 </style>
@@ -626,6 +632,7 @@
           </div>
 <!-- BONE_ACQ_UI_BEGIN -->
           <div id="boneAcqControls" class="bone-acq-controls" hidden aria-label="Adquisición ósea">
+            <label>Tipo <select id="boneAcqType" class="live-study" aria-label="Tipo de adquisición"><option value="static">Estática</option><option value="whole">Cuerpo entero</option></select></label>
             <button id="boneAcqStart" class="live-setting" type="button">Iniciar adquisición</button>
             <button id="boneAcqPause" class="live-setting" type="button" hidden>Pausar adquisición</button>
             <button id="boneAcqFinish" class="live-setting" type="button" hidden>Finalizar adquisición</button>
@@ -635,13 +642,14 @@
             <label>Guardadas <select id="boneAcqSaved" class="live-study" aria-label="Adquisiciones guardadas"><option value="current">Adquisición actual</option></select></label>
             <span id="boneAcqCacheStatus" role="status" title="Se conserva en este navegador y sitio; borrar los datos del sitio elimina las adquisiciones guardadas."></span>
             <span id="boneAcqStatus" role="status">Preparando proyecciones óseas…</span>
+            <span id="boneAcqPosition" role="status"></span>
             <form id="boneAcqSetup" hidden aria-label="Configurar adquisición ósea">
               <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
               <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label>Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label>Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
               <span id="boneAcqUnits">cuentas por detector</span>
-              <button class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
+              <button id="boneAcqBegin" class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
               <span id="boneAcqSetupError" role="alert"></span>
             </form>
           </div>
@@ -7380,11 +7388,53 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 <!-- MAG3_END -->
 <!-- BONE_ACQ_ENGINE_BEGIN -->
 <script>
+/* Whole-body projection adapter: linear ICRP activity, native aspect ratio. */
+(function(){
+  'use strict';
+  function eligibility(G,physical,declared,centers,scan={zTop:200}){
+    if(!physical||physical.headFirst!==false)return {ok:false,reason:'Coloca al paciente con los pies hacia adentro (Cambiar posición de paciente).'};
+    if(declared?.headFirst!==false)return {ok:false,reason:'En Adquisición, declara Pies adentro / Cabeza afuera.'};
+    if(!Number.isFinite(G?.tableZ)||Math.abs(G.tableZ-scan.zTop)>2)return {ok:false,reason:'Centra en cráneo: camilla Z '+scan.zTop+' cm (tolerancia ±2 cm).'};
+    if(centers&&Object.values(centers).some(c=>Math.abs(c.x)>0.02||Math.abs(c.y)>0.02))return {ok:false,reason:'Pulsa Centro original para centrar las imágenes en cráneo.'};
+    return {ok:true,reason:'Cráneo centrado · pies hacia adentro · listo para cuerpo entero'};
+  }
+  function geometry(pose,n){
+    // 56 cm transverse coverage at the same physical pixel size in both axes.
+    // Include the entire source volume, including raised hands and soles.
+    const width=Math.max(560/3,pose.width),height=pose.height;
+    return {width:n,height:Math.ceil(height/width*n),crop:{x:(pose.width-width)/2,y:0,w:width,h:height}};
+  }
+  let key='',cached=null;
+  function position(){
+    const live=window.GANTRY_LIVE;
+    return eligibility(window.GANTRY?.G,window.GANTRY_PATIENT3D,live?.settings,live?.settings.centers,window.GANTRY?.SCAN);
+  }
+  function fields(){
+    const live=window.GANTRY_LIVE,G=window.GANTRY.G,settings=live.settings;
+    const pose=window.GANTRY_ICRP?.poses[G.arms==='up'?'up':'down'];
+    if(!pose)throw Error('Preparando el fantoma óseo');
+    const size=geometry(pose,settings.matrix);
+    const gaps=window.GANTRY3D?.surfaceGaps(G);
+    const physicalProne=(document.getElementById('pos')?.value||'').toLowerCase().startsWith('pron');
+    const raw=G.rot+(physicalProne?180:0);
+    const pairs=[live.framePair(raw),live.framePair(raw+180)];
+    const metrics=[1,2].map(n=>live.distanceMetrics(Math.max(0,gaps?.['d'+n]?.cm??G['detDist'+n]),'bone',settings.collimator,settings.energyCenter,settings.windowWidth));
+    const flipX=physicalProne!==(settings.decubitus==='prone');
+    const nextKey=JSON.stringify([G.arms,size,pairs,metrics,flipX]);
+    if(nextKey!==key){
+      cached={...size,fields:pairs.map((pair,i)=>window.GANTRY_ICRP.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240))};
+      key=nextKey;
+    }
+    return cached;
+  }
+  window.GANTRY_BONE_WHOLE={eligibility,geometry,position,fields};
+})();
+
 /* Local, origin-scoped snapshots. Counts and catalogue commit atomically. */
 (function(){
   'use strict';
   function snapshot(session,names,settings,now=Date.now(),id=crypto.randomUUID()){
-    return {version:1,id,createdAt:now,n:session.n,mode:session.mode,target:session.target,
+    return {version:1,id,createdAt:now,n:session.n,height:session.height||session.n,kind:session.kind||'static',mode:session.mode,target:session.target,
       finished:session.finished,names:names.slice(),settings:structuredClone(settings),
       heads:session.heads.map(h=>({detector:h.detector,total:h.total,elapsed:h.elapsed,done:h.done,counts:h.counts.slice()}))};
   }
@@ -7393,8 +7443,11 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       ![128,256].includes(record.n)||!['counts','time'].includes(record.mode)||!Number.isFinite(record.target)||record.target<1||
       !Array.isArray(record.names)||record.names.length!==2||record.names.some(n=>typeof n!=='string'||!n.trim()||n.length>80)||
       !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
+    const height=record.height??record.n,kind=record.kind??'static';
+    if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
+      (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
     record.heads.forEach((h,i)=>{
-      if(h.detector!==i+1||!(h.counts instanceof Uint32Array)||h.counts.length!==record.n*record.n||
+      if(h.detector!==i+1||!(h.counts instanceof Uint32Array)||h.counts.length!==record.n*height||
         !Number.isFinite(h.elapsed)||h.elapsed<0||!Number.isSafeInteger(h.total)||h.total<0||h.counts.reduce((a,b)=>a+b,0)!==h.total)
         throw Error('Datos de cuentas incompletos');
     });
@@ -7471,10 +7524,11 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     return lo;
   }
   class Acquisition {
-    constructor(n,mode,target,random=Math.random){
+    constructor(n,mode,target,random=Math.random,height=n){
       if(![128,256].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?10000000:3600)||!Number.isInteger(target))throw Error('Objetivo no válido');
-      this.n=n;this.mode=mode;this.target=target;this.random=random;this.finished=false;
-      this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*n),total:0,elapsed:0,done:false}));
+      if(!Number.isInteger(height)||height<n||height>n*6)throw Error('Altura de matriz no válida');
+      this.n=n;this.height=height;this.kind=height===n?'static':'whole';this.mode=mode;this.target=target;this.random=random;this.finished=false;
+      this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*height),total:0,elapsed:0,done:false}));
     }
     step(fields,rate,seconds,eventLimit=Infinity){
       for(let j=0;j<2;j++){
@@ -7512,13 +7566,26 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   const buffers=canvases.map(()=>document.createElement('canvas'));
   const format=n=>n.toLocaleString('es-CL');
   const time=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
+  const whole=window.GANTRY_BONE_WHOLE;
+  const kind=()=>el('boneAcqType').value==='whole'?'whole':'static';
+  const position=()=>whole?.position()||{ok:false,reason:'Preparando posición del paciente'};
+  function acquisitionFields(){
+    if(session?.kind!=='whole')return fields;
+    const status=position();
+    if(!status.ok){paused=true;note=status.reason;return null;}
+    const result=whole.fields();
+    if(result.height!==session.height){paused=true;note='Restablece la postura de brazos inicial para reanudar.';return null;}
+    return result.fields;
+  }
   function advance(now=performance.now()){
     const dt=Math.max(0,(now-clock)/1000);clock=now;
-    if(session&&!session.finished&&!paused&&!busy&&study==='bone'&&!document.hidden&&fields&&dt>0)session.step(fields,rate,dt*speed);
+    if(session&&!session.finished&&!paused&&!busy&&study==='bone'&&!document.hidden&&fields&&dt>0){const current=acquisitionFields();if(current)session.step(current,rate,dt*speed);}
   }
-  function draw(h,j,n){
-    const buffer=buffers[j];if(buffer.width!==n)buffer.width=buffer.height=n;
-    const ctx=buffer.getContext('2d'),im=ctx.createImageData(n,n);
+  function draw(h,j,n,height=n){
+    const buffer=buffers[j];if(buffer.width!==n||buffer.height!==height){buffer.width=n;buffer.height=height;}
+    const canvas=canvases[j];if(canvas.width!==n||canvas.height!==height){canvas.width=n;canvas.height=height;}
+    canvas.style&&(canvas.style.aspectRatio=n+' / '+height);
+    const ctx=buffer.getContext('2d'),im=ctx.createImageData(n,height);
     let peak=1;for(const v of h.counts)if(v>peak)peak=v;
     for(let i=0;i<h.counts.length;i++){
       const value=Math.round(255*Math.pow(h.counts[i]/peak,.72));
@@ -7529,8 +7596,14 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   function paint(force=false){
     const active=study==='bone',running=!!session&&!session.finished;
+    const displayWhole=(archive||session)?.kind==='whole'||(!archive&&!session&&kind()==='whole');
+    el('gantryLive').classList.toggle('bone-whole-body',active&&displayWhole);
+    const check=position(),wantWhole=kind()==='whole';
+    el('boneAcqPosition').textContent=wantWhole?check.reason:'';
+    el('boneAcqType').disabled=running||busy||saving||loadingSaved;
+    el('boneAcqBegin').disabled=wantWhole&&!check.ok;
     el('gantryLive').classList.toggle('bone-acquisition',active);bar.hidden=!active;
-    el('boneAcqStart').disabled=running||!fields||saving||loadingSaved;
+    el('boneAcqStart').disabled=running||!fields||saving||loadingSaved||(wantWhole&&!check.ok);
     el('boneAcqPause').hidden=el('boneAcqFinish').hidden=el('boneAcqInstant').hidden=!running;
     el('boneAcqPause').textContent=paused?'Reanudar adquisición':'Pausar adquisición';
     for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])el(id).disabled=busy;
@@ -7559,9 +7632,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(!active)return;
     const now=performance.now();if(!force&&now-lastPaint<180)return;lastPaint=now;
     shown.heads.forEach((h,j)=>{
-      draw(h,j,shown.n);
-      const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j];title.title=title.textContent;
-      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada · M'+shown.n:h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo');
+      draw(h,j,shown.n,shown.height||shown.n);
+      const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
+      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada · M'+shown.n:h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+(shown.kind==='whole'?' · '+shown.n+'×'+shown.height:'');
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='counts'?h.total:h.elapsed;
     });
@@ -7581,7 +7654,12 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const nextNames=[el('boneAcqName1').value.trim(),el('boneAcqName2').value.trim()];
     if(nextNames.some(n=>!n||n.length>80)){el('boneAcqSetupError').textContent='Escribe un nombre para cada detector (máximo 80 caracteres).';return;}
     const {mode,target}=settings();
-    try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
+    if(kind()==='whole'&&!position().ok){el('boneAcqSetupError').textContent=position().reason;paint();return;}
+    let height=window.GANTRY_LIVE.settings.matrix;
+    if(kind()==='whole'){
+      try{height=whole.fields().height;}catch(error){el('boneAcqSetupError').textContent=error.message;return;}
+    }
+    try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target,Math.random,height);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
     names=nextNames;archive=null;selection++;el('boneAcqSaved').value='current';
     el('boneAcqCacheStatus').textContent='Adquisición actual sin guardar';
@@ -7590,18 +7668,22 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   async function instant(){
     if(!session||session.finished||busy||!fields)return;
-    advance();const snapshot=fields,currentRate=rate;
+    advance();const snapshot=acquisitionFields(),currentRate=rate;if(!snapshot){paint(true);return;}
     if(session.mode==='counts'&&session.heads.some((h,i)=>!h.done&&!(snapshot[i].sum*currentRate>0))){
       note='Sin señal en un detector: mueve el campo o ajusta la energía';paint(true);return;
     }
-    busy=true;note='Posición actual';paint(true);
+    busy=true;note=session.kind==='whole'?'Cuerpo entero':'Posición actual';paint(true);
     try{
       await new Promise(resolve=>setTimeout(resolve,0));
       if(session.mode==='time')session.step(snapshot,currentRate,session.target);
-      else while(!session.finished){session.step(snapshot,currentRate,Infinity,20000);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+      else while(!session.finished){
+        if(session.kind==='whole'&&!position().ok){paused=true;note=position().reason;break;}
+        session.step(snapshot,currentRate,Infinity,20000);paint();await new Promise(resolve=>setTimeout(resolve,0));
+      }
     }finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
   }
   el('boneAcqStart').onclick=()=>{el('boneAcqSetup').hidden=false;el('boneAcqTarget').focus();};
+  el('boneAcqType').onchange=()=>{el('boneAcqSetupError').textContent='';paint(true);};
   el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
   el('boneAcqSetup').onsubmit=event=>{event.preventDefault();start();};
   el('boneAcqCriterion').onchange=()=>{
@@ -7610,14 +7692,14 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     el('boneAcqUnits').textContent=counts?'cuentas por detector':'segundos por detector';el('boneAcqSetupError').textContent='';
   };
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
-  el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';paint(true);};
+  el('boneAcqPause').onclick=()=>{advance();if(paused&&session?.kind==='whole'&&!position().ok){note=position().reason;paint(true);return;}paused=!paused;note='';paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
   el('boneAcqInstant').onclick=instant;
   async function refreshSaved(){
     if(!store)return;
     const records=await store.list(),menu=el('boneAcqSaved'),value=menu.value||'current';
     menu.replaceChildren();const current=document.createElement('option');current.value='current';current.textContent='Adquisición actual';menu.append(current);
-    for(const item of records){const option=document.createElement('option');option.value=item.id;option.textContent=item.names.join(' / ')+' · '+new Date(item.createdAt).toLocaleString('es-CL');menu.append(option);}
+    for(const item of records){const option=document.createElement('option');option.value=item.id;option.textContent=item.names.join(' / ')+(item.kind==='whole'?' · Cuerpo entero':'')+' · '+new Date(item.createdAt).toLocaleString('es-CL');menu.append(option);}
     menu.value=records.some(r=>r.id===value)?value:'current';
   }
   el('boneAcqSave').onclick=async()=>{
@@ -7638,11 +7720,11 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     finally{loadingSaved=false;paint(true);}
   };
   refreshSaved().catch(error=>{el('boneAcqCacheStatus').textContent='Guardado local no disponible: '+error.message;});
-  canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive)window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
+  canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();});
   window.GANTRY_BONE_ACQ={advance,sync,
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
-    get state(){return session&&{mode:session.mode,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
+    get state(){return session&&{kind:session.kind,height:session.height,mode:session.mode,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
   setInterval(()=>{advance();paint();},100);
   window.GANTRY_LIVE?.update(window.GANTRY.G);
 })();

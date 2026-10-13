@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   function snapshot(session,names,settings,now=Date.now(),id=crypto.randomUUID()){
-    return {version:1,id,createdAt:now,n:session.n,mode:session.mode,target:session.target,
+    return {version:1,id,createdAt:now,n:session.n,height:session.height||session.n,kind:session.kind||'static',mode:session.mode,target:session.target,
       finished:session.finished,names:names.slice(),settings:structuredClone(settings),
       heads:session.heads.map(h=>({detector:h.detector,total:h.total,elapsed:h.elapsed,done:h.done,counts:h.counts.slice()}))};
   }
@@ -11,8 +11,11 @@
       ![128,256].includes(record.n)||!['counts','time'].includes(record.mode)||!Number.isFinite(record.target)||record.target<1||
       !Array.isArray(record.names)||record.names.length!==2||record.names.some(n=>typeof n!=='string'||!n.trim()||n.length>80)||
       !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
+    const height=record.height??record.n,kind=record.kind??'static';
+    if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
+      (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
     record.heads.forEach((h,i)=>{
-      if(h.detector!==i+1||!(h.counts instanceof Uint32Array)||h.counts.length!==record.n*record.n||
+      if(h.detector!==i+1||!(h.counts instanceof Uint32Array)||h.counts.length!==record.n*height||
         !Number.isFinite(h.elapsed)||h.elapsed<0||!Number.isSafeInteger(h.total)||h.total<0||h.counts.reduce((a,b)=>a+b,0)!==h.total)
         throw Error('Datos de cuentas incompletos');
     });

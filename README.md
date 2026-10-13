@@ -91,6 +91,22 @@ Motor y empaquetado: `scripts/bone_acquisition.js` y
 `python scripts/embed_bone_acquisition.py`. Prueba numérica con datos ICRP
 y control de reloj: `node tests/test_bone_acquisition.cjs`.
 
+El selector **Tipo → Cuerpo entero** muestra las dos adquisiciones en formato
+rectangular, con toda la proyección del fantoma (incluidas manos elevadas y
+plantas de los pies). Los dos cuadros en vivo conservan el campo local del
+detector para posicionar. Se habilita el inicio únicamente con **pies hacia
+adentro** tanto en la posición física como en la declarada, camilla en
+**Z 200 ±2 cm** y centrado original de imagen. La barra explica qué corregir.
+La comprobación se repite al pulsar Comenzar y antes de añadir cuentas; perder
+el centrado pausa la adquisición sin borrar lo acumulado.
+
+Este modo acumula la proyección panorámica completa de ICRP con ruido de
+Poisson; no ejecuta un barrido mecánico de camilla. El encuadre completo es
+independiente del zoom local de los cuadros en vivo. Conserva los controles
+por tiempo/cuentas, avance rápido e instantánea. Guardadas conserva también
+las dimensiones rectangulares y permite alternar con adquisiciones estáticas
+previas. Prueba: `node tests/test_bone_whole_body.cjs`.
+
 Al comenzar se solicita un **nombre para detector 1 y detector 2**. Los nombres
 aparecen sobre las imágenes adquiridas. **Guardar adquisición** conserva una
 copia de ambos mapas de cuentas, nombres, matriz, tiempos y ajustes en el

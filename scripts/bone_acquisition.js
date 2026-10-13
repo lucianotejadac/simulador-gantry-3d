@@ -28,10 +28,11 @@
     return lo;
   }
   class Acquisition {
-    constructor(n,mode,target,random=Math.random){
+    constructor(n,mode,target,random=Math.random,height=n){
       if(![128,256].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?10000000:3600)||!Number.isInteger(target))throw Error('Objetivo no válido');
-      this.n=n;this.mode=mode;this.target=target;this.random=random;this.finished=false;
-      this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*n),total:0,elapsed:0,done:false}));
+      if(!Number.isInteger(height)||height<n||height>n*6)throw Error('Altura de matriz no válida');
+      this.n=n;this.height=height;this.kind=height===n?'static':'whole';this.mode=mode;this.target=target;this.random=random;this.finished=false;
+      this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*height),total:0,elapsed:0,done:false}));
     }
     step(fields,rate,seconds,eventLimit=Infinity){
       for(let j=0;j<2;j++){
@@ -69,13 +70,26 @@
   const buffers=canvases.map(()=>document.createElement('canvas'));
   const format=n=>n.toLocaleString('es-CL');
   const time=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
+  const whole=window.GANTRY_BONE_WHOLE;
+  const kind=()=>el('boneAcqType').value==='whole'?'whole':'static';
+  const position=()=>whole?.position()||{ok:false,reason:'Preparando posición del paciente'};
+  function acquisitionFields(){
+    if(session?.kind!=='whole')return fields;
+    const status=position();
+    if(!status.ok){paused=true;note=status.reason;return null;}
+    const result=whole.fields();
+    if(result.height!==session.height){paused=true;note='Restablece la postura de brazos inicial para reanudar.';return null;}
+    return result.fields;
+  }
   function advance(now=performance.now()){
     const dt=Math.max(0,(now-clock)/1000);clock=now;
-    if(session&&!session.finished&&!paused&&!busy&&study==='bone'&&!document.hidden&&fields&&dt>0)session.step(fields,rate,dt*speed);
+    if(session&&!session.finished&&!paused&&!busy&&study==='bone'&&!document.hidden&&fields&&dt>0){const current=acquisitionFields();if(current)session.step(current,rate,dt*speed);}
   }
-  function draw(h,j,n){
-    const buffer=buffers[j];if(buffer.width!==n)buffer.width=buffer.height=n;
-    const ctx=buffer.getContext('2d'),im=ctx.createImageData(n,n);
+  function draw(h,j,n,height=n){
+    const buffer=buffers[j];if(buffer.width!==n||buffer.height!==height){buffer.width=n;buffer.height=height;}
+    const canvas=canvases[j];if(canvas.width!==n||canvas.height!==height){canvas.width=n;canvas.height=height;}
+    canvas.style&&(canvas.style.aspectRatio=n+' / '+height);
+    const ctx=buffer.getContext('2d'),im=ctx.createImageData(n,height);
     let peak=1;for(const v of h.counts)if(v>peak)peak=v;
     for(let i=0;i<h.counts.length;i++){
       const value=Math.round(255*Math.pow(h.counts[i]/peak,.72));
@@ -86,8 +100,14 @@
   }
   function paint(force=false){
     const active=study==='bone',running=!!session&&!session.finished;
+    const displayWhole=(archive||session)?.kind==='whole'||(!archive&&!session&&kind()==='whole');
+    el('gantryLive').classList.toggle('bone-whole-body',active&&displayWhole);
+    const check=position(),wantWhole=kind()==='whole';
+    el('boneAcqPosition').textContent=wantWhole?check.reason:'';
+    el('boneAcqType').disabled=running||busy||saving||loadingSaved;
+    el('boneAcqBegin').disabled=wantWhole&&!check.ok;
     el('gantryLive').classList.toggle('bone-acquisition',active);bar.hidden=!active;
-    el('boneAcqStart').disabled=running||!fields||saving||loadingSaved;
+    el('boneAcqStart').disabled=running||!fields||saving||loadingSaved||(wantWhole&&!check.ok);
     el('boneAcqPause').hidden=el('boneAcqFinish').hidden=el('boneAcqInstant').hidden=!running;
     el('boneAcqPause').textContent=paused?'Reanudar adquisición':'Pausar adquisición';
     for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])el(id).disabled=busy;
@@ -116,9 +136,9 @@
     if(!active)return;
     const now=performance.now();if(!force&&now-lastPaint<180)return;lastPaint=now;
     shown.heads.forEach((h,j)=>{
-      draw(h,j,shown.n);
-      const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j];title.title=title.textContent;
-      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada · M'+shown.n:h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo');
+      draw(h,j,shown.n,shown.height||shown.n);
+      const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
+      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada · M'+shown.n:h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+(shown.kind==='whole'?' · '+shown.n+'×'+shown.height:'');
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='counts'?h.total:h.elapsed;
     });
@@ -138,7 +158,12 @@
     const nextNames=[el('boneAcqName1').value.trim(),el('boneAcqName2').value.trim()];
     if(nextNames.some(n=>!n||n.length>80)){el('boneAcqSetupError').textContent='Escribe un nombre para cada detector (máximo 80 caracteres).';return;}
     const {mode,target}=settings();
-    try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
+    if(kind()==='whole'&&!position().ok){el('boneAcqSetupError').textContent=position().reason;paint();return;}
+    let height=window.GANTRY_LIVE.settings.matrix;
+    if(kind()==='whole'){
+      try{height=whole.fields().height;}catch(error){el('boneAcqSetupError').textContent=error.message;return;}
+    }
+    try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target,Math.random,height);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
     names=nextNames;archive=null;selection++;el('boneAcqSaved').value='current';
     el('boneAcqCacheStatus').textContent='Adquisición actual sin guardar';
@@ -147,18 +172,22 @@
   }
   async function instant(){
     if(!session||session.finished||busy||!fields)return;
-    advance();const snapshot=fields,currentRate=rate;
+    advance();const snapshot=acquisitionFields(),currentRate=rate;if(!snapshot){paint(true);return;}
     if(session.mode==='counts'&&session.heads.some((h,i)=>!h.done&&!(snapshot[i].sum*currentRate>0))){
       note='Sin señal en un detector: mueve el campo o ajusta la energía';paint(true);return;
     }
-    busy=true;note='Posición actual';paint(true);
+    busy=true;note=session.kind==='whole'?'Cuerpo entero':'Posición actual';paint(true);
     try{
       await new Promise(resolve=>setTimeout(resolve,0));
       if(session.mode==='time')session.step(snapshot,currentRate,session.target);
-      else while(!session.finished){session.step(snapshot,currentRate,Infinity,20000);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+      else while(!session.finished){
+        if(session.kind==='whole'&&!position().ok){paused=true;note=position().reason;break;}
+        session.step(snapshot,currentRate,Infinity,20000);paint();await new Promise(resolve=>setTimeout(resolve,0));
+      }
     }finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
   }
   el('boneAcqStart').onclick=()=>{el('boneAcqSetup').hidden=false;el('boneAcqTarget').focus();};
+  el('boneAcqType').onchange=()=>{el('boneAcqSetupError').textContent='';paint(true);};
   el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
   el('boneAcqSetup').onsubmit=event=>{event.preventDefault();start();};
   el('boneAcqCriterion').onchange=()=>{
@@ -167,14 +196,14 @@
     el('boneAcqUnits').textContent=counts?'cuentas por detector':'segundos por detector';el('boneAcqSetupError').textContent='';
   };
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
-  el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';paint(true);};
+  el('boneAcqPause').onclick=()=>{advance();if(paused&&session?.kind==='whole'&&!position().ok){note=position().reason;paint(true);return;}paused=!paused;note='';paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
   el('boneAcqInstant').onclick=instant;
   async function refreshSaved(){
     if(!store)return;
     const records=await store.list(),menu=el('boneAcqSaved'),value=menu.value||'current';
     menu.replaceChildren();const current=document.createElement('option');current.value='current';current.textContent='Adquisición actual';menu.append(current);
-    for(const item of records){const option=document.createElement('option');option.value=item.id;option.textContent=item.names.join(' / ')+' · '+new Date(item.createdAt).toLocaleString('es-CL');menu.append(option);}
+    for(const item of records){const option=document.createElement('option');option.value=item.id;option.textContent=item.names.join(' / ')+(item.kind==='whole'?' · Cuerpo entero':'')+' · '+new Date(item.createdAt).toLocaleString('es-CL');menu.append(option);}
     menu.value=records.some(r=>r.id===value)?value:'current';
   }
   el('boneAcqSave').onclick=async()=>{
@@ -195,11 +224,11 @@
     finally{loadingSaved=false;paint(true);}
   };
   refreshSaved().catch(error=>{el('boneAcqCacheStatus').textContent='Guardado local no disponible: '+error.message;});
-  canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive)window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
+  canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();});
   window.GANTRY_BONE_ACQ={advance,sync,
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
-    get state(){return session&&{mode:session.mode,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
+    get state(){return session&&{kind:session.kind,height:session.height,mode:session.mode,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
   setInterval(()=>{advance();paint();},100);
   window.GANTRY_LIVE?.update(window.GANTRY.G);
 })();

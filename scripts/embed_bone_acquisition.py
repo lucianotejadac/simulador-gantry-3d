@@ -17,6 +17,10 @@ css='''
 #boneAcqCacheStatus{color:#b7c9d9;font-size:9px}.bone-acquisition .bone-card-title{overflow:hidden;text-overflow:ellipsis}
 #boneAcqSetup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-basis:100%;padding:4px 0}
 #boneAcqSetupError{color:#ffc282}#boneAcqStatus{color:#8ee6bd}
+#boneAcqPosition{color:#ffc282;flex-basis:100%}#boneAcqPosition:empty{display:none}
+.gantry-live.bone-acquisition.bone-whole-body{height:clamp(570px,76vh,790px)}
+.bone-whole-body .bone-acq-card canvas{object-fit:contain;aspect-ratio:1/3.5;max-height:100%;width:100%}
+.bone-whole-body .live-card:not(.bone-acq-card) canvas{max-height:100%;width:100%;height:auto;object-fit:contain}
 .gantry-live.bone-acquisition{height:clamp(355px,48vh,430px)}
 .bone-acquisition .gantry-live-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
 .bone-acquisition .live-card{grid-template-columns:1fr;grid-template-rows:18px minmax(0,1fr) 35px}
@@ -28,6 +32,8 @@ css='''
 @media(max-width:900px){
  .gantry-live.bone-acquisition{height:clamp(460px,66vh,580px)}
  .bone-acquisition .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+ .gantry-live.bone-acquisition.bone-whole-body{height:1040px}
+ .bone-whole-body .gantry-live-grid{grid-template-rows:260px minmax(0,1fr)}
 }
 /* BONE_ACQ_CSS_END */
 '''
@@ -37,6 +43,7 @@ else:s=s.replace('</style>',css+'</style>',1)
 
 toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
           <div id="boneAcqControls" class="bone-acq-controls" hidden aria-label="Adquisición ósea">
+            <label>Tipo <select id="boneAcqType" class="live-study" aria-label="Tipo de adquisición"><option value="static">Estática</option><option value="whole">Cuerpo entero</option></select></label>
             <button id="boneAcqStart" class="live-setting" type="button">Iniciar adquisición</button>
             <button id="boneAcqPause" class="live-setting" type="button" hidden>Pausar adquisición</button>
             <button id="boneAcqFinish" class="live-setting" type="button" hidden>Finalizar adquisición</button>
@@ -46,13 +53,14 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
             <label>Guardadas <select id="boneAcqSaved" class="live-study" aria-label="Adquisiciones guardadas"><option value="current">Adquisición actual</option></select></label>
             <span id="boneAcqCacheStatus" role="status" title="Se conserva en este navegador y sitio; borrar los datos del sitio elimina las adquisiciones guardadas."></span>
             <span id="boneAcqStatus" role="status">Preparando proyecciones óseas…</span>
+            <span id="boneAcqPosition" role="status"></span>
             <form id="boneAcqSetup" hidden aria-label="Configurar adquisición ósea">
               <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
               <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label>Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label>Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
               <span id="boneAcqUnits">cuentas por detector</span>
-              <button class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
+              <button id="boneAcqBegin" class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
               <span id="boneAcqSetupError" role="alert"></span>
             </form>
           </div>
@@ -99,7 +107,7 @@ s=s.replace("+'<br>'+meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSigna
             "+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate)")
 for n in [1,2]:
     s=s.replace(f'<h3 class="bone-card-title">ADQUISICIÓN · DETECTOR {n}</h3>',f'<h3 class="bone-card-title" id="boneAcqTitle{n}">ADQUISICIÓN · DETECTOR {n}</h3>')
-engine=(ROOT/'scripts/bone_acquisition_store.js').read_text(encoding='utf-8')+'\n'+(ROOT/'scripts/bone_acquisition.js').read_text(encoding='utf-8')
+engine='\n'.join((ROOT/'scripts'/name).read_text(encoding='utf-8') for name in ['bone_whole_body.js','bone_acquisition_store.js','bone_acquisition.js'])
 block='<!-- BONE_ACQ_ENGINE_BEGIN -->\n<script>\n'+engine+'\n</script>\n<!-- BONE_ACQ_ENGINE_END -->'
 if '<!-- BONE_ACQ_ENGINE_BEGIN -->' in s:
     s=re.sub(r'<!-- BONE_ACQ_ENGINE_BEGIN -->.*?<!-- BONE_ACQ_ENGINE_END -->',lambda _:block,s,flags=re.S)
