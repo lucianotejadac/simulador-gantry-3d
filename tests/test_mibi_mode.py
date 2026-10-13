@@ -57,6 +57,7 @@ with serve_site() as site_url, sync_playwright() as pw:
     page.evaluate('GANTRY_LIVE.setMatrix(256)')
     mibi=page.locator('#liveD1').evaluate('(c)=>c.toDataURL()')
     page.select_option('#liveStudy','bone')
+    page.wait_for_function('GANTRY_LIVE.ready')
     assert page.locator('[data-arms="down"]').is_enabled()
     assert mibi!=page.locator('#liveD1').evaluate('(c)=>c.toDataURL()'),'Stale cached MIBI field in bone mode'
     page.click('[data-arms="down"]');page.select_option('#liveStudy','mibi')

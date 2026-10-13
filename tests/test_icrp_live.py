@@ -13,6 +13,7 @@ with serve_site() as site_url, sync_playwright() as pw:
     page.wait_for_function('window.GANTRY_LIVE && window.GANTRY3D')
     page.evaluate("GANTRY_LIVE.setStudy('bone')")
     page.wait_for_function('GANTRY_LIVE.ready')
+    page.evaluate('GANTRY_ICRP.ready')  # The following checks intentionally inspect both poses.
     page.evaluate('''() => {
       GANTRY_PATIENT3D.headFirst=false;GANTRY_ACQUISITION.headFirst=false;
       GANTRY_ACQUISITION.decubitus='supine';

@@ -9,6 +9,7 @@
       task=window.GANTRY_MAG3.load();
     }else if(atlas.linear){
       const name=acquisition.study==='mibi'?'mibi_up':lastState?.arms==='up'?'up':'down';
+      if(window.GANTRY_ICRP.poses[name]){atlas.ready=true;return;}
       task=window.GANTRY_ICRP.load(name);
     }else{
       atlas.image.decoding='async';

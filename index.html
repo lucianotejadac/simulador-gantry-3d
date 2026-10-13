@@ -6369,6 +6369,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       task=window.GANTRY_MAG3.load();
     }else if(atlas.linear){
       const name=acquisition.study==='mibi'?'mibi_up':lastState?.arms==='up'?'up':'down';
+      if(window.GANTRY_ICRP.poses[name]){atlas.ready=true;return;}
       task=window.GANTRY_ICRP.load(name);
     }else{
       atlas.image.decoding='async';
