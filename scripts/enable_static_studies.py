@@ -27,4 +27,19 @@ if '// STATIC_POSTURES_ENABLED' not in s:
     replacement="    const selected=activeStudy();\n    if(['thyroid','exploration','parathyroid'].includes(acquisition.study)&&window.GANTRY){\n      window.GANTRY.G.arms='down';if(lastState)lastState.arms='down';window.GANTRY.render();\n    }\n    if(acquisition.study==='mibi'"
     assert anchor in s
     s=s.replace(anchor,replacement,1)
+for name, label, tracer in [('dmsa','DMSA renal','99mTc-DMSA · 3 H'), ('maa','MAA pulmonar','99mTc-MAA · 5 MIN')]:
+    if f"    {name}:{{" not in s:
+        definition = f"""    {name}:{{
+      atlasKey:'{name}',id:'{name}',label:'{label}',tracer:'{tracer}',
+      energy:'low',photopeak:140,energyRange:[80,450],energyResolution:.10,
+      scatterBase:.10,recommendedCollimator:'LEHR',
+      angles:window.GANTRY_ICRP_DATA.{name}.angles,
+      linear:true,ready:false,error:false
+    }},
+"""
+        s=s.replace("    mag3:{id:'mag3'",definition+"    mag3:{id:'mag3'",1)
+    if f'<option value="{name}">' not in s:
+        s=s.replace('<option value="parathyroid">',f'<option value="{name}">{label}</option>\n                <option value="parathyroid">',1)
+s=s.replace("['thyroid','exploration','parathyroid'].includes(acquisition.study)",
+            "['thyroid','exploration','parathyroid','dmsa','maa'].includes(acquisition.study)")
 p.write_text(s,encoding='utf-8',newline='\n')

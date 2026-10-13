@@ -65,7 +65,7 @@
   let note='',lastPaint=0,moving=false,lockedNodes=null;
   let names=['Detector 1','Detector 2'],archive=null,saving=false,loadingSaved=false,selection=0;
   const sessions=new Map();
-  const labels={bone:'Óseo',mibi:'MIBI',thyroid:'Tiroides',exploration:'I-131',parathyroid:'Paratiroides'};
+  const labels={bone:'Óseo',mibi:'MIBI',thyroid:'Tiroides',exploration:'I-131',parathyroid:'Paratiroides',dmsa:'DMSA',maa:'MAA'};
   const supported=value=>Object.hasOwn(labels,value);
   const storage=window.GANTRY_BONE_STORAGE;
   const store=storage?.createStore(window.indexedDB);

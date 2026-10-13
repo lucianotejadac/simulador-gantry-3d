@@ -1,0 +1,520 @@
+{
+  "dmsa": {
+    "case": {
+      "id": "dmsa",
+      "titulo": "99mTc-DMSA",
+      "nombre": "Succímero",
+      "tiempo": "3 h",
+      "via": "Intravenosa",
+      "descripcion": "Predominio de corteza renal, mejor visible por posterior; fondo extrarrenal bajo.",
+      "escenario": "Riñones sin defectos corticales añadidos; vejiga con actividad baja tras micción supuesta.",
+      "energy": 140,
+      "fwhm": 9,
+      "sources": [
+        "dmsa"
+      ],
+      "reglas_captacion": [
+        {
+          "region": "corteza renal",
+          "ids": [
+            8900,
+            9200
+          ],
+          "actividad_relativa_por_voxel": 4.0,
+          "voxeles": 11575
+        },
+        {
+          "region": "médula renal",
+          "ids": [
+            9000,
+            9300
+          ],
+          "actividad_relativa_por_voxel": 0.08,
+          "voxeles": 2747
+        },
+        {
+          "region": "pelvis renal",
+          "ids": [
+            9100,
+            9400
+          ],
+          "actividad_relativa_por_voxel": 0.002,
+          "voxeles": 532
+        },
+        {
+          "region": "vejiga post micción",
+          "ids": [
+            13800
+          ],
+          "actividad_relativa_por_voxel": 0.008,
+          "voxeles": 7162
+        },
+        {
+          "region": "hígado",
+          "ids": [
+            9500
+          ],
+          "actividad_relativa_por_voxel": 0.012,
+          "voxeles": 82452
+        },
+        {
+          "region": "bazo",
+          "ids": [
+            12700
+          ],
+          "actividad_relativa_por_voxel": 0.008,
+          "voxeles": 7981
+        },
+        {
+          "region": "sangre",
+          "ids": [
+            8800,
+            900,
+            910
+          ],
+          "actividad_relativa_por_voxel": 0.002,
+          "voxeles": 18126
+        }
+      ],
+      "fondo_relativo": 0.0008
+    },
+    "angles": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      160,
+      165,
+      170,
+      175,
+      180,
+      185,
+      190,
+      195,
+      200,
+      205,
+      210,
+      215,
+      220,
+      225,
+      230,
+      235,
+      240,
+      245,
+      250,
+      255,
+      260,
+      265,
+      270,
+      275,
+      280,
+      285,
+      290,
+      295,
+      300,
+      305,
+      310,
+      315,
+      320,
+      325,
+      330,
+      335,
+      340,
+      345,
+      350,
+      355
+    ],
+    "posture": "arms down",
+    "anatomy": "ICRP 145 MRCP_AM; original 3 mm organ labels",
+    "organ_sha256": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
+    "uptake_source_sha256": "ea2316b4ec887f3fe6688a0306a6c8c1c91470db696de071f19d8d9bb6a64814",
+    "projector_source_sha256": "675d35ddceda74c7ded26b45975206f46327209fcb56dd66d0a31be7b13b48b4",
+    "normalization": "One factor for all angles; anterior reference 2 M arbitrary expected counts",
+    "transport": "Parallel rays, 3 mm step, bilinear interpolation, 140 keV attenuation, Gaussian PSF; no scatter or Monte Carlo",
+    "limitation": "Educational relative uptake model, not a validated clinical or dosimetric simulation",
+    "cardinal_relative_l1_errors": [
+      4.4532185938805924e-07,
+      3.5213807336731406e-07
+    ],
+    "source_urls": {
+      "icrp": {
+        "titulo": "ICRP Publication 145 · anatomía MRCP_AM",
+        "url": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145"
+      },
+      "mibi": {
+        "titulo": "DailyMed · 99mTc-sestamibi · distribución y eliminación",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87"
+      },
+      "mibi_imagenes": {
+        "titulo": "O. Kraft · FN Ostrava · MIBI corporal ANT/POST, figuras 2 y 3",
+        "url": "https://www.kcsolid.cz/zdravotnictvi/klinicka_kapitola/onk/onk-238/onk-238-text.htm"
+      },
+      "pertecnetato": {
+        "titulo": "DailyMed · pertecnetato · farmacología",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=98947d99-5be5-461e-ad36-7425d3646389"
+      },
+      "dmsa": {
+        "titulo": "DailyMed · NEPHROSCAN · captación cortical renal",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ddd90c4a-5792-49c9-837f-710d1a604742"
+      },
+      "i131": {
+        "titulo": "DailyMed · yoduro de sodio I-131 · administración oral y distribución",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=380e8e26-0625-4233-b36e-afb9f66e8a77"
+      },
+      "i131_tiempo": {
+        "titulo": "SNMMI · rastreo post terapia, intervalo de adquisición",
+        "url": "https://tech.snmjournals.org/content/48/3/202"
+      },
+      "maa": {
+        "titulo": "DailyMed · PULMOTECH MAA · distribución pulmonar",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=a8b7adf0-2c6b-4acd-96d3-a099306951a0"
+      }
+    },
+    "descriptor": {
+      "angles": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100,
+        105,
+        110,
+        115,
+        120,
+        125,
+        130,
+        135,
+        140,
+        145,
+        150,
+        155,
+        160,
+        165,
+        170,
+        175,
+        180,
+        185,
+        190,
+        195,
+        200,
+        205,
+        210,
+        215,
+        220,
+        225,
+        230,
+        235,
+        240,
+        245,
+        250,
+        255,
+        260,
+        265,
+        270,
+        275,
+        280,
+        285,
+        290,
+        295,
+        300,
+        305,
+        310,
+        315,
+        320,
+        325,
+        330,
+        335,
+        340,
+        345,
+        350,
+        355
+      ],
+      "width": 256,
+      "height": 640,
+      "scale": 0.16793771040760663,
+      "window": 8803.5546875,
+      "headRow": 26.984309999999976,
+      "footRow": 613.6666666666666,
+      "pixelMm": 3,
+      "source": "ICRP 145 · captación simulada por órganos",
+      "url": "assets/runtime/icrp-dmsa.3d2c79304fe0e707.deflate"
+    }
+  },
+  "maa": {
+    "case": {
+      "id": "maa",
+      "titulo": "99mTc-MAA",
+      "nombre": "Macroagregados de albúmina",
+      "tiempo": "5 min",
+      "via": "Intravenosa",
+      "descripcion": "Señal predominantemente pulmonar. El resto del campo completo permanece casi vacío.",
+      "escenario": "Perfusión en decúbito supino, sin defectos ni derivación derecha-izquierda añadidos.",
+      "energy": 140,
+      "fwhm": 9,
+      "sources": [
+        "maa"
+      ],
+      "reglas_captacion": [
+        {
+          "region": "parénquima pulmonar",
+          "ids": [
+            9700,
+            9900
+          ],
+          "actividad_relativa_por_voxel": 1.0,
+          "voxeles": 107017
+        }
+      ],
+      "fondo_relativo": 5e-06
+    },
+    "angles": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      160,
+      165,
+      170,
+      175,
+      180,
+      185,
+      190,
+      195,
+      200,
+      205,
+      210,
+      215,
+      220,
+      225,
+      230,
+      235,
+      240,
+      245,
+      250,
+      255,
+      260,
+      265,
+      270,
+      275,
+      280,
+      285,
+      290,
+      295,
+      300,
+      305,
+      310,
+      315,
+      320,
+      325,
+      330,
+      335,
+      340,
+      345,
+      350,
+      355
+    ],
+    "posture": "arms down",
+    "anatomy": "ICRP 145 MRCP_AM; original 3 mm organ labels",
+    "organ_sha256": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
+    "uptake_source_sha256": "ea2316b4ec887f3fe6688a0306a6c8c1c91470db696de071f19d8d9bb6a64814",
+    "projector_source_sha256": "675d35ddceda74c7ded26b45975206f46327209fcb56dd66d0a31be7b13b48b4",
+    "normalization": "One factor for all angles; anterior reference 2 M arbitrary expected counts",
+    "transport": "Parallel rays, 3 mm step, bilinear interpolation, 140 keV attenuation, Gaussian PSF; no scatter or Monte Carlo",
+    "limitation": "Educational relative uptake model, not a validated clinical or dosimetric simulation",
+    "cardinal_relative_l1_errors": [
+      3.3294574564024515e-07,
+      2.923803776866407e-07
+    ],
+    "source_urls": {
+      "icrp": {
+        "titulo": "ICRP Publication 145 · anatomía MRCP_AM",
+        "url": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145"
+      },
+      "mibi": {
+        "titulo": "DailyMed · 99mTc-sestamibi · distribución y eliminación",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87"
+      },
+      "mibi_imagenes": {
+        "titulo": "O. Kraft · FN Ostrava · MIBI corporal ANT/POST, figuras 2 y 3",
+        "url": "https://www.kcsolid.cz/zdravotnictvi/klinicka_kapitola/onk/onk-238/onk-238-text.htm"
+      },
+      "pertecnetato": {
+        "titulo": "DailyMed · pertecnetato · farmacología",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=98947d99-5be5-461e-ad36-7425d3646389"
+      },
+      "dmsa": {
+        "titulo": "DailyMed · NEPHROSCAN · captación cortical renal",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ddd90c4a-5792-49c9-837f-710d1a604742"
+      },
+      "i131": {
+        "titulo": "DailyMed · yoduro de sodio I-131 · administración oral y distribución",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=380e8e26-0625-4233-b36e-afb9f66e8a77"
+      },
+      "i131_tiempo": {
+        "titulo": "SNMMI · rastreo post terapia, intervalo de adquisición",
+        "url": "https://tech.snmjournals.org/content/48/3/202"
+      },
+      "maa": {
+        "titulo": "DailyMed · PULMOTECH MAA · distribución pulmonar",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=a8b7adf0-2c6b-4acd-96d3-a099306951a0"
+      }
+    },
+    "descriptor": {
+      "angles": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100,
+        105,
+        110,
+        115,
+        120,
+        125,
+        130,
+        135,
+        140,
+        145,
+        150,
+        155,
+        160,
+        165,
+        170,
+        175,
+        180,
+        185,
+        190,
+        195,
+        200,
+        205,
+        210,
+        215,
+        220,
+        225,
+        230,
+        235,
+        240,
+        245,
+        250,
+        255,
+        260,
+        265,
+        270,
+        275,
+        280,
+        285,
+        290,
+        295,
+        300,
+        305,
+        310,
+        315,
+        320,
+        325,
+        330,
+        335,
+        340,
+        345,
+        350,
+        355
+      ],
+      "width": 256,
+      "height": 640,
+      "scale": 0.017031152768439573,
+      "window": 1008.8129272460938,
+      "headRow": 26.984309999999976,
+      "footRow": 613.6666666666666,
+      "pixelMm": 3,
+      "source": "ICRP 145 · captación simulada por órganos",
+      "url": "assets/runtime/icrp-maa.eeffc34598c0dd99.deflate"
+    }
+  }
+}

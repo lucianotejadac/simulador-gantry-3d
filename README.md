@@ -44,7 +44,7 @@ límites mecánicos del simulador. [Fuentes y adaptaciones](assets/symbia-room/C
 
 ### Adquisición estática para los estudios del menú
 
-Óseo, MIBI, tiroides/pertecnetato, exploración I-131 y paratiroides comparten
+Óseo, MIBI, tiroides/pertecnetato, exploración I-131, paratiroides, DMSA y MAA comparten
 dos vistas en vivo y dos imágenes adquiridas. **Iniciar adquisición** pide los
 nombres de los detectores y una meta de cuentas o tiempo. Incluye pausa,
 avance rápido, adquisición instantánea y guardado local con el nombre del estudio.
@@ -63,6 +63,18 @@ Estos tres atlas usan brazos al costado; MIBI usa su serie de brazos arriba.
 Para regenerarlos: `python scripts/build_static_atlases.py`, seguido de
 `python scripts/enable_static_studies.py`, `python scripts/embed_bone_acquisition.py`
 y `python scripts/refresh_lazy_assets.py`.
+
+DMSA y MAA tienen 72 proyecciones a pasos de 5°, con brazos al costado,
+generadas desde los mismos volúmenes de captación por órgano del proyecto
+`icrp145-multitrazador-ap-pa`. Conservan los supuestos de DMSA a 3 h y MAA
+a 5 min. Incluyen atenuación y PSF; no incluyen dispersión ni transporte
+Monte Carlo. Son simulaciones educativas de actividad relativa, sin validación
+clínica. Cada atlas comprimido se descarga sólo al seleccionar su estudio.
+La procedencia y comprobación AP/PA están en
+`assets/icrp145/organ-static-provenance.json`. Para regenerarlos, usar
+`python scripts/build_organ_static_360.py` (NumPy, SciPy, Numba y Pillow,
+más el proyecto fuente junto a este repositorio), seguido de los tres
+scripts de integración anteriores desde `enable_static_studies.py`.
 
 ### Zoom y recentrado
 

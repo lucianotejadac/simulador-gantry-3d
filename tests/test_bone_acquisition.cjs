@@ -35,7 +35,7 @@ assert.equal(chunks,3);assert(chunked.heads.every(h=>h.total===51000));
 
 // Real ICRP projections and production field sampler; no image screenshots.
 const packed=JSON.parse(html.match(/window.GANTRY_ICRP_DATA=(.*?);\n/)[1]);
-const linearContext=vm.createContext({window:{GANTRY_ICRP_DATA:{down:packed.down}},Uint8Array,Uint16Array,Float32Array,Float64Array,Blob,Response,DecompressionStream,fetch:assetFetch,atob});
+const linearContext=vm.createContext({window:{GANTRY_ICRP_DATA:{down:packed.down,dmsa:packed.dmsa,maa:packed.maa}},Uint8Array,Uint16Array,Float32Array,Float64Array,Blob,Response,DecompressionStream,fetch:assetFetch,atob});
 vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linearContext);
 
 (async()=>{
@@ -44,6 +44,20 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linearContext);
  assert(fields.every(f=>f.sum>0));
  const real=new Acquisition(128,'time',60,seeded());real.step(fields,4000,60);
  real.heads.forEach((h,j)=>{const expected=fields[j].sum*4000*60/2000000;assert(Math.abs(h.total-expected)<6*Math.sqrt(expected));assert(h.counts.filter(v=>v>0).length>100);});
+
+ // Newly projected organ studies use the same detector crop and count engine.
+ for(const study of ['dmsa','maa']){
+  const organPose=api.poses[study],metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
+  const crop={x:organPose.width/2-90,y:organPose.headRow+(study==='dmsa'?195:125),w:180,h:180};
+  const pair=[0,36].map(i=>api.field(organPose,{lo:i,hi:i,mix:0},crop,128,128,false,false,metrics,1));
+  const high=api.field(organPose,{lo:0,hi:0,mix:0},crop,256,256,false,false,metrics,2);
+  assert(pair.every(f=>f.sum>10000));
+  assert(Math.abs(high.sum/pair[0].sum-1)<.01,'Matrix must conserve rate: '+study);
+  const timed=new Acquisition(128,'time',60,seeded());timed.step(pair,4000,60);
+  timed.heads.forEach((h,j)=>{const expected=pair[j].sum*4000*60/2000000;assert(Math.abs(h.total-expected)<6*Math.sqrt(expected));});
+  const counted=new Acquisition(128,'counts',2500,seeded());counted.step(pair,4000,Infinity);
+  assert(counted.finished);assert(counted.heads.every(h=>h.total===2500));
+ }
 
  // Drive the actual UI controller with a clock and a minimal DOM substitute.
  let now=0;const els=new Map(),intervals=[];

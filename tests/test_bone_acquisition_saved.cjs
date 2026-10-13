@@ -66,7 +66,7 @@ function environment(whole=false){
  c.el('boneAcqSaved').value=wholeRecord.id;await c.el('boneAcqSaved').onchange();assert.equal(c.el('boneAcqD1').height,320);
  c.el('boneAcqSaved').value='current';await c.el('boneAcqSaved').onchange();assert.equal(c.el('boneAcqD1').height,128);
  const d=environment();
- for(const study of ['mibi','thyroid','exploration','parathyroid']){
+ for(const study of ['mibi','thyroid','exploration','parathyroid','dmsa','maa']){
   d.window.GANTRY_LIVE.settings.study=study;d.window.GANTRY_LIVE.update();
   assert.equal(d.window.GANTRY_BONE_ACQ.state,null);
   d.submit(12,study+' D1',study+' D2');
