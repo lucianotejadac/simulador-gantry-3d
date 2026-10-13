@@ -1,3 +1,4 @@
+const assetFetch=require('./asset_fetch.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8').replace(/\r\n/g,'\n');
 const engine=fs.readFileSync('scripts/bone_acquisition.js','utf8').replace(/\r\n/g,'\n');
@@ -34,7 +35,7 @@ assert.equal(chunks,3);assert(chunked.heads.every(h=>h.total===51000));
 
 // Real ICRP projections and production field sampler; no image screenshots.
 const packed=JSON.parse(html.match(/window.GANTRY_ICRP_DATA=(.*?);\n/)[1]);
-const linearContext=vm.createContext({window:{GANTRY_ICRP_DATA:{down:packed.down}},Uint8Array,Uint16Array,Float32Array,Float64Array,Blob,Response,DecompressionStream,atob});
+const linearContext=vm.createContext({window:{GANTRY_ICRP_DATA:{down:packed.down}},Uint8Array,Uint16Array,Float32Array,Float64Array,Blob,Response,DecompressionStream,fetch:assetFetch,atob});
 vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linearContext);
 
 (async()=>{

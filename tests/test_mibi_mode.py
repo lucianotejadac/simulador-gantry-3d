@@ -3,11 +3,12 @@ from pathlib import Path
 import base64, hashlib, json, re, zlib
 import numpy as np
 from playwright.sync_api import sync_playwright
+from serve_site import serve_site
 
 ROOT=Path(__file__).resolve().parents[1]
 html=(ROOT/'index.html').read_text(encoding='utf-8')
 packed=json.loads(re.search(r'window.GANTRY_ICRP_DATA=(.*?);\n',html).group(1))['mibi_up']
-frames=np.frombuffer(zlib.decompress(base64.b64decode(packed['deflate'])),dtype='<u2').reshape(72,768,320)*packed['scale']
+frames=np.frombuffer(zlib.decompress((ROOT/packed['url']).read_bytes()),dtype='<u2').reshape(72,768,320)*packed['scale']
 provenance=json.loads((ROOT/'assets/icrp145/procedencia.json').read_text(encoding='utf-8'))['mibi_up']
 assert packed['angles']==list(range(0,360,5))
 assert abs(frames[0].sum()/2000000-1)<.0001
@@ -19,13 +20,11 @@ if source.exists():
     expected=np.load(source)['cuentas_esperadas']*provenance['factor_referencia_motor']
     assert np.max(np.abs(frames-expected))<=packed['scale']*.51
 
-with sync_playwright() as pw:
+with serve_site() as site_url, sync_playwright() as pw:
     browser=pw.chromium.launch(channel='chrome',headless=True)
     page=browser.new_page(viewport={'width':1440,'height':1000})
     errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-    page.route('http://**/*',lambda route:route.abort())
-    page.route('https://**/*',lambda route:route.abort())
-    page.goto((ROOT/'index.html').as_uri()+'?demo=mibi-brazos-arriba')
+    page.goto(site_url+'?demo=mibi-brazos-arriba')
     page.wait_for_function("window.GANTRY_LIVE && GANTRY_LIVE.ready && GANTRY_LIVE.settings.study==='mibi'")
     assert page.evaluate("GANTRY.G.arms==='up' && GANTRY_LIVE.state.d1.arms==='up'")
     assert page.locator('[data-arms="down"]').is_disabled()

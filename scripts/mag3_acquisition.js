@@ -4,14 +4,28 @@
   const data=window.GANTRY_MAG3_DATA,poses={},button=document.getElementById('injectMAG3');
   let session=null,panel=null,ready=false;
   const pixels=data.width*data.height,componentCount=data.scales.down.length;
-  const loading=Promise.all(['down','up'].map(async name=>{
-    const bytes=Uint8Array.from(atob(data.packed[name]),c=>c.charCodeAt(0));
+  let pending=null;
+  function load(){
+    if(ready)return Promise.resolve();
+    if(pending)return pending;
+    button.disabled=true;button.textContent='Cargando MAG3…';
+    pending=Promise.all([data.integral?Promise.resolve():fetch(data.integralUrl).then(response=>{
+      if(!response.ok)throw Error('Cinética MAG3 no disponible ('+response.status+')');return response.json();
+    }).then(integral=>{data.integral=integral;}),...['down','up'].map(async name=>{
+    if(poses[name])return;
+    let bytes;
+    if(data.urls){const response=await fetch(data.urls[name]);if(!response.ok)throw Error('Serie MAG3 no disponible ('+response.status+')');bytes=await response.arrayBuffer();}
+    else bytes=Uint8Array.from(atob(data.packed[name]),c=>c.charCodeAt(0));
     const buffer=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
     const values=new Uint16Array(buffer);if(values.length!==componentCount*data.angles.length*pixels)throw Error('Serie MAG3 incompleta');
     poses[name]=Array.from({length:componentCount},(_,c)=>({width:data.width,height:data.height,scale:data.scales[name][c],window:1,
       frames:data.angles.map((_,a)=>values.subarray((c*data.angles.length+a)*pixels,(c*data.angles.length+a+1)*pixels))}));
-  })).then(()=>{ready=true;button.disabled=false;button.title='Iniciar basal de 20 minutos desde la posición actual';window.dispatchEvent(new Event('mag3ready'));})
-    .catch(e=>{button.title='No se pudo cargar MAG3: '+e.message;console.error(e);});
+  })]).then(()=>{ready=true;button.title='Iniciar basal de 20 minutos desde la posición actual';window.dispatchEvent(new Event('mag3ready'));})
+    .catch(e=>{pending=null;button.title='No se pudo cargar MAG3: '+e.message;throw e;})
+    .finally(()=>{button.disabled=false;button.textContent='inyectar MAG3';});
+    return pending;
+  }
+  button.disabled=false;
   function coefficients(t){const position=Math.max(0,Math.min(data.duration,t))/data.dt,lo=Math.floor(position),hi=Math.min(data.integral.length-1,lo+1),f=position-lo;
     return data.integral[lo].map((v,c)=>v*(1-f)+data.integral[hi][c]*f);}
   function instantaneous(t){const a=coefficients(Math.max(0,t-.25)),b=coefficients(Math.min(data.duration,t+.25)),dt=Math.min(data.duration,t+.25)-Math.max(0,t-.25);return a.map((v,c)=>(b[c]-v)/Math.max(dt,1e-6));}
@@ -102,8 +116,9 @@
     document.getElementById('gantryLive').classList.toggle('mag3-acquisition',active);
     document.querySelector('#gantryLive .gantry-live-grid').style.display=active?'none':'';
   }
-  function inject(){
-    if(!ready)return;if(session&&!session.finished){window.GANTRY_LIVE.setStudy('mag3');refresh();return;}
+  async function inject(){
+    if(!ready){try{await load();}catch(error){document.getElementById('mag3Status').textContent='No se pudo cargar MAG3. Pulsa inyectar para reintentar.';console.error(error);return;}}
+    if(session&&!session.finished){window.GANTRY_LIVE.setStudy('mag3');refresh();return;}
     ensurePanel();panel.shadowRoot.innerHTML=html;
     const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
     const n=window.GANTRY_LIVE.settings.matrix,geometry=detector===1?g1:g2;
@@ -130,7 +145,7 @@
     return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate:values.reduce((a,b)=>a+b,0)};
   }
   button.onclick=inject;
-  window.GANTRY_MAG3={loading,get ready(){return ready;},inject,stateChanged,renderHead,
+  window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,stateChanged,renderHead,
     get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,matrix:session.n};},
     // Pure numerical entry points used by offline acquisition tests.
     coefficients,fields,mix,accumulate,poissonEvents,data};

@@ -49,3 +49,6 @@ if __name__ == '__main__':
                  'GANTRY_LIVE_ATLAS_EXPLORACION', build_atlas())
     path.write_text(html,encoding='utf-8',newline='\n')
     print('Replaced exploration with 16 supplied views; 360 wraps to 0.')
+
+    from externalize_assets import externalize
+    externalize()

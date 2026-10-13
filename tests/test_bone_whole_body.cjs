@@ -1,3 +1,4 @@
+const assetFetch=require('./asset_fetch.cjs');
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('index.html','utf8');
 const src=fs.readFileSync('scripts/bone_whole_body.js','utf8');
@@ -27,7 +28,7 @@ assert.equal(guarded.detDist1,36);assert.equal(guarded.detDist2,26);
 assert.throws(()=>safeTargets({tableZ:200},190,()=>({d1:50,d2:12}),range));
 assert.throws(()=>new Scan(128,0,{width:256,height:640},200));
 const packed=JSON.parse(html.match(/window.GANTRY_ICRP_DATA=(.*?);\n/)[1]);
-const linear=vm.createContext({window:{GANTRY_ICRP_DATA:{down:packed.down,up:packed.up}},Uint8Array,Uint16Array,Float32Array,Float64Array,Blob,Response,DecompressionStream,atob});
+const linear=vm.createContext({window:{GANTRY_ICRP_DATA:{down:packed.down,up:packed.up}},Uint8Array,Uint16Array,Float32Array,Float64Array,Blob,Response,DecompressionStream,fetch:assetFetch,atob});
 vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linear);
 const {Acquisition}=ctx.window.GANTRY_BONE_CORE;
 vm.runInContext(fs.readFileSync('scripts/bone_acquisition_store.js','utf8'),ctx);

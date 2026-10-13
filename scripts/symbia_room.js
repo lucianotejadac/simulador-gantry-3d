@@ -10,8 +10,12 @@ window.createSymbiaRoom = function({THREE, scene, camera, controls, renderer, fl
   let last=0, frames=0, cpu=0;
 
   async function load() {
-    const encoded=document.getElementById('symbiaRoomData').textContent.trim();
-    const bytes=Uint8Array.from(atob(encoded), c=>c.charCodeAt(0));
+    const source=document.getElementById('symbiaRoomData');
+    let bytes;
+    if(source.dataset?.src){
+      const response=await fetch(source.dataset.src);if(!response.ok)throw Error('Sala no disponible ('+response.status+')');
+      bytes=await response.arrayBuffer();
+    }else bytes=Uint8Array.from(atob(source.textContent.trim()), c=>c.charCodeAt(0));
     const raw=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
     const size=new DataView(raw).getUint32(0,true);
     const meta=JSON.parse(new TextDecoder().decode(new Uint8Array(raw,4,size)));

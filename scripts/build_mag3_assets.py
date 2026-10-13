@@ -113,3 +113,6 @@ p=ROOT/'index.html';html=p.read_text(encoding='utf-8')
 if '<!-- MAG3_BEGIN -->' in html:html=re.sub(r'<!-- MAG3_BEGIN -->.*?<!-- MAG3_END -->',lambda _:block,html,flags=re.S)
 else:html=html.replace('</body>',block+'\n</body>')
 p.write_text(html,encoding='utf-8');print('MAG3 embedded',flush=True)
+
+from externalize_assets import externalize
+externalize()

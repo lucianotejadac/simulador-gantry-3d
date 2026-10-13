@@ -1,13 +1,27 @@
 # Simulador Gantry 3D
 
-Simulador autocontenido de posicionamiento del gantry y adquisición
-gammagráfica. Todo el funcionamiento, los atlas y los recursos necesarios se
-encuentran incorporados en un solo archivo: `index.html`.
+Simulador de posicionamiento del gantry y adquisición gammagráfica.
+El HTML contiene la interfaz; las proyecciones, imágenes y modelos están
+en archivos separados del mismo repositorio, dentro de `assets/runtime/`.
 
 ## Ejecución
 
-Descargue `index.html` y ábralo en un navegador moderno. No requiere conexión
-a Internet.
+Abra la versión de GitHub Pages. Para uso local, descargue el repositorio
+completo y ejecute `python -m http.server 8000` en su carpeta; después abra
+`http://localhost:8000`. Esto funciona sin Internet, con los archivos locales.
+Abrir sólo `index.html` con `file://` ya no es compatible con la carga de datos.
+
+El HTML pasó de 56 MB a aproximadamente 1 MB. Cada estudio y postura se
+descarga y descomprime al seleccionarlo; MAG3 se prepara al seleccionarlo o
+inyectarlo y la sala al mostrarla. Los recursos tienen nombres con huella de
+contenido: una actualización de la interfaz conserva las URLs de los datos
+que no cambiaron, permitiendo reutilizar la caché HTTP del navegador.
+La primera selección de un estudio aún necesita descargar sus proyecciones.
+No se reduce resolución ni se modifican las cuentas esperadas.
+
+Después de modificar motores: `python scripts/refresh_lazy_assets.py`.
+Los generadores de datos separan automáticamente sus recursos al terminar;
+`python scripts/externalize_assets.py` también puede ejecutarse por separado.
 
 ### Sala opcional de SymbiaRoom
 
@@ -16,8 +30,7 @@ el entorno completo y **Ocultar sala** recupera el suelo habitual. Las paredes
 que quedan entre una cámara exterior y el equipo se ocultan automáticamente.
 Los controles del gantry y la adquisición MAG3 siguen funcionando.
 
-El recurso está incrustado en el HTML para funcionar sin conexión: añade
-aproximadamente 0,82 MB al archivo, pero sólo se descomprime y crea en GPU
+El recurso se descarga por separado, se descomprime y crea en GPU
 al mostrarlo por primera vez. Son seis grupos y 81.798 triángulos, sin físicas,
 luces ni sombras dinámicas adicionales. Oculto no se dibuja; tras la primera
 carga conserva su memoria para poder volver a mostrarlo rápidamente.
@@ -182,8 +195,8 @@ zoom 1×, matriz 256, 4.000 cuentas/s y 0,75 s. Introduzca la camilla en el
 campo. Para abrir directamente la demostración local con los brazos elevados,
 añada `?demo=oseo-brazos-arriba` a la dirección de `index.html`.
 
-Todos los datos lineales están comprimidos e incrustados en el HTML, que
-funciona sin servidor ni red en Chrome/Edge modernos (DecompressionStream).
+Los datos lineales están comprimidos en archivos externos y se cargan por
+estudio y postura en Chrome/Edge modernos (DecompressionStream).
 El montaje de 16 vistas está en `assets/icrp145/montaje-brazos-arriba.jpg`.
 Las imágenes de referencia anteriores se conservan en `assets/` como material
 histórico; ya no alimentan el estudio óseo.

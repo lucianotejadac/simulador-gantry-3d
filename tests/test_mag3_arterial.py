@@ -18,10 +18,10 @@ assert A[0,t==15]>original[0,t==15]
 html=(root/'index.html').read_text(encoding='utf-8')
 data=json.loads(re.search(r'window.GANTRY_MAG3_DATA=(.*?);\n',html)[1])
 assert len(data['components'])==15
-cumulative=np.array(data['integral']);assert (np.diff(cumulative,axis=0)>=-1e-8).all()
+cumulative=np.array(json.loads((root/data['integralUrl']).read_text()));assert (np.diff(cumulative,axis=0)>=-1e-8).all()
 assert data['edges'][:31]==list(range(0,61,2))
 shape=(15,36,data['height'],data['width'])
-atlas=np.frombuffer(zlib.decompress(base64.b64decode(data['packed']['down'])),dtype='<u2').reshape(shape)
+atlas=np.frombuffer(zlib.decompress((root/data['urls']['down']).read_bytes()),dtype='<u2').reshape(shape)
 bases=atlas[:,18].astype(float)*np.array(data['scales']['down'])[:,None,None]
 assert all(b.sum()>0 for b in bases[10:])
 # First-pass aortic activity rises then falls; cannot be explained by diffuse background alone.

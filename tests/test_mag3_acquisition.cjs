@@ -1,9 +1,10 @@
+const assetFetch=require('./asset_fetch.cjs');
 /* Offline runtime tests: genuine compressed data and sampling engine, mocked UI.
  * Does not claim browser layout/CSS verification. */
 const fs=require('fs'),vm=require('vm'),assert=require('assert'),path=require('path');
 const root=path.resolve(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/\r\n/g,'\n');
 const packed=JSON.parse(html.match(/window.GANTRY_MAG3_DATA=(.*?);\n/)[1]);
-let now=0;const intervals=[],errors=[],elements=new Map(),events={};
+let now=0;const intervals=[],errors=[],elements=new Map(),events={},downloads=[];
 function element(id){return {id,classList:{toggle(){}},hidden:false,style:{},attributes:{},setAttribute(k,v){this.attributes[k]=v;},focus(){},addEventListener(){},insertAdjacentElement(where,e){elements.set(e.id,e);},attachShadow(){return this.shadowRoot=doc();},value:({gain:'1',frame:'current',speed:'1'})[id]||'',disabled:false,checked:false,width:512,height:512,
  options:id==='frame'?[{}]:[],textContent:'',children:[],getContext(){return {createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){},drawImage(){}};},
  append(e){this.children.push(e);this.options.push(e);elements.set(e.id,e);},click(){},toDataURL(){return 'data:image/png;base64,';}};}
@@ -12,7 +13,7 @@ const document=doc(),window={GANTRY_MAG3_DATA:packed,GANTRY_ICRP_DATA:{},GANTRY:
  addEventListener:(n,fn)=>events[n]=fn,dispatchEvent:e=>events[e.type]?.(),
  open(){throw Error('MAG3 must not open a browser window');}};
 const ctx=vm.createContext({window,document,Uint8Array,Uint16Array,Uint32Array,Float32Array,Float64Array,Uint8ClampedArray,
- Blob,Response,DecompressionStream,atob,URL,Event,performance:{now:()=>now},setTimeout,
+ Blob,Response,DecompressionStream,fetch:url=>{downloads.push(url);return assetFetch(url);},atob,URL,Event,performance:{now:()=>now},setTimeout,
  setInterval:fn=>intervals.push(fn),console:{error:e=>errors.push(e)}});
 vm.runInContext(fs.readFileSync(path.join(root,'scripts/icrp_live.js'),'utf8'),ctx);
 // Execute the production geometry bridge with deterministic neutral electronics.
@@ -30,7 +31,7 @@ window.GANTRY_LIVE={mag3Geometry,recenterFromCanvas,settings:acquisition,setStud
 vm.runInContext(fs.readFileSync(path.join(root,'scripts/mag3_acquisition.js'),'utf8'),ctx);
 function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return (s+.5)/4294967296;};}
 (async()=>{
- const api=window.GANTRY_MAG3;await api.loading;assert(api.ready);assert.equal(packed.duration,1200);assert.equal(packed.edges.length,85);
+ const api=window.GANTRY_MAG3;assert.equal(downloads.length,0);await api.loading;assert(api.ready);assert.equal(downloads.length,3);await api.load();assert.equal(downloads.length,3);assert.equal(packed.duration,1200);assert.equal(packed.edges.length,85);
  // Exercise production zoom/centering functions and geometry, including flips and letterboxing.
  const framing=vm.runInContext(`(()=>{
    const result=[];const initialMatrix=acquisition.matrix;

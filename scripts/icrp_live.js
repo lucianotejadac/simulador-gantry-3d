@@ -1,18 +1,24 @@
 /* Motor lineal y ventana de persistencia. Se incrusta en index.html al construir. */
 (function(){
   'use strict';
-  const poses={};
+  const poses={},pending={};
   async function decode(packed){
-    const bytes=Uint8Array.from(atob(packed.deflate),c=>c.charCodeAt(0));
+    let bytes;
+    if(packed.url){
+      const response=await fetch(packed.url);if(!response.ok)throw Error('No se pudo descargar la serie ('+response.status+')');
+      bytes=await response.arrayBuffer();
+    }else bytes=Uint8Array.from(atob(packed.deflate),c=>c.charCodeAt(0));
     const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
     const buffer=await new Response(stream).arrayBuffer();
     const values=new Uint16Array(buffer),length=packed.width*packed.height;
     if(values.length!==packed.angles.length*length)throw Error('Serie ICRP incompleta');
     return {...packed,deflate:undefined,frames:packed.angles.map((_,i)=>values.subarray(i*length,(i+1)*length))};
   }
-  const ready=Promise.all(Object.entries(window.GANTRY_ICRP_DATA).map(async([name,packed])=>{
-    poses[name]=await decode(packed);
-  }));
+  function load(name){
+    if(poses[name])return Promise.resolve(poses[name]);
+    if(!pending[name])pending[name]=decode(window.GANTRY_ICRP_DATA[name]).then(pose=>poses[name]=pose).catch(error=>{delete pending[name];throw error;});
+    return pending[name];
+  }
 
   function blur(input,w,h,sigma){
     if(sigma<.15)return input;
@@ -87,5 +93,5 @@
       ctx.putImageData(image,0,0);
     }
   }
-  window.GANTRY_ICRP={ready,poses,field,Persistence};
+  window.GANTRY_ICRP={load,get ready(){return Promise.all(Object.keys(window.GANTRY_ICRP_DATA).map(load));},poses,field,Persistence};
 })();

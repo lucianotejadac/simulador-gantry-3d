@@ -1,4 +1,4 @@
-"""Empaqueta ambas series lineales en el HTML autocontenido, sin fetch ni servidor.
+"""Genera series lineales comprimidas y sus referencias para carga por HTTP.
 
 python scripts/build_icrp_assets.py --source ../icrp145-oseo-360
 Requiere numpy. Las fuentes NPZ quedan fuera del repositorio.
@@ -60,3 +60,6 @@ else:
     html=html[:pos]+block+'\n'+html[pos:]
 page.write_text(html,encoding='utf-8')
 print('Embedded linear data and live engine')
+
+from externalize_assets import externalize
+externalize()

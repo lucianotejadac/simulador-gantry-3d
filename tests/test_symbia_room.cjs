@@ -1,3 +1,4 @@
+const assetFetch=require('./asset_fetch.cjs');
 // Real packed asset and loader, small Three/DOM substitutes (no browser required).
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
@@ -20,19 +21,19 @@ class Group {constructor(){this.children=[];this.visible=true;}add(v){this.child
 class Geometry {setAttribute(){}setIndex(){}computeBoundingSphere(){}}
 class Mesh {constructor(g,m){this.geometry=g;this.material=m;this.visible=true;}updateMatrix(){}}
 class Attribute {constructor(array){this.array=array;}}
-const elements={};
+const elements={},downloads=[];
 for(const id of ['roomToggle','roomOverview','roomStatus','roomPerformance','roomMetrics','symbiaRoomData']){
   elements[id]={textContent:'',dataset:{},addEventListener(type,cb){this[type]=cb;},setAttribute(k,v){this[k]=v;}};
 }
-elements.symbiaRoomData.textContent=asset.toString('base64');
+elements.symbiaRoomData.dataset.src=fs.readFileSync('index.html','utf8').match(/id="symbiaRoomData"[^>]*data-src="([^"]+)/)[1];
 const scene=new Group();scene.fog={original:true};
 const fog=scene.fog,plainFloor={visible:true},grid={visible:true};
 const camera={position:{x:-3.4,y:2.3,z:3.7,set(){}}};
-const context={window:{},document:{getElementById:id=>elements[id]},performance,console,atob,Uint8Array,Int8Array,Float32Array,Uint32Array,DataView,TextDecoder,Blob,Response,DecompressionStream};
+const context={window:{},document:{getElementById:id=>elements[id]},performance,console,atob,Uint8Array,Int8Array,Float32Array,Uint32Array,DataView,TextDecoder,Blob,Response,DecompressionStream,fetch:url=>{downloads.push(url);return assetFetch(url);}};
 vm.runInNewContext(fs.readFileSync('scripts/symbia_room.js','utf8'),context);
 const room=context.window.createSymbiaRoom({THREE:{Group,BufferGeometry:Geometry,BufferAttribute:Attribute,Mesh,MeshStandardMaterial:class{},DoubleSide:2},scene,camera,controls:{update(){},target:{set(){}}},renderer:{info:{render:{}}},floor:plainFloor,grid});
 (async()=>{
-  assert.equal(room.metadata,null);assert.equal(scene.children.length,0);
+  assert.equal(room.metadata,null);assert.equal(scene.children.length,0);assert.equal(downloads.length,0);
   await elements.roomToggle.click();
   assert.equal(room.enabled,true);assert.equal(scene.children.length,1);
   assert.equal(plainFloor.visible,false);assert.equal(scene.fog,null);
@@ -44,9 +45,9 @@ const room=context.window.createSymbiaRoom({THREE:{Group,BufferGeometry:Geometry
   await elements.roomToggle.click();
   assert.equal(room.enabled,false);assert.equal(root.visible,false);
   assert.equal(plainFloor.visible,true);assert.equal(grid.visible,true);assert.equal(scene.fog,fog);
-  await elements.roomToggle.click();assert.equal(scene.children.length,1);
+  await elements.roomToggle.click();assert.equal(scene.children.length,1);assert.equal(downloads.length,1);
   const html=fs.readFileSync('index.html','utf8');
   assert(html.includes(fs.readFileSync('scripts/symbia_room.js','utf8')));
-  assert(html.includes(asset.toString('base64')));
-  console.log('OK: lazy decoding, real asset bounds/indices, six batches, cutaway walls, no shadow casters, hide/restore/reuse, offline embedding.');
+  assert(fs.readFileSync(elements.symbiaRoomData.dataset.src).equals(asset));
+  console.log('OK: lazy decoding, real asset bounds/indices, six batches, cutaway walls, no shadow casters, hide/restore/reuse, external asset loading.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -100,3 +100,6 @@ if __name__ == "__main__":
                  build_arms_up_atlas())
     path.write_text(html, encoding="utf-8", newline="\n")
     print("Embedded 14 arms-down and 16 arms-up views; 360 wraps to 0.")
+
+    from externalize_assets import externalize
+    externalize()

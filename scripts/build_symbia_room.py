@@ -2,7 +2,7 @@
 
 Usage: python scripts/build_symbia_room.py --source /path/to/SymbiaRoom
 Textures are sampled into vertex colours, objects batched, normals quantized.
-Requires numpy and Pillow. The compressed asset is embedded for offline use.
+Requires numpy and Pillow. The compressed asset is published separately.
 """
 import argparse
 import base64
@@ -196,3 +196,6 @@ def embed():
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--source',type=Path);args=parser.parse_args()
     build(args.source) if args.source else embed()
+
+    from externalize_assets import externalize
+    externalize()

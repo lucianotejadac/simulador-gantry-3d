@@ -9,17 +9,16 @@ Run: python tests/test_table_distance.py
 """
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from serve_site import serve_site
 
 ROOT = Path(__file__).resolve().parents[1]
 
-with sync_playwright() as playwright:
+with serve_site() as site_url, sync_playwright() as playwright:
     browser = playwright.chromium.launch(channel="chrome", headless=True)
     page = browser.new_page(viewport={"width": 1440, "height": 1000})
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
-    page.route("https://**/*", lambda route: route.abort())
-    page.route("http://**/*", lambda route: route.abort())
-    page.goto((ROOT / "index.html").as_uri())
+    page.goto(site_url)
     page.wait_for_function("window.GANTRY_LIVE && window.GANTRY3D && GANTRY_LIVE.ready")
     page.select_option("#liveStudy", "bone")
     page.wait_for_function("GANTRY_LIVE.ready")
