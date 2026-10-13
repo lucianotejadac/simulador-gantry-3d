@@ -8,6 +8,10 @@ s=p.read_text(encoding='utf-8')
 
 css='''
 /* BONE_ACQ_CSS_BEGIN */
+#gantryWin>.ris-title{display:none}
+#gantryWorkspace{height:calc(100% - 28px)!important}
+#gantryRemote{width:190px!important}
+#gantryRemote #mando{max-width:155px}
 .bone-card-title,.bone-acq-card{display:none}
 .bone-acq-controls{display:flex;flex:none;gap:5px 9px;align-items:center;flex-wrap:wrap;padding:5px 9px;background:#14232d;color:#c5d7e5;font:10px var(--mono);border-bottom:1px solid #304251}
 .bone-acq-controls[hidden],#boneAcqSetup[hidden],.bone-acq-controls button[hidden]{display:none}
@@ -18,9 +22,6 @@ css='''
 #boneAcqSetup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-basis:100%;padding:4px 0}
 #boneAcqSetupError{color:#ffc282}#boneAcqStatus{color:#8ee6bd}
 #boneAcqPosition{color:#ffc282;flex-basis:100%}#boneAcqPosition:empty{display:none}
-.gantry-live.bone-acquisition.bone-whole-body{height:clamp(570px,76vh,790px)}
-#gantryWin div:has(> .gantry-live.bone-whole-body){overflow-y:auto;min-height:0}
-#gantryWin div:has(> .gantry-live.bone-whole-body)>#g3dStage{min-height:250px;flex-shrink:0}
 .bone-whole-body .bone-acq-card canvas{object-fit:contain;aspect-ratio:1/3.5;max-height:100%;width:100%}
 .bone-whole-body .live-card:not(.bone-acq-card) canvas{max-height:100%;width:100%;height:auto;object-fit:contain}
 .gantry-live.bone-acquisition{height:clamp(355px,48vh,430px)}
@@ -31,14 +32,40 @@ css='''
 .bone-acquisition .live-info{display:block;border-left:0;border-top:1px solid #273745;padding:3px 6px;font-size:9px;line-height:1.3}
 .bone-acquisition .live-info b{font-size:9px;display:inline;margin-right:5px}
 .bone-acq-card progress{height:5px;width:100%;accent-color:#53d990;align-self:center}
+@media(min-width:901px){
+ #gantryWorkArea:has(> .bone-whole-body){display:grid!important;grid-template-columns:minmax(0,28fr) minmax(0,28fr) minmax(0,22fr) minmax(0,22fr);grid-template-rows:minmax(180px,1fr) auto auto auto minmax(140px,25vh) auto;gap:6px!important;min-height:0;overflow:auto}
+ #gantryWorkArea:has(> .bone-whole-body)>#g3dStage{grid-column:1/3;grid-row:1;min-height:180px!important}
+ .gantry-live.bone-acquisition.bone-whole-body,.bone-whole-body .gantry-live-grid{display:contents}
+ .bone-whole-body .gantry-live-head{grid-column:1/3;grid-row:2}
+ .bone-whole-body .bone-signal-controls{grid-column:1/3;grid-row:3}
+ .bone-whole-body .bone-acq-controls{grid-column:1/3;grid-row:4}
+ .bone-whole-body .gantry-live-grid>.live-card:nth-child(1){grid-column:1;grid-row:5}
+ .bone-whole-body .gantry-live-grid>.live-card:nth-child(2){grid-column:2;grid-row:5}
+ .bone-whole-body .gantry-live-grid>.bone-acq-card:nth-child(3){grid-column:3;grid-row:1/7}
+ .bone-whole-body .gantry-live-grid>.bone-acq-card:nth-child(4){grid-column:4;grid-row:1/7}
+ #gantryWorkArea:has(> .bone-whole-body)>.gantry-live+div{grid-column:1/3;grid-row:6}
+ .bone-whole-body .bone-acq-card .bone-card-title{white-space:normal;line-height:1.3;margin:5px 6px}
+ .bone-whole-body .bone-acq-card{grid-template-rows:minmax(32px,auto) minmax(0,1fr) 5px 42px}
+ .bone-whole-body .bone-acq-card canvas{min-height:0;height:100%;width:100%}
+ .bone-whole-body .bone-acq-controls #boneAcqSaved{width:200px;max-width:100%}
+}
 @media(max-width:900px){
  .gantry-live.bone-acquisition{height:clamp(460px,66vh,580px)}
  .bone-acquisition .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
  .gantry-live.bone-acquisition.bone-whole-body{height:1040px}
+ #gantryWorkArea:has(> .bone-whole-body){overflow-y:auto;min-height:0}
+ #gantryWorkArea:has(> .bone-whole-body)>#g3dStage{min-height:220px;flex-shrink:0}
  .bone-whole-body .gantry-live-grid{grid-template-rows:260px minmax(0,1fr)}
 }
 /* BONE_ACQ_CSS_END */
 '''
+# Stable layout hooks; retain the original elements, canvas contexts and handlers.
+for old,new in [
+    ('<div style="display:flex;gap:14px;padding:12px;height:calc(100% - 52px);', '<div id="gantryWorkspace" style="display:flex;gap:14px;padding:12px;height:calc(100% - 52px);'),
+    ('<div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">', '<div id="gantryWorkArea" style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">'),
+    ('<div style="width:252px;flex:none;display:flex;flex-direction:column;gap:9px;overflow:auto">', '<div id="gantryRemote" style="width:252px;flex:none;display:flex;flex-direction:column;gap:9px;overflow:auto">'),
+]:
+    if old in s:s=s.replace(old,new,1)
 if '/* BONE_ACQ_CSS_BEGIN */' in s:
     s=re.sub(r'/\* BONE_ACQ_CSS_BEGIN \*/.*?/\* BONE_ACQ_CSS_END \*/',lambda _:css.strip(),s,flags=re.S)
 else:s=s.replace('</style>',css+'</style>',1)

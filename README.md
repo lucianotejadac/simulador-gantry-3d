@@ -93,7 +93,11 @@ y control de reloj: `node tests/test_bone_acquisition.cjs`.
 
 El selector **Tipo → Cuerpo entero** muestra las dos adquisiciones en formato
 rectangular, con toda la proyección del fantoma (incluidas manos elevadas y
-plantas de los pies). Los dos cuadros en vivo conservan el campo local del
+plantas de los pies). En escritorio, las dos imágenes adquiridas ocupan la
+franja derecha, desde la parte superior de la vista 3D hasta el borde inferior.
+El gantry, los controles y las dos vistas en vivo quedan a la izquierda. El mando
+es más pequeño y se elimina la barra de título azul, conservando el menú.
+Los dos cuadros en vivo conservan el campo local del
 detector para posicionar. Se habilita el inicio únicamente con **pies hacia
 adentro** tanto en la posición física como en la declarada, camilla en
 **Z 200 ±2 cm** y centrado original de imagen. La barra explica qué corregir.
