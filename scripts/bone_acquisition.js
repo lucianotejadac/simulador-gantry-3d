@@ -120,6 +120,8 @@
     if(!session&&!archive){
       el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones óseas…';
       if(force)canvases.forEach((canvas,j)=>{
+        canvas.width=window.GANTRY_LIVE.settings.matrix;canvas.height=wantWhole?Math.round(canvas.width*2.5):canvas.width;
+        canvas.style&&(canvas.style.aspectRatio=canvas.width+' / '+canvas.height);
         canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
         el('boneAcqTitle'+(j+1)).textContent='ADQUISICIÓN · DETECTOR '+(j+1);
         el('boneAcqInfo'+(j+1)).textContent='Esperando adquisición';el('boneAcqProgress'+(j+1)).value=0;
