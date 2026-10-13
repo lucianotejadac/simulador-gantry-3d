@@ -9,7 +9,7 @@
   }
   function validate(record){
     if(!record||record.version!==1||typeof record.id!=='string'||!Number.isFinite(record.createdAt)||
-      ![128,256].includes(record.n)||!['counts','time','scan'].includes(record.mode)||!Number.isFinite(record.target)||record.target<1||
+      ![128,256].includes(record.n)||!['counts','time','scan'].includes(record.mode)||!Number.isFinite(record.target)||(record.mode==='scan'?record.target<=0:record.target<1)||
       !Array.isArray(record.names)||record.names.length!==2||record.names.some(n=>typeof n!=='string'||!n.trim()||n.length>80)||
       !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
     const height=record.height??record.n,kind=record.kind??'static';

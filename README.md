@@ -91,24 +91,26 @@ Motor y empaquetado: `scripts/bone_acquisition.js` y
 `python scripts/embed_bone_acquisition.py`. Prueba numérica con datos ICRP
 y control de reloj: `node tests/test_bone_acquisition.cjs`.
 
-El selector **Tipo → Cuerpo entero** realiza un barrido secuencial de cráneo a
-pies sobre dos imágenes rectangulares. En escritorio, las imágenes ocupan la
+El selector **Tipo → Cuerpo entero** realiza un barrido secuencial desde la posición
+actual hacia los pies sobre dos imágenes rectangulares. En escritorio, las imágenes ocupan la
 franja derecha, desde la parte superior de la vista 3D hasta el borde inferior.
 El gantry, los controles y las dos vistas en vivo quedan a la izquierda. El mando
 es más pequeño y se elimina la barra de título azul, conservando el menú.
 Los dos cuadros en vivo conservan el campo local del
 detector para posicionar. Se habilita el inicio únicamente con **pies hacia
-adentro** tanto en la posición física como en la declarada, camilla en
-**Z 200 cm** (se admite desde 198 cm) y centrado original de imagen. La barra
-explica qué corregir antes de comenzar.
+adentro** tanto en la posición física como en la declarada y recorrido restante
+hacia los pies (Z mayor que 16 cm). No exige centrar en cráneo ni recentrar
+las imágenes: toma la posición actual sin mover antes la camilla.
 
 El único parámetro del barrido es la **velocidad de camilla en cm/min**
 (1–60; valor inicial 10). Se mantienen los nombres para identificar ambos
 detectores. Primero se acercan automáticamente los cabezales a 1 cm del tope
 geométrico seguro del simulador, con movimiento limitado a 8 cm/s. Después
-la camilla recorre desde cráneo hasta Z 16 cm. El recorrido 200→16 equivale a
+la camilla recorre desde su posición inicial hasta Z 16 cm. El recorrido 200→16 equivale a
 175 cm físicos del modelo, por lo que 10 cm/min requiere 17 min 30 s de
-movimiento, además del posicionamiento inicial de los cabezales. Los topes
+movimiento, además del posicionamiento inicial de los cabezales. Si comienza
+más abajo, recorre sólo la distancia restante; las zonas que ya quedaron fuera
+del detector no se adquieren retrospectivamente. Los topes
 se revisan antes de cada desplazamiento; si hace falta reajustar un detector,
 la camilla espera. El contorno de seguridad usa la envolvente conservadora
 actual del modelo 3D, no una medición clínica de superficie.

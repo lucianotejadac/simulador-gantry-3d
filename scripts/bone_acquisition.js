@@ -127,7 +127,7 @@
     const check=position(),wantWhole=kind()==='whole';
     const scanning=running&&session.mode==='scan';
     lockScan(scanning);
-    el('boneAcqPosition').textContent=scanning?'Barrido automático cráneo → pies · posición y ajustes bloqueados':wantWhole?check.reason:'';
+    el('boneAcqPosition').textContent=scanning?'Barrido desde posición inicial → pies · detectores automáticos':wantWhole?check.reason:'';
     for(const id of ['boneAcqCriterionWrap','boneAcqTargetWrap','boneAcqUnits'])el(id).hidden=wantWhole;
     el('boneAcqCriterion').disabled=el('boneAcqTarget').disabled=wantWhole;
     el('boneAcqVelocityWrap').hidden=!wantWhole;el('boneAcqVelocity').disabled=!wantWhole;

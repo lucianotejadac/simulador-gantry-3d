@@ -8,14 +8,15 @@ vm.runInContext(src,ctx);vm.runInContext(engine,ctx);
 const {eligibility,geometry,Scan,exposure,safeTargets,approach}=ctx.window.GANTRY_BONE_WHOLE;
 const good={tableZ:200},feet={headFirst:false};
 assert(eligibility(good,feet,feet).ok);
-assert(!eligibility({tableZ:184},feet,feet).ok);
+assert(eligibility({tableZ:184},feet,feet).ok);
 assert(!eligibility({tableZ:16},feet,feet).ok);
 assert(!eligibility({tableZ:NaN},feet,feet).ok);
 assert(!eligibility(good,{headFirst:true},feet).ok);
 assert(!eligibility(good,feet,{headFirst:true}).ok);
-assert(!eligibility(good,feet,feet,{1:{x:0,y:.1}}).ok);
+assert(eligibility(good,feet,feet,{1:{x:0,y:.1}}).ok);
 assert(eligibility({tableZ:198},feet,feet).ok);
-assert(!eligibility({tableZ:197.9},feet,feet).ok);
+assert(eligibility({tableZ:120},feet,feet).ok);
+assert(eligibility({tableZ:205},feet,feet).ok);
 assert.equal(exposure(10,0,20,5,20),10);
 assert.equal(exposure(50,0,20,5,20),0);
 assert.equal(approach(50,20,.1),49.2);
@@ -57,16 +58,27 @@ function rng(){let seed=123;return ()=>((seed=(Math.imul(seed,1664525)+101390422
   assert(Math.abs(slowCounts-2*fastCounts)<7*Math.sqrt(slowCounts+4*fastCounts),'half velocity approximately doubles counts');
   for(const h of scan.heads)assert.equal(h.total,h.counts.reduce((a,b)=>a+b,0));
   ctx.window.GANTRY_BONE_STORAGE.validate({...record,mode:'scan',target:175,heads:scan.heads,scan:{velocity:10,travel:175}});
+  // Starting over the torso must never acquire the head that has already passed.
+  const partial=new Scan(128,20,pose,120,rng());
+  assert.equal(partial.tableZ,120);assert(partial.fromRow>pose.headRow);
+  partial.step(fields,4000,10000);
+  assert(partial.finished);assert.equal(partial.tableZ,16);
+  assert(Math.abs(partial.heads[0].elapsed-(120-16)*175/184*3)<1e-8);
+  const pastRows=Math.floor((partial.fromRow-560/3/2)/pose.height*height);
+  assert(partial.heads.every(h=>h.counts.slice(0,pastRows*width).every(v=>v===0)));
+  assert(partial.heads.every(h=>h.total>0));
+  const short=new Scan(128,20,pose,16.5,rng());short.step(fields,4000,100);
+  ctx.window.GANTRY_BONE_STORAGE.validate({...record,mode:'scan',target:short.target,heads:short.heads,scan:{velocity:20,travel:short.travel}});
   console.log('Complete phantom:',pose.width,pose.height,'=>',width,height,'counts:',a.heads.map(h=>h.total));
  }
  // Production movement adapter: actual fields plus a conservative changing envelope.
- const W=ctx.window,G={tableZ:200,detDist1:50,detDist2:50,tableH:94,arms:'down',rot:0};
+ const W=ctx.window,G={tableZ:120,detDist1:50,detDist2:50,tableH:94,arms:'down',rot:0};
  const settings={matrix:128,zoom:1,centers:{1:{x:0,y:0},2:{x:0,y:0}},headFirst:false,decubitus:'supine',collimator:'LEHR',energyCenter:140,windowWidth:20};
  W.GANTRY={G,LIM:range,SCAN:{zTop:200},render(){}};W.GANTRY_PATIENT3D={headFirst:false};
  W.GANTRY3D={limits:g=>({d1:g.tableZ<100?35:20,d2:25}),surfaceGaps:()=>null};W.GANTRY_ICRP=linear.window.GANTRY_ICRP;
  W.GANTRY_LIVE={settings,setZoom:z=>settings.zoom=z,resetImageCenter(){},framePair(angle){const i=W.GANTRY_ICRP.poses.down.angles.indexOf(angle);return {lo:i,hi:i,mix:0};},distanceMetrics:()=>({blur:.2,contrast:1,countFactor:1,haloAlpha:0,haloBlur:0})};
  const auto=W.GANTRY_BONE_WHOLE.create(60);W.GANTRY_BONE_WHOLE.advance(auto,1000,.5);
- assert.equal(G.tableZ,200);assert.equal(auto.travel,0);assert.equal(G.detDist1,46);assert.equal(auto.heads[0].total,0);
+ assert.equal(G.tableZ,120);assert.equal(auto.startZ,120);assert.equal(auto.travel,0);assert.equal(G.detDist1,46);assert.equal(auto.heads[0].total,0);
  for(let steps=0;!auto.finished&&steps<500;steps++){
   W.GANTRY_BONE_WHOLE.advance(auto,1000,.5);
   const L=W.GANTRY3D.limits(G);assert(G.detDist1>=L.d1+1);assert(G.detDist2>=L.d2+1);

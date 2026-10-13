@@ -1,12 +1,12 @@
 /* Whole-body projection adapter: linear ICRP activity, native aspect ratio. */
 (function(){
   'use strict';
-  function eligibility(G,physical,declared,centers,scan={zTop:200}){
+  function eligibility(G,physical,declared){
     if(!physical||physical.headFirst!==false)return {ok:false,reason:'Coloca al paciente con los pies hacia adentro (Cambiar posición de paciente).'};
     if(declared?.headFirst!==false)return {ok:false,reason:'En Adquisición, declara Pies adentro / Cabeza afuera.'};
-    if(!Number.isFinite(G?.tableZ)||G.tableZ>scan.zTop||G.tableZ<scan.zTop-2)return {ok:false,reason:'Centra en cráneo: camilla Z '+scan.zTop+' cm (tolerancia 2 cm antes del tope).'};
-    if(centers&&Object.values(centers).some(c=>Math.abs(c.x)>0.02||Math.abs(c.y)>0.02))return {ok:false,reason:'Pulsa Centro original para centrar las imágenes en cráneo.'};
-    return {ok:true,reason:'Cráneo centrado · pies hacia adentro · listo para cuerpo entero'};
+    if(!Number.isFinite(G?.tableZ))return {ok:false,reason:'Posición de camilla no disponible.'};
+    if(G.tableZ<=16)return {ok:false,reason:'La camilla ya alcanzó el final del recorrido hacia los pies.'};
+    return {ok:true,reason:'Inicio en posición actual · detectores automáticos · pies hacia adentro'};
   }
   function geometry(pose,n){
     // 56 cm transverse coverage at the same physical pixel size in both axes.
@@ -22,14 +22,14 @@
   class Scan {
     constructor(n,velocity,pose,startZ=200,random=Math.random){
       if(![128,256].includes(n)||!Number.isFinite(velocity)||velocity<1||velocity>60)throw Error('Introduce una velocidad entre 1 y 60 cm/min.');
-      if(!Number.isFinite(startZ)||startZ<198||startZ>200)throw Error('Centra la camilla en cráneo antes de iniciar.');
+      if(!Number.isFinite(startZ)||startZ<=16)throw Error('No queda recorrido hacia los pies desde esta posición.');
       Object.assign(this,geometry(pose,n));
       this.n=n;this.kind='whole';this.mode='scan';this.velocity=velocity;this.startZ=startZ;this.endZ=16;
       this.target=(startZ-this.endZ)*175/184;this.travel=0;this.finished=false;this.phase='positioning';this.random=random;
       this.fromRow=pose.headRow+(200-startZ)/184*(pose.footRow-pose.headRow);this.toRow=pose.footRow;
       this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*this.height),total:0,elapsed:0,done:false}));
     }
-    get tableZ(){return this.startZ-(this.startZ-this.endZ)*this.travel/this.target;}
+    get tableZ(){return this.finished?this.endZ:this.startZ-(this.startZ-this.endZ)*this.travel/this.target;}
     get row(){return this.fromRow+(this.toRow-this.fromRow)*this.travel/this.target;}
     step(fields,rate,seconds){
       if(this.finished||!(seconds>0))return;
@@ -80,7 +80,6 @@
   function create(velocity){
     const status=position();if(!status.ok)throw Error(status.reason);
     const G=window.GANTRY.G;
-    if(G.tableZ>200)throw Error('Centra la camilla en Z 200 cm.');
     window.GANTRY_LIVE.setZoom(1);window.GANTRY_LIVE.resetImageCenter();
     const pose=window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'];
     const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ);
