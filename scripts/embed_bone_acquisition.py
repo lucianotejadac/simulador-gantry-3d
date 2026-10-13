@@ -83,10 +83,13 @@ if 'window.GANTRY_BONE_ACQ?.advance();' not in s:
     s=s.replace(a,a+"\n    if(acquisition.study==='bone' && window.GANTRY_BONE_ACQ?.active)acquisition.matrix=window.GANTRY_BONE_ACQ.matrix;",1)
     a='    return meta;\n  }'
     assert a in s
-    s=s.replace(a,"""    if(acquisition.study==='bone')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
+    s=s.replace(a,"""    if(acquisition.study==='bone')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
     return meta;
   }""",1)
 
+# Upgrade the compact live caption installed by the first packaging version.
+s=s.replace("+'<br>'+meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s · '+Math.round(meta.expectedRate)",
+            "+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate)")
 engine=(ROOT/'scripts/bone_acquisition.js').read_text(encoding='utf-8')
 block='<!-- BONE_ACQ_ENGINE_BEGIN -->\n<script>\n'+engine+'\n</script>\n<!-- BONE_ACQ_ENGINE_END -->'
 if '<!-- BONE_ACQ_ENGINE_BEGIN -->' in s:

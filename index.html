@@ -6167,7 +6167,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       'X por altura: '+(heightShiftPx>=0?'+':'')+heightShiftPx.toFixed(0)+' px<br>'+
       '<span class="'+(Math.abs(metrics.energy.centerOffset)<=1?'accent':'warn')+'">E '+
       metrics.energy.center.toFixed(0)+' keV · '+metrics.energy.width+'%</span>';
-    if(acquisition.study==='bone')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
+    if(acquisition.study==='bone')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
     return meta;
   }
 

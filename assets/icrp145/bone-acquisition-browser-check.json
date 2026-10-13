@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-13",
+  "browser": "Chrome",
+  "scenario": "Cintigrama óseo, brazos arriba, LEHR, 140 keV / 20%, matriz 256",
+  "four_panels_visible": true,
+  "inline_setup": true,
+  "time_goal_seconds": 5,
+  "time_result": [
+    {"detector": 1, "elapsed_seconds": 5, "counts": 3239},
+    {"detector": 2, "elapsed_seconds": 5, "counts": 2432}
+  ],
+  "count_goal_per_detector": 100000,
+  "fast_forward": 10,
+  "fast_forward_observation": [
+    {"detector": 1, "displayed_time": "0:20", "counts": 12752},
+    {"detector": 2, "displayed_time": "0:20", "counts": 9595}
+  ],
+  "instant_completion": [
+    {"detector": 1, "displayed_time": "2:37", "counts": 100000},
+    {"detector": 2, "displayed_time": "3:28", "counts": 100000}
+  ],
+  "live_persistence_continues": true,
+  "matrix_disabled_during_acquisition_and_restored_after": true
+}
