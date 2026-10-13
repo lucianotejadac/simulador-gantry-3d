@@ -13,6 +13,8 @@ css='''
 .bone-acq-controls[hidden],#boneAcqSetup[hidden],.bone-acq-controls button[hidden]{display:none}
 .bone-acq-controls label{display:flex;gap:5px;align-items:center}
 .bone-acq-controls input{width:100px;background:#0d151c;color:#d7e8f2;border:1px solid #42586b;padding:3px;font:inherit}
+#boneAcqSetup input[type=text]{width:150px}#boneAcqSaved{max-width:300px;width:260px}
+#boneAcqCacheStatus{color:#b7c9d9;font-size:9px}.bone-acquisition .bone-card-title{overflow:hidden;text-overflow:ellipsis}
 #boneAcqSetup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-basis:100%;padding:4px 0}
 #boneAcqSetupError{color:#ffc282}#boneAcqStatus{color:#8ee6bd}
 .gantry-live.bone-acquisition{height:clamp(355px,48vh,430px)}
@@ -40,8 +42,13 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
             <button id="boneAcqFinish" class="live-setting" type="button" hidden>Finalizar adquisición</button>
             <label>Avance rápido <select id="boneAcqSpeed" class="live-study" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></label>
             <button id="boneAcqInstant" class="live-setting" type="button" hidden title="Completa lo que falta usando la posición y ajustes actuales">Adquisición instantánea</button>
+            <button id="boneAcqSave" class="live-setting" type="button" disabled>Guardar adquisición</button>
+            <label>Guardadas <select id="boneAcqSaved" class="live-study" aria-label="Adquisiciones guardadas"><option value="current">Adquisición actual</option></select></label>
+            <span id="boneAcqCacheStatus" role="status" title="Se conserva en este navegador y sitio; borrar los datos del sitio elimina las adquisiciones guardadas."></span>
             <span id="boneAcqStatus" role="status">Preparando proyecciones óseas…</span>
             <form id="boneAcqSetup" hidden aria-label="Configurar adquisición ósea">
+              <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
+              <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label>Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label>Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
               <span id="boneAcqUnits">cuentas por detector</span>
@@ -65,7 +72,7 @@ else:
     cards=''
     for n in [1,2]:
         cards+=f'''            <div class="live-card bone-acq-card">
-              <h3 class="bone-card-title">ADQUISICIÓN · DETECTOR {n}</h3>
+              <h3 class="bone-card-title" id="boneAcqTitle{n}">ADQUISICIÓN · DETECTOR {n}</h3>
               <canvas id="boneAcqD{n}" width="256" height="256" aria-label="Adquisición ósea detector {n}"></canvas>
               <progress id="boneAcqProgress{n}" value="0" max="1" aria-label="Progreso adquisición detector {n}"></progress>
               <div class="live-info" id="boneAcqInfo{n}">Esperando adquisición</div>
@@ -90,7 +97,9 @@ if 'window.GANTRY_BONE_ACQ?.advance();' not in s:
 # Upgrade the compact live caption installed by the first packaging version.
 s=s.replace("+'<br>'+meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s · '+Math.round(meta.expectedRate)",
             "+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate)")
-engine=(ROOT/'scripts/bone_acquisition.js').read_text(encoding='utf-8')
+for n in [1,2]:
+    s=s.replace(f'<h3 class="bone-card-title">ADQUISICIÓN · DETECTOR {n}</h3>',f'<h3 class="bone-card-title" id="boneAcqTitle{n}">ADQUISICIÓN · DETECTOR {n}</h3>')
+engine=(ROOT/'scripts/bone_acquisition_store.js').read_text(encoding='utf-8')+'\n'+(ROOT/'scripts/bone_acquisition.js').read_text(encoding='utf-8')
 block='<!-- BONE_ACQ_ENGINE_BEGIN -->\n<script>\n'+engine+'\n</script>\n<!-- BONE_ACQ_ENGINE_END -->'
 if '<!-- BONE_ACQ_ENGINE_BEGIN -->' in s:
     s=re.sub(r'<!-- BONE_ACQ_ENGINE_BEGIN -->.*?<!-- BONE_ACQ_ENGINE_END -->',lambda _:block,s,flags=re.S)

@@ -53,6 +53,7 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linearContext);
  const window={GANTRY:{G:{}},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync('bone',[a,b],1000);}}};
  const ui=vm.createContext({window,document,performance:{now:()=>now},setInterval:fn=>intervals.push(fn),setTimeout});
  vm.runInContext(engine,ui);
+ el('boneAcqName1').value='Anterior';el('boneAcqName2').value='Posterior';
  el('boneAcqCriterion').value='time';el('boneAcqTarget').value='60';el('boneAcqSetup').onsubmit({preventDefault(){}});
  now=1000;intervals[0]();assert.equal(window.GANTRY_BONE_ACQ.state.heads[0].elapsed,1);
  el('boneAcqSpeed').value='10';el('boneAcqSpeed').onchange();now=2000;intervals[0]();assert.equal(window.GANTRY_BONE_ACQ.state.heads[0].elapsed,11);

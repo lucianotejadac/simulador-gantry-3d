@@ -91,6 +91,24 @@ Motor y empaquetado: `scripts/bone_acquisition.js` y
 `python scripts/embed_bone_acquisition.py`. Prueba numérica con datos ICRP
 y control de reloj: `node tests/test_bone_acquisition.cjs`.
 
+Al comenzar se solicita un **nombre para detector 1 y detector 2**. Los nombres
+aparecen sobre las imágenes adquiridas. **Guardar adquisición** conserva una
+copia de ambos mapas de cuentas, nombres, matriz, tiempos y ajustes en el
+almacenamiento local del navegador (IndexedDB). Puede guardarse una captura
+durante la adquisición o después de finalizar; continuar no altera esa copia.
+
+El menú **Guardadas** abre las adquisiciones anteriores en los dos cuadros de
+adquisición. Si hay una adquisición en curso, se pausa al abrir una guardada.
+Selecciona **Adquisición actual** para regresar y reanudar. Iniciar otra no
+elimina las guardadas; guarda la actual antes de reemplazarla si deseas
+conservarla. El menú se recupera al recargar la página en el mismo navegador
+y sitio. Borrar los datos del sitio elimina estas copias; no se sincronizan
+con GitHub ni con otros dispositivos.
+
+Prueba de copias independientes, nombres y recuperación de la interfaz:
+`node tests/test_bone_acquisition_saved.cjs`. La persistencia de IndexedDB
+se comprueba además guardando y recargando en Chrome.
+
 Seleccione **Cintigrama óseo** en ESTUDIO. El selector **Brazos: Arriba /
 Al costado** cambia simultáneamente el muñeco y las proyecciones de ambos
 cabezales. Cada postura contiene 80 vistas calculadas: cada 5° y las oblicuas

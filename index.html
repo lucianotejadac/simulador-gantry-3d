@@ -489,6 +489,8 @@
 .bone-acq-controls[hidden],#boneAcqSetup[hidden],.bone-acq-controls button[hidden]{display:none}
 .bone-acq-controls label{display:flex;gap:5px;align-items:center}
 .bone-acq-controls input{width:100px;background:#0d151c;color:#d7e8f2;border:1px solid #42586b;padding:3px;font:inherit}
+#boneAcqSetup input[type=text]{width:150px}#boneAcqSaved{max-width:300px;width:260px}
+#boneAcqCacheStatus{color:#b7c9d9;font-size:9px}.bone-acquisition .bone-card-title{overflow:hidden;text-overflow:ellipsis}
 #boneAcqSetup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-basis:100%;padding:4px 0}
 #boneAcqSetupError{color:#ffc282}#boneAcqStatus{color:#8ee6bd}
 .gantry-live.bone-acquisition{height:clamp(355px,48vh,430px)}
@@ -629,8 +631,13 @@
             <button id="boneAcqFinish" class="live-setting" type="button" hidden>Finalizar adquisición</button>
             <label>Avance rápido <select id="boneAcqSpeed" class="live-study" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></label>
             <button id="boneAcqInstant" class="live-setting" type="button" hidden title="Completa lo que falta usando la posición y ajustes actuales">Adquisición instantánea</button>
+            <button id="boneAcqSave" class="live-setting" type="button" disabled>Guardar adquisición</button>
+            <label>Guardadas <select id="boneAcqSaved" class="live-study" aria-label="Adquisiciones guardadas"><option value="current">Adquisición actual</option></select></label>
+            <span id="boneAcqCacheStatus" role="status" title="Se conserva en este navegador y sitio; borrar los datos del sitio elimina las adquisiciones guardadas."></span>
             <span id="boneAcqStatus" role="status">Preparando proyecciones óseas…</span>
             <form id="boneAcqSetup" hidden aria-label="Configurar adquisición ósea">
+              <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
+              <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label>Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label>Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
               <span id="boneAcqUnits">cuentas por detector</span>
@@ -651,13 +658,13 @@
               <div class="live-info" id="liveInfoD2"><b>DETECTOR 2</b>Esperando atlas...</div>
             </div>
             <div class="live-card bone-acq-card">
-              <h3 class="bone-card-title">ADQUISICIÓN · DETECTOR 1</h3>
+              <h3 class="bone-card-title" id="boneAcqTitle1">ADQUISICIÓN · DETECTOR 1</h3>
               <canvas id="boneAcqD1" width="256" height="256" aria-label="Adquisición ósea detector 1"></canvas>
               <progress id="boneAcqProgress1" value="0" max="1" aria-label="Progreso adquisición detector 1"></progress>
               <div class="live-info" id="boneAcqInfo1">Esperando adquisición</div>
             </div>
             <div class="live-card bone-acq-card">
-              <h3 class="bone-card-title">ADQUISICIÓN · DETECTOR 2</h3>
+              <h3 class="bone-card-title" id="boneAcqTitle2">ADQUISICIÓN · DETECTOR 2</h3>
               <canvas id="boneAcqD2" width="256" height="256" aria-label="Adquisición ósea detector 2"></canvas>
               <progress id="boneAcqProgress2" value="0" max="1" aria-label="Progreso adquisición detector 2"></progress>
               <div class="live-info" id="boneAcqInfo2">Esperando adquisición</div>
@@ -7373,6 +7380,67 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 <!-- MAG3_END -->
 <!-- BONE_ACQ_ENGINE_BEGIN -->
 <script>
+/* Local, origin-scoped snapshots. Counts and catalogue commit atomically. */
+(function(){
+  'use strict';
+  function snapshot(session,names,settings,now=Date.now(),id=crypto.randomUUID()){
+    return {version:1,id,createdAt:now,n:session.n,mode:session.mode,target:session.target,
+      finished:session.finished,names:names.slice(),settings:structuredClone(settings),
+      heads:session.heads.map(h=>({detector:h.detector,total:h.total,elapsed:h.elapsed,done:h.done,counts:h.counts.slice()}))};
+  }
+  function validate(record){
+    if(!record||record.version!==1||typeof record.id!=='string'||!Number.isFinite(record.createdAt)||
+      ![128,256].includes(record.n)||!['counts','time'].includes(record.mode)||!Number.isFinite(record.target)||record.target<1||
+      !Array.isArray(record.names)||record.names.length!==2||record.names.some(n=>typeof n!=='string'||!n.trim()||n.length>80)||
+      !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
+    record.heads.forEach((h,i)=>{
+      if(h.detector!==i+1||!(h.counts instanceof Uint32Array)||h.counts.length!==record.n*record.n||
+        !Number.isFinite(h.elapsed)||h.elapsed<0||!Number.isSafeInteger(h.total)||h.total<0||h.counts.reduce((a,b)=>a+b,0)!==h.total)
+        throw Error('Datos de cuentas incompletos');
+    });
+    return record;
+  }
+  function createStore(indexedDB){
+    let opening;
+    function open(){
+      if(!opening)opening=new Promise((resolve,reject)=>{
+        if(!indexedDB){reject(Error('Almacenamiento local no disponible'));return;}
+        const request=indexedDB.open('gantry-bone-acquisitions',1);
+        request.onupgradeneeded=()=>{
+          const db=request.result;
+          for(const name of ['records','catalog'])if(!db.objectStoreNames.contains(name))db.createObjectStore(name,{keyPath:'id'});
+        };
+        request.onerror=()=>reject(request.error);
+        request.onblocked=()=>reject(Error('Cierra las otras pestañas del simulador y vuelve a intentar'));
+        request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>{db.close();opening=null;};resolve(db);};
+      }).catch(error=>{opening=null;throw error;});
+      return opening;
+    }
+    async function transaction(stores,mode,work){
+      const db=await open();
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(stores,mode);let result;
+        tx.oncomplete=()=>resolve(result);tx.onabort=()=>reject(tx.error||Error('No se pudo guardar en este navegador'));
+        tx.onerror=()=>{};
+        try{work(tx,value=>{result=value;});}catch(error){tx.abort();reject(error);}
+      });
+    }
+    return {
+      async save(record){
+        validate(record);
+        const {heads,settings,...meta}=record;
+        return transaction(['records','catalog'],'readwrite',tx=>{
+          tx.objectStore('records').put(record);
+          tx.objectStore('catalog').put({...meta,totals:heads.map(h=>h.total)});
+        });
+      },
+      async list(){return transaction(['catalog'],'readonly',(tx,set)=>{const r=tx.objectStore('catalog').getAll();r.onsuccess=()=>set(r.result.sort((a,b)=>b.createdAt-a.createdAt));});},
+      async get(id){const record=await transaction(['records'],'readonly',(tx,set)=>{const r=tx.objectStore('records').get(id);r.onsuccess=()=>set(r.result);});return validate(record);}
+    };
+  }
+  window.GANTRY_BONE_STORAGE={snapshot,validate,createStore};
+})();
+
 /* Independent Poisson accumulation from linear detector fields, never screenshots. */
 (function(){
   'use strict';
@@ -7437,6 +7505,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   if(!bar)return;
   let session=null,fields=null,rate=4000,study='',clock=performance.now(),speed=1,paused=false,busy=false;
   let note='',lastPaint=0;
+  let names=['Detector 1','Detector 2'],archive=null,saving=false,loadingSaved=false,selection=0;
+  const storage=window.GANTRY_BONE_STORAGE;
+  const store=storage?.createStore(window.indexedDB);
   const canvases=[el('boneAcqD1'),el('boneAcqD2')];
   const buffers=canvases.map(()=>document.createElement('canvas'));
   const format=n=>n.toLocaleString('es-CL');
@@ -7445,9 +7516,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const dt=Math.max(0,(now-clock)/1000);clock=now;
     if(session&&!session.finished&&!paused&&!busy&&study==='bone'&&!document.hidden&&fields&&dt>0)session.step(fields,rate,dt*speed);
   }
-  function draw(h,j){
-    const buffer=buffers[j];if(buffer.width!==session.n)buffer.width=buffer.height=session.n;
-    const ctx=buffer.getContext('2d'),im=ctx.createImageData(session.n,session.n);
+  function draw(h,j,n){
+    const buffer=buffers[j];if(buffer.width!==n)buffer.width=buffer.height=n;
+    const ctx=buffer.getContext('2d'),im=ctx.createImageData(n,n);
     let peak=1;for(const v of h.counts)if(v>peak)peak=v;
     for(let i=0;i<h.counts.length;i++){
       const value=Math.round(255*Math.pow(h.counts[i]/peak,.72));
@@ -7459,22 +7530,32 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   function paint(force=false){
     const active=study==='bone',running=!!session&&!session.finished;
     el('gantryLive').classList.toggle('bone-acquisition',active);bar.hidden=!active;
-    el('boneAcqStart').disabled=running||!fields;
+    el('boneAcqStart').disabled=running||!fields||saving||loadingSaved;
     el('boneAcqPause').hidden=el('boneAcqFinish').hidden=el('boneAcqInstant').hidden=!running;
     el('boneAcqPause').textContent=paused?'Reanudar adquisición':'Pausar adquisición';
     for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])el(id).disabled=busy;
     el('boneAcqSpeed').disabled=!running||busy;
+    for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])if(archive||loadingSaved)el(id).disabled=true;
+    el('boneAcqSave').disabled=!store||!session||busy||saving||!!archive||loadingSaved;
+    el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
+    el('boneAcqSaved').disabled=busy||loadingSaved;
     el('liveMatrix128').disabled=el('liveMatrix256').disabled=active&&running;
-    if(!session){el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones óseas…';return;}
+    if(!session&&!archive){el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones óseas…';return;}
+    const shown=archive||session,shownNames=archive?archive.names:names;
+    if(!session)el('boneAcqStatus').textContent='Sin adquisición actual';
+    else {
     const state=busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':'Adquiriendo';
     el('boneAcqStatus').textContent=state+' · '+(session.mode==='counts'?format(session.target)+' cuentas por detector':time(session.target)+' por detector')+(note?' · '+note:'');
+    }
+    if(archive)el('boneAcqStatus').textContent='Viendo guardada · '+new Date(archive.createdAt).toLocaleString('es-CL')+(running?' · actual en pausa':'');
     if(!active)return;
     const now=performance.now();if(!force&&now-lastPaint<180)return;lastPaint=now;
-    session.heads.forEach((h,j)=>{
-      draw(h,j);
-      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(h.done?'Meta alcanzada':state);
-      el('boneAcqProgress'+(j+1)).max=session.target;
-      el('boneAcqProgress'+(j+1)).value=session.mode==='counts'?h.total:h.elapsed;
+    shown.heads.forEach((h,j)=>{
+      draw(h,j,shown.n);
+      const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j];title.title=title.textContent;
+      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada · M'+shown.n:h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo');
+      el('boneAcqProgress'+(j+1)).max=shown.target;
+      el('boneAcqProgress'+(j+1)).value=shown.mode==='counts'?h.total:h.elapsed;
     });
   }
   function sync(nextStudy,nextFields,nextRate){
@@ -7488,10 +7569,13 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     return {mode,target};
   }
   function start(){
-    if(!fields||busy||(session&&!session.finished))return;
+    if(!fields||busy||saving||loadingSaved||(session&&!session.finished))return;
+    const nextNames=[el('boneAcqName1').value.trim(),el('boneAcqName2').value.trim()];
+    if(nextNames.some(n=>!n||n.length>80)){el('boneAcqSetupError').textContent='Escribe un nombre para cada detector (máximo 80 caracteres).';return;}
     const {mode,target}=settings();
     try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
+    names=nextNames;archive=null;selection++;el('boneAcqSaved').value='current';
     clock=performance.now();speed=1;paused=false;note='';el('boneAcqSpeed').value='1';
     el('boneAcqSetup').hidden=true;el('boneAcqSetupError').textContent='';paint(true);
   }
@@ -7520,7 +7604,32 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
   el('boneAcqInstant').onclick=instant;
-  canvases.forEach((canvas,i)=>canvas.onclick=event=>window.GANTRY_LIVE.recenterFromCanvas(i+1,event));
+  async function refreshSaved(){
+    if(!store)return;
+    const records=await store.list(),menu=el('boneAcqSaved'),value=menu.value||'current';
+    menu.replaceChildren();const current=document.createElement('option');current.value='current';current.textContent='Adquisición actual';menu.append(current);
+    for(const item of records){const option=document.createElement('option');option.value=item.id;option.textContent=item.names.join(' / ')+' · '+new Date(item.createdAt).toLocaleString('es-CL');menu.append(option);}
+    menu.value=records.some(r=>r.id===value)?value:'current';
+  }
+  el('boneAcqSave').onclick=async()=>{
+    if(!session||archive||busy||saving||!store)return;
+    advance();
+    saving=true;el('boneAcqCacheStatus').textContent='Guardando en este navegador…';paint();
+    try{const record=storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G});await store.save(record);await refreshSaved();el('boneAcqCacheStatus').textContent='Adquisición guardada en este navegador';}
+    catch(error){el('boneAcqCacheStatus').textContent='No se pudo guardar: '+(error.name==='QuotaExceededError'?'almacenamiento lleno':error.message)+'. La adquisición actual se conserva.';}
+    finally{saving=false;paint();}
+  };
+  el('boneAcqSaved').onchange=async()=>{
+    const id=el('boneAcqSaved').value,token=++selection;
+    if(id==='current'){archive=null;paint(true);return;}
+    advance();if(session&&!session.finished)paused=true;
+    loadingSaved=true;paint();
+    try{const record=await store.get(id);if(token===selection){archive=record;el('boneAcqCacheStatus').textContent='Copia guardada; selecciona Adquisición actual para volver';}}
+    catch(error){el('boneAcqCacheStatus').textContent='No se pudo abrir: '+error.message;el('boneAcqSaved').value=archive?.id||'current';}
+    finally{loadingSaved=false;paint(true);}
+  };
+  refreshSaved().catch(error=>{el('boneAcqCacheStatus').textContent='Guardado local no disponible: '+error.message;});
+  canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive)window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();});
   window.GANTRY_BONE_ACQ={advance,sync,
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
