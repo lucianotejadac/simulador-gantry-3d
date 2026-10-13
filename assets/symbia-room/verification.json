@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-13",
+  "browser": "Chrome, user workstation, existing viewport",
+  "offline_tests": ["node tests/test_symbia_room.cjs", "node tests/test_mag3_acquisition.cjs"],
+  "manual_scenario": "MIBI arms up demo, same 3D camera, after initial scene and shader loading",
+  "without_room_observation": {"fps": 31.3, "scene_cpu_ms": 0.64, "draw_calls": 59, "triangles": 17402},
+  "with_room_observation": {"fps": 31.8, "scene_cpu_ms": 0.67, "draw_calls": 62, "triangles": 99194},
+  "limitations": "Short observations, not a controlled benchmark or a GPU-time measurement. First activation includes decompression, buffer upload and shader compilation and can briefly pause rendering. Other devices and acquisition workloads can differ.",
+  "mag3_manual": {
+    "injected_with_room": true,
+    "hidden_then_shown_during_acquisition": true,
+    "observations_seconds_counts": [[2,30],[30,2767],[59,6283]],
+    "paused_at_end_for_review": true,
+    "inline_acquisition_preserved": true
+  }
+}

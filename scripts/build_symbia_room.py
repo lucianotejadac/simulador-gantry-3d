@@ -187,7 +187,6 @@ def embed():
     if start in text:
         a=text.index(start);b=text.index(end,a)+len(end);text=text[:a]+block+text[b:]
     else:
-        text=text.replace('  /* ---------- sala ---------- */', '  /* ---------- sala ---------- */',1)
         anchor='<script>\n// Enlace de demostración:'
         assert anchor in text
         text=text.replace(anchor,block+'\n\n'+anchor,1)
