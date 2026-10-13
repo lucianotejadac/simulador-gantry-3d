@@ -66,6 +66,31 @@ Al empaquetar, `scripts/build_icrp_assets.py` también lee
 
 ## Cintigrama óseo · ICRP 145
 
+### Adquisición ósea de dos detectores
+
+En **Cintigrama óseo**, la barra presenta cuatro cuadros: **En vivo D1**,
+**En vivo D2**, **Adquisición D1** y **Adquisición D2**. Pulsa **Iniciar
+adquisición**, selecciona cuentas objetivo o tiempo (segundos) y **Comenzar**.
+Las cuentas objetivo son por detector: cada cabezal se detiene al llegar a
+su propia meta. El tiempo también se aplica a ambos detectores.
+
+La suma usa eventos nuevos de Poisson sobre los campos lineales del fantoma;
+no acumula capturas de la ventana de persistencia. **Avance rápido** ofrece
+1×, 10×, 30× y 60×, sin acelerar las imágenes en vivo. **Adquisición
+instantánea** completa el tiempo o las cuentas restantes con el campo y los
+ajustes del momento. Si no hay señal, no inventa cuentas para alcanzar la meta.
+
+Mover el equipo, cambiar el zoom, recentrar o ajustar la energía afecta sólo
+las cuentas nuevas. La matriz queda fijada durante la adquisición. Puedes
+pausar, reanudar o finalizar conservando el resultado; iniciar otra adquisición
+borra la suma anterior al pulsar Comenzar. Cambiar de estudio pausa la
+adquisición ósea; al regresar puedes reanudarla. Una pestaña oculta suspende
+su reloj. Congelar o limpiar la persistencia no modifica la suma adquirida.
+
+Motor y empaquetado: `scripts/bone_acquisition.js` y
+`python scripts/embed_bone_acquisition.py`. Prueba numérica con datos ICRP
+y control de reloj: `node tests/test_bone_acquisition.cjs`.
+
 Seleccione **Cintigrama óseo** en ESTUDIO. El selector **Brazos: Arriba /
 Al costado** cambia simultáneamente el muñeco y las proyecciones de ambos
 cabezales. Cada postura contiene 80 vistas calculadas: cada 5° y las oblicuas

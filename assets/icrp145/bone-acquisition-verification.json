@@ -1,0 +1,15 @@
+{
+  "result": "OK",
+  "poisson_mean_variance": true,
+  "exact_per_detector_targets": true,
+  "exact_time_stop": true,
+  "motion_retains_counts": true,
+  "empty_field_no_counts": true,
+  "chunked_instant_counts": true,
+  "real_icrp_expected_counts": true,
+  "fast_forward_pause_resume": true,
+  "study_switch_pauses": true,
+  "instant_time_and_counts": true,
+  "matrix_unlocks_on_completion": true,
+  "browser_layout": "Not exercised by this offline test"
+}

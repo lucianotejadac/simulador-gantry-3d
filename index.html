@@ -482,6 +482,28 @@
   ::-webkit-scrollbar-corner{background:#c0c0c0}
   /* ===== la ventana del gantry a pantalla completa (siempre) ===== */
   .riswin{border:0 !important;box-shadow:none !important}
+
+/* BONE_ACQ_CSS_BEGIN */
+.bone-card-title,.bone-acq-card{display:none}
+.bone-acq-controls{display:flex;flex:none;gap:5px 9px;align-items:center;flex-wrap:wrap;padding:5px 9px;background:#14232d;color:#c5d7e5;font:10px var(--mono);border-bottom:1px solid #304251}
+.bone-acq-controls[hidden],#boneAcqSetup[hidden],.bone-acq-controls button[hidden]{display:none}
+.bone-acq-controls label{display:flex;gap:5px;align-items:center}
+.bone-acq-controls input{width:100px;background:#0d151c;color:#d7e8f2;border:1px solid #42586b;padding:3px;font:inherit}
+#boneAcqSetup{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-basis:100%;padding:4px 0}
+#boneAcqSetupError{color:#ffc282}#boneAcqStatus{color:#8ee6bd}
+.gantry-live.bone-acquisition{height:clamp(355px,48vh,430px)}
+.bone-acquisition .gantry-live-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+.bone-acquisition .live-card{grid-template-columns:1fr;grid-template-rows:18px minmax(0,1fr) 35px}
+.bone-acquisition .bone-acq-card{display:grid;grid-template-rows:18px minmax(0,1fr) 5px 30px}
+.bone-acquisition .bone-card-title{display:block;font:700 10px var(--mono);color:#87dcc1;margin:3px 6px;white-space:nowrap}
+.bone-acquisition .live-info{display:block;border-left:0;border-top:1px solid #273745;padding:3px 6px;font-size:9px;line-height:1.3}
+.bone-acquisition .live-info b{font-size:9px;display:inline;margin-right:5px}
+.bone-acq-card progress{height:5px;width:100%;accent-color:#53d990;align-self:center}
+@media(max-width:900px){
+ .gantry-live.bone-acquisition{height:clamp(460px,66vh,580px)}
+ .bone-acquisition .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr))}
+}
+/* BONE_ACQ_CSS_END */
 </style>
 </head>
 <body>
@@ -600,14 +622,45 @@
             <button id="boneClear" type="button" class="live-setting">Limpiar</button>
             <span id="boneSignalStatus" role="status">ICRP 145 · captación simulada</span>
           </div>
+<!-- BONE_ACQ_UI_BEGIN -->
+          <div id="boneAcqControls" class="bone-acq-controls" hidden aria-label="Adquisición ósea">
+            <button id="boneAcqStart" class="live-setting" type="button">Iniciar adquisición</button>
+            <button id="boneAcqPause" class="live-setting" type="button" hidden>Pausar adquisición</button>
+            <button id="boneAcqFinish" class="live-setting" type="button" hidden>Finalizar adquisición</button>
+            <label>Avance rápido <select id="boneAcqSpeed" class="live-study" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></label>
+            <button id="boneAcqInstant" class="live-setting" type="button" hidden title="Completa lo que falta usando la posición y ajustes actuales">Adquisición instantánea</button>
+            <span id="boneAcqStatus" role="status">Preparando proyecciones óseas…</span>
+            <form id="boneAcqSetup" hidden aria-label="Configurar adquisición ósea">
+              <label>Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
+              <label>Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
+              <span id="boneAcqUnits">cuentas por detector</span>
+              <button class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
+              <span id="boneAcqSetupError" role="alert"></span>
+            </form>
+          </div>
+          <!-- BONE_ACQ_UI_END -->
           <div class="gantry-live-grid">
             <div class="live-card">
+              <h3 class="bone-card-title">EN VIVO · DETECTOR 1</h3>
               <canvas id="liveD1" width="256" height="256" aria-label="Proyeccion en vivo del detector 1"></canvas>
               <div class="live-info" id="liveInfoD1"><b>DETECTOR 1</b>Esperando atlas...</div>
             </div>
             <div class="live-card">
+              <h3 class="bone-card-title">EN VIVO · DETECTOR 2</h3>
               <canvas id="liveD2" width="256" height="256" aria-label="Proyeccion en vivo del detector 2"></canvas>
               <div class="live-info" id="liveInfoD2"><b>DETECTOR 2</b>Esperando atlas...</div>
+            </div>
+            <div class="live-card bone-acq-card">
+              <h3 class="bone-card-title">ADQUISICIÓN · DETECTOR 1</h3>
+              <canvas id="boneAcqD1" width="256" height="256" aria-label="Adquisición ósea detector 1"></canvas>
+              <progress id="boneAcqProgress1" value="0" max="1" aria-label="Progreso adquisición detector 1"></progress>
+              <div class="live-info" id="boneAcqInfo1">Esperando adquisición</div>
+            </div>
+            <div class="live-card bone-acq-card">
+              <h3 class="bone-card-title">ADQUISICIÓN · DETECTOR 2</h3>
+              <canvas id="boneAcqD2" width="256" height="256" aria-label="Adquisición ósea detector 2"></canvas>
+              <progress id="boneAcqProgress2" value="0" max="1" aria-label="Progreso adquisición detector 2"></progress>
+              <div class="live-info" id="boneAcqInfo2">Esperando adquisición</div>
             </div>
           </div>
         </section>
@@ -6114,11 +6167,13 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       'X por altura: '+(heightShiftPx>=0?'+':'')+heightShiftPx.toFixed(0)+' px<br>'+
       '<span class="'+(Math.abs(metrics.energy.centerOffset)<=1?'accent':'warn')+'">E '+
       metrics.energy.center.toFixed(0)+' keV · '+metrics.energy.width+'%</span>';
+    if(acquisition.study==='bone')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
     return meta;
   }
 
   function update(G){
     if(!G) return;
+    window.GANTRY_BONE_ACQ?.advance();
     if(window.GANTRY_MAG3)window.GANTRY_MAG3.stateChanged(G);
     // Conservar estela al mover gantry/camilla; limpiar al cambiar pose,
     // presentación o configuración de adquisición para no mezclar matrices.
@@ -6143,6 +6198,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
         '% · Zoom '+acquisition.zoom+'x · matriz '+acquisition.matrix;
       panel.classList.add('ready');
     }
+    window.GANTRY_BONE_ACQ?.sync(acquisition.study,targets.map(t=>ready?t.linearField:null),boneSignal.rate);
   }
 
   function syncControls(){
@@ -6181,6 +6237,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   }
 
   function setMatrix(matrix){
+    if(acquisition.study==='bone' && window.GANTRY_BONE_ACQ?.active)return;
     acquisition.matrix=matrix===128 ? 128 : 256;
     syncControls();
     update(lastState || (window.GANTRY && window.GANTRY.G));
@@ -6194,6 +6251,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
 
   function setStudy(study){
     acquisition.study=studies[study] ? study : 'thyroid';
+    if(acquisition.study==='bone' && window.GANTRY_BONE_ACQ?.active)acquisition.matrix=window.GANTRY_BONE_ACQ.matrix;
     const selected=activeStudy();
     if(acquisition.study==='mibi' && window.GANTRY){
       window.GANTRY.G.arms='up';
@@ -7313,5 +7371,165 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 
 </script>
 <!-- MAG3_END -->
+<!-- BONE_ACQ_ENGINE_BEGIN -->
+<script>
+/* Independent Poisson accumulation from linear detector fields, never screenshots. */
+(function(){
+  'use strict';
+  const logFactorial=[0];
+  for(let k=1;k<256;k++)logFactorial[k]=logFactorial[k-1]+Math.log(k);
+  function logFact(k){
+    if(k<256)return logFactorial[k];
+    const x=k+1;return (x-.5)*Math.log(x)-x+.9189385332046727+1/(12*x)-1/(360*x*x*x);
+  }
+  function poisson(mu,random){
+    if(!(mu>0))return 0;
+    if(mu<30){let p=1,k=0,limit=Math.exp(-mu);do{k++;p*=1-random();}while(p>limit);return k-1;}
+    // PTRS transformed rejection: constant expected cost at high count rates.
+    const b=.931+2.53*Math.sqrt(mu),a=-.059+.02483*b,alpha=1.1239+1.1328/(b-3.4),vr=.9277-3.6224/(b-2);
+    for(;;){
+      const u=random()-.5,v=random(),us=.5-Math.abs(u);
+      if(us===0)continue;
+      const k=Math.floor((2*a/us+b)*u+mu+.43);
+      if(k<0)continue;
+      if(us>=.07&&v<=vr)return k;
+      if(us<.013&&v>us)continue;
+      if(Math.log(v*alpha/(a/(us*us)+b))<=-mu+k*Math.log(mu)-logFact(k))return k;
+    }
+  }
+  function pixel(field,random){
+    const value=random()*field.sum;let lo=0,hi=field.cdf.length-1;
+    while(lo<hi){const mid=(lo+hi)>>>1;if(field.cdf[mid]>value)hi=mid;else lo=mid+1;}
+    return lo;
+  }
+  class Acquisition {
+    constructor(n,mode,target,random=Math.random){
+      if(![128,256].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?10000000:3600)||!Number.isInteger(target))throw Error('Objetivo no válido');
+      this.n=n;this.mode=mode;this.target=target;this.random=random;this.finished=false;
+      this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*n),total:0,elapsed:0,done:false}));
+    }
+    step(fields,rate,seconds,eventLimit=Infinity){
+      for(let j=0;j<2;j++){
+        const h=this.heads[j],f=fields[j];if(h.done)continue;
+        if(!f||f.values.length!==h.counts.length)throw Error('Campo o matriz incompatible');
+        const cps=f.sum*rate/2000000;
+        if(this.mode==='time'){
+          const dt=Math.min(seconds,this.target-h.elapsed),factor=rate*dt/2000000;
+          for(let i=0;i<h.counts.length;i++){const v=poisson(f.values[i]*factor,this.random);h.counts[i]+=v;h.total+=v;}
+          h.elapsed+=dt;h.done=h.elapsed>=this.target-1e-9;
+        }else if(cps>0){
+          let t=0,events=0;
+          for(;;){
+            const next=t-Math.log(Math.max(Number.MIN_VALUE,1-this.random()))/cps;
+            if(next>seconds){t=seconds;break;}
+            t=next;h.counts[pixel(f,this.random)]++;h.total++;events++;
+            if(h.total>=this.target){h.done=true;break;}
+            if(events>=eventLimit)break;
+          }
+          h.elapsed+=t;
+        }else if(Number.isFinite(seconds))h.elapsed+=seconds;
+      }
+      this.finished=this.heads.every(h=>h.done);
+    }
+  }
+  window.GANTRY_BONE_CORE={Acquisition,poisson};
+  const el=id=>document.getElementById(id),bar=el('boneAcqControls');
+  if(!bar)return;
+  let session=null,fields=null,rate=4000,study='',clock=performance.now(),speed=1,paused=false,busy=false;
+  let note='',lastPaint=0;
+  const canvases=[el('boneAcqD1'),el('boneAcqD2')];
+  const buffers=canvases.map(()=>document.createElement('canvas'));
+  const format=n=>n.toLocaleString('es-CL');
+  const time=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
+  function advance(now=performance.now()){
+    const dt=Math.max(0,(now-clock)/1000);clock=now;
+    if(session&&!session.finished&&!paused&&!busy&&study==='bone'&&!document.hidden&&fields&&dt>0)session.step(fields,rate,dt*speed);
+  }
+  function draw(h,j){
+    const buffer=buffers[j];if(buffer.width!==session.n)buffer.width=buffer.height=session.n;
+    const ctx=buffer.getContext('2d'),im=ctx.createImageData(session.n,session.n);
+    let peak=1;for(const v of h.counts)if(v>peak)peak=v;
+    for(let i=0;i<h.counts.length;i++){
+      const value=Math.round(255*Math.pow(h.counts[i]/peak,.72));
+      im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=value;im.data[i*4+3]=255;
+    }
+    ctx.putImageData(im,0,0);const out=canvases[j].getContext('2d');out.imageSmoothingEnabled=false;
+    out.drawImage(buffer,0,0,canvases[j].width,canvases[j].height);
+  }
+  function paint(force=false){
+    const active=study==='bone',running=!!session&&!session.finished;
+    el('gantryLive').classList.toggle('bone-acquisition',active);bar.hidden=!active;
+    el('boneAcqStart').disabled=running||!fields;
+    el('boneAcqPause').hidden=el('boneAcqFinish').hidden=el('boneAcqInstant').hidden=!running;
+    el('boneAcqPause').textContent=paused?'Reanudar adquisición':'Pausar adquisición';
+    for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])el(id).disabled=busy;
+    el('boneAcqSpeed').disabled=!running||busy;
+    el('liveMatrix128').disabled=el('liveMatrix256').disabled=active&&running;
+    if(!session){el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones óseas…';return;}
+    const state=busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':'Adquiriendo';
+    el('boneAcqStatus').textContent=state+' · '+(session.mode==='counts'?format(session.target)+' cuentas por detector':time(session.target)+' por detector')+(note?' · '+note:'');
+    if(!active)return;
+    const now=performance.now();if(!force&&now-lastPaint<180)return;lastPaint=now;
+    session.heads.forEach((h,j)=>{
+      draw(h,j);
+      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(h.done?'Meta alcanzada':state);
+      el('boneAcqProgress'+(j+1)).max=session.target;
+      el('boneAcqProgress'+(j+1)).value=session.mode==='counts'?h.total:h.elapsed;
+    });
+  }
+  function sync(nextStudy,nextFields,nextRate){
+    if(busy)return;
+    if(study==='bone'&&nextStudy!=='bone'&&session&&!session.finished){paused=true;note='Cambio de estudio; reanuda al volver a óseo';}
+    study=nextStudy;fields=nextStudy==='bone'&&nextFields.every(Boolean)?nextFields:null;rate=nextRate;
+    paint();
+  }
+  function settings(){
+    const mode=el('boneAcqCriterion').value,target=Number(el('boneAcqTarget').value);
+    return {mode,target};
+  }
+  function start(){
+    if(!fields||busy||(session&&!session.finished))return;
+    const {mode,target}=settings();
+    try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
+    catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
+    clock=performance.now();speed=1;paused=false;note='';el('boneAcqSpeed').value='1';
+    el('boneAcqSetup').hidden=true;el('boneAcqSetupError').textContent='';paint(true);
+  }
+  async function instant(){
+    if(!session||session.finished||busy||!fields)return;
+    advance();const snapshot=fields,currentRate=rate;
+    if(session.mode==='counts'&&session.heads.some((h,i)=>!h.done&&!(snapshot[i].sum*currentRate>0))){
+      note='Sin señal en un detector: mueve el campo o ajusta la energía';paint(true);return;
+    }
+    busy=true;note='Posición actual';paint(true);
+    try{
+      await new Promise(resolve=>setTimeout(resolve,0));
+      if(session.mode==='time')session.step(snapshot,currentRate,session.target);
+      else while(!session.finished){session.step(snapshot,currentRate,Infinity,20000);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+    }finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
+  }
+  el('boneAcqStart').onclick=()=>{el('boneAcqSetup').hidden=false;el('boneAcqTarget').focus();};
+  el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
+  el('boneAcqSetup').onsubmit=event=>{event.preventDefault();start();};
+  el('boneAcqCriterion').onchange=()=>{
+    const counts=el('boneAcqCriterion').value==='counts';
+    el('boneAcqTarget').value=counts?'100000':'60';el('boneAcqTarget').max=counts?'10000000':'3600';
+    el('boneAcqUnits').textContent=counts?'cuentas por detector':'segundos por detector';el('boneAcqSetupError').textContent='';
+  };
+  el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
+  el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';paint(true);};
+  el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
+  el('boneAcqInstant').onclick=instant;
+  canvases.forEach((canvas,i)=>canvas.onclick=event=>window.GANTRY_LIVE.recenterFromCanvas(i+1,event));
+  document.addEventListener('visibilitychange',()=>{clock=performance.now();});
+  window.GANTRY_BONE_ACQ={advance,sync,
+    get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
+    get state(){return session&&{mode:session.mode,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
+  setInterval(()=>{advance();paint();},100);
+  window.GANTRY_LIVE?.update(window.GANTRY.G);
+})();
+
+</script>
+<!-- BONE_ACQ_ENGINE_END -->
 </body>
 </html>
