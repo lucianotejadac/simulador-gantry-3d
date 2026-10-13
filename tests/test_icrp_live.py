@@ -69,7 +69,7 @@ with serve_site() as site_url, sync_playwright() as pw:
       if(Math.abs(a-b)/a>.03)throw Error('Matrix changes physical count rate');
     }''')
     page.select_option('#liveStudy','thyroid')
-    assert not page.locator('#boneSignalControls').is_visible()
+    assert page.locator('#boneSignalControls').is_visible()
     page.select_option('#liveStudy','bone')
     assert page.locator('#boneSignalControls').is_visible()
     assert not errors,errors

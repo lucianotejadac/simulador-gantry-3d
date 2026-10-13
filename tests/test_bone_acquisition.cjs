@@ -47,7 +47,7 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linearContext);
 
  // Drive the actual UI controller with a clock and a minimal DOM substitute.
  let now=0;const els=new Map(),intervals=[];
- const context2d={createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){},drawImage(){}};
+ const context2d={createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){},drawImage(){},clearRect(){}};
  function element(id){return {id,hidden:false,disabled:false,value:'',textContent:'',classList:{toggle(){}},width:256,height:256,getContext:()=>context2d,focus(){}};}
  const document={hidden:false,getElementById(id){if(!els.has(id))els.set(id,element(id));return els.get(id);},createElement:()=>element('canvas'),addEventListener(){}};
  const el=id=>document.getElementById(id);
@@ -60,8 +60,8 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linearContext);
  el('boneAcqSpeed').value='10';el('boneAcqSpeed').onchange();now=2000;intervals[0]();assert.equal(window.GANTRY_BONE_ACQ.state.heads[0].elapsed,11);
  el('boneAcqPause').onclick();now=4000;intervals[0]();assert.equal(window.GANTRY_BONE_ACQ.state.heads[0].elapsed,11);
  el('boneAcqPause').onclick();now=4500;intervals[0]();assert.equal(window.GANTRY_BONE_ACQ.state.heads[0].elapsed,16);
- window.GANTRY_BONE_ACQ.sync('mibi',[a,b],1000);now=5500;intervals[0]();assert(window.GANTRY_BONE_ACQ.state.paused);
- window.GANTRY_BONE_ACQ.sync('bone',[a,b],1000);await el('boneAcqInstant').onclick();
+ window.GANTRY_BONE_ACQ.sync('mibi',[a,b],1000);now=5500;intervals[0]();assert.equal(window.GANTRY_BONE_ACQ.state,null);
+ window.GANTRY_BONE_ACQ.sync('bone',[a,b],1000);assert(window.GANTRY_BONE_ACQ.state.paused);assert.equal(window.GANTRY_BONE_ACQ.state.heads[0].elapsed,16);await el('boneAcqInstant').onclick();
  assert(window.GANTRY_BONE_ACQ.state.finished);assert(window.GANTRY_BONE_ACQ.state.heads.every(h=>h.elapsed===60));
  assert.equal(el('liveMatrix128').disabled,false);
  el('boneAcqCriterion').value='counts';el('boneAcqTarget').value='100';el('boneAcqSetup').onsubmit({preventDefault(){}});

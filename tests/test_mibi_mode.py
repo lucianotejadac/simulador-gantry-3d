@@ -64,7 +64,7 @@ with serve_site() as site_url, sync_playwright() as pw:
     assert page.evaluate("GANTRY.G.arms==='up'")
     assert mibi==page.locator('#liveD1').evaluate('(c)=>c.toDataURL()'),'Pose or field not restored'
     page.select_option('#liveStudy','thyroid')
-    assert not page.locator('#boneSignalControls').is_visible()
+    assert page.locator('#boneSignalControls').is_visible()
     page.select_option('#liveStudy','mibi')
     page.evaluate('GANTRY.G.rot=0;GANTRY.render()')
     page.locator('#gantryLive').screenshot(path=str(ROOT/'assets/icrp145/mibi-integrado.png'))

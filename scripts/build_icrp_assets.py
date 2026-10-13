@@ -12,7 +12,10 @@ parser=argparse.ArgumentParser()
 parser.add_argument('--source',type=Path,default=ROOT.parent/'icrp145-oseo-360')
 parser.add_argument('--mibi-source',type=Path,default=ROOT.parent/'icrp145-multitrazador-ap-pa/mibi-360-brazos-arriba')
 args=parser.parse_args()
-result={};provenance={}
+existing=(ROOT/'index.html').read_text(encoding='utf-8')
+match=re.search(r'window.GANTRY_ICRP_DATA=(.*?);\n',existing)
+result=json.loads(match[1]) if match else {}
+provenance={}
 for name,folder in [('down',args.source),('up',args.source/'brazos-arriba')]:
     path=folder/'proyecciones_lineales.npz'
     data=np.load(path);frames=data['cuentas_esperadas']

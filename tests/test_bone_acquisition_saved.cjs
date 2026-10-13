@@ -13,7 +13,7 @@ function environment(whole=false){
  const field={values,cdf,sum:2000000};
  const G={rot:0,tableZ:184};
  const wholeValues=new Float32Array(128*320),wholeCdf=new Float64Array(wholeValues.length);wholeValues[5]=2000000;wholeCdf.fill(2000000,5);
- const window={GANTRY:{G},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync('bone',[field,field],1000);}},GANTRY_BONE_WHOLE:{position:()=>({ok:G.tableZ>16,reason:'Centra en cráneo'}),fields:()=>({height:320,fields:[1,2].map(()=>({values:wholeValues,cdf:wholeCdf,sum:2000000}))})}};
+ const window={GANTRY:{G},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync(window.GANTRY_LIVE.settings.study||'bone',[field,field],1000);}},GANTRY_BONE_WHOLE:{position:()=>({ok:G.tableZ>16,reason:'Centra en cráneo'}),fields:()=>({height:320,fields:[1,2].map(()=>({values:wholeValues,cdf:wholeCdf,sum:2000000}))})}};
  const context=vm.createContext({window,document,performance:{now:()=>now},crypto:webcrypto,structuredClone,Uint32Array,setInterval(){},setTimeout});
  vm.runInContext(fs.readFileSync('scripts/bone_whole_body.js','utf8'),context);
  const {Scan}=window.GANTRY_BONE_WHOLE;
@@ -65,5 +65,22 @@ function environment(whole=false){
  assert.equal(c.el('boneAcqD1').height,128);
  c.el('boneAcqSaved').value=wholeRecord.id;await c.el('boneAcqSaved').onchange();assert.equal(c.el('boneAcqD1').height,320);
  c.el('boneAcqSaved').value='current';await c.el('boneAcqSaved').onchange();assert.equal(c.el('boneAcqD1').height,128);
+ const d=environment();
+ for(const study of ['mibi','thyroid','exploration','parathyroid']){
+  d.window.GANTRY_LIVE.settings.study=study;d.window.GANTRY_LIVE.update();
+  assert.equal(d.window.GANTRY_BONE_ACQ.state,null);
+  d.submit(12,study+' D1',study+' D2');
+  assert.equal(d.window.GANTRY_BONE_ACQ.state.study,study);
+  assert.equal(d.window.GANTRY_BONE_ACQ.state.kind,'static');
+  await d.el('boneAcqInstant').onclick();assert(d.window.GANTRY_BONE_ACQ.state.heads.every(h=>h.total===12));
+  await d.el('boneAcqSave').onclick();assert.equal([...database.values()].at(-1).study,study);
+ }
+ d.window.GANTRY_LIVE.settings.study='mibi';d.window.GANTRY_LIVE.update();
+ assert(d.window.GANTRY_BONE_ACQ.state.heads.every(h=>h.total===12));
+ d.submit(10000,'MIBI next D1','MIBI next D2');d.tick(1);const beforeSwitch=d.window.GANTRY_BONE_ACQ.state.heads[0].total;
+ d.window.GANTRY_LIVE.settings.study='thyroid';d.window.GANTRY_LIVE.update();d.tick(20);
+ assert.equal(d.window.GANTRY_BONE_ACQ.state.heads[0].total,12);
+ d.window.GANTRY_LIVE.settings.study='mibi';d.window.GANTRY_LIVE.update();
+ assert(d.window.GANTRY_BONE_ACQ.state.paused);assert.equal(d.window.GANTRY_BONE_ACQ.state.heads[0].total,beforeSwitch);
  console.log('OK: names required, literal safe labels, immutable snapshots, prior image browsing without replacing current data, pause for review, quota failure preserves current, catalogue after new controller, corrupt-record rejection. IndexedDB reload checked separately in Chrome.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

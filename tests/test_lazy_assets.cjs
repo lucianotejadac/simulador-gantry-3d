@@ -20,7 +20,7 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),ctx);
  const {execFileSync}=require('node:child_process');
  const before=execFileSync('git',['show','20c55e4:index.html'],{maxBuffer:70_000_000}).toString();
  const oldIcrp=JSON.parse(before.match(/window.GANTRY_ICRP_DATA=(.*?);\n/)[1]);
- for(const [name,pose] of Object.entries(packed))assert(fs.readFileSync(pose.url).equals(Buffer.from(oldIcrp[name].deflate,'base64')));
+ for(const name of Object.keys(oldIcrp))assert(fs.readFileSync(packed[name].url).equals(Buffer.from(oldIcrp[name].deflate,'base64')));
  const mag3=JSON.parse(html.match(/window.GANTRY_MAG3_DATA=(.*?);\n/)[1]);
  const oldMag3=JSON.parse(before.match(/window.GANTRY_MAG3_DATA=(.*?);\n/)[1]);
  for(const name of ['down','up'])assert(fs.readFileSync(mag3.urls[name]).equals(Buffer.from(oldMag3.packed[name],'base64')));

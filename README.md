@@ -42,6 +42,28 @@ dibujo en el navegador. No mide tiempo GPU ni garantiza el mismo rendimiento
 en todos los equipos. La colocación del entorno es visual; no cambia los
 límites mecánicos del simulador. [Fuentes y adaptaciones](assets/symbia-room/CREDITS.md).
 
+### Adquisición estática para los estudios del menú
+
+Óseo, MIBI, tiroides/pertecnetato, exploración I-131 y paratiroides comparten
+dos vistas en vivo y dos imágenes adquiridas. **Iniciar adquisición** pide los
+nombres de los detectores y una meta de cuentas o tiempo. Incluye pausa,
+avance rápido, adquisición instantánea y guardado local con el nombre del estudio.
+Al cambiar de estudio, la adquisición anterior queda pausada y se conserva en
+memoria; al volver puede reanudarse. Las cuentas de distintos estudios nunca
+se mezclan. MAG3 mantiene su adquisición dinámica basal y el barrido de cuerpo
+entero sigue disponible en óseo.
+
+MIBI reutiliza sus proyecciones lineales ICRP de 360°. Los atlas previos de
+tiroides (40 vistas), I-131 (16) y paratiroides (40) conservan las vistas
+y resolución originales; sus intensidades se normalizan como pesos de actividad
+para generar eventos nuevos de Poisson. No son cuentas clínicas recuperadas
+ni nuevos volúmenes ICRP sembrados por órgano. La procedencia y esa limitación
+se registran en `assets/icrp145/static-atlas-provenance.json`.
+Estos tres atlas usan brazos al costado; MIBI usa su serie de brazos arriba.
+Para regenerarlos: `python scripts/build_static_atlases.py`, seguido de
+`python scripts/enable_static_studies.py`, `python scripts/embed_bone_acquisition.py`
+y `python scripts/refresh_lazy_assets.py`.
+
 ### Zoom y recentrado
 
 La barra Imagen en vivo ofrece **1×, 1,5×, 1,75× y 2×**, con aumentos reales
