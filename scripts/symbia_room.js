@@ -105,5 +105,7 @@ window.createSymbiaRoom = function({THREE, scene, camera, controls, renderer, fl
     controls.target.set(-.65,.7,-.17);
     controls.update();
   });
-  return {update,measured,get enabled(){return enabled;},get metadata(){return metadata;}};
+  // Start the independent download without delaying the gantry or study setup.
+  const ready=toggle();
+  return {ready,update,measured,get enabled(){return enabled;},get metadata(){return metadata;}};
 };

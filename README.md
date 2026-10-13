@@ -13,7 +13,8 @@ Abrir sólo `index.html` con `file://` ya no es compatible con la carga de datos
 
 El HTML pasó de 56 MB a aproximadamente 1 MB. Cada estudio y postura se
 descarga y descomprime al seleccionarlo; MAG3 se prepara al seleccionarlo o
-inyectarlo y la sala al mostrarla. Los recursos tienen nombres con huella de
+inyectarlo. La sala se carga automáticamente en segundo plano al abrir el
+simulador. Los recursos tienen nombres con huella de
 contenido: una actualización de la interfaz conserva las URLs de los datos
 que no cambiaron, permitiendo reutilizar la caché HTTP del navegador.
 La primera selección de un estudio aún necesita descargar sus proyecciones.
@@ -23,15 +24,16 @@ Después de modificar motores: `python scripts/refresh_lazy_assets.py`.
 Los generadores de datos separan automáticamente sus recursos al terminar;
 `python scripts/externalize_assets.py` también puede ejecutarse por separado.
 
-### Sala opcional de SymbiaRoom
+### Sala de SymbiaRoom
 
-Pulsa **Mostrar sala** junto a los botones de vista. **Vista sala** encuadra
+La sala aparece por defecto al abrir el simulador. **Vista sala** encuadra
 el entorno completo y **Ocultar sala** recupera el suelo habitual. Las paredes
 que quedan entre una cámara exterior y el equipo se ocultan automáticamente.
 Los controles del gantry y la adquisición MAG3 siguen funcionando.
 
 El recurso se descarga por separado, se descomprime y crea en GPU
-al mostrarlo por primera vez. Son seis grupos y 81.798 triángulos, sin físicas,
+al abrir el simulador, sin esperar su descarga para habilitar el gantry ni el
+estudio. Son seis grupos y 81.798 triángulos, sin físicas,
 luces ni sombras dinámicas adicionales. Oculto no se dibuja; tras la primera
 carga conserva su memoria para poder volver a mostrarlo rápidamente.
 

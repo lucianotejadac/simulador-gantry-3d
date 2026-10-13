@@ -33,8 +33,10 @@ const context={window:{},document:{getElementById:id=>elements[id]},performance,
 vm.runInNewContext(fs.readFileSync('scripts/symbia_room.js','utf8'),context);
 const room=context.window.createSymbiaRoom({THREE:{Group,BufferGeometry:Geometry,BufferAttribute:Attribute,Mesh,MeshStandardMaterial:class{},DoubleSide:2},scene,camera,controls:{update(){},target:{set(){}}},renderer:{info:{render:{}}},floor:plainFloor,grid});
 (async()=>{
-  assert.equal(room.metadata,null);assert.equal(scene.children.length,0);assert.equal(downloads.length,0);
-  await elements.roomToggle.click();
+  assert.equal(room.metadata,null);assert.equal(scene.children.length,0);assert.equal(downloads.length,1);
+  assert.equal(elements.roomToggle.disabled,true);
+  await room.ready;
+  assert.equal(elements.roomToggle.disabled,false);
   assert.equal(room.enabled,true);assert.equal(scene.children.length,1);
   assert.equal(plainFloor.visible,false);assert.equal(scene.fog,null);
   const root=scene.children[0];
@@ -49,5 +51,5 @@ const room=context.window.createSymbiaRoom({THREE:{Group,BufferGeometry:Geometry
   const html=fs.readFileSync('index.html','utf8');
   assert(html.includes(fs.readFileSync('scripts/symbia_room.js','utf8')));
   assert(fs.readFileSync(elements.symbiaRoomData.dataset.src).equals(asset));
-  console.log('OK: lazy decoding, real asset bounds/indices, six batches, cutaway walls, no shadow casters, hide/restore/reuse, external asset loading.');
+  console.log('OK: automatic asynchronous room loading, real asset bounds/indices, six batches, cutaway walls, no shadow casters, hide/restore/reuse, single external download.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
