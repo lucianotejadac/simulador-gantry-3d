@@ -97,7 +97,15 @@
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
     el('liveMatrix128').disabled=el('liveMatrix256').disabled=active&&running;
-    if(!session&&!archive){el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones óseas…';return;}
+    if(!session&&!archive){
+      el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones óseas…';
+      if(force)canvases.forEach((canvas,j)=>{
+        canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+        el('boneAcqTitle'+(j+1)).textContent='ADQUISICIÓN · DETECTOR '+(j+1);
+        el('boneAcqInfo'+(j+1)).textContent='Esperando adquisición';el('boneAcqProgress'+(j+1)).value=0;
+      });
+      return;
+    }
     const shown=archive||session,shownNames=archive?archive.names:names;
     if(!session)el('boneAcqStatus').textContent='Sin adquisición actual';
     else {
@@ -133,6 +141,7 @@
     try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
     names=nextNames;archive=null;selection++;el('boneAcqSaved').value='current';
+    el('boneAcqCacheStatus').textContent='Adquisición actual sin guardar';
     clock=performance.now();speed=1;paused=false;note='';el('boneAcqSpeed').value='1';
     el('boneAcqSetup').hidden=true;el('boneAcqSetupError').textContent='';paint(true);
   }
@@ -178,7 +187,7 @@
   };
   el('boneAcqSaved').onchange=async()=>{
     const id=el('boneAcqSaved').value,token=++selection;
-    if(id==='current'){archive=null;paint(true);return;}
+    if(id==='current'){archive=null;el('boneAcqCacheStatus').textContent='Mostrando adquisición actual';paint(true);return;}
     advance();if(session&&!session.finished)paused=true;
     loadingSaved=true;paint();
     try{const record=await store.get(id);if(token===selection){archive=record;el('boneAcqCacheStatus').textContent='Copia guardada; selecciona Adquisición actual para volver';}}

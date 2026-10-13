@@ -7,7 +7,7 @@ const database=new Map();let failSave=false;
 const memoryStore={async list(){return [...database.values()].map(({heads,...r})=>({...r,totals:heads.map(h=>h.total)}));},async get(id){return structuredClone(database.get(id));},async save(r){if(failSave){const e=Error('Full');e.name='QuotaExceededError';throw e;}database.set(r.id,structuredClone(r));}};
 function environment(){
  let now=0;const els=new Map();
- function el(id){if(!els.has(id))els.set(id,{id,value:'',textContent:'',width:256,height:256,hidden:false,disabled:false,children:[],classList:{toggle(){}},focus(){},append(x){this.children.push(x);},replaceChildren(){this.children=[];},getContext(){return {createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){},drawImage(){}};}});return els.get(id);}
+ function el(id){if(!els.has(id))els.set(id,{id,value:'',textContent:'',width:256,height:256,hidden:false,disabled:false,children:[],classList:{toggle(){}},focus(){},append(x){this.children.push(x);},replaceChildren(){this.children=[];},getContext(){return {createImageData:(w,h)=>({data:new Uint8ClampedArray(w*h*4)}),putImageData(){},drawImage(){},clearRect(){}};}});return els.get(id);}
  const document={getElementById:el,createElement:()=>({value:'',textContent:'',width:256,height:256,getContext:()=>el('canvas').getContext()}),addEventListener(){},hidden:false};
  const values=new Float32Array(128*128);values[5]=2000000;const cdf=new Float64Array(values.length);cdf.fill(2000000,5);
  const field={values,cdf,sum:2000000};
@@ -39,6 +39,7 @@ function environment(){
  const b=environment();await new Promise(r=>setTimeout(r,0));
  assert.equal(b.el('boneAcqSaved').children.length,3);
  b.el('boneAcqSaved').value=first.id;await b.el('boneAcqSaved').onchange();assert(b.el('boneAcqInfo1').textContent.startsWith('3 cuentas'));assert.equal(b.window.GANTRY_BONE_ACQ.state,null);
+ b.el('boneAcqSaved').value='current';await b.el('boneAcqSaved').onchange();assert.equal(b.el('boneAcqInfo1').textContent,'Esperando adquisición');assert.equal(b.el('boneAcqProgress1').value,0);
  b.submit(100,'En curso D1','En curso D2');b.el('boneAcqSaved').value=first.id;await b.el('boneAcqSaved').onchange();assert(b.window.GANTRY_BONE_ACQ.state.paused);
  const broken=structuredClone(first);broken.heads[0].counts[5]=999;assert.throws(()=>b.storage.validate(broken));
  assert.throws(()=>b.storage.validate({...first,version:2}));
