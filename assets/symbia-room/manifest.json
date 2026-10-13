@@ -1,0 +1,252 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "name": "Floor",
+      "vertices": 12,
+      "triangles": 6,
+      "bounds": [
+        [
+          -4.25,
+          0.0,
+          -2.2965
+        ],
+        [
+          2.939000129699707,
+          0.004,
+          1.958500114440918
+        ]
+      ],
+      "position": [
+        0,
+        36
+      ],
+      "normal": [
+        144,
+        36
+      ],
+      "color": [
+        180,
+        36
+      ],
+      "index": [
+        216,
+        18
+      ]
+    },
+    {
+      "name": "Wall_Front",
+      "vertices": 24,
+      "triangles": 12,
+      "bounds": [
+        [
+          -4.25,
+          0.0,
+          -2.2965
+        ],
+        [
+          -4.12,
+          2.3399999141693115,
+          1.958500114440918
+        ]
+      ],
+      "position": [
+        288,
+        72
+      ],
+      "normal": [
+        576,
+        72
+      ],
+      "color": [
+        648,
+        72
+      ],
+      "index": [
+        720,
+        36
+      ]
+    },
+    {
+      "name": "Wall_Left",
+      "vertices": 4,
+      "triangles": 2,
+      "bounds": [
+        [
+          -4.25,
+          0.0,
+          -2.2965
+        ],
+        [
+          2.939000129699707,
+          2.3399999141693115,
+          -2.2965
+        ]
+      ],
+      "position": [
+        864,
+        12
+      ],
+      "normal": [
+        912,
+        12
+      ],
+      "color": [
+        924,
+        12
+      ],
+      "index": [
+        936,
+        6
+      ]
+    },
+    {
+      "name": "Wall_Rear",
+      "vertices": 4,
+      "triangles": 2,
+      "bounds": [
+        [
+          2.939000129699707,
+          0.0,
+          -2.2965
+        ],
+        [
+          2.939000129699707,
+          2.3399999141693115,
+          1.958500114440918
+        ]
+      ],
+      "position": [
+        960,
+        12
+      ],
+      "normal": [
+        1008,
+        12
+      ],
+      "color": [
+        1020,
+        12
+      ],
+      "index": [
+        1032,
+        6
+      ]
+    },
+    {
+      "name": "Wall_Right",
+      "vertices": 8,
+      "triangles": 4,
+      "bounds": [
+        [
+          -4.25,
+          0.0,
+          1.958500114440918
+        ],
+        [
+          2.939000129699707,
+          2.3399999141693115,
+          1.958500114440918
+        ]
+      ],
+      "position": [
+        1056,
+        24
+      ],
+      "normal": [
+        1152,
+        24
+      ],
+      "color": [
+        1176,
+        24
+      ],
+      "index": [
+        1200,
+        12
+      ]
+    },
+    {
+      "name": "Furniture",
+      "vertices": 58463,
+      "triangles": 81772,
+      "bounds": [
+        [
+          -3.1424794793128967,
+          0.0,
+          -2.28130224609375
+        ],
+        [
+          2.915489239692688,
+          1.8000003099441528,
+          1.9124099061489108
+        ]
+      ],
+      "position": [
+        1248,
+        175389
+      ],
+      "normal": [
+        702804,
+        175389
+      ],
+      "color": [
+        878196,
+        175389
+      ],
+      "index": [
+        1053588,
+        245316
+      ]
+    }
+  ],
+  "source": "SymbiaRoom static scenery",
+  "dimensions_m": [
+    4.255,
+    7.189,
+    2.34
+  ],
+  "placement": "visual alignment; original scale retained",
+  "source_files": [
+    {
+      "file": "medical_cabinet.glb",
+      "sha256": "ebb4d653952a92dc9088112979ea7ce66499e19a4c8fa91e081ba9325f964938"
+    },
+    {
+      "file": "hospital_medical_trolley.glb",
+      "sha256": "7063d1814aa47cb4c74cea7e10c8df4283666b6a8f4280e79f25ec194e11cc5a"
+    },
+    {
+      "file": "iv_pole.glb",
+      "sha256": "dec5260b0cbcafed4a9fcc69a11c4180d1baddfdd3a14182074c351391f19ba6"
+    },
+    {
+      "file": "clinical_hospital_bin_white.glb",
+      "sha256": "dc26ee0ad9d3910249740704b8addec85ce637b264742ff642f491280e73e0b5"
+    },
+    {
+      "file": "clinical_waste_hospital_bin_yellow.glb",
+      "sha256": "ea55aff8c03beb1e54dd49ad72b610e546187bac195c620fab86eb82d6946209"
+    },
+    {
+      "file": "clinical_chair.glb",
+      "sha256": "bbd1f81650d3e7abddf18c070486ac7b8a0859998010afbdbcb3ca065538f5ff"
+    },
+    {
+      "file": "clinical_hand_wash_basin.glb",
+      "sha256": "d512d3bc4620d61453596226cfffdd2cdc68c8f66c7391ccf2a6451642b7b865"
+    }
+  ],
+  "excluded": [
+    "scanner",
+    "patient",
+    "ceiling",
+    "physics",
+    "lights",
+    "photos",
+    "hospital_kit_2",
+    "siemens_collimator_cart"
+  ],
+  "compressed_bytes": 612168,
+  "triangles": 81798
+}

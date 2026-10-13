@@ -9,6 +9,24 @@ encuentran incorporados en un solo archivo: `index.html`.
 Descargue `index.html` y ábralo en un navegador moderno. No requiere conexión
 a Internet.
 
+### Sala opcional de SymbiaRoom
+
+Pulsa **Mostrar sala** junto a los botones de vista. **Vista sala** encuadra
+el entorno completo y **Ocultar sala** recupera el suelo habitual. Las paredes
+que quedan entre una cámara exterior y el equipo se ocultan automáticamente.
+Los controles del gantry y la adquisición MAG3 siguen funcionando.
+
+El recurso está incrustado en el HTML para funcionar sin conexión: añade
+aproximadamente 0,82 MB al archivo, pero sólo se descomprime y crea en GPU
+al mostrarlo por primera vez. Son seis grupos y 81.798 triángulos, sin físicas,
+luces ni sombras dinámicas adicionales. Oculto no se dibuja; tras la primera
+carga conserva su memoria para poder volver a mostrarlo rápidamente.
+
+**Rendimiento** permite comparar fps, tiempo CPU de la escena y llamadas de
+dibujo en el navegador. No mide tiempo GPU ni garantiza el mismo rendimiento
+en todos los equipos. La colocación del entorno es visual; no cambia los
+límites mecánicos del simulador. [Fuentes y adaptaciones](assets/symbia-room/CREDITS.md).
+
 ### Zoom y recentrado
 
 La barra Imagen en vivo ofrece **1×, 1,5×, 1,75× y 2×**, con aumentos reales
