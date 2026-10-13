@@ -91,25 +91,43 @@ Motor y empaquetado: `scripts/bone_acquisition.js` y
 `python scripts/embed_bone_acquisition.py`. Prueba numérica con datos ICRP
 y control de reloj: `node tests/test_bone_acquisition.cjs`.
 
-El selector **Tipo → Cuerpo entero** muestra las dos adquisiciones en formato
-rectangular, con toda la proyección del fantoma (incluidas manos elevadas y
-plantas de los pies). En escritorio, las dos imágenes adquiridas ocupan la
+El selector **Tipo → Cuerpo entero** realiza un barrido secuencial de cráneo a
+pies sobre dos imágenes rectangulares. En escritorio, las imágenes ocupan la
 franja derecha, desde la parte superior de la vista 3D hasta el borde inferior.
 El gantry, los controles y las dos vistas en vivo quedan a la izquierda. El mando
 es más pequeño y se elimina la barra de título azul, conservando el menú.
 Los dos cuadros en vivo conservan el campo local del
 detector para posicionar. Se habilita el inicio únicamente con **pies hacia
 adentro** tanto en la posición física como en la declarada, camilla en
-**Z 200 ±2 cm** y centrado original de imagen. La barra explica qué corregir.
-La comprobación se repite al pulsar Comenzar y antes de añadir cuentas; perder
-el centrado pausa la adquisición sin borrar lo acumulado.
+**Z 200 cm** (se admite desde 198 cm) y centrado original de imagen. La barra
+explica qué corregir antes de comenzar.
 
-Este modo acumula la proyección panorámica completa de ICRP con ruido de
-Poisson; no ejecuta un barrido mecánico de camilla. El encuadre completo es
-independiente del zoom local de los cuadros en vivo. Conserva los controles
-por tiempo/cuentas, avance rápido e instantánea. Guardadas conserva también
-las dimensiones rectangulares y permite alternar con adquisiciones estáticas
-previas. Prueba: `node tests/test_bone_whole_body.cjs`.
+El único parámetro del barrido es la **velocidad de camilla en cm/min**
+(1–60; valor inicial 10). Se mantienen los nombres para identificar ambos
+detectores. Primero se acercan automáticamente los cabezales a 1 cm del tope
+geométrico seguro del simulador, con movimiento limitado a 8 cm/s. Después
+la camilla recorre desde cráneo hasta Z 16 cm. El recorrido 200→16 equivale a
+175 cm físicos del modelo, por lo que 10 cm/min requiere 17 min 30 s de
+movimiento, además del posicionamiento inicial de los cabezales. Los topes
+se revisan antes de cada desplazamiento; si hace falta reajustar un detector,
+la camilla espera. El contorno de seguridad usa la envolvente conservadora
+actual del modelo 3D, no una medición clínica de superficie.
+
+Se integran eventos de Poisson únicamente durante la exposición de cada fila
+al campo móvil de 56×56 cm, registrados en coordenadas del cuerpo. Las zonas
+que aún no entran en el detector permanecen vacías; regiones fuera del campo
+durante todo el recorrido (por ejemplo manos muy por encima del cráneo) no
+reciben cuentas inventadas. Una línea indica el centro del barrido. Una
+velocidad menor aumenta el tiempo de exposición y las cuentas esperadas.
+No hay objetivo por cuentas/tiempo, avance rápido ni instantánea en este modo.
+El zoom se fija a 1× y se bloquean posición, orientación y ajustes durante el
+barrido; **Pausar**, **Reanudar**, **Finalizar** y **Guardar adquisición** siguen
+disponibles. Pausar o esconder la pestaña suspende tanto movimiento como
+cuentas. Las adquisiciones estáticas conservan sus controles anteriores.
+
+Guardadas conserva velocidad, recorrido, cuentas, nombres y dimensiones,
+incluidos barridos parciales, y sigue abriendo las adquisiciones anteriores.
+Prueba: `node tests/test_bone_whole_body.cjs`.
 
 Al comenzar se solicita un **nombre para detector 1 y detector 2**. Los nombres
 aparecen sobre las imágenes adquiridas. **Guardar adquisición** conserva una

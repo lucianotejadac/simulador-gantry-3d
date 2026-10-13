@@ -4,14 +4,16 @@
   function snapshot(session,names,settings,now=Date.now(),id=crypto.randomUUID()){
     return {version:1,id,createdAt:now,n:session.n,height:session.height||session.n,kind:session.kind||'static',mode:session.mode,target:session.target,
       finished:session.finished,names:names.slice(),settings:structuredClone(settings),
+      ...(session.mode==='scan'?{scan:{velocity:session.velocity,travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
       heads:session.heads.map(h=>({detector:h.detector,total:h.total,elapsed:h.elapsed,done:h.done,counts:h.counts.slice()}))};
   }
   function validate(record){
     if(!record||record.version!==1||typeof record.id!=='string'||!Number.isFinite(record.createdAt)||
-      ![128,256].includes(record.n)||!['counts','time'].includes(record.mode)||!Number.isFinite(record.target)||record.target<1||
+      ![128,256].includes(record.n)||!['counts','time','scan'].includes(record.mode)||!Number.isFinite(record.target)||record.target<1||
       !Array.isArray(record.names)||record.names.length!==2||record.names.some(n=>typeof n!=='string'||!n.trim()||n.length>80)||
       !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
     const height=record.height??record.n,kind=record.kind??'static';
+    if(record.mode==='scan'&&(kind!=='whole'||!record.scan||!Number.isFinite(record.scan.velocity)||record.scan.velocity<1||record.scan.velocity>60||!Number.isFinite(record.scan.travel)||record.scan.travel<0||record.scan.travel>record.target))throw Error('Datos de barrido no válidos');
     if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
       (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
     record.heads.forEach((h,i)=>{
