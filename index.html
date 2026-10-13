@@ -180,13 +180,13 @@
   .gantry-live{height:232px;flex:none;background:#111820;border:1px solid #2a3a52;
     border-radius:4px;display:flex;flex-direction:column;min-width:0;overflow:hidden;
     box-shadow:inset 0 0 18px #0008}
-  .gantry-live-head{height:52px;flex:none;display:flex;align-items:center;align-content:center;
+  .gantry-live-head{min-height:52px;flex:none;display:flex;align-items:center;align-content:center;
     flex-wrap:wrap;gap:3px 9px;padding:4px 9px;color:#d7e3ef;background:#17222d;border-bottom:1px solid #304251;
     font:700 11px var(--mono)}
   .gantry-live-head .live-dot{width:8px;height:8px;border-radius:50%;background:#6b7681}
   .gantry-live.ready .live-dot{background:#32c875;box-shadow:0 0 7px #32c875}
   .gantry-live-head .live-status{margin-left:auto;color:#8fa4b7;font-weight:400}
-  .live-controls{order:1;flex-basis:100%;display:flex;align-items:center;gap:3px;margin-left:17px;color:#8295a7;
+  .live-controls{order:1;flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:3px;margin-left:17px;color:#8295a7;
     font:700 9px var(--mono)}
   .live-controls .control-label{margin-left:5px}
   .live-setting{min-width:27px;height:19px;padding:0 5px;border:1px solid #42586b;
@@ -194,6 +194,7 @@
   .live-setting:hover{border-color:#72b68e;color:#e8f3eb}
   .live-setting.active,.live-setting[aria-pressed="true"]{background:#19452f;
     border-color:#43cc7d;color:#b8f4d0;box-shadow:inset 0 0 5px #0008}
+  .gantry-live.recenter-active canvas{cursor:crosshair}
   .live-setting:focus-visible{outline:2px solid #78d9a1;outline-offset:1px}
   .live-study{height:19px;max-width:142px;padding:0 20px 0 5px;border:1px solid #42586b;
     border-radius:2px;background:#0d151c;color:#c8d7e2;font:700 9px var(--mono);cursor:pointer}
@@ -578,7 +579,11 @@
               </select>
               <span class="control-label">ZOOM</span>
               <button class="live-setting active" id="liveZoom1" type="button" aria-pressed="true">1&times;</button>
+              <button class="live-setting" id="liveZoom15" type="button" aria-pressed="false">1,5&times;</button>
+              <button class="live-setting" id="liveZoom175" type="button" aria-pressed="false">1,75&times;</button>
               <button class="live-setting" id="liveZoom2" type="button" aria-pressed="false">2&times;</button>
+              <button class="live-setting" id="liveRecenter" type="button" aria-pressed="false" title="Activa y haz clic en el punto de la imagen que quieres llevar al centro. En MAG3 afecta las cuentas siguientes.">Recentrar</button>
+              <button class="live-setting" id="liveResetCenter" type="button" title="Restablecer el centro de ambos detectores">Centro original</button>
               <span class="control-label">MATRIZ</span>
               <button class="live-setting" id="liveMatrix128" type="button" aria-pressed="false">128</button>
               <button class="live-setting active" id="liveMatrix256" type="button" aria-pressed="true">256</button>
@@ -5526,7 +5531,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   const BLUR_PER_CM = 0.075;
   const PEAK_COUNTS = 192;
   const LEGACY_DISPLAY_WIDTH = 240;
-  const ZOOM_MAGNIFICATION = {1:1,2:1.7};
+  const ZOOM_MAGNIFICATION = {1:1,1.5:1.5,1.75:1.75,2:2};
   const ANGLES = [];
   for(let base=0;base<360;base+=45){
     [0,5,15,25,35].forEach(offset=>ANGLES.push(base+offset));
@@ -5550,9 +5555,46 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     windowWidth:document.getElementById('liveWindowWidth'),
     zoom1:document.getElementById('liveZoom1'),
     zoom2:document.getElementById('liveZoom2'),
+    zoom15:document.getElementById('liveZoom15'),
+    zoom175:document.getElementById('liveZoom175'),
+    recenter:document.getElementById('liveRecenter'),
+    resetCenter:document.getElementById('liveResetCenter'),
     matrix128:document.getElementById('liveMatrix128'),
     matrix256:document.getElementById('liveMatrix256')
   };
+  // IMAGE_FRAMING_BEGIN
+  const imageCenters={1:{x:0,y:0},2:{x:0,y:0}};
+  let recenterEnabled=false;
+  function framedCrop(crop,n){
+    const center=imageCenters[n],factor=ZOOM_MAGNIFICATION[acquisition.zoom]||1;
+    return {...crop,x:crop.x+center.x*crop.w*factor,y:crop.y+center.y*crop.h*factor};
+  }
+  function recenterAt(n,u,v){
+    if(!imageCenters[n]||!Number.isFinite(u)||!Number.isFinite(v)||u<0||u>1||v<0||v>1)return false;
+    const physical=physicalPatientPosition(),declared=acquisitionPosition(),factor=ZOOM_MAGNIFICATION[acquisition.zoom]||1;
+    const center=imageCenters[n];
+    center.x+=(u-.5)*(physical.prone!==declared.prone?-1:1)/factor;
+    center.y+=(v-.5)*(physical.headFirst!==declared.headFirst?-1:1)/factor;
+    setRecenterEnabled(false);
+    update(lastState || (window.GANTRY && window.GANTRY.G));
+    return true;
+  }
+  function setRecenterEnabled(value){
+    recenterEnabled=!!value;panel.classList.toggle('recenter-active',recenterEnabled);
+    controls.recenter.textContent=recenterEnabled?'Haz clic en la imagen':'Recentrar';syncControls();
+  }
+  function resetImageCenter(){
+    imageCenters[1]={x:0,y:0};imageCenters[2]={x:0,y:0};setRecenterEnabled(false);
+    update(lastState || (window.GANTRY && window.GANTRY.G));
+  }
+  function recenterFromCanvas(n,event){
+    if(!recenterEnabled)return false;
+    const canvas=event.currentTarget,rect=canvas.getBoundingClientRect();
+    // Exclude the black margins around the square detector image (object-fit:contain).
+    const size=Math.min(rect.width,rect.height),left=rect.left+(rect.width-size)/2,top=rect.top+(rect.height-size)/2;
+    return recenterAt(n,(event.clientX-left)/size,(event.clientY-top)/size);
+  }
+  // IMAGE_FRAMING_END
   const studyTracer=document.getElementById('liveStudyTracer');
   const randomItem=items=>items[Math.floor(Math.random()*items.length)];
   const initialZoom=randomItem([1,2]);
@@ -5944,11 +5986,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     const metrics=distanceMetrics(effectiveDistance,acquisition.study,
       acquisition.collimator,acquisition.energyCenter,acquisition.windowWidth);
 
-    // Recorte anatomico exacto del atlas. Al pasar de 1x a 2x, tanto el alto
-    // como el ancho del campo se reducen a la mitad alrededor del mismo punto;
-    // no se estira el cuerpo ni se usa una escala especial para el cuello.
-    // El preset se conserva como "2x", pero usa un encuadre efectivo de 1,7x
-    // para que la region ampliada no quede excesivamente cerca.
+    // Campo inversamente proporcional al zoom, alrededor del centro elegido.
     const magnification=ZOOM_MAGNIFICATION[acquisition.zoom] || 1;
     const icrpPose=acquisition.study==='mibi' ? window.GANTRY_ICRP.poses.mibi_up :
       acquisition.study==='bone' ? window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'] : null;
@@ -5959,9 +5997,9 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     const heightShiftSource=heightDeltaCm*(icrpPose ? 10/3 : FRAME_W/ATLAS_TRANSVERSE_CM)*
       Math.sin(rawAngle*Math.PI/180);
     const heightShiftPx=heightShiftSource/cropWidth*w;
-    const crop={x:sourceWidth/2-cropWidth/2-heightShiftSource,
+    const crop=framedCrop({x:sourceWidth/2-cropWidth/2-heightShiftSource,
                 y:(icrpPose ? icrpPose.headRow+progress*(icrpPose.footRow-icrpPose.headRow) : progress*FRAME_H)-cropHeight/2,
-                w:cropWidth,h:cropHeight};
+                w:cropWidth,h:cropHeight},target.n);
 
     ctx.save();
     ctx.beginPath(); ctx.rect(0,0,w,h); ctx.clip();
@@ -6068,7 +6106,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
         (gap && gap.cm!=null ? 'a '+gap.surface+': '+effectiveDistance.toFixed(0)+' cm' : 'campo libre')+'<br>'+
       (icrpPose ? (boneSignal.mode==='live'?'Ventana: '+meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido') : 'Cuentas: '+metrics.counts.toLocaleString('es-CL'))+'<br>'+
       'PSF '+metrics.blur.toFixed(1)+'px · '+acquisition.collimator+'<br>'+
-      'Zoom '+acquisition.zoom.toFixed(0)+'x · M'+acquisition.matrix+'<br>'+
+      'Zoom '+String(acquisition.zoom).replace('.',',')+'x · M'+acquisition.matrix+'<br>'+
       'X por altura: '+(heightShiftPx>=0?'+':'')+heightShiftPx.toFixed(0)+' px<br>'+
       '<span class="'+(Math.abs(metrics.energy.centerOffset)<=1?'accent':'warn')+'">E '+
       metrics.energy.center.toFixed(0)+' keV · '+metrics.energy.width+'%</span>';
@@ -6080,7 +6118,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     if(window.GANTRY_MAG3)window.GANTRY_MAG3.stateChanged(G);
     // Conservar estela al mover gantry/camilla; limpiar al cambiar pose,
     // presentación o configuración de adquisición para no mezclar matrices.
-    const historyKey=JSON.stringify([acquisition.study,G.arms,acquisition.matrix,acquisition.zoom,
+    const historyKey=JSON.stringify([acquisition.study,G.arms,acquisition.matrix,acquisition.zoom,imageCenters,
       acquisition.collimator,acquisition.energyCenter,acquisition.windowWidth,
       acquisitionPosition(),physicalPatientPosition()]);
     if(historyKey!==boneHistoryKey){clearPersistence();boneHistoryKey=historyKey;}
@@ -6125,6 +6163,9 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     const states=[
       [controls.zoom1,acquisition.zoom===1],
       [controls.zoom2,acquisition.zoom===2],
+      [controls.zoom15,acquisition.zoom===1.5],
+      [controls.zoom175,acquisition.zoom===1.75],
+      [controls.recenter,recenterEnabled],
       [controls.matrix128,acquisition.matrix===128],
       [controls.matrix256,acquisition.matrix===256]
     ];
@@ -6142,8 +6183,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   }
 
   function setZoom(zoom){
-    acquisition.zoom=zoom===2 ? 2 : 1;
-    if(acquisition.zoom===2) acquisition.matrix=128;
+    acquisition.zoom=Object.hasOwn(ZOOM_MAGNIFICATION,Number(zoom)) ? Number(zoom) : 1;
     syncControls();
     update(lastState || (window.GANTRY && window.GANTRY.G));
   }
@@ -6197,6 +6237,11 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     ()=>setWindowWidth(controls.windowWidth.value));
   if(controls.zoom1) controls.zoom1.addEventListener('click',()=>setZoom(1));
   if(controls.zoom2) controls.zoom2.addEventListener('click',()=>setZoom(2));
+  controls.zoom15.addEventListener('click',()=>setZoom(1.5));
+  controls.zoom175.addEventListener('click',()=>setZoom(1.75));
+  controls.recenter.addEventListener('click',()=>setRecenterEnabled(!recenterEnabled));
+  controls.resetCenter.addEventListener('click',resetImageCenter);
+  targets.forEach(target=>target.canvas.addEventListener('click',event=>recenterFromCanvas(target.n,event)));
   if(controls.matrix128) controls.matrix128.addEventListener('click',()=>setMatrix(128));
   if(controls.matrix256) controls.matrix256.addEventListener('click',()=>setMatrix(256));
   syncControls();
@@ -6245,14 +6290,15 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     const metrics=distanceMetrics(distance,'mag3',acquisition.collimator,acquisition.energyCenter,acquisition.windowWidth);
     const d=window.GANTRY_MAG3_DATA,magnification=ZOOM_MAGNIFICATION[acquisition.zoom]||1;
     const size=560/d.pixelMm/magnification,shift=(G.tableH-TABLE_HEIGHT_REFERENCE_CM)*10/d.pixelMm*Math.sin(rawAngle*Math.PI/180);
-    return {rawAngle,arms:G.arms,crop:{x:d.width/2-size/2-shift,y:d.headRow+progress*(d.footRow-d.headRow)-size/2,w:size,h:size},
+    return {rawAngle,arms:G.arms,crop:framedCrop({x:d.width/2-size/2-shift,y:d.headRow+progress*(d.footRow-d.headRow)-size/2,w:size,h:size},n),
       flipX:physical.prone!==declared.prone,flipY:physical.headFirst!==declared.headFirst,
       metrics:{countFactor:metrics.countFactor,contrast:metrics.contrast,haloAlpha:metrics.haloAlpha,haloBlur:metrics.haloBlur},
       blur:metrics.blur,collimator:acquisition.collimator,energyCenter:acquisition.energyCenter,zoom:acquisition.zoom,tableZ:G.tableZ};
   }
   window.addEventListener('mag3ready',()=>{studies.mag3.ready=true;if(acquisition.study==='mag3')update(lastState||window.GANTRY.G);});
   window.GANTRY_LIVE={
-    mag3Geometry,
+    mag3Geometry,recenterFromCanvas,recenterAt,resetImageCenter,
+    get recenterEnabled(){return recenterEnabled;},
     update,
     get angles(){return (activeAtlas().angles || ANGLES).slice();},
     framePair,
@@ -6276,6 +6322,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       const energy=energyWindowMetrics(acquisition.study,acquisition.energyCenter,
         acquisition.windowWidth);
       return {zoom:acquisition.zoom,matrix:acquisition.matrix,study:acquisition.study,
+               centers:{1:{...imageCenters[1]},2:{...imageCenters[2]}},
               collimator:acquisition.collimator,
               recommendedCollimator:activeStudy().recommendedCollimator,
               energyCenter:acquisition.energyCenter,windowWidth:acquisition.windowWidth,
@@ -7064,7 +7111,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(JSON.stringify(geometry)!==JSON.stringify(session.geometry)){session.geometry=geometry;session.history.push({time:session.time,geometry});}
   }
   const html=`<style>
-  :host{color-scheme:dark;font:11px Consolas,monospace;color:#b7cadd;display:flex;flex:1;min-height:0;flex-direction:column}:host([hidden]){display:none}*{box-sizing:border-box}
+  :host{color-scheme:dark;font:11px Consolas,monospace;color:#b7cadd;display:flex;flex:1;min-height:0;flex-direction:column}:host([hidden]){display:none}:host-context(.recenter-active) canvas{cursor:crosshair}*{box-sizing:border-box}
   .bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:5px 7px;border-bottom:1px solid #293b4a;flex:none;max-height:90px;overflow:auto}
   button,select,input{font:inherit}button,select{background:#172631;color:#d6e6ef;border:1px solid #42586b;padding:2px 5px}button:focus-visible,select:focus-visible{outline:2px solid #78d9a1}button:disabled{opacity:.5}label{display:flex;gap:4px;align-items:center}input{width:70px}#frame{max-width:145px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px;flex:1;min-height:0}article{border:1px solid #293b4a;background:#0b1218;display:flex;flex-direction:column;min-width:0;min-height:0}h2{font-size:11px;margin:4px 7px;font-weight:normal;color:#7fdfc8}canvas{display:block;width:100%;flex:1;min-height:0;object-fit:contain;background:black}small{font-size:10px;padding:3px 7px;color:#a9bdce;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -7116,6 +7163,11 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     session={detector,n,geometry,cache:{},time:0,lastClock:performance.now(),speed:1,paused:false,finished:false,
       counts:new Uint32Array(n*n),frameCounts:new Uint32Array(n*n),expected:new Float64Array(n*n),total:0,expectedTotal:0,frameIndex:0,frames:[],history:[{time:0,geometry}]};
     const d=panel.shadowRoot;
+    for(const id of ['sum','current']){
+      const canvas=d.getElementById(id);
+      canvas.title='Recentrar: selecciona un punto para las cuentas siguientes; la suma previa se conserva';
+      canvas.onclick=event=>window.GANTRY_LIVE.recenterFromCanvas(session.detector,event);
+    }
     d.getElementById('pause').onclick=()=>{advance();session.paused=!session.paused;refresh();};
     d.getElementById('finish').onclick=()=>{advance();session.finished=true;session.paused=true;refresh();};
     d.getElementById('speed').onchange=e=>{advance();session.speed=Number(e.target.value);};

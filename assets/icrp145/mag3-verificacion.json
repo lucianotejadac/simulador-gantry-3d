@@ -15,5 +15,8 @@
   "prone_selects_detector_1": true,
   "inline_scripts_parse": true,
   "embedded_engine_current": true,
+  "zoom_1_15_175_2": true,
+  "recenter_handles_flips_and_black_margins": true,
+  "zoom_and_recenter_preserve_acquired_counts": true,
   "browser_ui": "Not exercised: offline numerical/runtime test with mocked DOM"
 }

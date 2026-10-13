@@ -16,17 +16,45 @@ const ctx=vm.createContext({window,document,Uint8Array,Uint16Array,Uint32Array,F
  setInterval:fn=>intervals.push(fn),console:{error:e=>errors.push(e)}});
 vm.runInContext(fs.readFileSync(path.join(root,'scripts/icrp_live.js'),'utf8'),ctx);
 // Execute the production geometry bridge with deterministic neutral electronics.
-vm.runInContext(`const wrap=x=>(x%360+360)%360,SCAN_TOP=200,SCAN_BOTTOM=16,TABLE_HEIGHT_REFERENCE_CM=92,ZOOM_MAGNIFICATION={1:1,2:1.7};
+vm.runInContext(`const wrap=x=>(x%360+360)%360,SCAN_TOP=200,SCAN_BOTTOM=16,TABLE_HEIGHT_REFERENCE_CM=92,ZOOM_MAGNIFICATION=${html.match(/const ZOOM_MAGNIFICATION = (.*?);/)[1]};
 let physical={prone:false,headFirst:false},declared={prone:false,headFirst:false};
 const acquisition={matrix:128,zoom:1,collimator:'LEHR',energyCenter:140,windowWidth:20};
 const physicalPatientPosition=()=>physical,acquisitionPosition=()=>declared;
+const panel=document.getElementById('gantryLive'),controls={recenter:document.getElementById('liveRecenter')};
+let lastState=null;function syncControls(){}function update(G){window.GANTRY_MAG3?.stateChanged(G);}
+${html.split('// IMAGE_FRAMING_BEGIN')[1].split('// IMAGE_FRAMING_END')[0]}
+${html.slice(html.indexOf('  function setZoom('),html.indexOf('  function setStudy('))}
 const distanceMetrics=()=>({countFactor:1,contrast:1,haloAlpha:0,haloBlur:0,blur:0});
 ${html.slice(html.indexOf('  function mag3Geometry('),html.indexOf("  window.addEventListener('mag3ready'"))}
-window.GANTRY_LIVE={mag3Geometry,settings:acquisition,setStudy(s){acquisition.study=s;},update(G){window.GANTRY_MAG3.stateChanged(G);}};`,ctx);
+window.GANTRY_LIVE={mag3Geometry,recenterFromCanvas,settings:acquisition,setStudy(s){acquisition.study=s;},update(G){window.GANTRY_MAG3.stateChanged(G);}};`,ctx);
 vm.runInContext(fs.readFileSync(path.join(root,'scripts/mag3_acquisition.js'),'utf8'),ctx);
 function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return (s+.5)/4294967296;};}
 (async()=>{
  const api=window.GANTRY_MAG3;await api.loading;assert(api.ready);assert.equal(packed.duration,1200);assert.equal(packed.edges.length,85);
+ // Exercise production zoom/centering functions and geometry, including flips and letterboxing.
+ const framing=vm.runInContext(`(()=>{
+   const result=[];const initialMatrix=acquisition.matrix;
+   for(const zoom of [1,1.5,1.75,2]){
+     setZoom(zoom);const before=mag3Geometry(2,window.GANTRY.G).crop;
+     recenterAt(2,.75,.25);const after=mag3Geometry(2,window.GANTRY.G).crop;
+     result.push({zoom,width:before.w,dx:after.x-before.x,dy:after.y-before.y,matrix:acquisition.matrix,initialMatrix});
+     resetImageCenter();
+   }
+   setZoom(1.75);const a=mag3Geometry(2,window.GANTRY.G).crop;
+   physical.prone=true;physical.headFirst=true;
+   recenterAt(2,.75,.25);const flipped={...imageCenters[2]};
+   physical.prone=false;physical.headFirst=false;resetImageCenter();setZoom(1);
+   setRecenterEnabled(true);
+   const canvas={getBoundingClientRect:()=>({left:0,top:0,width:200,height:100})};
+   const margin=recenterFromCanvas(2,{currentTarget:canvas,clientX:10,clientY:50});
+   const clicked=recenterFromCanvas(2,{currentTarget:canvas,clientX:125,clientY:25});
+   const pointer={...imageCenters[2]},other={...imageCenters[1]};
+   const enabled=recenterEnabled;resetImageCenter();
+   return {result,flipped,margin,clicked,pointer,other,enabled};
+ })()`,ctx);
+ for(const f of framing.result){assert(Math.abs(f.width-560/packed.pixelMm/f.zoom)<1e-8);assert(Math.abs(f.dx-f.width*.25)<1e-8);assert(Math.abs(f.dy+f.width*.25)<1e-8);assert.equal(f.matrix,f.initialMatrix);}
+ assert(framing.flipped.x<0&&framing.flipped.y>0);assert.equal(framing.margin,false);assert.equal(framing.clicked,true);
+ assert.equal(framing.pointer.x,.25);assert.equal(framing.pointer.y,-.25);assert.equal(framing.other.x,0);assert.equal(framing.enabled,false);
  const geometry=window.GANTRY_LIVE.mag3Geometry(2,window.GANTRY.G);assert.equal(geometry.rawAngle,180);
  const coeff=api.coefficients(1200);assert(coeff.every(v=>v>=0));
  const s={n:128,geometry,cache:{},time:0,counts:new Uint32Array(128*128),frameCounts:new Uint32Array(128*128),expected:new Float64Array(128*128),
@@ -49,6 +77,8 @@ function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;
  assert(document.getElementById('gantryLive').children.includes(panel));assert.equal(document.getElementById('g3dStage').children.length,0);
  assert.equal(document.querySelector('#gantryLive .gantry-live-grid').style.display,'none');
  now=5000;intervals.at(-1)();assert(api.state.time>=5);const once=api.state.total;api.inject();assert(api.state.total>=once);
+ const preserved={...api.state};vm.runInContext('setZoom(1.75);recenterAt(2,.6,.4);',ctx);
+ assert.equal(api.state.total,preserved.total);assert.equal(api.state.matrix,preserved.matrix);assert.equal(api.state.time,preserved.time);
  const controls=panel.shadowRoot;window.GANTRY_LIVE.setStudy('bone');api.stateChanged(window.GANTRY.G);assert(panel.hidden);
  assert.equal(document.querySelector('#gantryLive .gantry-live-grid').style.display,'');
  now=6000;intervals.at(-1)();assert.equal(api.state.time,6);assert(api.state.total>=once);
@@ -72,6 +102,7 @@ function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;
    dynamic_frames:84,frame_sum_equals_total:true,poisson_expected_agreement:true,
    inline_live_bar_no_popup:true,stage_3d_untouched:true,study_switch_keeps_acquiring:true,return_preserves_counts:true,repeat_button_does_not_reset:true,selected_posterior_detector:2,
    pause_speed_finish:true,prone_selects_detector_1:true,inline_scripts_parse:true,embedded_engine_current:true,
+   zoom_1_15_175_2:true,recenter_handles_flips_and_black_margins:true,zoom_and_recenter_preserve_acquired_counts:true,
    browser_ui:'Not exercised: offline numerical/runtime test with mocked DOM'};
  fs.writeFileSync(path.join(root,'assets/icrp145/mag3-verificacion.json'),JSON.stringify(report,null,2));
  assert(!errors.length,String(errors));console.log(JSON.stringify(report,null,2));

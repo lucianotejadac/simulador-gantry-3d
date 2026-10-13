@@ -118,3 +118,16 @@ identifica la fase vascular y permite revisar los cuadros iniciales de 2 s.
 test_mag3_arterial.py y test_mag3_acquisition.cjs aprobados. El montaje de cuentas
 esperadas confirma el tránsito vascular antes del predominio renal. Los tiempos
 son ilustrativos y no una calibración hemodinámica al caso clínico.
+
+## 2026-10-13 - Zoom intermedio y recentrado
+
+Se añaden 1,5× y 1,75×. Los factores son reales y monótonos: el antiguo botón
+2× usaba internamente 1,7×; ahora usa 2×. El zoom conserva la matriz elegida.
+Recentrar permite elegir un punto de la imagen y Centro original restablece
+ambos detectores. Se respetan las inversiones de orientación y se excluyen
+los márgenes negros. Funciona también en los recuadros integrados de MAG3,
+conservando las cuentas previas y aplicando el recorte a las nuevas.
+
+Pruebas numéricas de los cuatro factores, centro elegido, inversiones,
+márgenes, matriz y conservación de cuentas aprobadas. La barra admite varias
+filas para mantener accesibles los controles adicionales.

@@ -9,6 +9,19 @@ encuentran incorporados en un solo archivo: `index.html`.
 Descargue `index.html` y ábralo en un navegador moderno. No requiere conexión
 a Internet.
 
+### Zoom y recentrado
+
+La barra Imagen en vivo ofrece **1×, 1,5×, 1,75× y 2×**, con aumentos reales
+y sin cambiar la matriz elegida. Pulsa **Recentrar** y después haz clic en el
+punto de la imagen que quieres llevar al centro. Cada detector conserva su
+centro; **Centro original** restablece ambos. Se ignoran los clics en los
+márgenes negros externos a la imagen.
+
+En MAG3 puedes seleccionar el centro sobre la suma o el cuadro dinámico. El
+nuevo encuadre afecta sólo las cuentas siguientes: no desplaza ni borra la
+adquisición previa. Los cambios de zoom y centro se guardan en su historia de
+geometría.
+
 ## MIBI cardíaco · brazos arriba
 
 Seleccione **MIBI cardíaco · brazos arriba** en ESTUDIO, o abra

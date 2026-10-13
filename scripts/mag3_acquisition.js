@@ -58,7 +58,7 @@
     if(JSON.stringify(geometry)!==JSON.stringify(session.geometry)){session.geometry=geometry;session.history.push({time:session.time,geometry});}
   }
   const html=`<style>
-  :host{color-scheme:dark;font:11px Consolas,monospace;color:#b7cadd;display:flex;flex:1;min-height:0;flex-direction:column}:host([hidden]){display:none}*{box-sizing:border-box}
+  :host{color-scheme:dark;font:11px Consolas,monospace;color:#b7cadd;display:flex;flex:1;min-height:0;flex-direction:column}:host([hidden]){display:none}:host-context(.recenter-active) canvas{cursor:crosshair}*{box-sizing:border-box}
   .bar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:5px 7px;border-bottom:1px solid #293b4a;flex:none;max-height:90px;overflow:auto}
   button,select,input{font:inherit}button,select{background:#172631;color:#d6e6ef;border:1px solid #42586b;padding:2px 5px}button:focus-visible,select:focus-visible{outline:2px solid #78d9a1}button:disabled{opacity:.5}label{display:flex;gap:4px;align-items:center}input{width:70px}#frame{max-width:145px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px;flex:1;min-height:0}article{border:1px solid #293b4a;background:#0b1218;display:flex;flex-direction:column;min-width:0;min-height:0}h2{font-size:11px;margin:4px 7px;font-weight:normal;color:#7fdfc8}canvas{display:block;width:100%;flex:1;min-height:0;object-fit:contain;background:black}small{font-size:10px;padding:3px 7px;color:#a9bdce;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -110,6 +110,11 @@
     session={detector,n,geometry,cache:{},time:0,lastClock:performance.now(),speed:1,paused:false,finished:false,
       counts:new Uint32Array(n*n),frameCounts:new Uint32Array(n*n),expected:new Float64Array(n*n),total:0,expectedTotal:0,frameIndex:0,frames:[],history:[{time:0,geometry}]};
     const d=panel.shadowRoot;
+    for(const id of ['sum','current']){
+      const canvas=d.getElementById(id);
+      canvas.title='Recentrar: selecciona un punto para las cuentas siguientes; la suma previa se conserva';
+      canvas.onclick=event=>window.GANTRY_LIVE.recenterFromCanvas(session.detector,event);
+    }
     d.getElementById('pause').onclick=()=>{advance();session.paused=!session.paused;refresh();};
     d.getElementById('finish').onclick=()=>{advance();session.finished=true;session.paused=true;refresh();};
     d.getElementById('speed').onchange=e=>{advance();session.speed=Number(e.target.value);};
