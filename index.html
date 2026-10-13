@@ -607,7 +607,7 @@
               <span class="control-label">ESTUDIO</span>
               <select class="live-study" id="liveStudy" aria-label="Estudio mostrado en vivo">
                 <option value="thyroid">Cintigrama tiroideo</option>
-                <option value="exploration">Exploraci&oacute;n</option>
+                <option value="exploration">I-131 postratamiento</option>
                 <option value="dmsa">DMSA renal</option>
                 <option value="maa">MAA pulmonar</option>
                 <option value="parathyroid">Paratiroides</option>
@@ -5487,16 +5487,13 @@ three/build/three.module.js:
 
 <!-- Atlas de cintigrama tiroideo incorporado. -->
 <script>
-window.GANTRY_LIVE_ATLAS="assets/runtime/image.8d8b7e9089b435bf.png";
 
 </script>
 <!-- Atlas de exploracion I-131 incorporado. -->
 <script>
-window.GANTRY_LIVE_ATLAS_EXPLORACION="assets/runtime/image.d2b8c81a04b50f77.png";
 </script>
 <!-- Atlas de paratiroides incorporado. -->
 <script>
-window.GANTRY_LIVE_ATLAS_PARATIROIDES="assets/runtime/image.a11a27ad13a6205d.png";
 
 </script>
 <!-- Atlas de cintigrama oseo incorporado. -->
@@ -5510,7 +5507,7 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="assets/runtime/image.3861454422d07e6c.png";
 <!-- Motor de imagen en vivo incorporado. -->
 <!-- ICRP145_BEGIN -->
 <script>
-window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0,35.0,40.0,45.0,50.0,55.0,60.0,65.0,67.5,70.0,75.0,80.0,85.0,90.0,95.0,100.0,105.0,110.0,112.5,115.0,120.0,125.0,130.0,135.0,140.0,145.0,150.0,155.0,157.5,160.0,165.0,170.0,175.0,180.0,185.0,190.0,195.0,200.0,202.5,205.0,210.0,215.0,220.0,225.0,230.0,235.0,240.0,245.0,247.5,250.0,255.0,260.0,265.0,270.0,275.0,280.0,285.0,290.0,292.5,295.0,300.0,305.0,310.0,315.0,320.0,325.0,330.0,335.0,337.5,340.0,345.0,350.0,355.0],"width":256,"height":640,"scale":0.007534427516218671,"window":222.35995483398438,"headRow":26.984309999999976,"footRow":613.6666666666666,"url":"assets/runtime/icrp-down.3c325b71e8182fe7.deflate"},"up":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0,35.0,40.0,45.0,50.0,55.0,60.0,65.0,67.5,70.0,75.0,80.0,85.0,90.0,95.0,100.0,105.0,110.0,112.5,115.0,120.0,125.0,130.0,135.0,140.0,145.0,150.0,155.0,157.5,160.0,165.0,170.0,175.0,180.0,185.0,190.0,195.0,200.0,202.5,205.0,210.0,215.0,220.0,225.0,230.0,235.0,240.0,245.0,247.5,250.0,255.0,260.0,265.0,270.0,275.0,280.0,285.0,290.0,292.5,295.0,300.0,305.0,310.0,315.0,320.0,325.0,330.0,335.0,337.5,340.0,345.0,350.0,355.0],"width":320,"height":768,"scale":0.007465831767942464,"window":215.846435546875,"headRow":168.98430999999997,"footRow":755.6666666666666,"url":"assets/runtime/icrp-up.07cc6e9a570a3d2a.deflate"},"mibi_up":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":320,"height":768,"scale":0.007246917796787976,"window":352.1590811320954,"headRow":168.98430999999997,"footRow":755.6666666666666,"url":"assets/runtime/icrp-mibi_up.1011b494f9753c3d.deflate"},"thyroid":{"angles":[0,5,15,25,35,45,50,60,70,80,90,95,105,115,125,135,140,150,160,170,180,185,195,205,215,225,230,240,250,260,270,275,285,295,305,315,320,330,340,350],"width":480,"height":960,"scale":0.0016346033097693006,"window":107.12372790573112,"headRow":0,"footRow":960,"pixelMm":1.8229166666666667,"transversePxPerCm":9.6,"source":"Atlas 360 previo \u00b7 intensidad normalizada","url":"assets/runtime/atlas-thyroid.696bed7dda273669.deflate"},"exploration":{"angles":[0.0,22.5,45.0,67.5,90.0,112.5,135.0,157.5,180.0,202.5,225.0,247.5,270.0,292.5,315.0,337.5],"width":480,"height":960,"scale":0.001844997818207055,"window":120.91193201619934,"headRow":0,"footRow":960,"pixelMm":1.8229166666666667,"transversePxPerCm":9.6,"source":"Atlas 360 previo \u00b7 intensidad normalizada","url":"assets/runtime/atlas-exploration.2cc2aa4c1454a9e6.deflate"},"parathyroid":{"angles":[0,5,15,25,35,45,50,60,70,80,90,95,105,115,125,135,140,150,160,170,180,185,195,205,215,225,230,240,250,260,270,275,285,295,305,315,320,330,340,350],"width":480,"height":960,"scale":0.001601239898979408,"window":104.93725677961551,"headRow":0,"footRow":960,"pixelMm":1.8229166666666667,"transversePxPerCm":9.6,"source":"Atlas 360 previo \u00b7 intensidad normalizada","url":"assets/runtime/atlas-parathyroid.e76450ba75c9798d.deflate"},"dmsa":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":256,"height":640,"scale":0.16793771040760663,"window":8803.5546875,"headRow":26.984309999999976,"footRow":613.6666666666666,"pixelMm":3,"source":"ICRP 145 \u00b7 captaci\u00f3n simulada por \u00f3rganos","url":"assets/runtime/icrp-dmsa.3d2c79304fe0e707.deflate"},"maa":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":256,"height":640,"scale":0.017031152768439573,"window":1008.8129272460938,"headRow":26.984309999999976,"footRow":613.6666666666666,"pixelMm":3,"source":"ICRP 145 \u00b7 captaci\u00f3n simulada por \u00f3rganos","url":"assets/runtime/icrp-maa.eeffc34598c0dd99.deflate"}};
+window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0,35.0,40.0,45.0,50.0,55.0,60.0,65.0,67.5,70.0,75.0,80.0,85.0,90.0,95.0,100.0,105.0,110.0,112.5,115.0,120.0,125.0,130.0,135.0,140.0,145.0,150.0,155.0,157.5,160.0,165.0,170.0,175.0,180.0,185.0,190.0,195.0,200.0,202.5,205.0,210.0,215.0,220.0,225.0,230.0,235.0,240.0,245.0,247.5,250.0,255.0,260.0,265.0,270.0,275.0,280.0,285.0,290.0,292.5,295.0,300.0,305.0,310.0,315.0,320.0,325.0,330.0,335.0,337.5,340.0,345.0,350.0,355.0],"width":256,"height":640,"scale":0.007534427516218671,"window":222.35995483398438,"headRow":26.984309999999976,"footRow":613.6666666666666,"url":"assets/runtime/icrp-down.3c325b71e8182fe7.deflate"},"up":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0,35.0,40.0,45.0,50.0,55.0,60.0,65.0,67.5,70.0,75.0,80.0,85.0,90.0,95.0,100.0,105.0,110.0,112.5,115.0,120.0,125.0,130.0,135.0,140.0,145.0,150.0,155.0,157.5,160.0,165.0,170.0,175.0,180.0,185.0,190.0,195.0,200.0,202.5,205.0,210.0,215.0,220.0,225.0,230.0,235.0,240.0,245.0,247.5,250.0,255.0,260.0,265.0,270.0,275.0,280.0,285.0,290.0,292.5,295.0,300.0,305.0,310.0,315.0,320.0,325.0,330.0,335.0,337.5,340.0,345.0,350.0,355.0],"width":320,"height":768,"scale":0.007465831767942464,"window":215.846435546875,"headRow":168.98430999999997,"footRow":755.6666666666666,"url":"assets/runtime/icrp-up.07cc6e9a570a3d2a.deflate"},"mibi_up":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":320,"height":768,"scale":0.007246917796787976,"window":352.1590811320954,"headRow":168.98430999999997,"footRow":755.6666666666666,"url":"assets/runtime/icrp-mibi_up.1011b494f9753c3d.deflate"},"thyroid":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":256,"height":640,"scale":0.05754215528319791,"window":2224.797607421875,"headRow":26.984309999999976,"footRow":613.6666666666666,"pixelMm":3,"source":"ICRP 145 \u00b7 captaci\u00f3n simulada por \u00f3rganos","url":"assets/runtime/icrp-thyroid.1ce883a6a0893e81.deflate"},"exploration":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":256,"height":640,"scale":0.12356831929026474,"window":2949.936767578125,"headRow":26.984309999999976,"footRow":613.6666666666666,"pixelMm":3,"source":"ICRP 145 \u00b7 captaci\u00f3n simulada por \u00f3rganos","url":"assets/runtime/icrp-exploration.fd924e7a42519d86.deflate"},"parathyroid":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":256,"height":640,"scale":0.007605241243049992,"window":358.29180908203125,"headRow":26.984309999999976,"footRow":613.6666666666666,"pixelMm":3,"source":"ICRP 145 \u00b7 captaci\u00f3n simulada por \u00f3rganos","url":"assets/runtime/icrp-parathyroid.e1257f45bc32b819.deflate"},"dmsa":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":256,"height":640,"scale":0.16793771040760663,"window":8803.5546875,"headRow":26.984309999999976,"footRow":613.6666666666666,"pixelMm":3,"source":"ICRP 145 \u00b7 captaci\u00f3n simulada por \u00f3rganos","url":"assets/runtime/icrp-dmsa.3d2c79304fe0e707.deflate"},"maa":{"angles":[0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195,200,205,210,215,220,225,230,235,240,245,250,255,260,265,270,275,280,285,290,295,300,305,310,315,320,325,330,335,340,345,350,355],"width":256,"height":640,"scale":0.017031152768439573,"window":1008.8129272460938,"headRow":26.984309999999976,"footRow":613.6666666666666,"pixelMm":3,"source":"ICRP 145 \u00b7 captaci\u00f3n simulada por \u00f3rganos","url":"assets/runtime/icrp-maa.eeffc34598c0dd99.deflate"}};
 /* Motor lineal y ventana de persistencia. Se incrusta en index.html al construir. */
 (function(){
   'use strict';
@@ -5715,32 +5712,21 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   const studies={
     thyroid:{
       atlasKey:'thyroid',linear:true,angles:window.GANTRY_ICRP_DATA.thyroid.angles,
-      id:'thyroid',label:'Cintigrama tiroideo',
-      tracer:'99mTc-PERTECNETATO · 10 MIN',
-      energy:'low',photopeak:140,energyRange:[80,450],energyResolution:0.10,
-      scatterBase:0.10,recommendedCollimator:'LEHR',
-      source:window.GANTRY_LIVE_ATLAS || 'assets/atlas-pertecnetato-40.png',
-      image:new Image(),ready:false,error:false
+      id:'thyroid',label:'Cintigrama tiroideo',tracer:'99mTc-PERTECNETATO · ICRP 145 · 20 MIN',
+      energy:'low',photopeak:140,energyRange:[80,450],energyResolution:.10,
+      scatterBase:0.1,recommendedCollimator:'LEHR',ready:false,error:false
     },
     exploration:{
       atlasKey:'exploration',linear:true,angles:window.GANTRY_ICRP_DATA.exploration.angles,
-      id:'exploration',label:'Exploración',
-      tracer:'I-131 · EXPLORACIÓN',
-      energy:'high',photopeak:364,energyRange:[80,450],energyResolution:0.10,
-      scatterBase:0.30,recommendedCollimator:'HE',
-      angles:Array.from({length:16},(_,index)=>index*22.5),
-      source:window.GANTRY_LIVE_ATLAS_EXPLORACION,
-      image:new Image(),ready:false,error:false
+      id:'exploration',label:'I-131 postratamiento',tracer:'I-131 · ICRP 145 · POSTRATAMIENTO · DÍA 5',
+      energy:'high',photopeak:364,energyRange:[80,450],energyResolution:.10,
+      scatterBase:0.3,recommendedCollimator:'HE',ready:false,error:false
     },
     parathyroid:{
       atlasKey:'parathyroid',linear:true,angles:window.GANTRY_ICRP_DATA.parathyroid.angles,
-      id:'parathyroid',label:'Paratiroides',
-      tracer:'99mTc-SESTAMIBI · PARATIROIDES',
-      energy:'low',photopeak:140,energyRange:[80,450],energyResolution:0.10,
-      scatterBase:0.10,recommendedCollimator:'LEHR',
-      source:window.GANTRY_LIVE_ATLAS_PARATIROIDES ||
-        'assets/atlas-paratiroides-40.png',
-      image:new Image(),ready:false,error:false
+      id:'parathyroid',label:'Paratiroides',tracer:'99mTc-MIBI · ICRP 145 · PARATIROIDES · 60 MIN · SIN ADENOMA',
+      energy:'low',photopeak:140,energyRange:[80,450],energyResolution:.10,
+      scatterBase:0.1,recommendedCollimator:'LEHR',ready:false,error:false
     },
     dmsa:{
       atlasKey:'dmsa',id:'dmsa',label:'DMSA renal',tracer:'99mTc-DMSA · 3 H',

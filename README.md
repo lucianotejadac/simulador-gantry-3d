@@ -53,28 +53,38 @@ memoria; al volver puede reanudarse. Las cuentas de distintos estudios nunca
 se mezclan. MAG3 mantiene su adquisición dinámica basal y el barrido de cuerpo
 entero sigue disponible en óseo.
 
-MIBI reutiliza sus proyecciones lineales ICRP de 360°. Los atlas previos de
-tiroides (40 vistas), I-131 (16) y paratiroides (40) conservan las vistas
-y resolución originales; sus intensidades se normalizan como pesos de actividad
-para generar eventos nuevos de Poisson. No son cuentas clínicas recuperadas
-ni nuevos volúmenes ICRP sembrados por órgano. La procedencia y esa limitación
-se registran en `assets/icrp145/static-atlas-provenance.json`.
-Estos tres atlas usan brazos al costado; MIBI usa su serie de brazos arriba.
-Para regenerarlos: `python scripts/build_static_atlases.py`, seguido de
-`python scripts/enable_static_studies.py`, `python scripts/embed_bone_acquisition.py`
-y `python scripts/refresh_lazy_assets.py`.
+Todos los estudios estáticos activos usan proyecciones de volúmenes basados
+en ICRP 145. Tiroides/pertecnetato, I-131, paratiroides, DMSA y MAA tienen
+72 vistas a pasos de 5°, con brazos al costado, desde la captación por órgano
+del proyecto `icrp145-multitrazador-ap-pa`. MIBI conserva su serie de brazos
+arriba y el ventrículo sintético adaptado previamente. Los PNG antiguos de
+tiroides, I-131 y paratiroides ya no alimentan las imágenes en vivo ni las
+nuevas adquisiciones; las adquisiciones guardadas anteriores se conservan.
 
-DMSA y MAA tienen 72 proyecciones a pasos de 5°, con brazos al costado,
-generadas desde los mismos volúmenes de captación por órgano del proyecto
-`icrp145-multitrazador-ap-pa`. Conservan los supuestos de DMSA a 3 h y MAA
-a 5 min. Incluyen atenuación y PSF; no incluyen dispersión ni transporte
-Monte Carlo. Son simulaciones educativas de actividad relativa, sin validación
-clínica. Cada atlas comprimido se descarga sólo al seleccionar su estudio.
-La procedencia y comprobación AP/PA están en
-`assets/icrp145/organ-static-provenance.json`. Para regenerarlos, usar
-`python scripts/build_organ_static_360.py` (NumPy, SciPy, Numba y Pillow,
-más el proyecto fuente junto a este repositorio), seguido de los tres
-scripts de integración anteriores desde `enable_static_studies.py`.
+Los escenarios son pertecnetato a 20 min; I-131 al día 5 tras tratamiento de
+100 mCi y tiroidectomía, con pequeño remanente cervical sintético y sin focos
+metastásicos añadidos; paratiroides con distribución MIBI a 60 min, sin adenoma;
+DMSA a 3 h y MAA a 5 min. La segmentación disponible no distingue las
+paratiroides: este escenario no añade glándulas o lesiones artificialmente
+visibles. La referencia de protocolo para MIBI es la
+[guía SNMMI de paratiroides](https://tech.snmjournals.org/content/40/2/111);
+los pesos de actividad son supuestos docentes, no parámetros clínicos ajustados.
+
+Incluyen atenuación y PSF; no incluyen dispersión ni transporte Monte Carlo.
+Para I-131 se conserva la aproximación del modelo AP/PA previo: μ a 140 keV
+multiplicado por 0,70 y PSF de 15 mm. La actividad se normaliza una sola vez
+para toda la serie; 100 mCi no se convierte en cuentas absolutas de cámara.
+Son simulaciones educativas de actividad relativa, sin validación clínica.
+Cada atlas comprimido se descarga sólo al seleccionar su estudio. Procedencia,
+reglas de captación y comprobación AP/PA: `assets/icrp145/organ-static-provenance.json`.
+`static-atlas-provenance.json` documenta únicamente los atlas antiguos retirados.
+
+Para regenerar: `python scripts/build_organ_static_360.py` (NumPy, SciPy,
+Numba y Pillow, más el proyecto fuente junto a este repositorio), seguido de
+`python scripts/enable_static_studies.py`, `python scripts/embed_bone_acquisition.py`
+y `python scripts/refresh_lazy_assets.py`. Puede limitarse la generación con
+`--studies thyroid exploration parathyroid`. `build_static_atlases.py` ahora
+redirige al generador por órganos para impedir recuperar los PNG por error.
 
 ### Zoom y recentrado
 

@@ -1,4 +1,4 @@
-"""Project the existing organ-seeded DMSA/MAA models; no new uptake fitting.
+"""Project organ-seeded ICRP uptake models, never image-derived atlases.
 
 Source defaults to the sibling icrp145-multitrazador-ap-pa project. Original
 float frames stay there; only compressed angular weights enter the simulator.
@@ -18,11 +18,14 @@ from numba import set_num_threads
 from externalize_assets import asset
 
 ROOT = Path(__file__).resolve().parents[1]
+CASES = {'thyroid':'pertecnetato', 'exploration':'i131',
+         'parathyroid':'mibi', 'dmsa':'dmsa', 'maa':'maa'}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, default=ROOT.parent/'icrp145-multitrazador-ap-pa')
+    parser.add_argument('--studies', nargs='+', choices=CASES, default=list(CASES))
     args = parser.parse_args()
     sys.path.insert(0, str(args.source.resolve()))
     import generar as source
@@ -30,20 +33,31 @@ def main():
     set_num_threads(6)
     reg, mu, organs, origin = source.load_volume()
     angles = list(range(0, 360, 5))
-    descriptors, provenance = {}, {}
-    for name in ['dmsa', 'maa']:
-        case = copy.deepcopy(next(c for c in source.CASES if c['id'] == name))
+    provenance_path = ROOT/'assets/icrp145/organ-static-provenance.json'
+    provenance = json.loads(provenance_path.read_text(encoding='utf-8')) if provenance_path.exists() else {}
+    descriptors = {}
+    for name in args.studies:
+        case = copy.deepcopy(next(c for c in source.CASES if c['id'] == CASES[name]))
         activity = source.uptake(case, reg, organs, origin)
+        if name == 'parathyroid':
+            case.update(id='parathyroid', titulo='99mTc-MIBI · paratiroides',
+                descripcion='Distribución MIBI por órganos ICRP a 60 min; estudio normal sin lesión añadida.',
+                escenario='Sin adenoma simulado. La segmentación disponible no distingue paratiroides; no se inventan glándulas visibles.',
+                paratiroides_segmentadas=False,
+                referencia_protocolo='https://tech.snmjournals.org/content/40/2/111')
+        # Same approximate energy scaling as the existing I-131 AP/PA model.
+        attenuation_factor = .70 if case['energy'] == 364 else 1.
+        attenuation = mu*attenuation_factor
         frames = []
         for i, angle in enumerate(angles):
-            frames.append(gaussian_filter(project(activity, mu, math.radians(angle)), case['fwhm']/2.35482/3))
+            frames.append(gaussian_filter(project(activity, attenuation, math.radians(angle)), case['fwhm']/2.35482/3))
             if i % 12 == 0:
                 print(f'{name}: {i+1}/72', flush=True)
         frames = np.stack(frames)
         factor = 2_000_000/float(frames[0].sum())
         frames *= factor
         # Independent AP/PA implementation validates angle convention and registration.
-        pair = source.project_pair(activity, mu)
+        pair = source.project_pair(activity, attenuation)
         pair = np.stack([gaussian_filter(f, case['fwhm']/2.35482/3) for f in pair])*factor
         cardinal_errors = []
         for index, expected in zip([0, 36], pair):
@@ -66,9 +80,12 @@ def main():
             anatomy='ICRP 145 MRCP_AM; original 3 mm organ labels',
             organ_sha256=hashlib.sha256((args.source/'organos_3mm.npz').read_bytes()).hexdigest(),
             uptake_source_sha256=hashlib.sha256((args.source/'generar.py').read_bytes()).hexdigest(),
+            builder_source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
             projector_source_sha256=hashlib.sha256((args.source/'generar_mibi_360.py').read_bytes()).hexdigest(),
             normalization='One factor for all angles; anterior reference 2 M arbitrary expected counts',
-            transport='Parallel rays, 3 mm step, bilinear interpolation, 140 keV attenuation, Gaussian PSF; no scatter or Monte Carlo',
+            transport='Parallel rays, 3 mm step, bilinear interpolation, Gaussian PSF; no scatter or Monte Carlo',
+            attenuation=dict(reference_keV=140, energy_keV=case['energy'], factor=attenuation_factor,
+                method='Original 140 keV mu, scaled by 0.70 for I-131 as in the previous AP/PA model; approximate, not material-specific at 364 keV'),
             limitation='Educational relative uptake model, not a validated clinical or dosimetric simulation',
             cardinal_relative_l1_errors=cardinal_errors, source_urls=source.SOURCES,
             descriptor=descriptors[name])
@@ -85,7 +102,7 @@ def main():
     data.update(descriptors)
     html = html[:match.start(1)]+json.dumps(data, separators=(',', ':'))+html[match.end(1):]
     page.write_text(html, encoding='utf-8', newline='\n')
-    (ROOT/'assets/icrp145/organ-static-provenance.json').write_text(json.dumps(provenance, ensure_ascii=False, indent=2), encoding='utf-8')
+    provenance_path.write_text(json.dumps(provenance, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
 if __name__ == '__main__':

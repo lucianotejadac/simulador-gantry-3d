@@ -516,5 +516,1059 @@
       "source": "ICRP 145 · captación simulada por órganos",
       "url": "assets/runtime/icrp-maa.eeffc34598c0dd99.deflate"
     }
+  },
+  "thyroid": {
+    "case": {
+      "id": "pertecnetato",
+      "titulo": "99mTc-pertecnetato",
+      "nombre": "Pertecnetato de sodio",
+      "tiempo": "20 min",
+      "via": "Intravenosa",
+      "descripcion": "Tiroides, glándulas salivales y estómago, con fondo vascular y eliminación urinaria.",
+      "escenario": "Tiroides conservada; sin bloqueo farmacológico simulado.",
+      "energy": 140,
+      "fwhm": 9,
+      "sources": [
+        "pertecnetato"
+      ],
+      "reglas_captacion": [
+        {
+          "region": "fondo sanguíneo",
+          "ids": [
+            8800,
+            900,
+            910
+          ],
+          "actividad_relativa_por_voxel": 0.11,
+          "voxeles": 18126
+        },
+        {
+          "region": "tiroides",
+          "ids": [
+            13200
+          ],
+          "actividad_relativa_por_voxel": 12.0,
+          "voxeles": 823
+        },
+        {
+          "region": "salivales",
+          "ids": [
+            12000,
+            12100
+          ],
+          "actividad_relativa_por_voxel": 4.5,
+          "voxeles": 3167
+        },
+        {
+          "region": "pared gástrica",
+          "ids": [
+            7200,
+            7201,
+            7202,
+            7203
+          ],
+          "actividad_relativa_por_voxel": 2.8,
+          "voxeles": 7075
+        },
+        {
+          "region": "contenido gástrico",
+          "ids": [
+            7300
+          ],
+          "actividad_relativa_por_voxel": 0.22,
+          "voxeles": 8857
+        },
+        {
+          "region": "corteza renal",
+          "ids": [
+            8900,
+            9200
+          ],
+          "actividad_relativa_por_voxel": 0.25,
+          "voxeles": 11575
+        },
+        {
+          "region": "médula renal",
+          "ids": [
+            9000,
+            9300
+          ],
+          "actividad_relativa_por_voxel": 0.15,
+          "voxeles": 2747
+        },
+        {
+          "region": "pelvis renal",
+          "ids": [
+            9100,
+            9400
+          ],
+          "actividad_relativa_por_voxel": 0.18,
+          "voxeles": 532
+        },
+        {
+          "region": "vejiga",
+          "ids": [
+            13800
+          ],
+          "actividad_relativa_por_voxel": 2.4,
+          "voxeles": 7162
+        }
+      ],
+      "fondo_relativo": 0.012
+    },
+    "angles": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      160,
+      165,
+      170,
+      175,
+      180,
+      185,
+      190,
+      195,
+      200,
+      205,
+      210,
+      215,
+      220,
+      225,
+      230,
+      235,
+      240,
+      245,
+      250,
+      255,
+      260,
+      265,
+      270,
+      275,
+      280,
+      285,
+      290,
+      295,
+      300,
+      305,
+      310,
+      315,
+      320,
+      325,
+      330,
+      335,
+      340,
+      345,
+      350,
+      355
+    ],
+    "posture": "arms down",
+    "anatomy": "ICRP 145 MRCP_AM; original 3 mm organ labels",
+    "organ_sha256": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
+    "uptake_source_sha256": "ea2316b4ec887f3fe6688a0306a6c8c1c91470db696de071f19d8d9bb6a64814",
+    "builder_source_sha256": "2e7a9da40057fad9dd18073ed7672b7ce977caed60681fec696ad247f80e8371",
+    "projector_source_sha256": "675d35ddceda74c7ded26b45975206f46327209fcb56dd66d0a31be7b13b48b4",
+    "normalization": "One factor for all angles; anterior reference 2 M arbitrary expected counts",
+    "transport": "Parallel rays, 3 mm step, bilinear interpolation, Gaussian PSF; no scatter or Monte Carlo",
+    "attenuation": {
+      "reference_keV": 140,
+      "energy_keV": 140,
+      "factor": 1.0,
+      "method": "Original 140 keV mu, scaled by 0.70 for I-131 as in the previous AP/PA model; approximate, not material-specific at 364 keV"
+    },
+    "limitation": "Educational relative uptake model, not a validated clinical or dosimetric simulation",
+    "cardinal_relative_l1_errors": [
+      1.0792687277216828e-07,
+      1.8446787919401686e-07
+    ],
+    "source_urls": {
+      "icrp": {
+        "titulo": "ICRP Publication 145 · anatomía MRCP_AM",
+        "url": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145"
+      },
+      "mibi": {
+        "titulo": "DailyMed · 99mTc-sestamibi · distribución y eliminación",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87"
+      },
+      "mibi_imagenes": {
+        "titulo": "O. Kraft · FN Ostrava · MIBI corporal ANT/POST, figuras 2 y 3",
+        "url": "https://www.kcsolid.cz/zdravotnictvi/klinicka_kapitola/onk/onk-238/onk-238-text.htm"
+      },
+      "pertecnetato": {
+        "titulo": "DailyMed · pertecnetato · farmacología",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=98947d99-5be5-461e-ad36-7425d3646389"
+      },
+      "dmsa": {
+        "titulo": "DailyMed · NEPHROSCAN · captación cortical renal",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ddd90c4a-5792-49c9-837f-710d1a604742"
+      },
+      "i131": {
+        "titulo": "DailyMed · yoduro de sodio I-131 · administración oral y distribución",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=380e8e26-0625-4233-b36e-afb9f66e8a77"
+      },
+      "i131_tiempo": {
+        "titulo": "SNMMI · rastreo post terapia, intervalo de adquisición",
+        "url": "https://tech.snmjournals.org/content/48/3/202"
+      },
+      "maa": {
+        "titulo": "DailyMed · PULMOTECH MAA · distribución pulmonar",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=a8b7adf0-2c6b-4acd-96d3-a099306951a0"
+      }
+    },
+    "descriptor": {
+      "angles": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100,
+        105,
+        110,
+        115,
+        120,
+        125,
+        130,
+        135,
+        140,
+        145,
+        150,
+        155,
+        160,
+        165,
+        170,
+        175,
+        180,
+        185,
+        190,
+        195,
+        200,
+        205,
+        210,
+        215,
+        220,
+        225,
+        230,
+        235,
+        240,
+        245,
+        250,
+        255,
+        260,
+        265,
+        270,
+        275,
+        280,
+        285,
+        290,
+        295,
+        300,
+        305,
+        310,
+        315,
+        320,
+        325,
+        330,
+        335,
+        340,
+        345,
+        350,
+        355
+      ],
+      "width": 256,
+      "height": 640,
+      "scale": 0.05754215528319791,
+      "window": 2224.797607421875,
+      "headRow": 26.984309999999976,
+      "footRow": 613.6666666666666,
+      "pixelMm": 3,
+      "source": "ICRP 145 · captación simulada por órganos",
+      "url": "assets/runtime/icrp-thyroid.1ce883a6a0893e81.deflate"
+    }
+  },
+  "exploration": {
+    "case": {
+      "id": "i131",
+      "titulo": "I-131 · 100 mCi",
+      "nombre": "Post tiroidectomía",
+      "tiempo": "Día 5",
+      "via": "Oral",
+      "descripcion": "Pequeño remanente cervical simulado, salivales, estómago, intestino y señal hepática difusa.",
+      "escenario": "Tiroidectomía total con remanente de tejido añadido como supuesto docente; sin focos metastásicos añadidos.",
+      "actividad_administrada_mCi": 100,
+      "actividad_administrada_MBq": 3700,
+      "energy": 364,
+      "fwhm": 15,
+      "sources": [
+        "i131",
+        "i131_tiempo"
+      ],
+      "remanente": {
+        "voxeles": 25,
+        "volumen_ml": 0.675,
+        "centro_lps_mm": [
+          -9.61757,
+          -11.328460000000007,
+          592.9777099999999
+        ],
+        "actividad_relativa_por_voxel": 65,
+        "supuesto_sintetico": true
+      },
+      "reglas_captacion": [
+        {
+          "region": "lecho tiroideo sin tiroides funcional íntegra",
+          "ids": [
+            13200
+          ],
+          "actividad_relativa_por_voxel": 0.0008,
+          "voxeles": 823
+        },
+        {
+          "region": "salivales",
+          "ids": [
+            12000,
+            12100
+          ],
+          "actividad_relativa_por_voxel": 0.85,
+          "voxeles": 3167
+        },
+        {
+          "region": "actividad en cavidad oral",
+          "ids": [
+            500,
+            501,
+            600
+          ],
+          "actividad_relativa_por_voxel": 0.12,
+          "voxeles": 2
+        },
+        {
+          "region": "pared gástrica",
+          "ids": [
+            7200,
+            7201,
+            7202,
+            7203
+          ],
+          "actividad_relativa_por_voxel": 0.7,
+          "voxeles": 7075
+        },
+        {
+          "region": "contenido gástrico",
+          "ids": [
+            7300
+          ],
+          "actividad_relativa_por_voxel": 0.18,
+          "voxeles": 8857
+        },
+        {
+          "region": "contenido de intestino delgado",
+          "ids": [
+            7500
+          ],
+          "actividad_relativa_por_voxel": 0.018,
+          "voxeles": 1968
+        },
+        {
+          "region": "contenido de colon",
+          "ids": [
+            7700,
+            7900,
+            8100,
+            8300,
+            8500
+          ],
+          "actividad_relativa_por_voxel": 0.09,
+          "voxeles": 10707
+        },
+        {
+          "region": "captación hepática difusa",
+          "ids": [
+            9500
+          ],
+          "actividad_relativa_por_voxel": 0.045,
+          "voxeles": 82452
+        },
+        {
+          "region": "riñones",
+          "ids": [
+            8900,
+            9200,
+            9000,
+            9300
+          ],
+          "actividad_relativa_por_voxel": 0.008,
+          "voxeles": 14322
+        },
+        {
+          "region": "vejiga",
+          "ids": [
+            13800
+          ],
+          "actividad_relativa_por_voxel": 0.09,
+          "voxeles": 7162
+        }
+      ],
+      "fondo_relativo": 0.0008
+    },
+    "angles": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      160,
+      165,
+      170,
+      175,
+      180,
+      185,
+      190,
+      195,
+      200,
+      205,
+      210,
+      215,
+      220,
+      225,
+      230,
+      235,
+      240,
+      245,
+      250,
+      255,
+      260,
+      265,
+      270,
+      275,
+      280,
+      285,
+      290,
+      295,
+      300,
+      305,
+      310,
+      315,
+      320,
+      325,
+      330,
+      335,
+      340,
+      345,
+      350,
+      355
+    ],
+    "posture": "arms down",
+    "anatomy": "ICRP 145 MRCP_AM; original 3 mm organ labels",
+    "organ_sha256": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
+    "uptake_source_sha256": "ea2316b4ec887f3fe6688a0306a6c8c1c91470db696de071f19d8d9bb6a64814",
+    "builder_source_sha256": "2e7a9da40057fad9dd18073ed7672b7ce977caed60681fec696ad247f80e8371",
+    "projector_source_sha256": "675d35ddceda74c7ded26b45975206f46327209fcb56dd66d0a31be7b13b48b4",
+    "normalization": "One factor for all angles; anterior reference 2 M arbitrary expected counts",
+    "transport": "Parallel rays, 3 mm step, bilinear interpolation, Gaussian PSF; no scatter or Monte Carlo",
+    "attenuation": {
+      "reference_keV": 140,
+      "energy_keV": 364,
+      "factor": 0.7,
+      "method": "Original 140 keV mu, scaled by 0.70 for I-131 as in the previous AP/PA model; approximate, not material-specific at 364 keV"
+    },
+    "limitation": "Educational relative uptake model, not a validated clinical or dosimetric simulation",
+    "cardinal_relative_l1_errors": [
+      1.1848773340261687e-07,
+      2.0680101897596614e-07
+    ],
+    "source_urls": {
+      "icrp": {
+        "titulo": "ICRP Publication 145 · anatomía MRCP_AM",
+        "url": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145"
+      },
+      "mibi": {
+        "titulo": "DailyMed · 99mTc-sestamibi · distribución y eliminación",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87"
+      },
+      "mibi_imagenes": {
+        "titulo": "O. Kraft · FN Ostrava · MIBI corporal ANT/POST, figuras 2 y 3",
+        "url": "https://www.kcsolid.cz/zdravotnictvi/klinicka_kapitola/onk/onk-238/onk-238-text.htm"
+      },
+      "pertecnetato": {
+        "titulo": "DailyMed · pertecnetato · farmacología",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=98947d99-5be5-461e-ad36-7425d3646389"
+      },
+      "dmsa": {
+        "titulo": "DailyMed · NEPHROSCAN · captación cortical renal",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ddd90c4a-5792-49c9-837f-710d1a604742"
+      },
+      "i131": {
+        "titulo": "DailyMed · yoduro de sodio I-131 · administración oral y distribución",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=380e8e26-0625-4233-b36e-afb9f66e8a77"
+      },
+      "i131_tiempo": {
+        "titulo": "SNMMI · rastreo post terapia, intervalo de adquisición",
+        "url": "https://tech.snmjournals.org/content/48/3/202"
+      },
+      "maa": {
+        "titulo": "DailyMed · PULMOTECH MAA · distribución pulmonar",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=a8b7adf0-2c6b-4acd-96d3-a099306951a0"
+      }
+    },
+    "descriptor": {
+      "angles": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100,
+        105,
+        110,
+        115,
+        120,
+        125,
+        130,
+        135,
+        140,
+        145,
+        150,
+        155,
+        160,
+        165,
+        170,
+        175,
+        180,
+        185,
+        190,
+        195,
+        200,
+        205,
+        210,
+        215,
+        220,
+        225,
+        230,
+        235,
+        240,
+        245,
+        250,
+        255,
+        260,
+        265,
+        270,
+        275,
+        280,
+        285,
+        290,
+        295,
+        300,
+        305,
+        310,
+        315,
+        320,
+        325,
+        330,
+        335,
+        340,
+        345,
+        350,
+        355
+      ],
+      "width": 256,
+      "height": 640,
+      "scale": 0.12356831929026474,
+      "window": 2949.936767578125,
+      "headRow": 26.984309999999976,
+      "footRow": 613.6666666666666,
+      "pixelMm": 3,
+      "source": "ICRP 145 · captación simulada por órganos",
+      "url": "assets/runtime/icrp-exploration.fd924e7a42519d86.deflate"
+    }
+  },
+  "parathyroid": {
+    "case": {
+      "id": "parathyroid",
+      "titulo": "99mTc-MIBI · paratiroides",
+      "nombre": "Sestamibi",
+      "tiempo": "60 min",
+      "via": "Intravenosa",
+      "descripcion": "Distribución MIBI por órganos ICRP a 60 min; estudio normal sin lesión añadida.",
+      "escenario": "Sin adenoma simulado. La segmentación disponible no distingue paratiroides; no se inventan glándulas visibles.",
+      "energy": 140,
+      "fwhm": 9,
+      "sources": [
+        "mibi",
+        "mibi_imagenes"
+      ],
+      "region_vi_aproximada": {
+        "tipo": "Región ventricular izquierda aproximada sobre Heart_wall; delimitación sintética",
+        "metodo": "Semiespacio oblicuo con transición logística; no segmentación de cámaras",
+        "id_icrp_soporte": 8700,
+        "base_zyx_voxel": [
+          451.0,
+          47.0,
+          106.0
+        ],
+        "base_lps_mm": [
+          22.542429999999968,
+          -3.5284599999999955,
+          465.89770999999996
+        ],
+        "direccion_hacia_apice_lps": [
+          0.8068188894866839,
+          -0.23994613813730373,
+          -0.5398788108089334
+        ],
+        "umbral_mm": 15.0,
+        "transicion_mm": 5.4,
+        "peso_residual": 0.025,
+        "voxeles_region_destacada": 5497,
+        "fraccion_actividad_cardiaca_region_destacada": 0.8924573945942507,
+        "cavidad": "Actividad sanguínea previa conservada; sin añadir captación miocárdica en la cavidad",
+        "limite": "Aproxima la pared izquierda/apical; no reconstruye el septo ni distingue anatómicamente todas las cámaras.",
+        "actividad_cardiaca_integrada": 9646.884002115577,
+        "actividad_relativa_por_voxel_min_max": [
+          0.04212811216711998,
+          1.6851005554199219
+        ]
+      },
+      "calibracion_mibi": {
+        "version": "2026-10-12",
+        "tipo": "Ajuste visual y restricción relativa de actividad; no calibración cuantitativa de cámara",
+        "corazon_higado_actividad_integrada_objetivo": 0.18,
+        "referencia_relacion": "DailyMed, tabla 6: 0,9 % / 5,0 % de actividad efectiva a 1 h en reposo",
+        "figuras_comparadas": "Kraft, caso ONK-238, figuras 2 (2011) y 3 (2015)",
+        "limite_referencias": "Tiempo postinyección no especificado. Paciente tiroidectomizado; figura 3 con adenopatías axilares patológicas. Se comparó distribución extracervical, sin copiar esos focos.",
+        "otros_pesos": "Intestino y músculo ajustados visualmente; no son porcentajes medidos.",
+        "geometria_cardiaca": "Geometría ICRP conservada; captación no uniforme en Heart_wall con énfasis izquierdo/apical sintético. Ver region_vi_aproximada."
+      },
+      "reglas_captacion": [
+        {
+          "region": "músculo",
+          "ids": [
+            10600,
+            10700,
+            10800,
+            10900
+          ],
+          "actividad_relativa_por_voxel": 0.035,
+          "voxeles": 1050510
+        },
+        {
+          "region": "miocardio",
+          "ids": [
+            8700
+          ],
+          "actividad_relativa_por_voxel": 0.7160691805225653,
+          "voxeles": 13472,
+          "distribucion": "No uniforme: actividad_relativa_por_voxel expresa el promedio; ver region_vi_aproximada"
+        },
+        {
+          "region": "sangre",
+          "ids": [
+            8800,
+            900,
+            910
+          ],
+          "actividad_relativa_por_voxel": 0.035,
+          "voxeles": 18126
+        },
+        {
+          "region": "hígado",
+          "ids": [
+            9500
+          ],
+          "actividad_relativa_por_voxel": 0.65,
+          "voxeles": 82452
+        },
+        {
+          "region": "vesícula y bilis",
+          "ids": [
+            7000,
+            7100
+          ],
+          "actividad_relativa_por_voxel": 1.1,
+          "voxeles": 2467
+        },
+        {
+          "region": "contenido completo de intestino delgado",
+          "ids": [
+            7500,
+            7501
+          ],
+          "actividad_relativa_por_voxel": 0.9,
+          "voxeles": 12492
+        },
+        {
+          "region": "contenido de colon",
+          "ids": [
+            7700,
+            7900,
+            8100,
+            8300,
+            8500
+          ],
+          "actividad_relativa_por_voxel": 0.12,
+          "voxeles": 10707
+        },
+        {
+          "region": "corteza renal",
+          "ids": [
+            8900,
+            9200
+          ],
+          "actividad_relativa_por_voxel": 1.3,
+          "voxeles": 11575
+        },
+        {
+          "region": "médula renal",
+          "ids": [
+            9000,
+            9300
+          ],
+          "actividad_relativa_por_voxel": 0.45,
+          "voxeles": 2747
+        },
+        {
+          "region": "pelvis renal",
+          "ids": [
+            9100,
+            9400
+          ],
+          "actividad_relativa_por_voxel": 0.2,
+          "voxeles": 532
+        },
+        {
+          "region": "vejiga",
+          "ids": [
+            13800
+          ],
+          "actividad_relativa_por_voxel": 1.5,
+          "voxeles": 7162
+        },
+        {
+          "region": "salivales",
+          "ids": [
+            12000,
+            12100
+          ],
+          "actividad_relativa_por_voxel": 1.4,
+          "voxeles": 3167
+        },
+        {
+          "region": "tiroides",
+          "ids": [
+            13200
+          ],
+          "actividad_relativa_por_voxel": 0.65,
+          "voxeles": 823
+        },
+        {
+          "region": "bazo",
+          "ids": [
+            12700
+          ],
+          "actividad_relativa_por_voxel": 0.18,
+          "voxeles": 7981
+        }
+      ],
+      "fondo_relativo": 0.012,
+      "paratiroides_segmentadas": false,
+      "referencia_protocolo": "https://tech.snmjournals.org/content/40/2/111"
+    },
+    "angles": [
+      0,
+      5,
+      10,
+      15,
+      20,
+      25,
+      30,
+      35,
+      40,
+      45,
+      50,
+      55,
+      60,
+      65,
+      70,
+      75,
+      80,
+      85,
+      90,
+      95,
+      100,
+      105,
+      110,
+      115,
+      120,
+      125,
+      130,
+      135,
+      140,
+      145,
+      150,
+      155,
+      160,
+      165,
+      170,
+      175,
+      180,
+      185,
+      190,
+      195,
+      200,
+      205,
+      210,
+      215,
+      220,
+      225,
+      230,
+      235,
+      240,
+      245,
+      250,
+      255,
+      260,
+      265,
+      270,
+      275,
+      280,
+      285,
+      290,
+      295,
+      300,
+      305,
+      310,
+      315,
+      320,
+      325,
+      330,
+      335,
+      340,
+      345,
+      350,
+      355
+    ],
+    "posture": "arms down",
+    "anatomy": "ICRP 145 MRCP_AM; original 3 mm organ labels",
+    "organ_sha256": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
+    "uptake_source_sha256": "ea2316b4ec887f3fe6688a0306a6c8c1c91470db696de071f19d8d9bb6a64814",
+    "builder_source_sha256": "2e7a9da40057fad9dd18073ed7672b7ce977caed60681fec696ad247f80e8371",
+    "projector_source_sha256": "675d35ddceda74c7ded26b45975206f46327209fcb56dd66d0a31be7b13b48b4",
+    "normalization": "One factor for all angles; anterior reference 2 M arbitrary expected counts",
+    "transport": "Parallel rays, 3 mm step, bilinear interpolation, Gaussian PSF; no scatter or Monte Carlo",
+    "attenuation": {
+      "reference_keV": 140,
+      "energy_keV": 140,
+      "factor": 1.0,
+      "method": "Original 140 keV mu, scaled by 0.70 for I-131 as in the previous AP/PA model; approximate, not material-specific at 364 keV"
+    },
+    "limitation": "Educational relative uptake model, not a validated clinical or dosimetric simulation",
+    "cardinal_relative_l1_errors": [
+      1.2602687604612584e-07,
+      1.566594534097021e-07
+    ],
+    "source_urls": {
+      "icrp": {
+        "titulo": "ICRP Publication 145 · anatomía MRCP_AM",
+        "url": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145"
+      },
+      "mibi": {
+        "titulo": "DailyMed · 99mTc-sestamibi · distribución y eliminación",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87"
+      },
+      "mibi_imagenes": {
+        "titulo": "O. Kraft · FN Ostrava · MIBI corporal ANT/POST, figuras 2 y 3",
+        "url": "https://www.kcsolid.cz/zdravotnictvi/klinicka_kapitola/onk/onk-238/onk-238-text.htm"
+      },
+      "pertecnetato": {
+        "titulo": "DailyMed · pertecnetato · farmacología",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=98947d99-5be5-461e-ad36-7425d3646389"
+      },
+      "dmsa": {
+        "titulo": "DailyMed · NEPHROSCAN · captación cortical renal",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ddd90c4a-5792-49c9-837f-710d1a604742"
+      },
+      "i131": {
+        "titulo": "DailyMed · yoduro de sodio I-131 · administración oral y distribución",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=380e8e26-0625-4233-b36e-afb9f66e8a77"
+      },
+      "i131_tiempo": {
+        "titulo": "SNMMI · rastreo post terapia, intervalo de adquisición",
+        "url": "https://tech.snmjournals.org/content/48/3/202"
+      },
+      "maa": {
+        "titulo": "DailyMed · PULMOTECH MAA · distribución pulmonar",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/fda/fdaDrugXsl.cfm?setid=a8b7adf0-2c6b-4acd-96d3-a099306951a0"
+      }
+    },
+    "descriptor": {
+      "angles": [
+        0,
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        35,
+        40,
+        45,
+        50,
+        55,
+        60,
+        65,
+        70,
+        75,
+        80,
+        85,
+        90,
+        95,
+        100,
+        105,
+        110,
+        115,
+        120,
+        125,
+        130,
+        135,
+        140,
+        145,
+        150,
+        155,
+        160,
+        165,
+        170,
+        175,
+        180,
+        185,
+        190,
+        195,
+        200,
+        205,
+        210,
+        215,
+        220,
+        225,
+        230,
+        235,
+        240,
+        245,
+        250,
+        255,
+        260,
+        265,
+        270,
+        275,
+        280,
+        285,
+        290,
+        295,
+        300,
+        305,
+        310,
+        315,
+        320,
+        325,
+        330,
+        335,
+        340,
+        345,
+        350,
+        355
+      ],
+      "width": 256,
+      "height": 640,
+      "scale": 0.007605241243049992,
+      "window": 358.29180908203125,
+      "headRow": 26.984309999999976,
+      "footRow": 613.6666666666666,
+      "pixelMm": 3,
+      "source": "ICRP 145 · captación simulada por órganos",
+      "url": "assets/runtime/icrp-parathyroid.e1257f45bc32b819.deflate"
+    }
   }
 }
