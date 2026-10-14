@@ -541,6 +541,38 @@ Prueba: `node tests/test_mibi_kinetics.cjs`. Procedencia y resultados en
 `assets/icrp145/mibi-kinetic-provenance.json` y
 `assets/icrp145/mibi-kinetic-verification.json`.
 
+## Imagen final con las condiciones actuales
+
+En el menú **SEÑAL → Imagen final con condiciones actuales**, los dos cuadros
+de adquisición se ocultan y las dos imágenes de detector muestran una
+adquisición estática prevista. Se elige duración (1–3.600 s) o cuentas por
+detector (1–10.000.000). Distancia a piel, orientación, campo, posición de la
+camilla, recentrado, zoom, matriz, colimador y ventana energética usan los
+mismos campos lineales y desenfoque que la adquisición real del simulador.
+La geometría permanece fija durante cada predicción; no se prevé un barrido
+de cuerpo entero. MAG3 conserva su modo dinámico propio.
+
+Óseo y MIBI integran sus fracciones temporales desde el intervalo
+inyección–examen seleccionado, con actividad y decaimiento actuales, sin
+avanzar el reloj del estudio. Para otros estudios estáticos se usa su atlas
+y tasa actuales. La predicción por tiempo genera ruido de Poisson; por
+cuentas genera exactamente el total elegido a partir de la distribución
+integrada, con un tiempo estimado independiente para cada detector. Ese
+tiempo procede de la tasa esperada, no de una realización aleatoria del
+instante de llegada del último evento. Si el modelo termina antes de llegar
+al objetivo, se muestra la exposición disponible y el aviso correspondiente.
+
+Los cambios recalculan la imagen; el ruido se conserva entre repintados y
+**Nueva muestra de ruido** genera otra realización. El cálculo no inicia,
+guarda ni modifica adquisiciones. Una adquisición estática pendiente se
+pausa al entrar y sigue pausada al salir; conserva sus cuentas y parámetros
+de inyección bloqueados hasta finalizar. Durante un barrido en movimiento,
+la opción queda deshabilitada. Volver a **En vivo** recupera los cuatro cuadros.
+
+Motor externo: `scripts/final_preview.js`. Actualización:
+`python scripts/embed_final_preview.py`; prueba:
+`node tests/test_final_preview.cjs`.
+
 ## Derechos de autor
 
 Copyright © 2026 Luciano Tejada Castro. Distribuido bajo licencia [MIT](LICENSE).

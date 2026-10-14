@@ -93,6 +93,7 @@
     el('mibiControls').hidden=!active;
     if(active&&el('boneCountRate'))el('boneCountRate').closest('label').hidden=true;
     for(const id of ['mibiActivity','mibiUnit','mibiMinutes','mibiTimeline','mibiProtocol','mibiPlay','mibiSpeed','mibiVoid','mibiUsual','mibiLate'])el(id).disabled=!!locked;
+    if(window.GANTRY_LIVE?.signal?.mode==='final')el('mibiPlay').disabled=true;
     if(document.activeElement!==el('mibiMinutes'))el('mibiMinutes').value=(state.seconds/60).toFixed(2);
     el('mibiTimeline').value=state.seconds;
     el('mibiPlay').textContent=state.playing?'Pausar evolución':state.seconds>=LIMIT?'Reiniciar desde 0':'Reproducir evolución';

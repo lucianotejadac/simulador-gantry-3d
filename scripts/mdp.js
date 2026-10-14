@@ -89,6 +89,7 @@
     el('mdpControls').hidden=!active;
     if(el('boneCountRate'))el('boneCountRate').closest('label').hidden=active||(window.GANTRY_LIVE?.settings.study==='mibi'&&!!window.GANTRY_MIBI);
     for(const id of ['mdpActivity','mdpUnit','mdpMinutes','mdpTimeline','mdpPlay','mdpSpeed','mdpVoid'])el(id).disabled=!!locked;
+    if(window.GANTRY_LIVE?.signal?.mode==='final')el('mdpPlay').disabled=true;
     if(document.activeElement!==el('mdpMinutes'))el('mdpMinutes').value=(state.seconds/60).toFixed(2);
     el('mdpTimeline').value=state.seconds;
     el('mdpPlay').textContent=state.playing?'Pausar evolución':state.seconds>=LIMIT?'Reiniciar desde 0':'Reproducir evolución';
