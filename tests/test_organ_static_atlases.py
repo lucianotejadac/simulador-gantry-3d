@@ -16,6 +16,12 @@ for name in ['dmsa', 'maa', 'thyroid', 'exploration', 'parathyroid']:
     assert p['angles'] == list(range(0, 360, 5))
     raw = (root/p['url']).read_bytes()
     assert hashlib.sha256(raw).hexdigest()[:16] in p['url']
+    if name == 'parathyroid':
+        assert p==data['mibi_up']
+        assert provenance[name]['shared_model']=='mibi_up'
+        assert provenance[name]['asset_sha256']==hashlib.sha256(raw).hexdigest()
+        print(name, 'Exact shared cardiac MIBI volume, scale, window, registration and angles OK')
+        continue
     quant = np.frombuffer(zlib.decompress(raw), dtype='<u2').reshape(72,640,256)
     frames = quant*p['scale']
     assert np.all(frames.sum(axis=(1,2))>0)
@@ -30,10 +36,6 @@ for name in ['dmsa', 'maa', 'thyroid', 'exploration', 'parathyroid']:
     if name == 'exploration':
         assert case['energy']==364 and case['remanente']['voxeles']==25
         assert provenance[name]['attenuation']['factor']==.7
-    if name == 'parathyroid':
-        assert case['paratiroides_segmentadas'] is False
-        assert case['energy']==140
-        assert any(r['ids']==[13200] and r['voxeles']>0 for r in rules)
     original = root.parent/'icrp145-multitrazador-ap-pa'/(name+'-360')/'proyecciones_lineales.npz'
     if original.exists():
         expected = np.load(original)['cuentas_esperadas']

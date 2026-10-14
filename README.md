@@ -54,16 +54,20 @@ se mezclan. MAG3 mantiene su adquisición dinámica basal y el barrido de cuerpo
 entero sigue disponible en óseo.
 
 Todos los estudios estáticos activos usan proyecciones de volúmenes basados
-en ICRP 145. Tiroides/pertecnetato, I-131, paratiroides, DMSA y MAA tienen
+en ICRP 145. Tiroides/pertecnetato, I-131, DMSA y MAA tienen
 72 vistas a pasos de 5°, con brazos al costado, desde la captación por órgano
 del proyecto `icrp145-multitrazador-ap-pa`. MIBI conserva su serie de brazos
-arriba y el ventrículo sintético adaptado previamente. Los PNG antiguos de
+arriba y el ventrículo sintético adaptado previamente. Paratiroides comparte
+exactamente ese mismo atlas cardíaco MIBI de 72 vistas: misma captación,
+ventrículo izquierdo ampliado, postura de brazos arriba y escala de imagen.
+Ambos estudios reutilizan la misma descarga, pero mantienen adquisiciones
+y nombres guardados independientes. Los PNG antiguos de
 tiroides, I-131 y paratiroides ya no alimentan las imágenes en vivo ni las
 nuevas adquisiciones; las adquisiciones guardadas anteriores se conservan.
 
 Los escenarios son pertecnetato a 20 min; I-131 al día 5 tras tratamiento de
 100 mCi y tiroidectomía, con pequeño remanente cervical sintético y sin focos
-metastásicos añadidos; paratiroides con distribución MIBI a 60 min, sin adenoma;
+metastásicos añadidos; paratiroides con el modelo MIBI cardíaco a 60 min, sin adenoma;
 DMSA a 3 h y MAA a 5 min. La segmentación disponible no distingue las
 paratiroides: este escenario no añade glándulas o lesiones artificialmente
 visibles. La referencia de protocolo para MIBI es la

@@ -16,6 +16,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from numba import set_num_threads
 from externalize_assets import asset
+from share_mibi_model import share_mibi_model
 
 ROOT = Path(__file__).resolve().parents[1]
 CASES = {'thyroid':'pertecnetato', 'exploration':'i131',
@@ -31,20 +32,17 @@ def main():
     import generar as source
     from generar_mibi_360 import project
     set_num_threads(6)
-    reg, mu, organs, origin = source.load_volume()
+    if any(name!='parathyroid' for name in args.studies):
+        reg, mu, organs, origin = source.load_volume()
     angles = list(range(0, 360, 5))
     provenance_path = ROOT/'assets/icrp145/organ-static-provenance.json'
     provenance = json.loads(provenance_path.read_text(encoding='utf-8')) if provenance_path.exists() else {}
     descriptors = {}
     for name in args.studies:
+        if name == 'parathyroid':
+            continue  # Shared cardiac MIBI atlas, including its modified LV.
         case = copy.deepcopy(next(c for c in source.CASES if c['id'] == CASES[name]))
         activity = source.uptake(case, reg, organs, origin)
-        if name == 'parathyroid':
-            case.update(id='parathyroid', titulo='99mTc-MIBI · paratiroides',
-                descripcion='Distribución MIBI por órganos ICRP a 60 min; estudio normal sin lesión añadida.',
-                escenario='Sin adenoma simulado. La segmentación disponible no distingue paratiroides; no se inventan glándulas visibles.',
-                paratiroides_segmentadas=False,
-                referencia_protocolo='https://tech.snmjournals.org/content/40/2/111')
         # Same approximate energy scaling as the existing I-131 AP/PA model.
         attenuation_factor = .70 if case['energy'] == 364 else 1.
         attenuation = mu*attenuation_factor
@@ -101,8 +99,8 @@ def main():
     data = json.loads(match[1])
     data.update(descriptors)
     html = html[:match.start(1)]+json.dumps(data, separators=(',', ':'))+html[match.end(1):]
-    page.write_text(html, encoding='utf-8', newline='\n')
     provenance_path.write_text(json.dumps(provenance, ensure_ascii=False, indent=2), encoding='utf-8')
+    page.write_text(share_mibi_model(html), encoding='utf-8', newline='\n')
 
 
 if __name__ == '__main__':

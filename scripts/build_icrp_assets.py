@@ -66,3 +66,5 @@ print('Embedded linear data and live engine')
 
 from externalize_assets import externalize
 externalize()
+from share_mibi_model import share_mibi_model
+page.write_text(share_mibi_model(page.read_text(encoding='utf-8')),encoding='utf-8',newline='\n')

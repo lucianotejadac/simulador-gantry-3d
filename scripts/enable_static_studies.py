@@ -1,6 +1,7 @@
 """Refresh the live UI integration for all existing static 360 studies."""
 from pathlib import Path
 import re
+from share_mibi_model import share_mibi_model
 ROOT=Path(__file__).resolve().parents[1]
 p=ROOT/'index.html';s=p.read_text(encoding='utf-8')
 if '// STATIC_STUDIES_ENABLED' not in s:
@@ -47,9 +48,10 @@ s=s.replace("['thyroid','exploration','parathyroid'].includes(acquisition.study)
 for name, label, tracer, peak, scatter, collimator in [
     ('thyroid','Cintigrama tiroideo','99mTc-PERTECNETATO · ICRP 145 · 20 MIN',140,.10,'LEHR'),
     ('exploration','I-131 postratamiento','I-131 · ICRP 145 · POSTRATAMIENTO · DÍA 5',364,.30,'HE'),
-    ('parathyroid','Paratiroides','99mTc-MIBI · ICRP 145 · PARATIROIDES · 60 MIN · SIN ADENOMA',140,.10,'LEHR')]:
+    ('parathyroid','Paratiroides','99mTc-MIBI · PARATIROIDES · VI AMPLIADO · BRAZOS ARRIBA',140,.10,'LEHR')]:
+    atlas_key = 'mibi_up' if name=='parathyroid' else name
     descriptor = f"""    {name}:{{
-      atlasKey:'{name}',linear:true,angles:window.GANTRY_ICRP_DATA.{name}.angles,
+      atlasKey:'{atlas_key}',linear:true,angles:window.GANTRY_ICRP_DATA.{atlas_key}.angles,
       id:'{name}',label:'{label}',tracer:'{tracer}',
       energy:'{'high' if peak==364 else 'low'}',photopeak:{peak},energyRange:[80,450],energyResolution:.10,
       scatterBase:{scatter},recommendedCollimator:'{collimator}',ready:false,error:false
@@ -60,4 +62,11 @@ s=s.replace('<option value="exploration">Exploraci&oacute;n</option>',
             '<option value="exploration">I-131 postratamiento</option>')
 # Old PNG declarations have no runtime consumer after the organ migration.
 s=re.sub(r'window\.GANTRY_LIVE_ATLAS(?:_EXPLORACION|_PARATIROIDES)?=.*?;\n','',s)
+s=s.replace("['thyroid','exploration','parathyroid','dmsa','maa'].includes(acquisition.study)",
+            "['thyroid','exploration','dmsa','maa'].includes(acquisition.study)")
+s=s.replace("const fixedArms=acquisition.study==='mibi';", "const fixedArms=['mibi','parathyroid'].includes(acquisition.study);")
+s=s.replace("if(acquisition.study==='mibi' && window.GANTRY)", "if(['mibi','parathyroid'].includes(acquisition.study) && window.GANTRY)")
+s=s.replace('  update(window.GANTRY && window.GANTRY.G);\n})();',
+            '  setStudy(acquisition.study);\n})();',1)
+s=share_mibi_model(s)
 p.write_text(s,encoding='utf-8',newline='\n')
