@@ -452,6 +452,15 @@ Reproducir evolución. A los 180 min se detiene la adquisición, aunque la meta
 de cuentas aún no se alcance. Las copias guardadas conservan actividad,
 intervalo de tiempo y supuestos originales.
 
+El realce cardíaco del componente vascular se conserva hasta los 5 min y
+se atenúa suavemente entre 5 y 30 min. Desde los 30 min la sangre residual
+usa la base de fondo difuso, sin realce focal del corazón ni de los vasos.
+Es una elección docente de representación espacial, no un umbral fisiológico
+de desaparición de sangre: las fracciones sanguíneas y el balance de actividad
+se mantienen. No altera la captación ósea, renal o vesical ni el MIBI.
+Las cuentas ya adquiridas y las imágenes guardadas no se borran al transcurrir
+ese intervalo; el cambio afecta a los eventos nuevos (`mdp-v2`).
+
 Los atlas externos se cargan sólo para la postura seleccionada (3,34/3,70 MB),
 y se cachean las bases ya recortadas y desenfocadas. Cambiar el tiempo sólo
 remezcla estas bases. El HTML no incorpora los volúmenes ni los binarios.

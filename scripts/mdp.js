@@ -19,8 +19,14 @@
     const b=biological(t),excreted=voidAt120&&t>=120?biological(120).urine:0;
     const s=t*60,central=Math.exp(-s/6),lungs=(1-central)*Math.exp(-s/12);
     const arteries=(1-central-lungs)*Math.exp(-s/25),decay=2**(-t/HALF);
-    const weights=[b.bone,b.blood*(1-central-lungs-arteries),b.soft,b.renal,b.urine-excreted,b.blood*central,b.blood*lungs,b.blood*arteries].map(x=>Math.max(0,x)*decay);
-    return {weights,decay,excreted:excreted*decay,blood:b.blood*decay,bone:b.bone*decay,renal:b.renal*decay,soft:b.soft*decay,bladder:(b.urine-excreted)*decay};
+    // The inherited vascular basis strongly emphasizes the cardiac chambers.
+    // Retain it for first pass/pool, then replace its spatial contrast with
+    // diffuse background. This is a teaching display model, not zero blood
+    // activity at 30 min. Preserve total circulating activity and bone/renal kinetics.
+    const u=Math.max(0,Math.min(1,(t-5)/25)),vascularContrast=1-u*u*(3-2*u);
+    const visibleBlood=b.blood*vascularContrast,diffuseBlood=b.blood-visibleBlood;
+    const weights=[b.bone,visibleBlood*(1-central-lungs-arteries),b.soft+diffuseBlood,b.renal,b.urine-excreted,visibleBlood*central,visibleBlood*lungs,visibleBlood*arteries].map(x=>Math.max(0,x)*decay);
+    return {weights,decay,vascularContrast,diffuseBlood:diffuseBlood*decay,excreted:excreted*decay,blood:b.blood*decay,bone:b.bone*decay,renal:b.renal*decay,soft:b.soft*decay,bladder:(b.urine-excreted)*decay};
   }
   async function load(name){
     if(poses[name])return poses[name];
@@ -76,7 +82,7 @@
     if(state.seconds>=LIMIT&&!session.finished){session.finished=true;session.mdpLimit=true;}
   }
   const el=id=>document.getElementById(id);
-  function metadata(){return {...state,model:'mdp-v1',sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
+  function metadata(){return {...state,model:'mdp-v2',vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
   function render(){
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;

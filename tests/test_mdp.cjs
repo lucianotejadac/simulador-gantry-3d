@@ -22,6 +22,15 @@ assert(Math.abs(M.fractions(7200).blood/M.fractions(7200).decay-.05)<.005);
 assert(M.fractions(10800).bone/M.fractions(10800).decay>.48);
 assert(M.fractions(7199).bladder>.3);assert.equal(M.fractions(7200).bladder,0);
 assert(M.fractions(10800).bladder>0);assert(M.fractions(7200,false).bladder>.3);
+assert.equal(M.fractions(300).vascularContrast,1,'retain early blood-pool contrast');
+assert.equal(M.fractions(1050).vascularContrast,.5,'smooth transition at 17.5 minutes');
+for(const seconds of [1800,3600,7200,10800]){
+ const f=M.fractions(seconds);
+ for(const c of [1,5,6,7])assert.equal(f.weights[c],0,'no focal cardiac/vascular component after 30 min');
+ assert(f.blood>0,'blood activity has not been deleted');
+ assert.equal(f.diffuseBlood,f.blood);
+ assert(Math.abs(f.weights[2]-f.soft-f.blood)<1e-12,'residual blood appears as diffuse background');
+}
 const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
 (async()=>{
  const sums={};
@@ -38,7 +47,7 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
    assert(Math.abs(late.cdf.at(-1)-late.sum)<1e-6);
    const cached=cache.bases;f(3600);assert.equal(cache.bases,cached,'reuse spatial bases while changing time');
    const r1=late.sum*370*100/2000000,r2=late.sum*M.rate/2000000;
-   assert.equal(r2/r1,2,'activity scaling is linear');
+   assert(Math.abs(r2/r1-2)<1e-12,'activity scaling is linear');
    sums[name][angle]={initialCps:early.sum*M.rate/2000000,threeHourCps:r2};
   }
  }
@@ -46,6 +55,9 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
  // Integrating a changing distribution is different from multiplying a single late frame.
  const n=128,bases=Array.from({length:8},(_,c)=>{const a=new Float32Array(n*n);a[c]=1;return a;});
  const field=M.mix(bases),session=new ctx.window.GANTRY_BONE_CORE.Acquisition(n,'time',30);
+ const earlyPool=M.mix(bases,300),latePool=M.mix(bases,1800);
+ assert(earlyPool.values[1]>0&&latePool.values[1]===0,'late image has no cardiac-blood-only pixel');
+ assert(latePool.values[2]>0,'late circulating counts remain in diffuse tissue pixels');
  const persistence=new ctx.window.GANTRY_ICRP.Persistence(n,n);
  persistence.step(field,M.rate,.1,.1,.75);const first=persistence.total;
  persistence.step(field,M.rate,.1,.1,.75);assert.equal(persistence.total,first,'nested renders do not duplicate live events');
