@@ -569,10 +569,100 @@
 }
 
 /* COLLISION_SHOCK_CSS_END */
+/* STARTUP_LOADING_CSS_BEGIN */
+#startupLoading{position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;padding:20px;box-sizing:border-box;border:0;background:#07111be8;color:#e5f3ff;z-index:2147483000}
+#startupLoading[open]{display:grid;place-items:center}
+#startupLoading::backdrop{background:#07111b99}
+#startupLoading .startup-card{width:min(360px,90vw);box-sizing:border-box;text-align:center;padding:30px 25px;background:#15232f;border:1px solid #668399;border-radius:8px;box-shadow:0 20px 60px #0009;font:14px/1.5 system-ui,sans-serif}
+#startupLoading h2{font-size:24px;margin:12px 0 6px;color:#fff}
+#startupDetail{min-height:42px;margin:0 0 15px;color:#bcd0df}
+#startupProgress{width:100%;height:8px;accent-color:#5bdaa9}
+#startupSpinner{display:block;width:36px;height:36px;margin:0 auto;border:3px solid #344e62;border-top-color:#66e0b2;border-radius:50%;animation:startup-spin .9s linear infinite}
+#startupLoading [hidden]{display:none!important}
+#startupRetry{margin-top:12px;padding:9px 18px;border:1px solid #98b7ca;background:#d7e6ed;color:#14212b;border-radius:4px;cursor:pointer;font:600 14px system-ui,sans-serif}
+@keyframes startup-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#startupSpinner{animation:none}}
+/* STARTUP_LOADING_CSS_END */
 </style>
 </head>
 <body>
-  <div class="riswin" id="gantryWin">
+<!-- STARTUP_LOADING_BEGIN -->
+  <dialog id="startupLoading" open aria-modal="true" aria-labelledby="startupTitle" aria-describedby="startupDetail">
+    <div class="startup-card">
+      <span id="startupSpinner" aria-hidden="true"></span>
+      <h2 id="startupTitle">Cargando…</h2>
+      <p id="startupDetail" role="status">Preparando el simulador…</p>
+      <progress id="startupProgress" max="5" value="0" aria-label="Carga inicial del simulador"></progress>
+      <button id="startupRetry" type="button" hidden>Reintentar</button>
+    </div>
+  </dialog>
+<script>
+/* First-page load gate. Only the selected study/pose is required. */
+(function(){
+  'use strict';
+  const el=id=>document.getElementById(id),dialog=el('startupLoading');
+  let finished=false,failed=false,closing=false,poll=null,timeout=null;
+  const done=new Set(),watching=new Set();
+  const labels={scene:'escena 3D',patient:'paciente',room:'sala',equipment:'equipo',study:'proyecciones'};
+  dialog.addEventListener('cancel',event=>event.preventDefault());
+  // The HTML is already visible and the application inert before JS executes.
+  // Promote the initial open dialog to the modal top layer (keyboard + pointer).
+  dialog.removeAttribute('open');dialog.showModal();
+  el('startupRetry').addEventListener('click',()=>location.reload());
+  function fail(detail){
+    if(finished||failed)return;
+    failed=true;clearInterval(poll);clearTimeout(timeout);
+    el('startupTitle').textContent='No se pudo completar la carga';
+    el('startupDetail').textContent=detail+' Reintenta la carga para continuar.';
+    el('startupSpinner').hidden=true;el('startupProgress').hidden=true;
+    el('startupRetry').hidden=false;el('startupRetry').focus();
+  }
+  function watch(key,promise,valid){
+    if(watching.has(key))return;watching.add(key);
+    Promise.resolve(promise).then(()=>{
+      if(failed||finished)return;
+      if(valid())done.add(key);else fail('No se pudo cargar '+labels[key]+'.');
+    },()=>fail('No se pudo cargar '+labels[key]+'.'));
+  }
+  function tick(){
+    if(finished||failed||closing)return;
+    const scene=window.GANTRY3D,live=window.GANTRY_LIVE;
+    if(scene){
+      done.add('scene');
+      watch('room',scene.room.ready,()=>!!scene.room.metadata&&scene.room.enabled);
+      const simple=new URLSearchParams(location.search).get('equipo')==='simple';
+      watch('equipment',scene.equipment.ready,()=>simple||!!scene.equipment.metadata&&scene.equipment.enabled);
+      if(scene.patientLoadState==='ready')done.add('patient');
+      if(scene.patientLoadState==='error'){fail('No se pudo cargar el paciente.');return;}
+    }
+    if(live?.loadError){fail('No se pudieron cargar las proyecciones iniciales.');return;}
+    // Wait for demo setup, if requested, rather than its transient default study.
+    const demo=['oseo-brazos-arriba','mibi-brazos-arriba'].includes(new URLSearchParams(location.search).get('demo'));
+    if(live?.ready&&live.state?.d1&&live.state?.d2&&(!demo||window.GANTRY_DEMO_READY))done.add('study');
+    else done.delete('study');
+    el('startupProgress').value=done.size;
+    el('startupDetail').textContent='Preparando '+Object.keys(labels).filter(k=>!done.has(k)).map(k=>labels[k]).join(', ')+'…';
+    if(done.size===5){
+      closing=true;clearInterval(poll);clearTimeout(timeout);
+      el('startupDetail').textContent='Todo listo';
+      // Let the newly loaded geometry and first detector images reach a frame.
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        if(failed)return;
+        finished=true;const app=el('gantryWin');app.inert=false;app.removeAttribute('aria-busy');
+        dialog.close();dialog.remove();el('acquisitionMenuButton')?.focus({preventScroll:true});
+      }));
+    }
+  }
+  function start(){
+    poll=setInterval(tick,100);
+    timeout=setTimeout(()=>fail('La carga está tardando demasiado. Comprueba tu conexión.'),90000);
+    tick();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+<!-- STARTUP_LOADING_END -->
+  <div class="riswin" id="gantryWin" inert aria-busy="true">
     <div class="ris-title">
       <span class="badge"></span>
       <span>Posicionamiento del gantry (control remoto)</span>
@@ -6609,6 +6699,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     studies:Object.keys(studies),
     collimators:['LEHR','HE','MELP'],
     get ready(){return ready;},
+    get loadError(){return !!activeAtlas().error;},
     get state(){return lastRender;},
     get settings(){
       const patient=acquisitionPosition();
@@ -6973,6 +7064,7 @@ function init(){
     return box;
   }
 
+  let patientLoadState='loading';
   new GLTFLoader().load(PATIENT_GLB, (gltf)=>{
     const model = gltf.scene;
     model.updateMatrixWorld(true);
@@ -7023,7 +7115,9 @@ function init(){
     if(window.GANTRY && window.GANTRY.fit){
       if(!window.GANTRY.fit()) apply(null);
     }else apply(null);
+    patientLoadState='ready';
   }, undefined, ()=>{
+    patientLoadState='error';
     console.warn('Gantry 3D: no se pudo descargar el paciente GLB; se usa el maniquí interno.');
   });
 
@@ -7235,7 +7329,7 @@ function init(){
   function resume(){ if(running) return; running = true; resize(); renderer.setAnimationLoop(frame); }
   function pause(){ if(!running) return; running = false; renderer.setAnimationLoop(null); }
 
-  window.GANTRY3D = {update:apply, view, resume, pause, resize, limits:limitsFor, orbitLimit, patientPlacement, surfaceGaps, room, equipment, collision};
+  window.GANTRY3D = {update:apply, view, resume, pause, resize, limits:limitsFor, orbitLimit, patientPlacement, surfaceGaps, room, equipment, collision, get patientLoadState(){return patientLoadState;}};
   msgEl.style.display = 'none';
   view('iso');
   apply(window.GANTRY ? window.GANTRY.G : null);
