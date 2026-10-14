@@ -60,6 +60,7 @@ window.createSymbiaEquipment = function({THREE, scene, gantry, head1, head2, sim
       button.textContent=enabled?'Usar equipo simple':'Usar equipo Symbia';
       button.setAttribute('aria-pressed',String(enabled));
       status.textContent=enabled?'Symbia · modelo visual':'Equipo simple';
+      if(window.GANTRY3D?.collision){window.GANTRY3D.collision.invalidate();window.GANTRY?.render();}
     } catch(error) {
       status.textContent='No se pudo cargar Symbia. Se mantiene el equipo simple; puedes reintentar.';
       console.error('Symbia:',error);

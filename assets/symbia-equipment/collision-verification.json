@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-14",
+  "geometry": {
+    "patient": "Visible GLB skinned triangles captured in each arm pose, with anatomical labels from bones; fallback dummy before loading",
+    "detectors": "Conservative boxes from original Symbia component vertices; finite longitudinal and tangential footprint",
+    "registration": "Existing scene units and head/patient transforms",
+    "protection_margin_mm": 2.5,
+    "manual_training_max_depth_mm": 10,
+    "manual_path_max_translation_step_mm": 1,
+    "manual_path_max_angular_step_degrees": 0.25,
+    "contact_refinement_iterations": 9
+  },
+  "browser_checks": [
+    "Protected manual approach stops with 2.5 mm clearance and contact-avoided message",
+    "Training approach reaches 10.0 mm simulated penetration with red contact point and anatomical region",
+    "Current posture includes raised forearms at oblique angles",
+    "Whole-body start rotates from 30 degrees to 0 before counts and table travel",
+    "Automatic approach and sequential table travel maintain positive patient/table clearance",
+    "Acquisition continues to accumulate both detector images and pauses without losing counts",
+    "No console errors observed"
+  ],
+  "offline_checks": [
+    "Finite footprints and triangle crossings without vertices inside the detector",
+    "Head, torso, feet, raised hands and overhanging housing",
+    "Prone, head-first and opposed detectors",
+    "Intermediate path obstruction despite clear endpoints; angle wrap",
+    "Protected stopping, training depth cap, repeated attempted advance and safe withdrawal",
+    "Table protection in both modes; automatic guard always protected",
+    "Real patient GLB with bundled Three.js and production arm transforms",
+    "Contact log deduplication, actual admitted depth and optional audio activation",
+    "Acquisition guard rejects movement before accumulating counts",
+    "Per-detector projection reuse within distance bins",
+    "Existing bone/static/saved/MAG3/room/equipment/lazy-asset regression tests"
+  ],
+  "performance_observations": {
+    "real_mesh_80_head_queries_in_node_ms": 113,
+    "chrome_active_whole_body_optimized_fps_samples": [24.7, 20.3],
+    "scene_cpu_ms_samples": [0.59, 0.57],
+    "conditions": "Room and Symbia visible, bone arms-up, 256 matrix, 4000 counts/s, table speed 60 cm/min. Short UI observations at pelvis, not a controlled benchmark or GPU timing. Results vary with region and workload.",
+    "image_distance_bin_mm": 5,
+    "collision_distance_quantized": false
+  },
+  "limitations": "Geometric training model. Detector boxes fill curved corners and holes. Fixed patient poses and a low-poly visible mannequin, not ICRP tissue meshes. No tissue deformation, forces, injury model, calibrated safety clearance or complete scanner/room self-collision. Posture buttons check destination geometry, not an animated posture transition. Logs stay in memory for the page session."
+}

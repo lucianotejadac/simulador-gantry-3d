@@ -80,6 +80,7 @@
     return {detDist1:d1,detDist2:d2};
   }
   let key='',cached=null;
+  const detectorFields=[null,null];
   function position(){
     const live=window.GANTRY_LIVE;
     if(!window.GANTRY3D?.limits)return {ok:false,reason:'Preparando posicionamiento automático del gantry…'};
@@ -87,7 +88,7 @@
   }
   function signature(){
     const G=window.GANTRY.G,s=window.GANTRY_LIVE.settings;
-    return JSON.stringify([G.arms,G.rot,G.tableH,window.GANTRY_PATIENT3D?.headFirst,s.headFirst,s.decubitus,document.getElementById('pos')?.value,s.matrix,s.zoom,s.centers,s.collimator,s.energyCenter,s.windowWidth]);
+    return JSON.stringify([G.arms,G.rot,G.tableH,window.GANTRY_PATIENT3D?.headFirst,s.headFirst,s.decubitus,document.getElementById('pos')?.value,s.matrix,s.zoom,s.centers,s.collimator,s.energyCenter,s.windowWidth,window.GANTRY3D?.equipment?.enabled]);
   }
   function create(velocity){
     const status=position();if(!status.ok)throw Error(status.reason);
@@ -104,16 +105,22 @@
   }
   function advance(scan,rate,seconds){
     const G=window.GANTRY.G;
+    const guard=next=>{
+      const result=window.GANTRY3D?.collision?.guard(G,next);
+      if(result?.blocked)throw Error('Barrido detenido: riesgo de contacto en D'+result.blocked.detector+' · '+result.blocked.hit.region+'. Retira el detector antes de continuar.');
+    };
     if(signature()!==scan.geometrySignature||Math.abs(G.tableZ-scan.tableZ)>.001)throw Error('Cambió la posición o la configuración. Finaliza el barrido antes de reposicionar.');
     const dt=Math.min(.5,seconds);
     if(!(dt>0)||scan.finished)return;
     if(Math.abs(G.rot-scan.targetRot)>.001){
       const targets=scan.rotationClearance;
       if(['detDist1','detDist2'].some(k=>G[k]<targets[k]-.001)){
-        for(const k of ['detDist1','detDist2'])if(G[k]<targets[k])G[k]=approach(G[k],targets[k],dt);
+        const next={...G};for(const k of ['detDist1','detDist2'])if(next[k]<targets[k])next[k]=approach(next[k],targets[k],dt);
+        guard(next);Object.assign(G,next);
         scan.phase='retracting';
       }else{
-        G.rot+=Math.sign(scan.targetRot-G.rot)*Math.min(Math.abs(scan.targetRot-G.rot),12*dt);
+        const next={...G,rot:G.rot+Math.sign(scan.targetRot-G.rot)*Math.min(Math.abs(scan.targetRot-G.rot),12*dt)};
+        guard(next);Object.assign(G,next);
         scan.geometrySignature=signature();scan.phase='aligning';
       }
       window.GANTRY.render();return;
@@ -121,9 +128,11 @@
     const nextZ=Math.max(scan.endZ,G.tableZ-dt*scan.velocity/60*184/175);
     const targets=safeTargets(G,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     if(['detDist1','detDist2'].some(k=>Math.abs(G[k]-targets[k])>.001)){
-      for(const k of ['detDist1','detDist2'])G[k]=approach(G[k],targets[k],dt);
+      const next={...G};for(const k of ['detDist1','detDist2'])next[k]=approach(next[k],targets[k],dt);
+      guard(next);Object.assign(G,next);
       scan.phase='positioning';window.GANTRY.render();return;
     }
+    guard({...G,tableZ:nextZ});
     scan.step(fields().fields,rate,dt);G.tableZ=scan.tableZ;window.GANTRY.render();
   }
   function fields(){
@@ -135,11 +144,22 @@
     const physicalProne=(document.getElementById('pos')?.value||'').toLowerCase().startsWith('pron');
     const raw=G.rot+(physicalProne?180:0);
     const pairs=[live.framePair(raw),live.framePair(raw+180)];
-    const metrics=[1,2].map(n=>live.distanceMetrics(Math.max(0,gaps?.['d'+n]?.cm??G['detDist'+n]),'bone',settings.collimator,settings.energyCenter,settings.windowWidth));
+    // The local skin distance varies continuously along the body. Reuse a PSF
+    // within 5 mm distance bins instead of rebuilding the entire atlas field
+    // for submillimetre changes. Collision checks keep their full precision.
+    const metrics=[1,2].map(n=>{
+      const cm=Math.max(0,gaps?.['d'+n]?.cm??G['detDist'+n]);
+      return live.distanceMetrics(Math.round(cm*2)/2,'bone',settings.collimator,settings.energyCenter,settings.windowWidth);
+    });
     const flipX=physicalProne!==(settings.decubitus==='prone');
     const nextKey=JSON.stringify([G.arms,size,pairs,metrics,flipX]);
     if(nextKey!==key){
-      cached={...size,fields:pairs.map((pair,i)=>window.GANTRY_ICRP.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240))};
+      cached={...size,fields:pairs.map((pair,i)=>{
+        const signature=JSON.stringify([G.arms,size,pair,metrics[i],flipX]);
+        if(detectorFields[i]?.key!==signature)detectorFields[i]={key:signature,
+          field:window.GANTRY_ICRP.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240)};
+        return detectorFields[i].field;
+      })};
       key=nextKey;
     }
     return cached;

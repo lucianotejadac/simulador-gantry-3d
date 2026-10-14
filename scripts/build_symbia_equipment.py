@@ -38,7 +38,8 @@ def build(source):
         p = pos @ rotation.T + [-3.7065, -sign * face, -sign * 2.2965]
         n = normal @ rotation.T
         groups[group].append((p, n, colour, index))
-        included.append({'name': name, 'group': group, 'triangles': len(index)//3})
+        included.append({'name': name, 'group': group, 'triangles': len(index)//3,
+                         'bounds': [p.min(0).tolist(), p.max(0).tolist()]})
     data = bytearray()
     meta = {'version': 1, 'source': 'SymbiaRoom / Siemens planning model 13041',
             'source_sha256': hashlib.sha256(original.read_bytes()).hexdigest(),

@@ -16,10 +16,17 @@ Se conserva la camilla funcional existente, con su tablero telescópico, sus
 guías y el paciente. No se importa la camilla CAD ni sus asas: sustituirlas
 exigiría adaptar y validar el apoyo del paciente durante todo el recorrido.
 El soporte posterior CAD forma parte de la carcasa fija; no constituye una
-simulación nueva del mecanismo de elevación. La adquisición, el campo de
-visión y los límites de colisión siguen usando el modelo previo del simulador.
+simulación nueva del mecanismo de elevación. La adquisición y el campo de
+visión conservan el modelo del simulador; las colisiones se actualizan como
+se describe abajo.
 La unión es visual; no verifica las holguras ni la autocollision mecánica del
 equipo Siemens y no modifica sus límites clínicos ni representa un control real.
+
+Actualización de colisiones: las cajas de cada componente del cabezal se
+extraen de sus vértices originales y consultan la malla del muñeco en su
+postura actual. Son envolventes conservadoras: pueden detectar contacto antes
+que las superficies curvas reales. Sustituyen el perfil corporal global del
+simulador; no constituyen una validación mecánica del modelo del fabricante.
 
 Optimización: tres lotes de geometría, colores por vértice, normales de 8 bits,
 un material compartido, sin texturas ni nuevas sombras dinámicas. El binario

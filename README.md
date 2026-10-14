@@ -45,18 +45,50 @@ límites mecánicos del simulador. [Fuentes y adaptaciones](assets/symbia-room/C
 ### Equipo Symbia
 
 El gantry de SymbiaRoom aparece por defecto y se descarga en segundo plano
-(309 kB, tres grupos, 21.630 triángulos). **Usar equipo simple** permite volver
+(312 kB, tres grupos, 21.630 triángulos). **Usar equipo simple** permite volver
 al modelo anterior sin recargar ni interrumpir la adquisición. Para iniciar
 sin descargar Symbia, añada `?equipo=simple` a la dirección.
 
 Los cabezales importados siguen el giro y el desplazamiento radial existentes,
 incluido el posicionamiento automático al iniciar cuerpo entero. Se conserva
 la camilla funcional y el tablero telescópico del simulador. Es una adaptación
-visual: no cambia el modelo de cuentas, el campo de visión ni los límites
-de colisión. [Procedencia y alcance](assets/symbia-equipment/CREDITS.md).
+visual: conserva los atlas y el campo de visión. Los límites de aproximación
+usan las envolventes de las piezas visibles. [Procedencia y alcance](assets/symbia-equipment/CREDITS.md).
 
 Tras editar su motor: `python scripts/build_symbia_equipment.py`.
 Prueba: `node tests/test_symbia_equipment.cjs`.
+
+### Colisiones y entrenamiento
+
+El indicador 3D muestra la separación de cada detector, la región corporal
+más próxima y un marcador sobre el punto de aproximación/contacto. El menú
+**Colisiones** permite elegir **Protección** (margen de 2,5 mm) o
+**Entrenamiento** (penetración geométrica máxima de 10 mm), activar la alarma
+sonora y consultar los últimos 30 episodios de esta sesión. El detector puede
+retirarse aunque haya quedado en contacto. La camilla y el barrido automático
+mantienen siempre la protección; el modo de entrenamiento sólo permite
+penetrar la envolvente del paciente durante movimientos manuales.
+
+El cálculo utiliza los triángulos del muñeco 3D en cada postura, incluidos
+los brazos y las manos elevados, y cajas conservadoras por componente del
+detector Symbia. Recorta cada triángulo al área que ocupa la pieza; no utiliza
+el ancho máximo del cuerpo para todas las regiones. Las posturas se preparan
+una vez y se indexan por posición longitudinal. El recorrido manual se revisa
+en incrementos máximos de 1 mm o 0,25° y se refina al encontrar el límite.
+El barrido también revisa los movimientos antes de acumular cuentas.
+Para reutilizar las proyecciones de cuerpo entero, su desenfoque y sensibilidad
+se actualizan en intervalos de 5 mm de distancia a piel, de forma independiente
+por detector. Esta discretización de imagen no afecta el cálculo de colisiones.
+
+La distancia es una aproximación geométrica, no una medida calibrada del
+equipo real. Las cajas rellenan curvas y huecos de las piezas; no se modelan
+deformación de tejidos, fuerzas, lesiones ni todas las colisiones del gantry
+con la sala. Los atlas ICRP no son la superficie de colisión: lo es el muñeco
+visible. Cambiar el equipo durante un barrido requiere finalizar/reiniciar
+la adquisición, evitando continuar con una geometría diferente.
+
+Actualizar motor: `python scripts/embed_collision.py`.
+Prueba numérica y con GLB real: `node tests/test_gantry_collision.cjs`.
 
 ### Adquisición estática para los estudios del menú
 
