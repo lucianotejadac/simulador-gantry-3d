@@ -42,6 +42,22 @@ dibujo en el navegador. No mide tiempo GPU ni garantiza el mismo rendimiento
 en todos los equipos. La colocación del entorno es visual; no cambia los
 límites mecánicos del simulador. [Fuentes y adaptaciones](assets/symbia-room/CREDITS.md).
 
+### Equipo Symbia
+
+El gantry de SymbiaRoom aparece por defecto y se descarga en segundo plano
+(309 kB, tres grupos, 21.630 triángulos). **Usar equipo simple** permite volver
+al modelo anterior sin recargar ni interrumpir la adquisición. Para iniciar
+sin descargar Symbia, añada `?equipo=simple` a la dirección.
+
+Los cabezales importados siguen el giro y el desplazamiento radial existentes,
+incluido el posicionamiento automático al iniciar cuerpo entero. Se conserva
+la camilla funcional y el tablero telescópico del simulador. Es una adaptación
+visual: no cambia el modelo de cuentas, el campo de visión ni los límites
+de colisión. [Procedencia y alcance](assets/symbia-equipment/CREDITS.md).
+
+Tras editar su motor: `python scripts/build_symbia_equipment.py`.
+Prueba: `node tests/test_symbia_equipment.cjs`.
+
 ### Adquisición estática para los estudios del menú
 
 Óseo, MIBI, tiroides/pertecnetato, exploración I-131, paratiroides, DMSA y MAA comparten

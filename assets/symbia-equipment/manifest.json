@@ -1,0 +1,359 @@
+{
+  "version": 1,
+  "source": "SymbiaRoom / Siemens planning model 13041",
+  "source_sha256": "385225446afe1aa1c254bf3739896973e3c89ae64a419e728c88bfa62eb0bb82",
+  "units": "metres",
+  "scale": 1,
+  "groups": [
+    {
+      "name": "Gantry",
+      "vertices": 51514,
+      "triangles": 18366,
+      "bounds": [
+        [
+          0.3125380811691283,
+          -0.01160000000000587,
+          -1.168499740600586
+        ],
+        [
+          2.1965078947544097,
+          2.363075750732422,
+          1.8018806848526001
+        ]
+      ],
+      "position": [
+        0,
+        154542
+      ],
+      "normal": [
+        618168,
+        154542
+      ],
+      "color": [
+        772712,
+        154542
+      ],
+      "index": [
+        927256,
+        55098
+      ]
+    },
+    {
+      "name": "Detector1",
+      "vertices": 4359,
+      "triangles": 1600,
+      "bounds": [
+        [
+          -0.3456866207122804,
+          -3.764896392821626e-05,
+          -0.39391121530532835
+        ],
+        [
+          0.661980086326599,
+          0.6603001567840576,
+          0.3939468536376953
+        ]
+      ],
+      "position": [
+        1147648,
+        13077
+      ],
+      "normal": [
+        1199956,
+        13077
+      ],
+      "color": [
+        1213036,
+        13077
+      ],
+      "index": [
+        1226116,
+        4800
+      ]
+    },
+    {
+      "name": "Detector2",
+      "vertices": 4561,
+      "triangles": 1664,
+      "bounds": [
+        [
+          -0.3451861801147462,
+          4.707307815554618e-05,
+          -0.46082070207595827
+        ],
+        [
+          0.661980086326599,
+          0.6646000000953675,
+          0.4608215715885162
+        ]
+      ],
+      "position": [
+        1245316,
+        13683
+      ],
+      "normal": [
+        1300048,
+        13683
+      ],
+      "color": [
+        1313732,
+        13683
+      ],
+      "index": [
+        1327416,
+        4992
+      ]
+    }
+  ],
+  "components": [
+    {
+      "name": "CT_Part_00",
+      "group": "Gantry",
+      "triangles": 7058
+    },
+    {
+      "name": "Gantry_Static_Part_12",
+      "group": "Gantry",
+      "triangles": 678
+    },
+    {
+      "name": "Gantry_Static_Part_13",
+      "group": "Gantry",
+      "triangles": 612
+    },
+    {
+      "name": "Gantry_Static_Part_29",
+      "group": "Gantry",
+      "triangles": 154
+    },
+    {
+      "name": "Gantry_Static_Part_32",
+      "group": "Gantry",
+      "triangles": 120
+    },
+    {
+      "name": "Gantry_Static_Part_33",
+      "group": "Gantry",
+      "triangles": 120
+    },
+    {
+      "name": "Gantry_Static_Part_34",
+      "group": "Gantry",
+      "triangles": 120
+    },
+    {
+      "name": "Gantry_Static_Part_35",
+      "group": "Gantry",
+      "triangles": 120
+    },
+    {
+      "name": "Gantry_Static_Part_45",
+      "group": "Gantry",
+      "triangles": 140
+    },
+    {
+      "name": "Gantry_Static_Part_46",
+      "group": "Gantry",
+      "triangles": 140
+    },
+    {
+      "name": "Monitor_Part_10",
+      "group": "Gantry",
+      "triangles": 776
+    },
+    {
+      "name": "Monitor_Part_14",
+      "group": "Gantry",
+      "triangles": 560
+    },
+    {
+      "name": "Monitor_Part_17",
+      "group": "Gantry",
+      "triangles": 524
+    },
+    {
+      "name": "Monitor_Part_20",
+      "group": "Gantry",
+      "triangles": 332
+    },
+    {
+      "name": "Monitor_Part_23",
+      "group": "Gantry",
+      "triangles": 300
+    },
+    {
+      "name": "Monitor_Part_30",
+      "group": "Gantry",
+      "triangles": 122
+    },
+    {
+      "name": "Monitor_Part_31",
+      "group": "Gantry",
+      "triangles": 122
+    },
+    {
+      "name": "Monitor_Part_40",
+      "group": "Gantry",
+      "triangles": 156
+    },
+    {
+      "name": "Monitor_Part_41",
+      "group": "Gantry",
+      "triangles": 156
+    },
+    {
+      "name": "Monitor_Part_42",
+      "group": "Gantry",
+      "triangles": 156
+    },
+    {
+      "name": "Monitor_Part_51",
+      "group": "Gantry",
+      "triangles": 60
+    },
+    {
+      "name": "Monitor_Boom_Part_11",
+      "group": "Gantry",
+      "triangles": 694
+    },
+    {
+      "name": "Monitor_Boom_Part_26",
+      "group": "Gantry",
+      "triangles": 230
+    },
+    {
+      "name": "Detector_01_Part_16",
+      "group": "Detector1",
+      "triangles": 546
+    },
+    {
+      "name": "Detector_01_Part_18",
+      "group": "Detector1",
+      "triangles": 478
+    },
+    {
+      "name": "Detector_01_Part_38",
+      "group": "Detector1",
+      "triangles": 168
+    },
+    {
+      "name": "Detector_01_Part_52",
+      "group": "Detector1",
+      "triangles": 48
+    },
+    {
+      "name": "Detector_01_Part_53",
+      "group": "Detector1",
+      "triangles": 48
+    },
+    {
+      "name": "Detector_02_Part_15",
+      "group": "Detector2",
+      "triangles": 554
+    },
+    {
+      "name": "Detector_02_Part_19",
+      "group": "Detector2",
+      "triangles": 478
+    },
+    {
+      "name": "Detector_02_Part_39",
+      "group": "Detector2",
+      "triangles": 168
+    },
+    {
+      "name": "Detector_02_Part_54",
+      "group": "Detector2",
+      "triangles": 48
+    },
+    {
+      "name": "Detector_02_Part_55",
+      "group": "Detector2",
+      "triangles": 48
+    },
+    {
+      "name": "Detector_02_Part_56",
+      "group": "Detector2",
+      "triangles": 28
+    },
+    {
+      "name": "Detector_02_Part_57",
+      "group": "Detector2",
+      "triangles": 28
+    },
+    {
+      "name": "SPECT_Rotation_Part_21",
+      "group": "Detector1",
+      "triangles": 312
+    },
+    {
+      "name": "SPECT_Rotation_Part_22",
+      "group": "Detector2",
+      "triangles": 312
+    },
+    {
+      "name": "Rear_Support_Part_01",
+      "group": "Gantry",
+      "triangles": 2980
+    },
+    {
+      "name": "Rear_Support_Part_02",
+      "group": "Gantry",
+      "triangles": 1554
+    },
+    {
+      "name": "Rear_Support_Part_24",
+      "group": "Gantry",
+      "triangles": 290
+    },
+    {
+      "name": "Rear_Support_Part_50",
+      "group": "Gantry",
+      "triangles": 92
+    }
+  ],
+  "excluded": [
+    "Ceiling",
+    "Floor",
+    "Wall_Front",
+    "Wall_Left",
+    "Wall_Rear",
+    "Wall_Right",
+    "Wall_Right.001",
+    "Table_Base_Part_05",
+    "Table_Base_Part_27",
+    "Table_Base_Part_36",
+    "Table_Base_Part_37",
+    "Table_Base_Part_43",
+    "Table_Base_Part_44",
+    "Table_Base_Part_48",
+    "Table_Base_Part_58",
+    "Table_Collimator_Storage_Part_04",
+    "Table_Collimator_Storage_Part_06",
+    "Table_Collimator_Storage_Part_07",
+    "Table_Collimator_Storage_Part_08",
+    "Table_Collimator_Storage_Part_09",
+    "Table_Collimator_Storage_Part_28",
+    "Bed_Index_Handle_Housing",
+    "Bed_Index_Handle_Part_03",
+    "Table_Lift_Part_49",
+    "Pallet_Handle_Part_03",
+    "Pallet_Part_03",
+    "Pallet_Part_47",
+    "Table_Lift_Part_25"
+  ],
+  "registration": {
+    "source_transverse_center": 2.2965,
+    "source_spect_plane_z": -3.7065,
+    "source_ring_center_y": 1.0416,
+    "web_ring_center_y": 1.03,
+    "collimator_face_y": [
+      1.4053,
+      0.6822
+    ]
+  },
+  "limits": "Visual scanner adaptation. Existing simulator table and collision/acquisition model retained; not certified mechanical kinematics.",
+  "url": "assets/runtime/symbia-equipment.fbbb798c4ca9f62f.bin",
+  "compressed_bytes": 308980,
+  "triangles": 21630
+}

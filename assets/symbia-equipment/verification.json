@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-14",
+  "asset": {
+    "compressed_bytes": 308980,
+    "triangles": 21630,
+    "draw_batches": 3,
+    "new_shadow_casters": 0
+  },
+  "browser": {
+    "environment": "Chrome on current workstation; local HTTP server; existing normal viewport; room visible; bone arms-up; live signal 4000 counts/s; 0.75 s persistence; matrix 256",
+    "method": "Manual UI observations from the existing 1.5-second render counter, same tab with simple/Symbia toggles. Not a controlled GPU benchmark or a statistical performance claim.",
+    "live_simple": {"fps": 30.8, "scene_cpu_ms": 0.76, "render_calls": 62, "triangles": 99194},
+    "live_symbia": {"fps": 31.8, "scene_cpu_ms": 0.63, "render_calls": 37, "triangles": 108680},
+    "whole_body_simple": {"fps": 9.3, "scene_cpu_ms": 0.71},
+    "whole_body_symbia": {"fps": 9.9, "scene_cpu_ms": 0.67},
+    "limitations": "Active scan observations are at different longitudinal positions. CPU numbers cover the scene render call, not total acquisition work or GPU time. Both versions slow during sequential acquisition; no new reduction was evident from these observations.",
+    "checks": [
+      "Three-dimensional and lateral views render correctly",
+      "Switch to simple and back without resetting acquisition or redownloading geometry",
+      "Rotation from 0 to 30 degrees and independent detector 1 radial motion",
+      "Whole-body start from 30 degrees rotates to 0 before accumulating counts",
+      "Automatic radial approach, table translation and both images accumulate during scan",
+      "Pause preserves accumulated images"
+    ]
+  },
+  "offline_checks": [
+    "test_symbia_equipment.cjs",
+    "test_bone_whole_body.cjs",
+    "test_bone_acquisition.cjs",
+    "test_bone_acquisition_saved.cjs",
+    "test_mag3_acquisition.cjs",
+    "test_symbia_room.cjs",
+    "test_lazy_assets.cjs"
+  ]
+}
