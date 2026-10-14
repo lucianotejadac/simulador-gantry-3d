@@ -5630,7 +5630,7 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="assets/runtime/image.3861454422d07e6c.png";
 <script src="assets/runtime/mibi-kinetics-engine.40358a5028ab51c0.js"></script>
 <!-- MIBI_KINETICS_END -->
 <!-- FINAL_PREVIEW_BEGIN -->
-<script src="assets/runtime/final-preview.5d357c08e561b66f.js"></script>
+<script src="assets/runtime/final-preview.2d16778bb5b5fe02.js"></script>
 <!-- FINAL_PREVIEW_END -->
 <!-- ICRP145_BEGIN -->
 <script>
@@ -6192,7 +6192,12 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
 
   function renderDetector(target, G){
     if(acquisition.study==='mag3' && window.GANTRY_MAG3 && window.GANTRY_MAG3.ready)return window.GANTRY_MAG3.renderHead(target,G);
-    const output=target.canvas;
+    const preview=window.GANTRY_FINAL_PREVIEW?.active;
+    const output=preview?(target.previewBuffer ||= document.createElement('canvas')):target.canvas;
+    if(preview){
+      if(output.width!==target.canvas.width)output.width=target.canvas.width;
+      if(output.height!==target.canvas.height)output.height=target.canvas.height;
+    }
     const scale=acquisition.matrix===128 ? 0.5 : 1;
     const renderCanvas=scale===1 ? output : target.buffer;
     renderCanvas.width=Math.round(output.width*scale);
@@ -6359,7 +6364,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       signalMode:boneSignal.mode,persistenceSeconds:boneSignal.duration,
       windowCounts:target.persistence.total,expectedRate:target.linearField.sum/2000000*effectiveCountRate(),
       acquisitionSeconds:boneSignal.time});
-    target.info.innerHTML='<b>DETECTOR '+target.n+'</b>'+
+    if(!preview)target.info.innerHTML='<b>DETECTOR '+target.n+'</b>'+
       '<span class="accent">'+meta.view+'</span><br>'+
       segment+'<br>'+
       'D-isocentro: '+distance.toFixed(0)+' cm · '+
@@ -6370,7 +6375,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       'X por altura: '+(heightShiftPx>=0?'+':'')+heightShiftPx.toFixed(0)+' px<br>'+
       '<span class="'+(Math.abs(metrics.energy.centerOffset)<=1?'accent':'warn')+'">E '+
       metrics.energy.center.toFixed(0)+' keV · '+metrics.energy.width+'%</span>';
-    if(activeStudy().linear&&acquisition.study!=='mag3')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
+    if(!preview&&activeStudy().linear&&acquisition.study!=='mag3')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
     return meta;
   }
 

@@ -52,5 +52,18 @@ if 'GANTRY_FINAL_PREVIEW?.sync' not in s:
     for old,new in patches:
         assert old in s,old
         s=s.replace(old,new,1)
+# Live geometry/field calculations continue offscreen while final images remain
+# visible. Even resizing a canvas to the same dimensions clears its contents.
+if 'const preview=window.GANTRY_FINAL_PREVIEW?.active;' not in s:
+    old='    const output=target.canvas;'
+    new='''    const preview=window.GANTRY_FINAL_PREVIEW?.active;
+    const output=preview?(target.previewBuffer ||= document.createElement('canvas')):target.canvas;
+    if(preview){
+      if(output.width!==target.canvas.width)output.width=target.canvas.width;
+      if(output.height!==target.canvas.height)output.height=target.canvas.height;
+    }'''
+    assert old in s;s=s.replace(old,new,1)
+    s=s.replace("    target.info.innerHTML='<b>DETECTOR '+target.n", "    if(!preview)target.info.innerHTML='<b>DETECTOR '+target.n",1)
+    s=s.replace("    if(activeStudy().linear&&acquisition.study!=='mag3')target.info.innerHTML=", "    if(!preview&&activeStudy().linear&&acquisition.study!=='mag3')target.info.innerHTML=",1)
 p.write_text(s,encoding='utf-8',newline='\n')
 print('Final-image preview embedded')

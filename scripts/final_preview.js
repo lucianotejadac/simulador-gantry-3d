@@ -47,7 +47,8 @@
     return {...result,counts,total:counts.reduce((a,v)=>a+v,0)};
   }
   const el=id=>document.getElementById(id);
-  let key='',token=0,timer=null,results=null,latest=null,noise=1,wasActive=false;
+  let key='',token=0,timer=null,display=null,latest=null,noise=1,wasActive=false;
+  const painted=new WeakMap();
   const active=()=>window.GANTRY_LIVE?.signal.mode==='final'&&supported.has(window.GANTRY_LIVE.settings.study);
   const clock=s=>Number.isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'—';
   function controls(){
@@ -62,42 +63,55 @@
     }
     document.querySelectorAll('.live-card:not(.bone-acq-card) .bone-card-title').forEach((node,i)=>node.textContent=(on?'IMAGEN FINAL PREVISTA':'EN VIVO')+' · DETECTOR '+(i+1));
     wasActive=on;
-    if(!on){token++;clearTimeout(timer);key='';results=null;}
+    if(!on){token++;clearTimeout(timer);key='';display=null;latest=null;}
   }
   function units(){const counts=el('finalPreviewCriterion').value==='counts';el('finalPreviewTarget').max=counts?'10000000':'3600';el('finalPreviewUnits').textContent=counts?'cuentas por detector':'segundos por detector';}
-  function draw(){
-    if(!active()||!latest)return;
-    latest.targets.forEach((target,j)=>{
-      const canvas=target.canvas,ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);
-      const result=results?.[j];
-      if(!result){target.info.textContent=el('finalPreviewStatus').textContent;return;}
+  function prepare(images,state){
+    return images.map((result,j)=>{
       const n=Math.round(Math.sqrt(result.counts.length)),buffer=document.createElement('canvas');buffer.width=buffer.height=n;
       const out=buffer.getContext('2d'),im=out.createImageData(n,n);let peak=1;
       for(const v of result.counts)peak=Math.max(peak,v);
       for(let i=0;i<result.counts.length;i++){const v=Math.round(255*(result.counts[i]/peak)**.72);im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255;}
-      out.putImageData(im,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(buffer,0,0,canvas.width,canvas.height);
-      const meta=latest.state?.['d'+(j+1)];
-      target.info.textContent=result.total.toLocaleString('es-CL')+' cuentas simuladas · '+clock(result.elapsed)+(result.mode==='counts'?' estimados':'')+(meta?' · a piel '+meta.effectiveDistance.toFixed(1)+' cm':'')+(!result.reached?' · objetivo no alcanzable dentro del modelo':'');
+      out.putImageData(im,0,0);
+      const meta=state?.['d'+(j+1)];
+      const caption=result.total.toLocaleString('es-CL')+' cuentas simuladas · '+clock(result.elapsed)+(result.mode==='counts'?' estimados':'')+(meta?' · a piel '+meta.effectiveDistance.toFixed(1)+' cm':'')+(!result.reached?' · objetivo no alcanzable dentro del modelo':'');
+      return {buffer,caption};
+    });
+  }
+  function draw(){
+    if(!active()||!latest)return;
+    latest.targets.forEach((target,j)=>{
+      const canvas=target.canvas,frame=display?.[j];
+      if(!frame){target.info.textContent=el('finalPreviewStatus').textContent;return;}
+      const previous=painted.get(canvas);
+      if(previous?.frame!==frame||previous.width!==canvas.width||previous.height!==canvas.height){
+        const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+        // Fully opaque buffers replace both detectors in one synchronous turn.
+        // Never blank the visible canvas while a replacement is pending.
+        ctx.drawImage(frame.buffer,0,0,canvas.width,canvas.height);
+        painted.set(canvas,{frame,width:canvas.width,height:canvas.height});
+      }
+      target.info.textContent=frame.caption;
     });
   }
   function sync(study,targets,rate,state){
     controls();if(!active())return;
     latest={targets,state};
-    if(!window.GANTRY_LIVE.ready||targets.some(t=>!t.linearField)){token++;key='';results=null;el('finalPreviewStatus').textContent='Preparando proyecciones…';draw();return;}
+    if(!window.GANTRY_LIVE.ready||targets.some(t=>!t.linearField)){token++;clearTimeout(timer);key='';el('finalPreviewStatus').textContent='Preparando proyecciones…'+(display?' Se mantiene la última imagen.':'');draw();return;}
     const model=study==='bone'?window.GANTRY_MDP:study==='mibi'?window.GANTRY_MIBI:null,m=model?.metadata();
     const mode=el('finalPreviewCriterion').value,target=Number(el('finalPreviewTarget').value);
     const nextKey=JSON.stringify([study,window.GANTRY_LIVE.settings,state?.state,rate,m,mode,target,noise]);
     if(nextKey!==key){
-      key=nextKey;results=null;clearTimeout(timer);const current=++token;
+      key=nextKey;clearTimeout(timer);const current=++token;
       const fields=targets.map(t=>t.linearField);
-      el('finalPreviewStatus').textContent='Calculando imagen final…';
+      el('finalPreviewStatus').textContent='Calculando imagen final…'+(display?' Se mantiene la última imagen.':'');
       timer=setTimeout(async()=>{
         try{
           const options={mode,target,rate,model:model?study:null,start:m?.seconds||0,limit:model?(study==='bone'?10800:43200):Infinity,
             weights:model?(s=>study==='bone'?model.fractions(s,m.voidAt120).weights:model.fractions(s,m.protocol,m.voidEvery120).weights):null};
           const expected=predict(fields,options),images=[];
           for(let j=0;j<expected.length;j++){const image=await sample(expected[j],noise*104729+j*7919,()=>current!==token);if(!image||current!==token)return;images.push(image);}
-          if(current!==token)return;results=images;
+          if(current!==token)return;display=prepare(images,state);
           el('finalPreviewStatus').textContent='Vista previa · posición fija · '+(m?'evolución del RF incluida · ':'')+'no inicia ni guarda una adquisición';draw();
         }catch(error){if(current===token){el('finalPreviewStatus').textContent=error.message;draw();}}
       },150);
