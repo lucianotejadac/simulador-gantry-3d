@@ -1,0 +1,31 @@
+/* A single impact, confined to presentation: detector/table coordinates stay put. */
+@keyframes gantry-impact {
+  0%,100% { transform:translate(0,0) rotate(0deg) }
+  10% { transform:translate(-7px,3px) rotate(-.16deg) }
+  22% { transform:translate(7px,-4px) rotate(.16deg) }
+  36% { transform:translate(-5px,-2px) rotate(-.11deg) }
+  50% { transform:translate(5px,3px) rotate(.11deg) }
+  66% { transform:translate(-3px,1px) rotate(-.06deg) }
+  82% { transform:translate(2px,-1px) rotate(.04deg) }
+}
+@keyframes gantry-impact-frame {
+  0%,18% { opacity:1 }
+  100% { opacity:0 }
+}
+#gantryWin.collision-shock { animation:gantry-impact 460ms ease-out }
+#gantryWin.collision-shock::after {
+  content:""; position:absolute; inset:0; z-index:1000; pointer-events:none;
+  border:5px solid #ff303b; box-shadow:inset 0 0 28px #ff263d99;
+  animation:gantry-impact-frame 950ms ease-out forwards;
+}
+#gantryWin:is(.collision-shock,.collision-contact) :is(#g3dStage,#gantryLive,#gantryRemote,.live-card,#collisionFeedback) {
+  border-color:#ff3948!important;
+  box-shadow:inset 0 0 0 2px #ff3948,0 0 12px #ff263d70!important;
+}
+#gantryWin:is(.collision-shock,.collision-contact) #collisionMessage {
+  color:#ffb0b5!important;font-weight:bold;
+}
+@media(prefers-reduced-motion:reduce) {
+  #gantryWin.collision-shock { animation:none }
+  #gantryWin.collision-shock::after { animation:none;opacity:.75 }
+}

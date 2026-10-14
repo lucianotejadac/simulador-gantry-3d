@@ -5,6 +5,12 @@ import re
 ROOT=Path(__file__).resolve().parents[1]
 page=ROOT/'index.html'
 html=page.read_text(encoding='utf-8')
+css=(ROOT/'scripts/collision_shock.css').read_text(encoding='utf-8')
+style='/* COLLISION_SHOCK_CSS_BEGIN */\n'+css+'\n/* COLLISION_SHOCK_CSS_END */'
+if '/* COLLISION_SHOCK_CSS_BEGIN */' in html:
+    html=re.sub(r'/\* COLLISION_SHOCK_CSS_BEGIN \*/.*?/\* COLLISION_SHOCK_CSS_END \*/',lambda _:style,html,flags=re.S)
+else:
+    html=html.replace('</style>\n</head>',style+'\n</style>\n</head>',1)
 js=(ROOT/'scripts/gantry_collision.js').read_text(encoding='utf-8')
 block='<!-- COLLISION_ENGINE_BEGIN -->\n<script>\n'+js+'\n</script>\n<!-- COLLISION_ENGINE_END -->'
 if '<!-- COLLISION_ENGINE_BEGIN -->' in html:

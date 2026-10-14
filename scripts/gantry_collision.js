@@ -111,8 +111,18 @@
     const mode=document.getElementById('collisionMode'),sound=document.getElementById('collisionSound');
     const message=document.getElementById('collisionMessage'),log=document.getElementById('collisionLog');
     const outputs=[1,2].map(i=>document.getElementById('collisionD'+i));
+    const frame=document.getElementById('gantryWin');
     const poses=new Map(),results=new Map(),episodes=[null,null],records=[];
     let source=null,lastKey='',lastAlarm=0,audio=null;
+    let lastShock=-Infinity;
+    function shock(){
+      // One short impact per episode; paired detectors and held controls must
+      // not restart the animation every frame. Only CSS moves the viewport.
+      if(!frame||performance.now()-lastShock<1000)return;
+      lastShock=performance.now();
+      frame.classList.add('collision-shock');
+      setTimeout(()=>frame.classList.remove('collision-shock'),950);
+    }
     const markers=[1,2].map(()=>{
       const m=new THREE.Mesh(new THREE.SphereGeometry(.022,12,8),new THREE.MeshBasicMaterial({color:0xffc857,transparent:true,opacity:.8,depthTest:false}));
       m.visible=false;m.renderOrder=35;scene.add(m);return m;
@@ -186,13 +196,14 @@
         const row=document.createElement('li');row.style.marginBottom='3px';log.prepend(row);
         episodes[i]={kind,peak,row,time:new Date().toLocaleTimeString('es-CL'),region:hit.region};records.unshift(episodes[i]);
         if(records.length>30)records.pop().row.remove();
-        alarm();
+        alarm();shock();
       }
       const e=episodes[i];if(peak>=e.peak){e.peak=peak;e.region=hit.region;}
       e.row.textContent=e.time+' · D'+detector+' · '+kind+' · '+e.region+(e.peak>0?' · máximo '+e.peak.toFixed(1)+' mm':'');
     }
     function update(s){
       const hits=evaluate(s),training=mode.value==='training';
+      frame?.classList.toggle('collision-contact',hits.some(h=>h.body.gap<=0||h.table.gap<=0));
       hits.forEach((h,i)=>{
         const hit=h.body.gap<=h.table.gap?h.body:h.table,mm=hit.gap*1000;
         const critical=mm<=0,near=mm<50;
@@ -225,7 +236,7 @@
     return {evaluate,update,move,guard:(from,to)=>sweep(from,to,evaluate,false),
       canPose(from,to,physicalOverride){
         const blocked=worsens(evaluate(to,physicalOverride),evaluate(from),false);
-        if(blocked){message.textContent='Cambio de postura bloqueado · D'+blocked.detector+' · '+blocked.hit.region+'. Aleja los detectores.';alarm();}
+        if(blocked){message.textContent='Cambio de postura bloqueado · D'+blocked.detector+' · '+blocked.hit.region+'. Aleja los detectores.';alarm();shock();}
         return !blocked;
       },
       invalidate(){poses.clear();results.clear();lastKey='';},
