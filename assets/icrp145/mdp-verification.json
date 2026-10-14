@@ -16,37 +16,37 @@
     "down": {
       "0": {
         "initialCps": 25341.943506406962,
-        "threeHourCps": 10518.250527174447
+        "threeHourCps": 10841.674687669716
       },
       "90": {
         "initialCps": 6960.879411501117,
-        "threeHourCps": 6383.05113617917
+        "threeHourCps": 6652.791175208204
       },
       "180": {
         "initialCps": 11509.33992204261,
-        "threeHourCps": 9982.269282291414
+        "threeHourCps": 10342.430654194211
       },
       "270": {
         "initialCps": 12577.214463084578,
-        "threeHourCps": 6409.980172783776
+        "threeHourCps": 6668.849038635067
       }
     },
     "up": {
       "0": {
         "initialCps": 25640.011823711568,
-        "threeHourCps": 10626.761047919823
+        "threeHourCps": 10998.15861006499
       },
       "90": {
         "initialCps": 9455.71477607859,
-        "threeHourCps": 6484.691945762616
+        "threeHourCps": 6691.191252932573
       },
       "180": {
         "initialCps": 12374.32357879047,
-        "threeHourCps": 10234.457051609226
+        "threeHourCps": 10570.470102077805
       },
       "270": {
         "initialCps": 15817.015560203106,
-        "threeHourCps": 6468.628498748566
+        "threeHourCps": 6654.806368490421
       }
     }
   }

@@ -8,6 +8,7 @@ import sys, re, json, zlib, hashlib
 import numpy as np
 from scipy.ndimage import gaussian_filter
 from numba import set_num_threads
+from bone_emission import bone_emission, PARAMETERS
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT.parent
@@ -30,19 +31,19 @@ def main():
     mu[cortical] = .2732992; mu[marrow] = .1537*.981
     def coarse(v): return v.reshape(375,2,52,2,160,2).sum((1,3,5))
     meta = {k: mag[k] for k in ['width','height','pixelMm','angles','headRow','footRow']}
-    meta.update(components=['bone','blood','soft','kidneys','bladder','central','lungs','arteries'], poses={})
+    meta.update(components=['bone','blood','soft','kidneys','bladder','central','lungs','arteries'], poses={}, boneEmission=PARAMETERS)
     for pose in ['down','up']:
         if pose == 'up':
             vol = np.load(WORK/'icrp145-oseo-360/brazos-arriba/volumen_articulado.npz')
             r, m = vol['reg'], vol['mu']
             v = np.zeros((750,104,320),np.float32)
-            v[:,:,:319] = np.where(r == 2,.5,np.where(r == 3,1.,0.))
-            a = coarse(v/v.sum(dtype=float))
+            v[:,:,:319] = bone_emission(r)
+            a = coarse(v)
             v.fill(0); v[:,:,:319] = m
         else:
             v = np.zeros((750,104,320),np.float32)
-            v[:594,:,63:256] = np.where(reg == 2,.5,np.where(reg == 3,1.,0.))
-            a = coarse(v/v.sum(dtype=float))
+            v[:594,:,63:256] = bone_emission(reg)
+            a = coarse(v)
             v.fill(0); v[:594,:,63:256] = mu
         attenuation = coarse(v)/8*2  # projector's 3 mm step, volume now 6 mm
         bone = []
@@ -64,8 +65,8 @@ def main():
     meta['sources'] = [
         'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3c91d0d8-6cc5-834c-bda0-aa83a873b9fb',
         'https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/']
-    meta['limitations'] = 'Educational kinetics and assumed 100 cps/MBq LEHR sensitivity before attenuation; not a measured camera calibration. ICRP anatomy, not ICRP pharmacokinetics. 6 mm sampling, 10 degree views, synthetic articulated arms.'
-    meta['sourceHashes'] = {str(p.relative_to(WORK)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [WORK/'simulador-renograma-mc/salida_osea/cuerpo.npz', WORK/'icrp145-oseo-360/brazos-arriba/volumen_articulado.npz', ROOT/mag['urls']['down'], ROOT/mag['urls']['up']]}
+    meta['limitations'] = 'Educational kinetics and assumed 100 cps/MBq LEHR sensitivity before attenuation; not a measured camera calibration. ICRP anatomy, not ICRP pharmacokinetics. Continuous skeletal-envelope emission is an educational visual model, not measured regional uptake. 6 mm sampling, 10 degree views, synthetic articulated arms.'
+    meta['sourceHashes'] = {str(p.relative_to(WORK)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [WORK/'simulador-renograma-mc/salida_osea/cuerpo.npz', WORK/'icrp145-oseo-360/brazos-arriba/volumen_articulado.npz', WORK/'icrp145-oseo-360/correccion_huesos_largos.npz', ROOT/'scripts/bone_emission.py', ROOT/mag['urls']['down'], ROOT/mag['urls']['up']]}
     (ROOT/'assets/icrp145/mdp-provenance.json').write_text(json.dumps(meta,indent=2),encoding='utf-8')
 
 if __name__ == '__main__': main()
