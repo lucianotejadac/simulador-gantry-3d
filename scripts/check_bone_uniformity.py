@@ -14,8 +14,16 @@ for pi, pose in enumerate(['down', 'up']):
     pair = []
     for meta in [old, new]:
         p = meta['poses'][pose]
-        raw = np.frombuffer(zlib.decompress((ROOT/p['url']).read_bytes()), '<u2').reshape(8,36,384,160)
-        pair.append(raw.astype(np.float32)*np.array(p['scales'])[:,None,None,None])
+        if 'bone' in p:
+            b = p['bone']; o = p['organs']
+            bone = np.frombuffer(zlib.decompress((ROOT/b['url']).read_bytes()), '<u2').reshape(360,384,160)
+            organs = np.frombuffer(zlib.decompress((ROOT/o['url']).read_bytes()), '<u2').reshape(7,36,384,160)
+            assert np.all(bone.sum(axis=(1,2), dtype=np.uint64) > 0)
+            pair.append(np.concatenate([(bone[::10].astype(np.float64)*b['scales'][0])[None],
+                organs.astype(np.float64)*np.array(o['scales'])[:,None,None,None]]))
+        else:
+            raw = np.frombuffer(zlib.decompress((ROOT/p['url']).read_bytes()), '<u2').reshape(8,36,384,160)
+            pair.append(raw.astype(np.float32)*np.array(p['scales'])[:,None,None,None])
     np.testing.assert_array_equal(pair[0][1:], pair[1][1:])
     assert np.isfinite(pair[1]).all() and pair[1].min() >= 0
     # Retain real angular attenuation and anatomical asymmetry.
@@ -28,4 +36,4 @@ for pi, pose in enumerate(['down', 'up']):
         label = ('Brazos al costado' if pose == 'down' else 'Brazos arriba')
         draw.text((col*320+10,5), label+(' - ANTES' if j == 0 else ' - CORREGIDO'), fill='white')
 canvas.save(ROOT/'assets/icrp145/bone-uniformity-comparison.png')
-print('Both poses: non-bone bases identical; 36 finite views; angle dependence retained.')
+print('Both poses: non-bone bases identical; 360 nonempty skeletal views; angle dependence retained.')

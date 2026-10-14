@@ -9,6 +9,7 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync('scripts/mdp.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync('scripts/bone_acquisition.js','utf8'),ctx);
 const M=ctx.window.GANTRY_MDP;
+assert.deepEqual(data.angles,Array.from({length:360},(_,i)=>i),'one skeletal projection per degree');
 for(let t=0;t<=10800;t+=.25){
   for(const voiding of [false,true]){
     const f=M.fractions(t,voiding);
@@ -35,8 +36,20 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
 (async()=>{
  const sums={};
  for(const name of ['down','up']){
-  await Promise.all([M.load(name),M.load(name)]);const p=M.geometry(name),n=128,h=Math.ceil(p.height/p.width*n);
+  const [loaded]=await Promise.all([M.load(name),M.load(name)]);const p=M.geometry(name),n=128,h=Math.ceil(p.height/p.width*n);
+  assert.equal(loaded[0].frames.length,360);
+  assert(loaded.slice(1).every(c=>c.frames.length===36),'compact background bases');
+  const hashes=loaded[0].frames.map(f=>require('node:crypto').createHash('sha256').update(f).digest('hex'));
+  assert.equal(new Set(hashes).size,360,'all skeletal projections distinct');
   const crop={x:0,y:0,w:p.width,h:p.height};
+  function boneAt(angle){
+   const cache={};M.field({...p,angles:[angle]},{lo:0,hi:0,mix:0},crop,n,h,false,false,metrics,1,name,cache,10800);
+   return cache.bases[0];
+  }
+  const a0=boneAt(0),a1=boneAt(1),a10=boneAt(10),a359=boneAt(359),a360=boneAt(360),seam=boneAt(359.5);
+  assert.deepEqual(a360,a0,'360 closes at 0');
+  assert(a1.some((v,i)=>Math.abs(v-(a0[i]*.9+a10[i]*.1))>1e-8),'1 degree is a real projection, not interpolated from 0 and 10');
+  for(let i=0;i<seam.length;i++)assert(Math.abs(seam[i]-(a359[i]+a0[i])/2)<1e-9,'continuous 359 to 0 interpolation');
   sums[name]={};
   for(const angle of [0,90,180,270]){
    const i=p.angles.indexOf(angle),cache={};
@@ -51,7 +64,8 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
    sums[name][angle]={initialCps:early.sum*M.rate/2000000,threeHourCps:r2};
   }
  }
- assert.equal(downloads.length,2,'download only each selected pose, deduplicated');
+ assert.equal(downloads.length,4,'two compact payloads per selected pose, deduplicated');
+ for(const name of ['down','up'])for(const key of ['bone','organs'])assert.equal(downloads.filter(u=>u===data.poses[name][key].url).length,1);
  // Integrating a changing distribution is different from multiplying a single late frame.
  const n=128,bases=Array.from({length:8},(_,c)=>{const a=new Float32Array(n*n);a[c]=1;return a;});
  const field=M.mix(bases),session=new ctx.window.GANTRY_BONE_CORE.Acquisition(n,'time',30);

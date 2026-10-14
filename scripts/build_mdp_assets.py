@@ -31,7 +31,8 @@ def main():
     mu[cortical] = .2732992; mu[marrow] = .1537*.981
     def coarse(v): return v.reshape(375,2,52,2,160,2).sum((1,3,5))
     meta = {k: mag[k] for k in ['width','height','pixelMm','angles','headRow','footRow']}
-    meta.update(components=['bone','blood','soft','kidneys','bladder','central','lungs','arteries'], poses={}, boneEmission=PARAMETERS)
+    meta.update(angles=list(range(360)), organAngles=mag['angles'],
+                components=['bone','blood','soft','kidneys','bladder','central','lungs','arteries'], poses={}, boneEmission=PARAMETERS)
     for pose in ['down','up']:
         if pose == 'up':
             vol = np.load(WORK/'icrp145-oseo-360/brazos-arriba/volumen_articulado.npz')
@@ -47,25 +48,30 @@ def main():
             v.fill(0); v[:594,:,63:256] = mu
         attenuation = coarse(v)/8*2  # projector's 3 mm step, volume now 6 mm
         bone = []
-        for angle in mag['angles']:
+        for angle in meta['angles']:
             bone.append(gaussian_filter(project(a,attenuation,np.deg2rad(angle),160,384)/.3,6/2.35482/6))
+            if angle % 60 == 0: print(pose, angle+1, '/ 360 projections', flush=True)
         old = np.frombuffer(zlib.decompress((ROOT/mag['urls'][pose]).read_bytes()),'<u2').reshape(15,36,384,160)
         old = old.astype(np.float32)*np.array(mag['scales'][pose],np.float32)[:,None,None,None]
         # Each organ basis contains one unit of administered activity before attenuation.
         kidney = .45*(old[0]+old[2])+.05*(old[1]+old[3])
-        frames = np.stack([np.array(bone),old[7],old[8],kidney,old[6],old[10],old[11],.5*(old[12]+old[13])])
-        scales = frames.max(axis=(1,2,3))/65535
-        raw = zlib.compress(np.rint(frames/scales[:,None,None,None]).astype('<u2').tobytes(),9)
-        name = 'assets/runtime/mdp-'+pose+'.'+hashlib.sha256(raw).hexdigest()[:16]+'.bin'
-        (ROOT/name).write_bytes(raw)
-        meta['poses'][pose] = {'url':name,'scales':scales.tolist()}
-        print(pose, len(raw), 'bytes', flush=True)
+        # Keep the 360 real skeletal projections separate from the existing
+        # seven organ bases: no tenfold duplication of background data in RAM.
+        meta['poses'][pose] = {}
+        groups = {'bone':np.array(bone)[None], 'organs':np.stack([old[7],old[8],kidney,old[6],old[10],old[11],.5*(old[12]+old[13])])}
+        for group, frames in groups.items():
+            scales = frames.max(axis=(1,2,3))/65535
+            raw = zlib.compress(np.rint(frames/scales[:,None,None,None]).astype('<u2').tobytes(),9)
+            name = 'assets/runtime/mdp-'+group+'-'+pose+'.'+hashlib.sha256(raw).hexdigest()[:16]+'.bin'
+            (ROOT/name).write_bytes(raw)
+            meta['poses'][pose][group] = {'url':name,'scales':scales.tolist()}
+            print(pose, group, len(raw), 'bytes', flush=True)
     meta['sensitivityCpsPerMBq'] = 100
     meta['halfLifeMinutes'] = 6.0067*60
     meta['sources'] = [
         'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3c91d0d8-6cc5-834c-bda0-aa83a873b9fb',
         'https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/']
-    meta['limitations'] = 'Educational kinetics and assumed 100 cps/MBq LEHR sensitivity before attenuation; not a measured camera calibration. ICRP anatomy, not ICRP pharmacokinetics. Continuous skeletal-envelope emission is an educational visual model, not measured regional uptake. 6 mm sampling, 10 degree views, synthetic articulated arms.'
+    meta['limitations'] = 'Educational kinetics and assumed 100 cps/MBq LEHR sensitivity before attenuation; not a measured camera calibration. ICRP anatomy, not ICRP pharmacokinetics. Continuous skeletal-envelope emission is an educational visual model, not measured regional uptake. 6 mm spatial sampling. Bone: 360 independently projected 1 degree views. Other organ bases retain 10 degree sampling with angular interpolation. Synthetic articulated arms.'
     meta['sourceHashes'] = {str(p.relative_to(WORK)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [WORK/'simulador-renograma-mc/salida_osea/cuerpo.npz', WORK/'icrp145-oseo-360/brazos-arriba/volumen_articulado.npz', WORK/'icrp145-oseo-360/correccion_huesos_largos.npz', ROOT/'scripts/bone_emission.py', ROOT/mag['urls']['down'], ROOT/mag['urls']['up']]}
     (ROOT/'assets/icrp145/mdp-provenance.json').write_text(json.dumps(meta,indent=2),encoding='utf-8')
 

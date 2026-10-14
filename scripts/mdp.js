@@ -31,13 +31,17 @@
   async function load(name){
     if(poses[name])return poses[name];
     if(!pending[name])pending[name]=(async()=>{
-      const p=data.poses[name],response=await fetch(p.url);
-      if(!response.ok)throw Error('No se pudo cargar MDP ('+response.status+')');
-      const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
-      const values=new Uint16Array(buffer),n=data.width*data.height;
-      if(values.length!==8*data.angles.length*n)throw Error('Atlas MDP incompleto');
-      poses[name]=p.scales.map((scale,c)=>({width:data.width,height:data.height,scale,window:1,
-        frames:data.angles.map((_,a)=>values.subarray((c*data.angles.length+a)*n,(c*data.angles.length+a+1)*n))}));
+      const p=data.poses[name],n=data.width*data.height;
+      const groups=await Promise.all([['bone',data.angles,1],['organs',data.organAngles,7]].map(async([key,angles,count])=>{
+        const payload=p[key],response=await fetch(payload.url);
+        if(!response.ok)throw Error('No se pudo cargar MDP ('+response.status+')');
+        const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
+        const values=new Uint16Array(buffer);
+        if(payload.scales.length!==count||values.length!==count*angles.length*n)throw Error('Atlas MDP incompleto');
+        return payload.scales.map((scale,c)=>({width:data.width,height:data.height,scale,window:1,angles,
+          frames:angles.map((_,a)=>values.subarray((c*angles.length+a)*n,(c*angles.length+a+1)*n))}));
+      }));
+      poses[name]=groups.flat();
       return poses[name];
     })().catch(e=>{delete pending[name];throw e;});
     return pending[name];
@@ -47,12 +51,14 @@
   // independently normalized 6 mm organ atlases. No fixed late bone image mixing.
   function field(pose,pair,crop,w,h,flipX,flipY,metrics,sigma,name,cache,seconds=state.seconds){
     const oldAngles=pose.angles,angle=(oldAngles[pair.lo]+(((oldAngles[pair.hi]-oldAngles[pair.lo])+360)%360)*pair.mix)%360;
-    const pos=angle/10,lo=Math.floor(pos),angular={lo,hi:(lo+1)%36,mix:pos-lo};
     const ratio=(pose.pixelMm||3)/data.pixelMm;
     const mapped={x:data.width/2+(crop.x-pose.width/2)*ratio,y:data.headRow+(crop.y-pose.headRow)*ratio,w:crop.w*ratio,h:crop.h*ratio};
-    const key=JSON.stringify([name,angular,mapped,w,h,flipX,flipY,metrics,sigma]);
+    const key=JSON.stringify([name,angle,mapped,w,h,flipX,flipY,metrics,sigma]);
     if(cache.key!==key){
-      const bases=poses[name].map(p=>window.GANTRY_ICRP.field(p,angular,mapped,w,h,flipX,flipY,metrics,sigma).values);
+      const bases=poses[name].map(p=>{
+        const pos=angle*p.angles.length/360,lo=Math.floor(pos),angular={lo,hi:(lo+1)%p.angles.length,mix:pos-lo};
+        return window.GANTRY_ICRP.field(p,angular,mapped,w,h,flipX,flipY,metrics,sigma).values;
+      });
       cache.key=key;cache.bases=bases;
       cache.result=null;
     }
@@ -95,7 +101,7 @@
     el('mdpPlay').textContent=state.playing?'Pausar evolución':state.seconds>=LIMIT?'Reiniciar desde 0':'Reproducir evolución';
     const f=fractions(state.seconds,state.voidAt120),p=x=>(100*x).toFixed(1)+'%',clock=Math.floor(state.seconds+1e-6);
     el('mdpStats').textContent=(state.seconds<60?'Vascular':state.seconds<600?'Pool / captación':'Captación ósea')+' · '+Math.floor(clock/60)+':'+String(clock%60).padStart(2,'0')+' / 180:00 · Sangre '+p(f.blood)+' · Hueso '+p(f.bone)+' · Tejidos '+p(f.soft)+' · Riñones '+p(f.renal)+' · Vejiga '+p(f.bladder)+' · Eliminado '+p(f.excreted);
-    el('mdpDose').textContent=state.activityMBq.toFixed(0)+' MBq / '+(state.activityMBq/37).toFixed(1)+' mCi · actividad corporal '+(f.weights.reduce((a,b)=>a+b,0)*state.activityMBq).toFixed(0)+' MBq';
+    el('mdpDose').textContent=state.activityMBq.toFixed(0)+' MBq / '+(state.activityMBq/37).toFixed(1)+' mCi · actividad corporal '+(f.weights.reduce((a,b)=>a+b,0)*state.activityMBq).toFixed(0)+' MBq · '+data.angles.length+' proyecciones óseas (1°)';
   }
   function refresh(){window.GANTRY_LIVE?.clearPersistence();render();}
   function init(){
