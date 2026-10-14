@@ -65,7 +65,7 @@
   }
   class Persistence {
     constructor(w,h,random=Math.random){this.w=w;this.h=h;this.random=random;this.counts=new Uint32Array(w*h);this.reset();}
-    reset(){this.counts.fill(0);this.frames=[];this.total=0;}
+    reset(){this.counts.fill(0);this.frames=[];this.total=0;this.lastStepTime=-Infinity;}
     expire(now,duration){
       while(this.frames.length&&this.frames[0].time<=now-duration){
         const frame=this.frames.shift();for(const i of frame.events)this.counts[i]--;
@@ -73,6 +73,10 @@
       }
     }
     step(field,rate,dt,now,duration){
+      // A gantry render can re-enter the live view during an automatic scan.
+      // Each persistence interval contributes events exactly once.
+      if(now<=this.lastStepTime)return;
+      this.lastStepTime=now;
       this.expire(now,duration);
       const expected=field.sum/2000000*rate*dt,events=[];
       for(let t=-Math.log(1-this.random());t<expected;t+=-Math.log(1-this.random())){

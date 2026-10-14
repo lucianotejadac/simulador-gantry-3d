@@ -4,6 +4,7 @@
   function snapshot(session,names,settings,now=Date.now(),id=crypto.randomUUID()){
     return {version:1,id,createdAt:now,n:session.n,height:session.height||session.n,kind:session.kind||'static',mode:session.mode,target:session.target,
       study:session.study||settings.study||'bone',finished:session.finished,names:names.slice(),settings:structuredClone(settings),
+      ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mode==='scan'?{scan:{velocity:session.velocity,travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
       heads:session.heads.map(h=>({detector:h.detector,total:h.total,elapsed:h.elapsed,done:h.done,counts:h.counts.slice()}))};
   }

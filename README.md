@@ -402,6 +402,66 @@ DOM simulado. No sustituye una comprobación visual del navegador.
 Procedencia y resultados: `assets/icrp145/mag3-procedencia.json` y
 `assets/icrp145/mag3-verificacion.json`.
 
+## MDP: actividad y biodistribución de 0 a 3 horas
+
+El cintigrama óseo calcula las cuentas a partir de la **actividad inyectada**
+(MBq o mCi, 1 mCi = 37 MBq) y el **tiempo inyección–examen**. El selector manual
+de cuentas/s queda reservado a los demás estudios. El valor inicial de 740 MBq
+y 120 min es un ejemplo de simulación, no una recomendación de administración.
+
+La línea temporal permite explorar 0–180 min o reproducir la evolución hasta
+300×. La fase vascular redistribuye el bolo entre compartimento central,
+pulmonar, arterial y sangre periférica; después predominan el hueso y la
+eliminación renal. La opción de micción vacía la vejiga a los 120 min y permite
+su llenado posterior. Los porcentajes mostrados se refieren a la actividad
+inicial, después del decaimiento, por lo que no suman 100% a tiempos tardíos.
+
+Se proyectan ocho bases de actividad normalizadas de la anatomía ICRP 145:
+hueso, sangre, tejido blando, riñones, vejiga, región vascular central,
+pulmones y arterias. La base ósea contiene exclusivamente hueso cortical y
+trabecular, sin reutilizar el fondo o la vejiga de una imagen ósea tardía.
+Las dos posturas usan muestreo de 6 mm, 36 ángulos interpolados y atenuación
+a 140 keV. Brazos arriba es una articulación docente derivada, no una postura
+oficial ICRP. Los órganos reutilizan las bases anatómicas normalizadas del
+atlas MAG3; **la cinética es específica de MDP**, independiente de MAG3.
+
+La fracción sanguínea biológica se aproxima por
+`0.78 exp(-t/2) + 0.14 exp(-t/45) + 0.08 exp(-t/180)`, con t en minutos.
+La actividad que sale de sangre se reparte conservativamente entre hueso,
+tejidos, riñones y orina. La captación ósea tiende a 50%; todos los
+compartimentos aplican semiperíodo físico de 360,402 min. Los anclajes de sangre
+~10% a 1 h y ~5% a 2 h y la retención esquelética proceden de la
+[ficha de medronato de DailyMed](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3c91d0d8-6cc5-834c-bda0-aa83a873b9fb).
+La distinción entre fases y las imágenes tardías se apoyan en la
+[guía EANM](https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/).
+El resto de los tiempos y repartos son supuestos docentes, no parámetros
+farmacocinéticos certificados por ICRP ni ajustes a datos de un paciente.
+
+La sensibilidad efectiva LEHR se supone de **100 c/s/MBq antes de atenuación**.
+La tasa detectada aplica la actividad, las fracciones temporales, la transmisión
+de cada órgano, el campo, el colimador y la ventana energética existentes.
+Es una escala absoluta supuesta: no se ha calibrado con un equipo real. Los
+eventos acumulados mantienen ruido de Poisson y la ventana móvil en vivo.
+
+La adquisición estática integra la cinética en pasos de hasta 1 s durante el
+primer minuto y 5 s después; el barrido usa pasos de hasta 0,5 s. El avance
+rápido y la adquisición instantánea también avanzan el reloj del RF. La dosis,
+el instante y la micción quedan bloqueados durante una adquisición. Pausar
+adquisición pausa su reloj simulado; fuera de adquisición sólo avanza al pulsar
+Reproducir evolución. A los 180 min se detiene la adquisición, aunque la meta
+de cuentas aún no se alcance. Las copias guardadas conservan actividad,
+intervalo de tiempo y supuestos originales.
+
+Los atlas externos se cargan sólo para la postura seleccionada (3,34/3,70 MB),
+y se cachean las bases ya recortadas y desenfocadas. Cambiar el tiempo sólo
+remezcla estas bases. El HTML no incorpora los volúmenes ni los binarios.
+
+Regeneración: `python scripts/build_mdp_assets.py` (requiere fuentes locales),
+`python scripts/embed_mdp.py`, `python scripts/embed_bone_acquisition.py` y
+`python scripts/refresh_lazy_assets.py`. Prueba: `node tests/test_mdp.cjs`.
+Procedencia y pruebas: `assets/icrp145/mdp-provenance.json` y
+`assets/icrp145/mdp-verification.json`.
+
 ## Derechos de autor
 
 Copyright © 2026 Luciano Tejada Castro. Distribuido bajo licencia [MIT](LICENSE).

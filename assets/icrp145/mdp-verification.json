@@ -1,0 +1,53 @@
+{
+  "result": "OK",
+  "checks": [
+    "nonnegative compartments",
+    "mass plus physical decay",
+    "blood anchors",
+    "voiding",
+    "both poses and four angles",
+    "spatial cache reuse",
+    "linear activity response",
+    "changing acquisition",
+    "three hour boundary",
+    "immutable saved metadata"
+  ],
+  "wholeBodyExpectedCps": {
+    "down": {
+      "0": {
+        "initialCps": 25341.943506406962,
+        "threeHourCps": 10448.40847392684
+      },
+      "90": {
+        "initialCps": 6960.879411501117,
+        "threeHourCps": 6299.675961170506
+      },
+      "180": {
+        "initialCps": 11509.33992204261,
+        "threeHourCps": 9852.324221973427
+      },
+      "270": {
+        "initialCps": 12577.214463084578,
+        "threeHourCps": 6367.049215831168
+      }
+    },
+    "up": {
+      "0": {
+        "initialCps": 25640.011823711568,
+        "threeHourCps": 10552.720489465348
+      },
+      "90": {
+        "initialCps": 9455.71477607859,
+        "threeHourCps": 6403.490260951058
+      },
+      "180": {
+        "initialCps": 12374.32357879047,
+        "threeHourCps": 10100.616428801719
+      },
+      "270": {
+        "initialCps": 15817.015560203106,
+        "threeHourCps": 6436.039138549593
+      }
+    }
+  }
+}

@@ -7,6 +7,8 @@
     if(acquisition.study==='mag3'){
       if(!window.GANTRY_MAG3)return;
       task=window.GANTRY_MAG3.load();
+    }else if(acquisition.study==='bone'&&window.GANTRY_MDP){
+      task=window.GANTRY_MDP.load(lastState?.arms==='up'?'up':'down');
     }else if(atlas.linear){
       const name=activeStudy().atlasKey||(lastState?.arms==='up'?'up':'down');
       if(window.GANTRY_ICRP.poses[name]){atlas.ready=true;return;}

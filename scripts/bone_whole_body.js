@@ -94,7 +94,7 @@
     const status=position();if(!status.ok)throw Error(status.reason);
     const G=window.GANTRY.G;
     window.GANTRY_LIVE.setZoom(1);window.GANTRY_LIVE.resetImageCenter();
-    const pose=window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'];
+    const pose=window.GANTRY_MDP?.geometry(G.arms==='up'?'up':'down')||window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'];
     const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ);
     // Both 0/360 and 180 put the detector faces parallel to the patient.
     scan.targetRot=Math.round(G.rot/180)*180;
@@ -137,7 +137,7 @@
   }
   function fields(){
     const live=window.GANTRY_LIVE,G=window.GANTRY.G,settings=live.settings;
-    const pose=window.GANTRY_ICRP?.poses[G.arms==='up'?'up':'down'];
+    const pose=window.GANTRY_MDP?.geometry(G.arms==='up'?'up':'down')||window.GANTRY_ICRP?.poses[G.arms==='up'?'up':'down'];
     if(!pose)throw Error('Preparando el fantoma óseo');
     const size=geometry(pose,settings.matrix);
     const gaps=window.GANTRY3D?.surfaceGaps(G);
@@ -152,11 +152,15 @@
       return live.distanceMetrics(Math.round(cm*2)/2,'bone',settings.collimator,settings.energyCenter,settings.windowWidth);
     });
     const flipX=physicalProne!==(settings.decubitus==='prone');
-    const nextKey=JSON.stringify([G.arms,size,pairs,metrics,flipX]);
+    const mdp=window.GANTRY_MDP;
+    const nextKey=JSON.stringify([G.arms,size,pairs,metrics,flipX,mdp?.seconds,mdp?.metadata().voidAt120]);
     if(nextKey!==key){
       cached={...size,fields:pairs.map((pair,i)=>{
         const signature=JSON.stringify([G.arms,size,pair,metrics[i],flipX]);
-        if(detectorFields[i]?.key!==signature)detectorFields[i]={key:signature,
+        if(mdp){
+          const cache=detectorFields[i]?.mdpCache||{};
+          detectorFields[i]={key:signature,mdpCache:cache,field:mdp.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240,G.arms==='up'?'up':'down',cache)};
+        }else if(detectorFields[i]?.key!==signature)detectorFields[i]={key:signature,
           field:window.GANTRY_ICRP.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240)};
         return detectorFields[i].field;
       })};
