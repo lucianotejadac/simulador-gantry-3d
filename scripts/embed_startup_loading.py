@@ -29,7 +29,7 @@ block='''<!-- STARTUP_LOADING_BEGIN -->
       <span id="startupSpinner" aria-hidden="true"></span>
       <h2 id="startupTitle">Cargando…</h2>
       <p id="startupDetail" role="status">Preparando el simulador…</p>
-      <progress id="startupProgress" max="5" value="0" aria-label="Carga inicial del simulador"></progress>
+      <progress id="startupProgress" max="5" value="0" aria-label="Carga del simulador"></progress>
       <button id="startupRetry" type="button" hidden>Reintentar</button>
     </div>
   </dialog>
@@ -46,5 +46,7 @@ if 'let patientLoadState=' not in html:
     html=html.replace('surfaceGaps, room, equipment, collision};',"surfaceGaps, room, equipment, collision, get patientLoadState(){return patientLoadState;}};",1)
 if 'get loadError(){return !!activeAtlas().error;}' not in html:
     html=html.replace('    get ready(){return ready;},', '    get ready(){return ready;},\n    get loadError(){return !!activeAtlas().error;},',1)
+if 'window.GANTRY_LOADING?.studyChanged(' not in html:
+    html=html.replace('    acquisition.study=nextStudy;', '    window.GANTRY_LOADING?.studyChanged(nextStudy,studies[nextStudy].label);\n    acquisition.study=nextStudy;',1)
 page.write_text(html,encoding='utf-8',newline='\n')
 print('Startup loading dialog and readiness hooks installed.')
