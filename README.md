@@ -462,6 +462,76 @@ Regeneración: `python scripts/build_mdp_assets.py` (requiere fuentes locales),
 Procedencia y pruebas: `assets/icrp145/mdp-provenance.json` y
 `assets/icrp145/mdp-verification.json`.
 
+## MIBI cardíaco: actividad, biodistribución y demora
+
+En **MIBI cardíaco** las cuentas/s proceden de la actividad inyectada en MBq
+o mCi y del tiempo inyección–examen. Los controles permiten recorrer **0–12 h**,
+reproducir la evolución, elegir reposo, ejercicio o estrés farmacológico y
+comparar el tiempo de referencia con una demora de 6 h. Conserva el VI ampliado,
+asimétrico y con captación heterogénea que ya utilizaba el simulador.
+
+Las diez bases anatómicas son miocardio, sangre, tejidos blandos, hígado,
+vesícula, intestino delgado, colon, riñones, vejiga y glándulas. Se normalizan
+antes de proyectar; conservan la atenuación y las diferencias angulares.
+La anatomía deriva del fantoma ICRP 145 y su articulación docente de brazos
+arriba; el VI sigue siendo el emisor sintético previo, no una segmentación
+oficial ICRP. Las bases vasculares y renales reutilizan anatomía de MAG3,
+**sin reutilizar su farmacocinética**. Muestreo de 6 mm y 36 vistas interpoladas;
+el nuevo atlas externo ocupa 2,72 MB y se descarga sólo al elegir MIBI.
+
+Corazón e hígado interpolan logarítmicamente las fracciones **biológicas**
+de la tabla 6 de la [ficha de sestamibi de DailyMed](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87)
+a 5, 30, 60, 120 y 240 min, por separado para reposo y ejercicio. El
+decaimiento físico de Tc-99m (semiperíodo 360,402 min) se aplica una sola vez,
+después de la distribución biológica. Antes de 5 min la captación se aproxima
+por una subida exponencial; después de 4 h se extrapola con semiperíodos
+biológicos de 6 h para miocardio y 30 min para hígado.
+
+El aclaramiento sanguíneo, tránsito hepatobiliar, riñones, orina y fondo son
+compartimentos docentes conservativos. Sus repartos y constantes adicionales
+son supuestos, no curvas individuales medidas. La salida urinaria tiende a
+27% de la actividad inicial; se puede simular micción cada 2 h. El intestino
+recibe la actividad hepatobiliar y puede seguir interfiriendo tras disminuir
+el hígado. La actividad corporal más la eliminada coincide con la actividad
+inicial corregida por decaimiento. No se simulan enfermedad, respuesta de
+flujo coronario, extravasación ni dos inyecciones de un protocolo de un día.
+
+Los avisos usan los mínimos orientativos de la
+[guía ASNC 2016 de protocolos y trazadores](https://www.asnc.org/wp-content/uploads/2024/06/ASNC-SPECT-ProtocolsTracers-Guidelines2016.pdf):
+15–20 min después de ejercicio, 45–60 min en reposo y desde 60 min tras
+estrés farmacológico. Son referencias para esta simulación, no un óptimo
+universal ni una validación automática de la imagen. La guía admite demora
+de hasta 2 h cuando sea necesaria; el modelo señala demoras posteriores y
+demoras prolongadas después de 4 h, sin declarar la imagen inválida por un
+umbral fijo. Estos últimos umbrales organizan la demostración docente.
+El escenario farmacológico usa explícitamente las curvas de reposo como
+aproximación, con su propia espera orientativa; no representa la cinética
+específica de un fármaco. No se atribuyen estos valores a la guía ASNC 2026.
+
+La tasa usa la misma sensibilidad LEHR **supuesta** de 100 c/s/MBq antes de
+atenuación que MDP, además del campo, distancia, colimador y ventana existentes.
+No es una calibración de cámara real. El indicador de cuentas del VI compara
+su actividad efectiva con el tiempo de referencia del protocolo; el factor
+de tiempo es una estimación local, sin resolver el cambio posterior durante
+una adquisición larga. La imagen ajusta su contraste automáticamente, pero
+una adquisición de igual duración acumula menos eventos y más ruido relativo
+cuando disminuye la actividad.
+
+La adquisición estática integra las fracciones cambiantes, incluso en avance
+rápido o instantáneo, en pasos de hasta 1 s durante el primer minuto y 5 s
+después. Pausar detiene el reloj simulado. Los parámetros de inyección quedan
+bloqueados mientras hay una adquisición pendiente; guardar conserva actividad,
+protocolo, tiempos inicial/final y supuestos. El límite de 12 h detiene el
+modelo, no representa una caducidad clínica. Paratiroides mantiene su atlas
+previo compartido y no hereda estos tiempos de perfusión miocárdica.
+
+Regeneración: `python scripts/build_mibi_kinetic_assets.py` (requiere fuentes
+locales), `python scripts/embed_mibi_kinetics.py`,
+`python scripts/embed_bone_acquisition.py` y `python scripts/refresh_lazy_assets.py`.
+Prueba: `node tests/test_mibi_kinetics.cjs`. Procedencia y resultados en
+`assets/icrp145/mibi-kinetic-provenance.json` y
+`assets/icrp145/mibi-kinetic-verification.json`.
+
 ## Derechos de autor
 
 Copyright © 2026 Luciano Tejada Castro. Distribuido bajo licencia [MIT](LICENSE).

@@ -1,0 +1,41 @@
+{
+  "result": "OK",
+  "checks": [
+    "nonnegative balanced compartments through 12 h",
+    "label biological heart/liver anchors",
+    "physical decay once",
+    "three protocol windows",
+    "late signal retained",
+    "optional voiding",
+    "real organ bases at four angles",
+    "activity controls and unit conversion",
+    "spatial cache reuse",
+    "protocol changes distribution",
+    "dynamic time/count acquisition",
+    "fast-forward pause instant",
+    "12 h boundary",
+    "immutable saved kinetics"
+  ],
+  "wholeBodyExpectedCps": {
+    "0": {
+      "fiveMinCps": 25498.528809182466,
+      "oneHourCps": 24608.524485636684,
+      "sixHourCps": 10149.115908159192
+    },
+    "90": {
+      "fiveMinCps": 18832.941911797483,
+      "oneHourCps": 14381.403668091969,
+      "sixHourCps": 5784.70865862005
+    },
+    "180": {
+      "fiveMinCps": 24345.861442434456,
+      "oneHourCps": 20203.157986439586,
+      "sixHourCps": 7728.961382363804
+    },
+    "270": {
+      "fiveMinCps": 14855.79523082485,
+      "oneHourCps": 13604.516989458252,
+      "sixHourCps": 5883.520029063335
+    }
+  }
+}

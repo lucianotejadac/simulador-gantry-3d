@@ -109,9 +109,11 @@
         finally{moving=false;}
       }else {const current=acquisitionFields();if(current){
         if(study==='bone'&&window.GANTRY_MDP&&current.every(f=>f.mdpBases))window.GANTRY_MDP.step(session,current,dt*speed);
+        else if(study==='mibi'&&window.GANTRY_MIBI&&current.every(f=>f.mibiBases))window.GANTRY_MIBI.step(session,current,dt*speed);
         else session.step(current,rate,dt*speed);
       }}
       if(study==='bone'&&window.GANTRY_MDP)session.mdpEnd=window.GANTRY_MDP.metadata();
+      if(study==='mibi'&&window.GANTRY_MIBI)session.mibiEnd=window.GANTRY_MIBI.metadata();
     }
   }
   function draw(h,j,n,height=n){
@@ -133,6 +135,7 @@
   }
   function paint(force=false){
     window.GANTRY_MDP?.render();
+    window.GANTRY_MIBI?.render();
     const active=supported(study),running=!!session&&!session.finished;
     const displayWhole=(archive||session)?.kind==='whole'||(!archive&&!session&&kind()==='whole');
     el('gantryLive').classList.toggle('bone-whole-body',active&&displayWhole);
@@ -180,6 +183,8 @@
     if(archive)el('boneAcqStatus').textContent='Viendo guardada · '+new Date(archive.createdAt).toLocaleString('es-CL')+(running?' · actual en pausa':'');
     const mdpInfo=archive?archive.mdp:(session?.mdpStart?{start:session.mdpStart,end:session.mdpEnd||session.mdpStart,limit:session.mdpLimit}:null);
     if(mdpInfo)el('boneAcqStatus').textContent+=' · MDP '+mdpInfo.start.activityMBq.toFixed(0)+' MBq · '+(mdpInfo.start.seconds/60).toFixed(1)+' → '+(mdpInfo.end.seconds/60).toFixed(1)+' min'+(mdpInfo.limit?' · Límite de 3 h alcanzado':'');
+    const mibiInfo=archive?archive.mibi:(session?.mibiStart?{start:session.mibiStart,end:session.mibiEnd||session.mibiStart,limit:session.mibiLimit}:null);
+    if(mibiInfo)el('boneAcqStatus').textContent+=' · MIBI '+mibiInfo.start.activityMBq.toFixed(0)+' MBq · '+(mibiInfo.start.seconds/60).toFixed(1)+' → '+(mibiInfo.end.seconds/60).toFixed(1)+' min · '+(window.GANTRY_MIBI?.timing(mibiInfo.start.seconds,mibiInfo.start.protocol).label||mibiInfo.start.protocol)+(mibiInfo.limit?' · Fin del modelo a 12 h':'');
     if(!active)return;
     const now=performance.now();if(!force&&now-lastPaint<180)return;lastPaint=now;
     shown.heads.forEach((h,j)=>{
@@ -219,6 +224,7 @@
   function start(){
     if(!fields||busy||saving||loadingSaved||(session&&!session.finished))return;
     if(study==='bone'&&window.GANTRY_MDP?.remaining<=0){el('boneAcqSetupError').textContent='El modelo termina a las 3 horas. Elige un tiempo anterior para iniciar.';return;}
+    if(study==='mibi'&&window.GANTRY_MIBI?.remaining<=0){el('boneAcqSetupError').textContent='El modelo MIBI termina a las 12 horas. Elige un tiempo anterior para iniciar.';return;}
     const nextNames=[el('boneAcqName1').value.trim(),el('boneAcqName2').value.trim()];
     if(nextNames.some(n=>!n||n.length>80)){el('boneAcqSetupError').textContent='Escribe un nombre para cada detector (máximo 80 caracteres).';return;}
     const {mode,target}=settings();
@@ -230,6 +236,7 @@
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
     session.study=study;
     if(study==='bone'&&window.GANTRY_MDP)session.mdpStart=window.GANTRY_MDP.begin();
+    if(study==='mibi'&&window.GANTRY_MIBI)session.mibiStart=window.GANTRY_MIBI.begin();
     names=nextNames;archive=null;selection++;el('boneAcqSaved').value='current';
     el('boneAcqCacheStatus').textContent='Adquisición actual sin guardar';
     clock=performance.now();speed=1;paused=false;note='';el('boneAcqSpeed').value='1';
@@ -238,7 +245,7 @@
   async function instant(){
     if(!session||session.finished||busy||!fields||session.mode==='scan')return;
     advance();const snapshot=acquisitionFields(),currentRate=rate;if(!snapshot){paint(true);return;}
-    if(!(study==='bone'&&window.GANTRY_MDP)&&session.mode==='counts'&&session.heads.some((h,i)=>!h.done&&!(snapshot[i].sum*currentRate>0))){
+    if(!(study==='bone'&&window.GANTRY_MDP)&&!(study==='mibi'&&window.GANTRY_MIBI)&&session.mode==='counts'&&session.heads.some((h,i)=>!h.done&&!(snapshot[i].sum*currentRate>0))){
       note='Sin señal en un detector: mueve el campo o ajusta la energía';paint(true);return;
     }
     busy=true;note=session.kind==='whole'?'Cuerpo entero':'Posición actual';paint(true);
@@ -247,6 +254,11 @@
       if(study==='bone'&&window.GANTRY_MDP&&snapshot.every(f=>f.mdpBases)){
         while(!session.finished){
           window.GANTRY_MDP.step(session,snapshot,30);session.mdpEnd=window.GANTRY_MDP.metadata();
+          paint();await new Promise(resolve=>setTimeout(resolve,0));
+        }
+      }else if(study==='mibi'&&window.GANTRY_MIBI&&snapshot.every(f=>f.mibiBases)){
+        while(!session.finished){
+          window.GANTRY_MIBI.step(session,snapshot,30);session.mibiEnd=window.GANTRY_MIBI.metadata();
           paint();await new Promise(resolve=>setTimeout(resolve,0));
         }
       }else if(session.mode==='time')session.step(snapshot,currentRate,session.target);

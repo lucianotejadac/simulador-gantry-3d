@@ -81,13 +81,13 @@
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;
     el('mdpControls').hidden=!active;
-    if(el('boneCountRate'))el('boneCountRate').closest('label').hidden=active;
+    if(el('boneCountRate'))el('boneCountRate').closest('label').hidden=active||(window.GANTRY_LIVE?.settings.study==='mibi'&&!!window.GANTRY_MIBI);
     for(const id of ['mdpActivity','mdpUnit','mdpMinutes','mdpTimeline','mdpPlay','mdpSpeed','mdpVoid'])el(id).disabled=!!locked;
     if(document.activeElement!==el('mdpMinutes'))el('mdpMinutes').value=(state.seconds/60).toFixed(2);
     el('mdpTimeline').value=state.seconds;
     el('mdpPlay').textContent=state.playing?'Pausar evolución':state.seconds>=LIMIT?'Reiniciar desde 0':'Reproducir evolución';
-    const f=fractions(state.seconds,state.voidAt120),p=x=>(100*x).toFixed(1)+'%';
-    el('mdpStats').textContent=(state.seconds<60?'Vascular':state.seconds<600?'Pool / captación':'Captación ósea')+' · '+Math.floor(state.seconds/60)+':'+String(Math.floor(state.seconds%60)).padStart(2,'0')+' / 180:00 · Sangre '+p(f.blood)+' · Hueso '+p(f.bone)+' · Tejidos '+p(f.soft)+' · Riñones '+p(f.renal)+' · Vejiga '+p(f.bladder)+' · Eliminado '+p(f.excreted);
+    const f=fractions(state.seconds,state.voidAt120),p=x=>(100*x).toFixed(1)+'%',clock=Math.floor(state.seconds+1e-6);
+    el('mdpStats').textContent=(state.seconds<60?'Vascular':state.seconds<600?'Pool / captación':'Captación ósea')+' · '+Math.floor(clock/60)+':'+String(clock%60).padStart(2,'0')+' / 180:00 · Sangre '+p(f.blood)+' · Hueso '+p(f.bone)+' · Tejidos '+p(f.soft)+' · Riñones '+p(f.renal)+' · Vejiga '+p(f.bladder)+' · Eliminado '+p(f.excreted);
     el('mdpDose').textContent=state.activityMBq.toFixed(0)+' MBq / '+(state.activityMBq/37).toFixed(1)+' mCi · actividad corporal '+(f.weights.reduce((a,b)=>a+b,0)*state.activityMBq).toFixed(0)+' MBq';
   }
   function refresh(){window.GANTRY_LIVE?.clearPersistence();render();}

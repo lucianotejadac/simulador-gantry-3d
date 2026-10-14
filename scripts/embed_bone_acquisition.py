@@ -72,7 +72,7 @@ if '/* BONE_ACQ_CSS_BEGIN */' in s:
 else:s=s.replace('</style>',css+'</style>',1)
 
 toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
-          <div id="boneAcqControls" class="bone-acq-controls" hidden aria-label="Adquisición ósea">
+          <div id="boneAcqControls" class="bone-acq-controls" hidden aria-label="Adquisición de detectores">
             <label id="boneAcqTypeWrap">Tipo <select id="boneAcqType" class="live-study" aria-label="Tipo de adquisición"><option value="static">Estática</option><option value="whole">Cuerpo entero</option></select></label>
             <button id="boneAcqStart" class="live-setting" type="button">Iniciar adquisición</button>
             <button id="boneAcqPause" class="live-setting" type="button" hidden>Pausar adquisición</button>
@@ -82,9 +82,9 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
             <button id="boneAcqSave" class="live-setting" type="button" disabled>Guardar adquisición</button>
             <label>Guardadas <select id="boneAcqSaved" class="live-study" aria-label="Adquisiciones guardadas"><option value="current">Adquisición actual</option></select></label>
             <span id="boneAcqCacheStatus" role="status" title="Se conserva en este navegador y sitio; borrar los datos del sitio elimina las adquisiciones guardadas."></span>
-            <span id="boneAcqStatus" role="status">Preparando proyecciones óseas…</span>
+            <span id="boneAcqStatus" role="status">Preparando proyecciones…</span>
             <span id="boneAcqPosition" role="status"></span>
-            <form id="boneAcqSetup" hidden aria-label="Configurar adquisición ósea">
+            <form id="boneAcqSetup" hidden aria-label="Configurar adquisición">
               <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
               <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label id="boneAcqVelocityWrap" hidden>Velocidad de camilla <input id="boneAcqVelocity" type="number" min="1" max="60" step="0.5" value="10" required disabled> cm/min</label>
