@@ -167,8 +167,12 @@ las imágenes: toma la posición actual sin mover antes la camilla.
 
 El único parámetro del barrido es la **velocidad de camilla en cm/min**
 (1–60; valor inicial 10). Se mantienen los nombres para identificar ambos
-detectores. Primero se acercan automáticamente los cabezales a 1 cm del tope
-geométrico seguro del simulador, con movimiento limitado a 8 cm/s. Después
+detectores. Primero se alinean los cabezales en la orientación paralela más
+cercana al paciente (0°/360° o 180°), con giro limitado a 12°/s. Antes de
+girar se separan lo necesario para dejar espacio en todo el recorrido angular.
+Después se acercan automáticamente a 1 cm del tope geométrico seguro del
+simulador, con movimiento limitado a 8 cm/s. La camilla permanece quieta y
+no se acumulan cuentas durante la separación, alineación y acercamiento. Después
 la camilla recorre desde su posición inicial hasta Z 16 cm. El recorrido 200→16 equivale a
 175 cm físicos del modelo, por lo que 10 cm/min requiere 17 min 30 s de
 movimiento, además del posicionamiento inicial de los cabezales. Si comienza

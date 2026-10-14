@@ -164,7 +164,8 @@
     const shown=archive||session,shownNames=archive?archive.names:names;
     if(!session)el('boneAcqStatus').textContent='Sin adquisición actual';
     else {
-    const state=busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&session.phase==='positioning'?'Acercando detectores':'Adquiriendo';
+    const positioning={retracting:'Separando detectores para girar',aligning:'Alineando detectores con el paciente',positioning:'Acercando detectores'};
+    const state=busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&positioning[session.phase]?positioning[session.phase]:'Adquiriendo';
     el('boneAcqStatus').textContent=state+' · '+(session.mode==='scan'?session.velocity+' cm/min · '+session.travel.toFixed(1)+' / '+session.target.toFixed(1)+' cm':session.mode==='counts'?format(session.target)+' cuentas por detector':time(session.target)+' por detector')+(note?' · '+note:'');
     }
     if(archive)el('boneAcqStatus').textContent='Viendo guardada · '+new Date(archive.createdAt).toLocaleString('es-CL')+(running?' · actual en pausa':'');

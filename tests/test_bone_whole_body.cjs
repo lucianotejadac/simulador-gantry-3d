@@ -77,7 +77,7 @@ function rng(){let seed=123;return ()=>((seed=(Math.imul(seed,1664525)+101390422
  const settings={matrix:128,zoom:1,centers:{1:{x:0,y:0},2:{x:0,y:0}},headFirst:false,decubitus:'supine',collimator:'LEHR',energyCenter:140,windowWidth:20};
  W.GANTRY={G,LIM:range,SCAN:{zTop:200},render(){}};W.GANTRY_PATIENT3D={headFirst:false};
  W.GANTRY3D={limits:g=>({d1:g.tableZ<100?35:20,d2:25}),surfaceGaps:()=>null};W.GANTRY_ICRP=linear.window.GANTRY_ICRP;
- W.GANTRY_LIVE={settings,setZoom:z=>settings.zoom=z,resetImageCenter(){},framePair(angle){const i=W.GANTRY_ICRP.poses.down.angles.indexOf(angle);return {lo:i,hi:i,mix:0};},distanceMetrics:()=>({blur:.2,contrast:1,countFactor:1,haloAlpha:0,haloBlur:0})};
+ W.GANTRY_LIVE={settings,setZoom:z=>settings.zoom=z,resetImageCenter(){},framePair(angle){const i=W.GANTRY_ICRP.poses.down.angles.indexOf((angle%360+360)%360);return {lo:i,hi:i,mix:0};},distanceMetrics:()=>({blur:.2,contrast:1,countFactor:1,haloAlpha:0,haloBlur:0})};
  const auto=W.GANTRY_BONE_WHOLE.create(60);W.GANTRY_BONE_WHOLE.advance(auto,1000,.5);
  assert.equal(G.tableZ,120);assert.equal(auto.startZ,120);assert.equal(auto.travel,0);assert.equal(G.detDist1,46);assert.equal(auto.heads[0].total,0);
  for(let steps=0;!auto.finished&&steps<500;steps++){
@@ -85,6 +85,28 @@ function rng(){let seed=123;return ()=>((seed=(Math.imul(seed,1664525)+101390422
   const L=W.GANTRY3D.limits(G);assert(G.detDist1>=L.d1+1);assert(G.detDist2>=L.d2+1);
  }
  assert(auto.finished);assert.equal(G.tableZ,16);assert(auto.heads[0].total>0);
+ // Alignment must finish before table travel or counts, with room reserved
+ // for intermediate angles rather than only the final AP/PA position.
+ W.GANTRY3D.limits=g=>({d1:20+15*Math.abs(Math.sin(g.rot*Math.PI/90)),d2:25});
+ for(const [angle,target] of [[60,0],[140,180],[350,360]]){
+  Object.assign(G,{tableZ:120,rot:angle,detDist1:21,detDist2:26});
+  const aligned=W.GANTRY_BONE_WHOLE.create(60);
+  assert.equal(aligned.targetRot,target);
+  let sawRotation=false,sawRetraction=false;
+  for(let steps=0;aligned.travel===0&&steps<100;steps++){
+   const previous=G.rot;W.GANTRY_BONE_WHOLE.advance(aligned,1000,.5);
+   sawRetraction ||= aligned.phase==='retracting';sawRotation ||= G.rot!==previous;
+   if(G.rot!==previous){assert(G.detDist1>=W.GANTRY3D.limits(G).d1+1-1e-8);assert(G.detDist2>=26);}
+   if(aligned.travel===0){assert.equal(G.tableZ,120);assert(aligned.heads.every(h=>h.total===0&&h.elapsed===0));}
+  }
+  assert(sawRotation&&sawRetraction);assert.equal(G.rot,target);assert(aligned.travel>0);
+ }
+ Object.assign(G,{tableZ:120,rot:60,detDist1:21,detDist2:26});
+ const interrupted=W.GANTRY_BONE_WHOLE.create(60);G.rot=61;
+ assert.throws(()=>W.GANTRY_BONE_WHOLE.advance(interrupted,1000,.5));
+ W.GANTRY3D.limits=()=>({d1:50,d2:25});
+ assert.throws(()=>W.GANTRY_BONE_WHOLE.create(60),/espacio seguro/);
+ W.GANTRY3D.limits=()=>({d1:20,d2:25});G.rot=0;
  G.tableZ=200;const altered=W.GANTRY_BONE_WHOLE.create(60);G.arms='up';assert.throws(()=>W.GANTRY_BONE_WHOLE.advance(altered,1000,.5));
  console.log('OK: sequential finite-FOV exposure, no future-leg counts, physical velocity, exact endpoint/duration, slower scan increases counts, safe detector approach/path margins, immutable prior counts, real ICRP both arm poses, legacy and scan snapshots.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

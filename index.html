@@ -7523,6 +7523,18 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     }
   }
   function approach(current,target,seconds){return current+Math.sign(target-current)*Math.min(Math.abs(target-current),8*seconds);}
+  function rotationTargets(G,targetRot,limits,range){
+    // Retract before rotating: reserve clearance for the entire angular path.
+    const result={detDist1:G.detDist1,detDist2:G.detDist2};
+    const steps=Math.max(1,Math.ceil(Math.abs(targetRot-G.rot)));
+    for(let i=0;i<=steps;i++){
+      const L=limits({...G,rot:G.rot+(targetRot-G.rot)*i/steps});
+      result.detDist1=Math.max(result.detDist1,L.d1+1,range.detDist1[0]);
+      result.detDist2=Math.max(result.detDist2,L.d2+1,range.detDist2[0]);
+    }
+    if(['detDist1','detDist2'].some(k=>!Number.isFinite(result[k])||result[k]>range[k][1]))throw Error('No hay espacio seguro para alinear los detectores. Ajusta la altura de la camilla.');
+    return result;
+  }
   function safeTargets(G,nextZ,limits,range){
     let d1=range.detDist1[0],d2=range.detDist2[0];
     const steps=Math.max(1,Math.ceil(Math.abs(nextZ-G.tableZ)));
@@ -7549,14 +7561,30 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     window.GANTRY_LIVE.setZoom(1);window.GANTRY_LIVE.resetImageCenter();
     const pose=window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'];
     const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ);
-    safeTargets(G,scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    // Both 0/360 and 180 put the detector faces parallel to the patient.
+    scan.targetRot=Math.round(G.rot/180)*180;
+    if(Math.abs(G.rot-scan.targetRot)>.001)scan.rotationClearance=rotationTargets(G,scan.targetRot,window.GANTRY3D.limits,window.GANTRY.LIM);
+    safeTargets({...G,rot:scan.targetRot},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     scan.geometrySignature=signature();scan.initialGeometry={...G};
     return scan;
   }
   function advance(scan,rate,seconds){
     const G=window.GANTRY.G;
     if(signature()!==scan.geometrySignature||Math.abs(G.tableZ-scan.tableZ)>.001)throw Error('Cambió la posición o la configuración. Finaliza el barrido antes de reposicionar.');
-    const dt=Math.min(.5,seconds),nextZ=Math.max(scan.endZ,G.tableZ-dt*scan.velocity/60*184/175);
+    const dt=Math.min(.5,seconds);
+    if(!(dt>0)||scan.finished)return;
+    if(Math.abs(G.rot-scan.targetRot)>.001){
+      const targets=scan.rotationClearance;
+      if(['detDist1','detDist2'].some(k=>G[k]<targets[k]-.001)){
+        for(const k of ['detDist1','detDist2'])if(G[k]<targets[k])G[k]=approach(G[k],targets[k],dt);
+        scan.phase='retracting';
+      }else{
+        G.rot+=Math.sign(scan.targetRot-G.rot)*Math.min(Math.abs(scan.targetRot-G.rot),12*dt);
+        scan.geometrySignature=signature();scan.phase='aligning';
+      }
+      window.GANTRY.render();return;
+    }
+    const nextZ=Math.max(scan.endZ,G.tableZ-dt*scan.velocity/60*184/175);
     const targets=safeTargets(G,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     if(['detDist1','detDist2'].some(k=>Math.abs(G[k]-targets[k])>.001)){
       for(const k of ['detDist1','detDist2'])G[k]=approach(G[k],targets[k],dt);
@@ -7582,7 +7610,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     }
     return cached;
   }
-  window.GANTRY_BONE_WHOLE={eligibility,geometry,position,fields,Scan,exposure,approach,safeTargets,create,advance};
+  window.GANTRY_BONE_WHOLE={eligibility,geometry,position,fields,Scan,exposure,approach,safeTargets,rotationTargets,create,advance};
 })();
 
 /* Local, origin-scoped snapshots. Counts and catalogue commit atomically. */
@@ -7817,7 +7845,8 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const shown=archive||session,shownNames=archive?archive.names:names;
     if(!session)el('boneAcqStatus').textContent='Sin adquisición actual';
     else {
-    const state=busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&session.phase==='positioning'?'Acercando detectores':'Adquiriendo';
+    const positioning={retracting:'Separando detectores para girar',aligning:'Alineando detectores con el paciente',positioning:'Acercando detectores'};
+    const state=busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&positioning[session.phase]?positioning[session.phase]:'Adquiriendo';
     el('boneAcqStatus').textContent=state+' · '+(session.mode==='scan'?session.velocity+' cm/min · '+session.travel.toFixed(1)+' / '+session.target.toFixed(1)+' cm':session.mode==='counts'?format(session.target)+' cuentas por detector':time(session.target)+' por detector')+(note?' · '+note:'');
     }
     if(archive)el('boneAcqStatus').textContent='Viendo guardada · '+new Date(archive.createdAt).toLocaleString('es-CL')+(running?' · actual en pausa':'');

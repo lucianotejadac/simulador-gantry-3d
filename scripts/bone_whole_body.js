@@ -57,6 +57,18 @@
     }
   }
   function approach(current,target,seconds){return current+Math.sign(target-current)*Math.min(Math.abs(target-current),8*seconds);}
+  function rotationTargets(G,targetRot,limits,range){
+    // Retract before rotating: reserve clearance for the entire angular path.
+    const result={detDist1:G.detDist1,detDist2:G.detDist2};
+    const steps=Math.max(1,Math.ceil(Math.abs(targetRot-G.rot)));
+    for(let i=0;i<=steps;i++){
+      const L=limits({...G,rot:G.rot+(targetRot-G.rot)*i/steps});
+      result.detDist1=Math.max(result.detDist1,L.d1+1,range.detDist1[0]);
+      result.detDist2=Math.max(result.detDist2,L.d2+1,range.detDist2[0]);
+    }
+    if(['detDist1','detDist2'].some(k=>!Number.isFinite(result[k])||result[k]>range[k][1]))throw Error('No hay espacio seguro para alinear los detectores. Ajusta la altura de la camilla.');
+    return result;
+  }
   function safeTargets(G,nextZ,limits,range){
     let d1=range.detDist1[0],d2=range.detDist2[0];
     const steps=Math.max(1,Math.ceil(Math.abs(nextZ-G.tableZ)));
@@ -83,14 +95,30 @@
     window.GANTRY_LIVE.setZoom(1);window.GANTRY_LIVE.resetImageCenter();
     const pose=window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'];
     const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ);
-    safeTargets(G,scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    // Both 0/360 and 180 put the detector faces parallel to the patient.
+    scan.targetRot=Math.round(G.rot/180)*180;
+    if(Math.abs(G.rot-scan.targetRot)>.001)scan.rotationClearance=rotationTargets(G,scan.targetRot,window.GANTRY3D.limits,window.GANTRY.LIM);
+    safeTargets({...G,rot:scan.targetRot},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     scan.geometrySignature=signature();scan.initialGeometry={...G};
     return scan;
   }
   function advance(scan,rate,seconds){
     const G=window.GANTRY.G;
     if(signature()!==scan.geometrySignature||Math.abs(G.tableZ-scan.tableZ)>.001)throw Error('Cambió la posición o la configuración. Finaliza el barrido antes de reposicionar.');
-    const dt=Math.min(.5,seconds),nextZ=Math.max(scan.endZ,G.tableZ-dt*scan.velocity/60*184/175);
+    const dt=Math.min(.5,seconds);
+    if(!(dt>0)||scan.finished)return;
+    if(Math.abs(G.rot-scan.targetRot)>.001){
+      const targets=scan.rotationClearance;
+      if(['detDist1','detDist2'].some(k=>G[k]<targets[k]-.001)){
+        for(const k of ['detDist1','detDist2'])if(G[k]<targets[k])G[k]=approach(G[k],targets[k],dt);
+        scan.phase='retracting';
+      }else{
+        G.rot+=Math.sign(scan.targetRot-G.rot)*Math.min(Math.abs(scan.targetRot-G.rot),12*dt);
+        scan.geometrySignature=signature();scan.phase='aligning';
+      }
+      window.GANTRY.render();return;
+    }
+    const nextZ=Math.max(scan.endZ,G.tableZ-dt*scan.velocity/60*184/175);
     const targets=safeTargets(G,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     if(['detDist1','detDist2'].some(k=>Math.abs(G[k]-targets[k])>.001)){
       for(const k of ['detDist1','detDist2'])G[k]=approach(G[k],targets[k],dt);
@@ -116,5 +144,5 @@
     }
     return cached;
   }
-  window.GANTRY_BONE_WHOLE={eligibility,geometry,position,fields,Scan,exposure,approach,safeTargets,create,advance};
+  window.GANTRY_BONE_WHOLE={eligibility,geometry,position,fields,Scan,exposure,approach,safeTargets,rotationTargets,create,advance};
 })();
