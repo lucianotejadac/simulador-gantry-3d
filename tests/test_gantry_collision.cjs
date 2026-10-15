@@ -52,32 +52,52 @@ assert(rotate.blocked);assert(rotate.state.rot<15);
 const wrap=C.sweep({...state,rot:359},{...state,rot:2},s=>[{body:{gap:1},table:{gap:1}},{body:{gap:1},table:{gap:1}}]);near(wrap.state.rot,2);
 
 // Use the real bundled Three.js and patient GLB to exercise posed-mesh capture,
-// production rig arm transforms, contact records and mode changes (no browser).
+// production fixed-pose selection, contact records and mode changes (no browser).
 const bundle=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('window.GANTRY_THREE={'));
 assert(bundle);vm.runInContext(bundle,ctx);
 const {THREE,GLTFLoader}=ctx.window.GANTRY_THREE;
 const elements={};for(const id of ['collisionMode','collisionSound','collisionMessage','collisionLog','collisionD1','collisionD2'])elements[id]={value:'safe',style:{},checked:false,rows:[],addEventListener(k,f){this[k]=f;},prepend(row){this.rows.unshift(row);}};
 ctx.document={getElementById:id=>elements[id],createElement:()=>({style:{},remove(){}})};
-const bytes=fs.readFileSync('assets/runtime/patient.dad8fa3ca2bc7760.glb');
+const patientData=JSON.parse(fs.readFileSync('assets/patient/manifest.json'));
+const original=fs.readFileSync(patientData.url),jsonLength=original.readUInt32LE(12);
+const doc=JSON.parse(original.subarray(20,20+jsonLength));
+// Headless geometry test: omit texture decoding, preserve all real mesh data.
+delete doc.images;delete doc.textures;delete doc.samplers;delete doc.materials;
+for(const mesh of doc.meshes)for(const primitive of mesh.primitives)delete primitive.material;
+const json=Buffer.from(JSON.stringify(doc)),padded=Buffer.alloc(Math.ceil(json.length/4)*4,32);json.copy(padded);
+const binary=original.subarray(20+jsonLength),header=Buffer.from(original.subarray(0,20));
+header.writeUInt32LE(20+padded.length+binary.length,8);header.writeUInt32LE(padded.length,12);
+const bytes=Buffer.concat([header,padded,binary]);
 new GLTFLoader().parse(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'',gltf=>{
  try{
   const scene=new THREE.Scene(),flip=new THREE.Group(),model=gltf.scene;scene.add(flip);flip.add(model);
-  const bounds=new THREE.Box3().setFromObject(model),size=new THREE.Vector3();bounds.getSize(size);
-  model.scale.setScalar(1.75/size.y);model.rotation.set(-Math.PI/2,0,Math.PI/2);scene.updateMatrixWorld(true);
-  const b=new THREE.Box3().setFromObject(model);model.position.x-=b.max.x;model.position.y-=b.min.y;model.position.z-=(b.min.z+b.max.z)/2;scene.updateMatrixWorld(true);
-  const bones={};model.traverse(o=>{if(o.isBone)bones[o.name.replace(/[^a-z]/gi,'').toLowerCase()]=o;});
-  const rig={pairs:['l','r'].map(side=>{const upper=bones['upperarm'+side],lower=bones['lowerarm'+side];return {upper,lower,q0u:upper.quaternion.clone(),q0l:lower.quaternion.clone(),side:Math.sign(upper.getWorldPosition(new THREE.Vector3()).z)||1};})};
-  const start=html.indexOf('  function aimBone('),end=html.indexOf('  /* ---------- estado y',start);
-  Object.assign(ctx,{THREE,scene,flip,rig,dummyArms:[],_mi:new THREE.Matrix4(),_t:new THREE.Vector3(),_a:new THREE.Vector3(),_p:new THREE.Vector3(),_dir:new THREE.Vector3()});
+  const patientPoses=Object.fromEntries(['down','up'].map(pose=>[pose,model.getObjectByName(patientData.poses[pose].node)]));
+  assert(patientPoses.down&&patientPoses.up);
+  const start=html.indexOf('  function setArms(up){'),end=html.indexOf('  /* ---------- estado y',start);
+  Object.assign(ctx,{THREE,scene,flip,patientPoses,PATIENT_DATA:patientData,bodyH:.3,dummyArms:[]});
   vm.runInContext(html.slice(start,end),ctx);
+  for(const pose of ['down','up']){
+    ctx.setArms(pose==='up');scene.updateMatrixWorld(true);
+    const box=new THREE.Box3();model.traverseVisible(o=>{if(o.isMesh)box.union(new THREE.Box3().setFromObject(o));});
+    near(box.min.y,0,1e-6);near(box.max.x,0,1e-6);
+    near(box.max.y-box.min.y,patientData.poses[pose].height);
+    assert.equal(patientPoses.down.visible,pose==='down');assert.equal(patientPoses.up.visible,pose==='up');
+  }
   const s={...state,tableZ:175,arms:'up'},equipment={enabled:true,metadata:JSON.parse(fs.readFileSync('assets/symbia-equipment/manifest.json'))};
-  const api=ctx.window.createGantryCollision({THREE,scene,flip,dummy:new THREE.Group(),getModel:()=>model,setArms:ctx.setArms,getState:()=>s,equipment,physical:()=>p});
+  const api=ctx.window.createGantryCollision({THREE,scene,flip,dummy:new THREE.Group(),getModel:()=>model,setArms:ctx.setArms,getState:()=>s,equipment,physical:q=>({...p,bodyH:patientData.poses[q.arms].height})});
   const startTime=performance.now();
   const up=api.evaluate(s);assert(up[0].body.point);assert(Number.isFinite(up[0].limit));
   for(const pose of ['up','down'])for(const rot of [0,30,90,180,270])for(const z of [16,80,150,205]){
     const hits=api.evaluate({...s,arms:pose,rot,tableZ:z});assert(hits.every(h=>Number.isFinite(h.limit)));
   }
   assert([0,30,90,180,270].some(rot=>Math.abs(api.evaluate({...s,arms:'up',rot,tableZ:190})[0].body.required-api.evaluate({...s,arms:'down',rot,tableZ:190})[0].body.required)>.001),'Raised arms must change real mesh contacts');
+  // Up-only support and hands are beyond the skull. Hidden pose must never
+  // contribute contacts to the down posture (regression for traverse()).
+  equipment.enabled=false;
+  const beyond={...s,tableZ:220};
+  assert(Number.isFinite(api.evaluate({...beyond,arms:'up'})[0].body.required));
+  assert.equal(api.evaluate({...beyond,arms:'down'})[0].body.required,-Infinity);
+  equipment.enabled=true;
   const elapsed=performance.now()-startTime;
   let move=api.move(s,{...s,detDist1:12});assert(move.blocked);Object.assign(s,move.state);
   elements.collisionMode.value='training';elements.collisionMode.change();

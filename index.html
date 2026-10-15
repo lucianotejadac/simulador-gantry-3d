@@ -30,7 +30,7 @@
 
   ── Componentes de terceros ───────────────────────────────────────────────
   La vista 3D usa three.js v0.185.1, © 2010-2026 three.js authors, bajo
-  licencia MIT. El paciente es el modelo «Man» de Quaternius, ofrecido bajo
+  licencia MIT. El paciente procede de MakeHuman / MPFB, usado en SymbiaRoom Godot, ofrecido bajo
   CC0 1.0 Universal. En la versión autocontenida ambos recursos se incorporan
   en este HTML. Esos componentes conservan sus licencias originales y no
   quedan comprendidos en la licencia MIT anterior. Las marcas o nombres
@@ -730,7 +730,7 @@
         <p>Toda copia o parte sustancial debe conservar este aviso de copyright y los avisos de terceros.</p>
         <h3>Componentes de terceros</h3>
         <p><strong>Three.js v0.185.1</strong> — © 2010–2026 three.js authors; distribuido bajo <a href="https://opensource.org/license/mit" target="_blank" rel="noopener noreferrer">licencia MIT</a>.</p>
-        <p><strong>Modelo humano «Man» de Quaternius</strong> — distribuido bajo <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener noreferrer">CC0 1.0 Universal</a>.</p>
+        <p><strong>Paciente MakeHuman / MPFB de SymbiaRoom Godot</strong> — distribuido bajo <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener noreferrer">CC0 1.0 Universal</a>.</p>
         <p><strong>Anatomía ósea ICRP 145, MRCP_AM.</strong> ICRP, 2020. <a href="https://www.icrp.org/publication.asp?id=ICRP+Publication+145" target="_blank" rel="noopener noreferrer">Adult mesh-type reference computational phantoms</a>. ICRP Publication 145, Ann. ICRP 49(3). Las proyecciones se calcularon desde una voxelización local a 3 mm. La postura de brazos elevados es una rearticulación docente aproximada de húmeros, antebrazos y manos; no es una postura oficial certificada por ICRP. Clavículas y escápulas permanecen en la posición original.</p>
         <p><strong>MIBI cardíaco.</strong> 72 proyecciones cada 5° con brazos arriba. VI sintético ampliado un 25 % y descendido 6 mm hacia el hígado, con captación irregular. La serie usa la misma ventana de persistencia en vivo. Es un modelo emisor docente derivado de ICRP; no una segmentación ventricular original ni una reconstrucción SPECT.</p>
         <p>La captación ósea, los eventos de Poisson y la persistencia son simulados. Se dispone de 80 direcciones por postura, con interpolación lineal de intensidad entre vistas vecinas. La ventana conserva eventos de los últimos 0,25–5 s y se actualiza aproximadamente a 10 Hz. La tasa de cuentas se refiere al cuerpo completo anterior; el recorte, la distancia, el colimador y la ventana energética cambian las cuentas recibidas. El modelo humano 3D es un indicador de postura, no la malla anatómica ICRP.</p>
@@ -6757,7 +6757,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
      control remoto (G: detDist1, detDist2, rot, tableH, tableZ, arms),
      por lo que los topes mecánicos y el interlock antichoque son los
      mismos que en el simulador completo.
-     Paciente: modelo «Man» de Quaternius (CC0 1.0) cargado como GLB
+     Paciente: MakeHuman / MPFB de SymbiaRoom Godot (CC0), dos posturas GLB
      externo; si no se puede descargar se usa un maniquí equivalente.
      ===================================================================== -->
 <script type="module">
@@ -6789,7 +6789,8 @@ function init(){
   const FEET_X0 = -(SCAN.zBot/SCAN.zTop) * TRAVEL;      // posición de los pies en Z=0
   const BORE_R  = 0.66;                  // radio de la apertura del gantry
   const DET_LON = 0.56, DET_TAN = 0.72, DET_TH = 0.19; // cabezal detector (campo útil grande)
-  const PATIENT_GLB = "assets/runtime/patient.dad8fa3ca2bc7760.glb";
+  const PATIENT_GLB = "assets/runtime/patient-godot.c405f3e9acfbaba7.glb";
+  const PATIENT_DATA = {"url": "assets/runtime/patient-godot.c405f3e9acfbaba7.glb", "poses": {"down": {"node": "Patient_down", "triangles": 13248, "bounds": [[-1.750261173947365, 0.0, -0.28499382734298706], [0.0, 0.3074400087352842, 0.2849937379360199]], "height": 0.3074400087352842}, "up": {"node": "Patient_up", "triangles": 16846, "bounds": [[-2.0491297108965227, 0.0, -0.33244583010673523], [0.0, 0.39283245406113565, 0.3324456214904785]], "height": 0.39283245406113565}}};
 
   let renderer;
   try{
@@ -7080,7 +7081,7 @@ function init(){
     const toRelative = relativeTo
       ? new THREE.Matrix4().copy(relativeTo.matrixWorld).invert()
       : null;
-    model.traverse(o=>{
+    model.traverseVisible(o=>{
       const g=o.isMesh && o.geometry, pos=g && g.attributes.position;
       if(!pos) return;
       if(o.isSkinnedMesh && o.skeleton) o.skeleton.update();
@@ -7095,101 +7096,39 @@ function init(){
     return box;
   }
 
+  // Both fixed Godot poses share textures and one download. Coordinates are
+  // baked into the same local patient frame as the detector collision model.
   let patientLoadState='loading';
-  new GLTFLoader().load(PATIENT_GLB, (gltf)=>{
-    const model = gltf.scene;
-    model.updateMatrixWorld(true);
-    const b0 = new THREE.Box3().setFromObject(model);
-    const s0 = new THREE.Vector3(); b0.getSize(s0);
-    model.scale.setScalar(BODY_L / Math.max(s0.y, .001));
-    // el modelo original está de pie: se acuesta con el eje craneocaudal sobre la camilla
-    model.rotation.set(-Math.PI/2, 0, Math.PI/2);    // PIES hacia +X (gantry), cara hacia arriba
-    model.traverse(o=>{ if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; } });
-    flip.add(model);
-
-    // Asienta el modelo enteramente en el espacio LOCAL de «flip». Así la carga
-    // asíncrona es independiente de que el pivote cabeza/pies ya esté girado en
-    // el mundo. El extremo de los pies queda en X=0, la espalda en Y=0 y el
-    // cuerpo centrado en Z sobre la cara superior del tablero.
-    scene.updateMatrixWorld(true);
-    const b = posedBounds(model, flip);
-    model.position.x -= b.max.x;
-    model.position.y -= b.min.y;
-    model.position.z -= (b.min.z + b.max.z)/2;
-    scene.updateMatrixWorld(true);
-    const seated = posedBounds(model, flip);
-    bodyH = Math.max(.12, seated.max.y - seated.min.y);
-
-    collision.invalidate();       // the new posed mesh replaces fallback geometry
-
-    /* huesos de los brazos del rig (GLTFLoader sanea «UpperArm.L» → «UpperArm_L»),
-       con su pose de reposo guardada para poder volver a bajarlos */
-    const bn = {};
-    model.traverse(o=>{
-      const k = (o.name||'').replace(/[^a-z]/gi,'').toLowerCase();
-      if(/^(upper|lower)arm[lr]$/.test(k)) bn[k] = o;
-    });
-    if(bn.upperarml && bn.lowerarml && bn.upperarmr && bn.lowerarmr){
-      rig.pairs = ['l','r'].map(sfx=>{
-        const up = bn['upperarm'+sfx], lo = bn['lowerarm'+sfx];
-        const shoulder=flip.worldToLocal(up.getWorldPosition(new THREE.Vector3()));
-        return {upper:up, lower:lo, side:Math.sign(shoulder.z) || 1,
-          q0u:up.quaternion.clone(), q0l:lo.quaternion.clone()};
-      });
+  const patientPoses={};
+  new GLTFLoader().load(PATIENT_GLB, gltf=>{
+    const model=gltf.scene;
+    for(const pose of ['down','up']){
+      patientPoses[pose]=model.getObjectByName(PATIENT_DATA.poses[pose].node);
+      if(!patientPoses[pose]){
+        patientLoadState='error';
+        console.error('Falta la postura del paciente: '+pose);return;
+      }
     }
-
-    flip.remove(dummy);
-    patientVisual = model;
-    /* La malla llega de forma asíncrona y puede ser más ancha que el maniquí de
-       respaldo. Se recalcula el interlock inmediatamente para no dejar un
-       cabezal dentro del paciente si el operador ya movió la camilla. */
-    if(window.GANTRY && window.GANTRY.fit){
-      if(!window.GANTRY.fit()) apply(null);
-    }else apply(null);
+    model.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+    flip.add(model);flip.remove(dummy);patientVisual=model;
+    setArms(st.arms==='up');
+    collision.invalidate();
+    if(window.GANTRY?.fit){if(!window.GANTRY.fit())apply(null);}else apply(null);
     patientLoadState='ready';
-  }, undefined, ()=>{
-    patientLoadState='error';
-    console.warn('Gantry 3D: no se pudo descargar el paciente GLB; se usa el maniquí interno.');
+  },undefined,error=>{
+    patientLoadState='error';console.error('No se pudo cargar el paciente de Godot.',error);
   });
 
-  /* ---------- brazos del paciente: al costado ↔ por encima de la cabeza ----------
-     Pose del atlas óseo: húmeros hacia el cráneo y afuera; antebrazos hacia
-     dentro, con codos flexionados y manos sobre la cabeza. Las direcciones se
-     definen en el paciente para conservar la pose al invertir cabeza/pies. */
-  const rig = {};
-  const _mi = new THREE.Matrix4();
-  const _t  = new THREE.Vector3(), _a = new THREE.Vector3(), _p = new THREE.Vector3(), _dir = new THREE.Vector3();
-
-  function aimBone(bone, worldDir){                 // orienta el hueso hacia una dirección del mundo
-    const child = bone.children.find(c=>c.isBone);
-    if(!child) return;
-    _mi.copy(bone.parent.matrixWorld).invert();
-    _t.copy(worldDir).transformDirection(_mi).normalize();   // dirección deseada, en espacio del padre
-    _a.copy(child.position).normalize();                     // dirección del miembro en reposo
-    bone.quaternion.setFromUnitVectors(_a, _t);
-    bone.updateMatrixWorld(true);
-  }
-
   function setArms(up){
-    const upperAngle=Math.atan2(.60,-.80);
-    const lowerAngle=Math.atan2(-.60,-.80);
+    // Keep the fallback functional while the initial modal blocks loading.
+    const upperAngle=Math.atan2(.60,-.80),lowerAngle=Math.atan2(-.60,-.80);
     dummyArms.forEach(a=>{
-      a.g.rotation.y=up ? -upperAngle*a.s : 0;
-      a.elbow.rotation.y=up ? (upperAngle-lowerAngle)*a.s : 0;
+      a.g.rotation.y=up?-upperAngle*a.s:0;
+      a.elbow.rotation.y=up?(upperAngle-lowerAngle)*a.s:0;
     });
-    if(!rig.pairs) return;
-    scene.updateMatrixWorld(true);
-    rig.pairs.forEach(p=>{
-      if(!up){
-        p.upper.quaternion.copy(p.q0u); p.lower.quaternion.copy(p.q0l);
-        p.upper.updateMatrixWorld(true);
-        return;
-      }
-      _dir.set(-.80, 0, .60*p.side).transformDirection(flip.matrixWorld);
-      aimBone(p.upper, _dir);
-      _dir.set(-.80, 0, -.60*p.side).transformDirection(flip.matrixWorld);
-      aimBone(p.lower, _dir);
-    });
+    if(!patientPoses.down||!patientPoses.up)return;
+    patientPoses.down.visible=!up;patientPoses.up.visible=up;
+    bodyH=PATIENT_DATA.poses[up?'up':'down'].height;
   }
 
   /* ---------- estado y actualización ---------- */
@@ -7197,8 +7136,8 @@ function init(){
   const posSel = document.getElementById('pos');
   const isProne = ()=> !!(posSel && (posSel.value||'').toLowerCase().startsWith('pron'));
   const collision=window.createGantryCollision({THREE,scene,flip,dummy,getModel:()=>patientVisual,
-    setArms,getState:()=>st,equipment,physical:()=>({iso:ISO_Y,feetX0:FEET_X0,travel:TRAVEL,
-      length:BODY_L,bodyH,tail:PAL_TAIL_X,prone:isProne(),headFirst:!!window.GANTRY_PATIENT3D?.headFirst})});
+    setArms,getState:()=>st,equipment,physical:(s=st)=>({iso:ISO_Y,feetX0:FEET_X0,travel:TRAVEL,
+      length:BODY_L,bodyH:patientPoses.down?PATIENT_DATA.poses[s.arms==='up'?'up':'down'].height:bodyH,tail:PAL_TAIL_X,prone:isProne(),headFirst:!!window.GANTRY_PATIENT3D?.headFirst})});
 
   /* radio efectivo del detector: nunca invade al paciente ni al pallet
      (misma regla mecánica que aplicaba el control remoto en 2D).
@@ -7272,11 +7211,10 @@ function init(){
     patientPivot.rotation.y=patientHeadFirst ? Math.PI : 0;
     patientPivot.position.set(patientHeadFirst ? -BODY_L : 0,0,0);
 
+    setArms(armsUp);
     const prone = isProne();
     flip.rotation.x = prone ? Math.PI : 0;
     flip.position.y = prone ? bodyH : 0;
-
-    setArms(armsUp);
 
     const th = st.rot * Math.PI/180;
     const z  = bajoElCampo(st.tableZ);
@@ -7312,16 +7250,10 @@ function init(){
     const patientBox = patientVisual ? posedBounds(patientVisual) : new THREE.Box3();
     const palletBox = new THREE.Box3().setFromObject(pallet);
     const gapCm = patientBox.isEmpty() ? null : (patientBox.min.y - palletBox.max.y) * 100;
-    const localPoint=node=>flip.worldToLocal(node.getWorldPosition(new THREE.Vector3())).toArray();
-    const arms=rig.pairs ? rig.pairs.map(p=>({
-      shoulder:localPoint(p.upper),elbow:localPoint(p.lower),
-      wrist:localPoint(p.lower.children.find(child=>child.isBone))
-    })) : dummyArms.map(p=>({
-      shoulder:localPoint(p.g),elbow:localPoint(p.elbow),wrist:localPoint(p.hand)
-    }));
     return {
       source:patientVisual===dummy ? 'dummy' : 'glb',
-      arms,
+      pose:st.arms,
+      model:'MakeHuman / SymbiaRoom Godot',
       gapCm,
       supportedX:!patientBox.isEmpty() && patientBox.min.x >= palletBox.min.x-.01 && patientBox.max.x <= palletBox.max.x+.01,
       patientX:patientBox.isEmpty() ? null : [patientBox.min.x,patientBox.max.x],
@@ -7521,7 +7453,7 @@ function init(){
       setArms(arms==='up');scene.updateMatrixWorld(true);
       const inverse=new THREE.Matrix4().copy(flip.matrixWorld).invert(),matrix=new THREE.Matrix4(),v=new THREE.Vector3();
       const triangles=[];
-      model.traverse(o=>{
+      model.traverseVisible(o=>{
         if(!o.isMesh||!o.geometry?.attributes.position)return;
         if(o.skeleton)o.skeleton.update();
         matrix.multiplyMatrices(inverse,o.matrixWorld);
@@ -7531,7 +7463,8 @@ function init(){
           v.applyMatrix4(matrix);points.push([v.x,v.y,v.z]);
           let bone='',weight=-1;
           if(si&&sw&&o.skeleton)for(let j=0;j<4;j++)if(sw.getComponent(i,j)>weight){weight=sw.getComponent(i,j);bone=o.skeleton.bones[si.getComponent(i,j)]?.name||'';}
-          labels.push(region(bone,v.x));
+          labels.push(/IQSPECT_Arm_Support/.test(o.name)?'soporte de brazos':
+            /IQSPECT_Head_Pad/.test(o.name)?'cojín de cabeza':region(bone,v.x));
         }
         const count=g.index?g.index.count:pos.count;
         for(let i=0;i+2<count;i+=3){const ids=[0,1,2].map(j=>g.index?g.index.getX(i+j):i+j);
@@ -7548,7 +7481,7 @@ function init(){
       return simple;
     }
     function evaluate(s,physicalOverride){
-      const mesh=pose(s.arms),p={...physical(),...physicalOverride},key=JSON.stringify([s.rot,s.tableH,s.tableZ,s.detDist1,s.detDist2,s.arms,p.headFirst,p.prone,p.bodyH,equipment.enabled]);
+      const mesh=pose(s.arms),p={...physical(s),...physicalOverride},key=JSON.stringify([s.rot,s.tableH,s.tableZ,s.detDist1,s.detDist2,s.arms,p.headFirst,p.prone,p.bodyH,equipment.enabled]);
       if(results.has(key))return results.get(key);
       const hits=[1,2].map(d=>query(mesh,boxes(d),s,d,p));
       if(results.size>256)results.clear();results.set(key,hits);return hits;

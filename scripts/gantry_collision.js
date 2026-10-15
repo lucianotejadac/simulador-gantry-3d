@@ -148,7 +148,7 @@
       setArms(arms==='up');scene.updateMatrixWorld(true);
       const inverse=new THREE.Matrix4().copy(flip.matrixWorld).invert(),matrix=new THREE.Matrix4(),v=new THREE.Vector3();
       const triangles=[];
-      model.traverse(o=>{
+      model.traverseVisible(o=>{
         if(!o.isMesh||!o.geometry?.attributes.position)return;
         if(o.skeleton)o.skeleton.update();
         matrix.multiplyMatrices(inverse,o.matrixWorld);
@@ -158,7 +158,8 @@
           v.applyMatrix4(matrix);points.push([v.x,v.y,v.z]);
           let bone='',weight=-1;
           if(si&&sw&&o.skeleton)for(let j=0;j<4;j++)if(sw.getComponent(i,j)>weight){weight=sw.getComponent(i,j);bone=o.skeleton.bones[si.getComponent(i,j)]?.name||'';}
-          labels.push(region(bone,v.x));
+          labels.push(/IQSPECT_Arm_Support/.test(o.name)?'soporte de brazos':
+            /IQSPECT_Head_Pad/.test(o.name)?'cojín de cabeza':region(bone,v.x));
         }
         const count=g.index?g.index.count:pos.count;
         for(let i=0;i+2<count;i+=3){const ids=[0,1,2].map(j=>g.index?g.index.getX(i+j):i+j);
@@ -175,7 +176,7 @@
       return simple;
     }
     function evaluate(s,physicalOverride){
-      const mesh=pose(s.arms),p={...physical(),...physicalOverride},key=JSON.stringify([s.rot,s.tableH,s.tableZ,s.detDist1,s.detDist2,s.arms,p.headFirst,p.prone,p.bodyH,equipment.enabled]);
+      const mesh=pose(s.arms),p={...physical(s),...physicalOverride},key=JSON.stringify([s.rot,s.tableH,s.tableZ,s.detDist1,s.detDist2,s.arms,p.headFirst,p.prone,p.bodyH,equipment.enabled]);
       if(results.has(key))return results.get(key);
       const hits=[1,2].map(d=>query(mesh,boxes(d),s,d,p));
       if(results.size>256)results.clear();results.set(key,hits);return hits;

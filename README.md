@@ -573,6 +573,24 @@ Motor externo: `scripts/final_preview.js`. Actualización:
 `python scripts/embed_final_preview.py`; prueba:
 `node tests/test_final_preview.cjs`.
 
+## Paciente de SymbiaRoom Godot
+
+La figura visible es el paciente MakeHuman/MPFB de SymbiaRoom, con dos posturas
+fijas: brazos al costado y brazos arriba con apoyo. Comparte texturas de 512 px
+y una descarga GLB de 2,2 MB. La ropa es estática. Las colisiones usan la malla
+de la postura visible; la altura se adapta también al invertir supino/prono.
+Los atlas y la biodistribución ICRP se conservan independientemente de esta figura.
+
+Procedencia: `assets/patient/manifest.json`. Exportación desde una copia local
+de SymbiaRoom, sin modificar sus archivos originales:
+
+```powershell
+blender -b --python scripts/build_godot_patient.py -- --source C:/ruta/SymbiaRoom
+python scripts/embed_godot_patient.py
+python scripts/embed_collision.py
+node tests/test_gantry_collision.cjs
+```
+
 ## Derechos de autor
 
 Copyright © 2026 Luciano Tejada Castro. Distribuido bajo licencia [MIT](LICENSE).

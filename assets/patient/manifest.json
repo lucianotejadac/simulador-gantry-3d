@@ -1,0 +1,48 @@
+{
+  "source": "SymbiaRoom Godot / MakeHuman MPFB 2.0.17",
+  "license": "CC0",
+  "sourceHashes": {
+    "down": "4423b09711e75d90d275b7cdc768ce644a6cb8fe134c24ffddb8cabede502ef0",
+    "up": "f992d6bef862875f8f94f71bb234d18955eea72742a796a2125f45143729023c"
+  },
+  "url": "assets/runtime/patient-godot.c405f3e9acfbaba7.glb",
+  "sha256": "c405f3e9acfbaba7b47c535601f437938cc4ce23d440d64aa4955ccef341b4fc",
+  "bytes": 2166916,
+  "poses": {
+    "down": {
+      "node": "Patient_down",
+      "triangles": 13248,
+      "bounds": [
+        [
+          -1.750261173947365,
+          0.0,
+          -0.28499382734298706
+        ],
+        [
+          0.0,
+          0.3074400087352842,
+          0.2849937379360199
+        ]
+      ],
+      "height": 0.3074400087352842
+    },
+    "up": {
+      "node": "Patient_up",
+      "triangles": 16846,
+      "bounds": [
+        [
+          -2.0491297108965227,
+          0.0,
+          -0.33244583010673523
+        ],
+        [
+          0.0,
+          0.39283245406113565,
+          0.3324456214904785
+        ]
+      ],
+      "height": 0.39283245406113565
+    }
+  },
+  "notes": "Fixed poses; shared reduced textures; static clothing. Visual model, not ICRP anatomy."
+}
