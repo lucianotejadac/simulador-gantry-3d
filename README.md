@@ -576,8 +576,9 @@ Motor externo: `scripts/final_preview.js`. Actualización:
 ## Paciente de SymbiaRoom Godot
 
 La figura visible es el paciente MakeHuman/MPFB de SymbiaRoom, con dos posturas
-fijas: brazos al costado y brazos arriba con apoyo. Comparte texturas de 512 px
-y una descarga GLB de 2,2 MB. La ropa es estática. Las colisiones usan la malla
+fijas: brazos al costado y brazos arriba con apoyo. Comparte texturas de 512–1024 px
+y una descarga GLB de unos 4,9 MB. Los ojos conservan su geometría y recorte de
+córnea; la ropa tiene más detalle para vistas cercanas y es estática. Las colisiones usan la malla
 de la postura visible; la altura se adapta también al invertir supino/prono.
 Los atlas y la biodistribución ICRP se conservan independientemente de esta figura.
 

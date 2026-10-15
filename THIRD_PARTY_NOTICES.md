@@ -31,7 +31,7 @@ Fuente: https://github.com/mrdoob/three.js
 El paciente visible utiliza las dos posturas del proyecto SymbiaRoom Godot,
 creadas con MPFB 2.0.17 y MakeHuman System Assets (CC0): piel masculina,
 cabello short02, cejas eyebrow001, ojos, ropa male_casualsuit06 y zapatos shoes03.
-La versión web reduce la geometría, comparte texturas de hasta 512 px y conserva
+La versión web reduce la geometría, comparte texturas de hasta 1024 px y conserva
 la ropa estática. El soporte de brazos es una aproximación visual del proyecto.
 No es anatomía ICRP ni una simulación biomecánica; las proyecciones siguen usando
 sus atlas ICRP existentes. Procedencia y hashes: `assets/patient/manifest.json`.

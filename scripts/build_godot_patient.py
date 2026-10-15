@@ -1,7 +1,7 @@
 """Blender background export of the existing Godot patient (source is read-only).
 
 blender -b --python scripts/build_godot_patient.py -- --source /path/to/SymbiaRoom
-Two fixed poses, shared 512px textures, reduced meshes; no runtime cloth solver.
+Two fixed poses, shared 512–1024px textures, reduced meshes; no runtime cloth solver.
 """
 import argparse
 import hashlib
@@ -54,8 +54,10 @@ for pose, filename in [('down', 'patient.glb'), ('up', 'patient_arms_back.glb')]
         original = sum(len(p.vertices) - 2 for p in o.data.polygons)
         budget = 5500 if o.name == 'Human' or o.name.startswith('Human.00') else 1800
         if 'eyebrow' in o.name: budget = 350
-        if 'high-poly' in o.name: budget = 600
-        if 'casualsuit' in o.name: budget = 3200
+        # Cornea/iris layers and their UV islands are too small to decimate.
+        if 'high-poly' in o.name: budget = original
+        # Preserve the rounded trouser legs, hems and cloth folds at close zoom.
+        if 'casualsuit' in o.name: budget = 8000
         mod = o.modifiers.new('Web reduction', 'DECIMATE')
         mod.ratio = min(1, budget / max(1, original))
         bpy.ops.object.modifier_apply(modifier=mod.name)
@@ -71,8 +73,9 @@ for pose, filename in [('down', 'patient.glb'), ('up', 'patient_arms_back.glb')]
                     node.image = images[key]
                 else:
                     w, h = image.size
-                    if max(w, h) > 512:
-                        ratio = 512 / max(w, h)
+                    limit = 1024 if any(s in key for s in ['casualsuit','brown_eye','male_diffuse']) else 512
+                    if max(w, h) > limit:
+                        ratio = limit / max(w, h)
                         image.scale(max(1, round(w * ratio)), max(1, round(h * ratio)))
                     images[key] = image
     points = [v.co for o in objects for v in o.data.vertices]
@@ -83,14 +86,17 @@ for pose, filename in [('down', 'patient.glb'), ('up', 'patient_arms_back.glb')]
                    'height': bounds[1][1] - bounds[0][1]}
 
 # Decimation can shift a supporting vertex slightly. Seat both poses using
-# one shared correction so the feet and body do not jump on posture changes.
-shift = Vector((-poses['down']['bounds'][1][0], 0, -min(p['bounds'][0][1] for p in poses.values())))
+# one longitudinal correction and a submillimetre seating correction per pose.
+shift_x = -poses['down']['bounds'][1][0]
 for obj in bpy.data.objects:
-    if obj.type == 'MESH': obj.data.transform(Matrix.Translation(shift))
+    if obj.type == 'MESH':
+        pose = poses['up' if obj.parent.name == 'Patient_up' else 'down']
+        obj.data.transform(Matrix.Translation((shift_x, 0, -pose['bounds'][0][1])))
 for pose in poses.values():
+    shift_z = -pose['bounds'][0][1]
     for bound in pose['bounds']:
-        bound[0] += shift.x
-        bound[1] += shift.z
+        bound[0] += shift_x
+        bound[1] += shift_z
 
 temp = out / 'patient-export.glb'
 bpy.ops.export_scene.gltf(filepath=str(temp), export_format='GLB', export_animations=False,
@@ -104,10 +110,12 @@ data = temp.read_bytes()
 json_size = struct.unpack_from('<I', data, 12)[0]
 doc = json.loads(data[20:20 + json_size])
 for material in doc.get('materials', []):
-    cutout = any(name in material.get('name', '') for name in ['short02', 'eyebrow001'])
+    cutout = any(name in material.get('name', '') for name in ['short02', 'eyebrow001', 'high-poly'])
     material['alphaMode'] = 'MASK' if cutout else 'OPAQUE'
     if cutout: material['alphaCutoff'] = .35
     else: material.pop('alphaCutoff', None)
+    if 'casualsuit' in material.get('name',''):
+        material.get('normalTexture', {})['scale'] = .35
 encoded = json.dumps(doc, separators=(',', ':')).encode()
 encoded += b' ' * (-len(encoded) % 4)
 binary_chunk = data[20 + json_size:]
