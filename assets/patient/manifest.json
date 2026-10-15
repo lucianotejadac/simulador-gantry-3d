@@ -5,43 +5,43 @@
     "down": "4423b09711e75d90d275b7cdc768ce644a6cb8fe134c24ffddb8cabede502ef0",
     "up": "f992d6bef862875f8f94f71bb234d18955eea72742a796a2125f45143729023c"
   },
-  "url": "assets/runtime/patient-godot.bf28ef793a25794c.glb",
-  "sha256": "bf28ef793a25794cf0eee891f028888445f2905de6ddbc693c2dc3e60132e861",
-  "bytes": 4858740,
+  "url": "assets/runtime/patient-godot.e30b1e68f0f8d891.glb",
+  "sha256": "e30b1e68f0f8d891885d8f2ac4801fede8ca3b04c2897e8cace938d5c13f3395",
+  "bytes": 4859020,
   "poses": {
     "down": {
       "node": "Patient_down",
-      "triangles": 25608,
+      "triangles": 25607,
       "bounds": [
         [
-          -1.750261173947365,
+          -1.7502597894272185,
           0.0,
           -0.28499382734298706
         ],
         [
           0.0,
-          0.30625139515905175,
+          0.27772394864587113,
           0.2849937379360199
         ]
       ],
-      "height": 0.30625139515905175
+      "height": 0.27772394864587113
     },
     "up": {
       "node": "Patient_up",
       "triangles": 29208,
       "bounds": [
         [
-          -2.0491297108965227,
+          -2.049128326376376,
           0.0,
           -0.33244583010673523
         ],
         [
           0.0,
-          0.3917347649403382,
+          0.34238875954179093,
           0.3324456214904785
         ]
       ],
-      "height": 0.3917347649403382
+      "height": 0.34238875954179093
     }
   },
   "notes": "Fixed poses; shared reduced textures; static clothing. Visual model, not ICRP anatomy."

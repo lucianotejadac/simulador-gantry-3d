@@ -25,6 +25,43 @@ poses = {}
 sources = {}
 common = None
 images = {}
+
+def smoothstep(a, b, value):
+    t = max(0., min(1., (value - a) / (b - a)))
+    return t * t * (3 - 2 * t)
+
+
+def correct_resting_pose(obj, pose):
+    """Correct the baked source seating, without changing the denim UVs.
+
+    Source prepare_makehuman.py adds a 6 cm lateral rail-clearance ramp to
+    every mesh, including trousers and shoes. Undo it on the lower body;
+    it otherwise curls each leg into a trough. Work before normalization,
+    in source metres (the source object has a uniform 1.0120826 scale).
+    """
+    source_scale = 1.0120826
+    for vertex in obj.data.vertices:
+        p = vertex.co
+        x, y, z = (c / source_scale for c in p)
+        if not obj.name.startswith('IQSPECT'):
+            lower_body = 1 - smoothstep(.95, 1.15, -x)
+            p.z -= source_scale * .06 * smoothstep(.15, .185, abs(y)) * lower_body
+        if pose != 'up':
+            continue
+        if 'Head_Pad' in obj.name:
+            # Lower the cushion top with the occiput; retain its bottom seat.
+            p.z -= source_scale * .065 * max(0., min(1., (z - .065) / .11))
+            p.x += source_scale * .055
+        elif not obj.name.startswith('IQSPECT'):
+            # Rigid head displacement with a smooth neck transition. The
+            # transverse/cranial limits exclude raised arms and fingertips.
+            head = (smoothstep(1.39, 1.53, -x)
+                    * (1 - smoothstep(1.79, 1.85, -x))
+                    * (1 - smoothstep(.105, .155, abs(y))))
+            p.z -= source_scale * .065 * head
+            p.x += source_scale * .055 * head
+    obj.data.update()
+
 for pose, filename in [('down', 'patient.glb'), ('up', 'patient_arms_back.glb')]:
     path = opt.source / 'godot/assets/patient' / filename
     sources[pose] = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -36,6 +73,7 @@ for pose, filename in [('down', 'patient.glb'), ('up', 'patient_arms_back.glb')]
     for o in objects:
         o.data.transform(rotation @ o.matrix_world)
         o.matrix_world = Matrix.Identity(4)
+        correct_resting_pose(o, pose)
     if common is None:
         points = [v.co for o in objects for v in o.data.vertices]
         feet = max(p.x for p in points)
