@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import math
+import struct
 from pathlib import Path
 import sys
 
@@ -96,6 +97,21 @@ bpy.ops.export_scene.gltf(filepath=str(temp), export_format='GLB', export_animat
                          export_cameras=False, export_lights=False, export_extras=True,
                          export_image_format='AUTO', export_yup=True)
 data = temp.read_bytes()
+# Godot/Blender tolerated BLEND on every material. In Three.js it sorts whole
+# meshes rather than their intersecting faces, exposing eyes/skin through the
+# head and clothing. Solid surfaces must write opaque depth; only hair/brows
+# need cutout alpha, with depth testing preserved.
+json_size = struct.unpack_from('<I', data, 12)[0]
+doc = json.loads(data[20:20 + json_size])
+for material in doc.get('materials', []):
+    cutout = any(name in material.get('name', '') for name in ['short02', 'eyebrow001'])
+    material['alphaMode'] = 'MASK' if cutout else 'OPAQUE'
+    if cutout: material['alphaCutoff'] = .35
+    else: material.pop('alphaCutoff', None)
+encoded = json.dumps(doc, separators=(',', ':')).encode()
+encoded += b' ' * (-len(encoded) % 4)
+binary_chunk = data[20 + json_size:]
+data = struct.pack('<III', 0x46546C67, 2, 20 + len(encoded) + len(binary_chunk)) + struct.pack('<II', len(encoded), 0x4E4F534A) + encoded + binary_chunk
 digest = hashlib.sha256(data).hexdigest()
 asset = root / 'assets/runtime' / ('patient-godot.' + digest[:16] + '.glb')
 asset.write_bytes(data)

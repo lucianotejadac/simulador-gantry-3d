@@ -61,6 +61,10 @@ ctx.document={getElementById:id=>elements[id],createElement:()=>({style:{},remov
 const patientData=JSON.parse(fs.readFileSync('assets/patient/manifest.json'));
 const original=fs.readFileSync(patientData.url),jsonLength=original.readUInt32LE(12);
 const doc=JSON.parse(original.subarray(20,20+jsonLength));
+for(const material of doc.materials){
+ const cutout=/short02|eyebrow001/.test(material.name);
+ assert.equal(material.alphaMode,cutout?'MASK':'OPAQUE','Patient materials must occlude correctly in Three.js: '+material.name);
+}
 // Headless geometry test: omit texture decoding, preserve all real mesh data.
 delete doc.images;delete doc.textures;delete doc.samplers;delete doc.materials;
 for(const mesh of doc.meshes)for(const primitive of mesh.primitives)delete primitive.material;

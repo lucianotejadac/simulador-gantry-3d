@@ -5,9 +5,9 @@
     "down": "4423b09711e75d90d275b7cdc768ce644a6cb8fe134c24ffddb8cabede502ef0",
     "up": "f992d6bef862875f8f94f71bb234d18955eea72742a796a2125f45143729023c"
   },
-  "url": "assets/runtime/patient-godot.c405f3e9acfbaba7.glb",
-  "sha256": "c405f3e9acfbaba7b47c535601f437938cc4ce23d440d64aa4955ccef341b4fc",
-  "bytes": 2166916,
+  "url": "assets/runtime/patient-godot.0b367bd5e981aa74.glb",
+  "sha256": "0b367bd5e981aa74ad2a3dabc40dce78c62f33f0b94058b0367ef1cd399d93f5",
+  "bytes": 2167020,
   "poses": {
     "down": {
       "node": "Patient_down",
