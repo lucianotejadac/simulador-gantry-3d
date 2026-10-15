@@ -26,9 +26,9 @@ THE SOFTWARE.
 
 Fuente: https://github.com/mrdoob/three.js
 
-## Paciente MakeHuman / MPFB de SymbiaRoom Godot
+## Paciente MakeHuman / MPFB de SymbiaRoom Godot (archivado)
 
-El paciente visible utiliza las dos posturas del proyecto SymbiaRoom Godot,
+Los archivos archivados conservan las dos posturas del proyecto SymbiaRoom Godot,
 creadas con MPFB 2.0.17 y MakeHuman System Assets (CC0): piel masculina,
 cabello short02, cejas eyebrow001, ojos, ropa male_casualsuit06 y zapatos shoes03.
 La versión web reduce la geometría, comparte texturas de hasta 1024 px y conserva
@@ -40,9 +40,9 @@ sus atlas ICRP existentes. Procedencia y hashes: `assets/patient/manifest.json`.
 - Recursos: https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html
 - CC0: https://creativecommons.org/publicdomain/zero/1.0/
 
-## Modelo anterior «Man» de Quaternius
+## Modelo activo «Man» de Quaternius
 
-El modelo anterior, conservado para versiones en caché, procede del paquete *Animated Man Pack* de
+El paciente visible procede del paquete *Animated Man Pack* de
 Quaternius y se ofrece bajo CC0 1.0 Universal.
 
 - Fuente: https://quaternius.com/packs/animatedman.html

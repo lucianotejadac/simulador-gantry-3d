@@ -573,24 +573,18 @@ Motor externo: `scripts/final_preview.js`. Actualización:
 `python scripts/embed_final_preview.py`; prueba:
 `node tests/test_final_preview.cjs`.
 
-## Paciente de SymbiaRoom Godot
+## Paciente visible
 
-La figura visible es el paciente MakeHuman/MPFB de SymbiaRoom, con dos posturas
-fijas: brazos al costado y brazos arriba con apoyo. Comparte texturas de 512–1024 px
-y una descarga GLB de unos 4,9 MB. Los ojos conservan su geometría y recorte de
-córnea; la ropa tiene más detalle para vistas cercanas y es estática. Las colisiones usan la malla
-de la postura visible; la altura se adapta también al invertir supino/prono.
-Los atlas y la biodistribución ICRP se conservan independientemente de esta figura.
+Se restauró el modelo «Man» de Quaternius, anterior a la importación de Godot,
+con brazos articulados y colisiones calculadas sobre su malla en cada postura.
+El modelo activo es `assets/runtime/patient.dad8fa3ca2bc7760.glb`.
+Los atlas, la biodistribución ICRP y las adquisiciones son independientes de esta figura.
 
-Procedencia: `assets/patient/manifest.json`. Exportación desde una copia local
-de SymbiaRoom, sin modificar sus archivos originales:
-
-```powershell
-blender -b --python scripts/build_godot_patient.py -- --source C:/ruta/SymbiaRoom
-python scripts/embed_godot_patient.py
-python scripts/embed_collision.py
-node tests/test_gantry_collision.cjs
-```
+Los archivos MakeHuman/Godot y `assets/patient/manifest.json` quedan como archivo
+de la alternativa descartada y para versiones antiguas en caché; no se cargan
+en el simulador actual. Los scripts `build_godot_patient.py` y
+`embed_godot_patient.py` pertenecen a esa alternativa y no forman parte de la
+actualización habitual.
 
 ## Derechos de autor
 
