@@ -573,6 +573,19 @@ Motor externo: `scripts/final_preview.js`. Actualización:
 `python scripts/embed_final_preview.py`; prueba:
 `node tests/test_final_preview.cjs`.
 
+## Cuadrículas de cuentas por píxel
+
+Las imágenes de adquisición y de vista final incluyen un inspector de cuentas
+por píxel. Un clic en la imagen selecciona una zona marcada en amarillo; el
+panel compara esa misma zona con 2×2 celdas en matriz 128 y 4×4 en matriz 256.
+Para datos de 256, cada celda de 128 suma cuatro cuentas de píxeles originales.
+Para datos de 128, la división en 256 es uniforme y se identifica como
+ilustrativa: no recupera resolución ni genera una adquisición independiente.
+Ambas cuadrículas conservan el total de la zona. Las imágenes guardadas usan su
+propia matriz. No se modifican las cuentas ni la imagen para dibujar el marco.
+Actualizar con `python scripts/embed_pixel_grid.py`; comprobación numérica:
+`node tests/test_pixel_grid.cjs`.
+
 ## Paciente visible
 
 Se restauró el modelo «Man» de Quaternius, anterior a la importación de Godot,

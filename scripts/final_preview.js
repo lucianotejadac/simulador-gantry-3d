@@ -78,7 +78,7 @@
       const caption='Total: '+result.total.toLocaleString('es-CL')+' cuentas simuladas · '+clock(result.elapsed)+(result.mode==='counts'?' estimados':'')+
         '\nMedia: '+mean+' cuentas/píxel · matriz '+n+'×'+n+' completa'+
         (meta?' · a piel '+meta.effectiveDistance.toFixed(1)+' cm':'')+(!result.reached?' · objetivo no alcanzable dentro del modelo':'');
-      return {buffer,caption};
+      return {buffer,caption,counts:result.counts,n};
     });
   }
   function draw(){
@@ -93,6 +93,7 @@
         // Fully opaque buffers replace both detectors in one synchronous turn.
         // Never blank the visible canvas while a replacement is pending.
         ctx.drawImage(frame.buffer,0,0,canvas.width,canvas.height);
+        window.GANTRY_PIXEL_GRID?.render(canvas,frame.counts,frame.n);
         painted.set(canvas,{frame,width:canvas.width,height:canvas.height});
       }
       target.info.textContent=frame.caption;

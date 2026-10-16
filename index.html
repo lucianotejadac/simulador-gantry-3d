@@ -5749,8 +5749,12 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="assets/runtime/image.3861454422d07e6c.png";
 <script>window.GANTRY_MIBI_DATA={"width":160,"height":384,"pixelMm":6,"angles":[0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200,210,220,230,240,250,260,270,280,290,300,310,320,330,340,350],"headRow":84.49215499999998,"footRow":377.8333333333333,"components":["heart","blood","soft","liver","gallbladder","smallIntestine","colon","kidneys","bladder","glands"],"scales":[6.463119461841416e-08,9.601552442006778e-09,8.006708629437753e-10,1.1674387678795028e-08,1.863084406750204e-07,2.502845042329227e-08,5.474968745033948e-08,3.730846032112822e-08,6.899700366602701e-08,1.1436726055080726e-07],"url":"assets/runtime/mibi-kinetic-up.f4ee84c4f3c1348f.bin","posture":"Arms up; derived ICRP 145 anatomy, same enlarged asymmetric LV as existing cardiac MIBI","sensitivityCpsPerMBq":100,"halfLifeMinutes":360.402,"maxMinutes":720,"limitations":"Educational compartment kinetics, not a measured camera calibration. LV is a synthetic emitter inside the ICRP cardiac envelope. 6 mm spatial sampling, 10 degree views. Pharmacologic-stress kinetics use rest as an explicit approximation.","sources":["https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87","https://www.asnc.org/wp-content/uploads/2024/06/ASNC-SPECT-ProtocolsTracers-Guidelines2016.pdf"],"sourceHashes":{"icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\miocardio_3d.npz":"fdbc5ab65630c22758248b3947cfd879328f52e1f070d9b2f955ef01a9ef4a04","icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\volumen_mibi_brazos_arriba.npz":"a88cfbc5082614939d636ca877e85c6263629009047c5316bf5330b2cf382834","icrp145-multitrazador-ap-pa\\organos_3mm.npz":"c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b","simulador-gantry-3d\\assets\\runtime\\mag3-up.d22362c762fc09e0.deflate":"d22362c762fc09e04c89aea126400893e31f284cad225ca80d45160f2c4d69c5"}};</script>
 <script src="assets/runtime/mibi-kinetics-engine.40358a5028ab51c0.js"></script>
 <!-- MIBI_KINETICS_END -->
+<!-- PIXEL_GRID_BEGIN -->
+<link rel="stylesheet" href="assets/runtime/pixel-grid.96adc9ef6d7a4c95.css">
+<script src="assets/runtime/pixel-grid.6caaccd40a9f43b3.js"></script>
+<!-- PIXEL_GRID_END -->
 <!-- FINAL_PREVIEW_BEGIN -->
-<script src="assets/runtime/final-preview.5232e57b7e30c9ec.js"></script>
+<script src="assets/runtime/final-preview.0cfe3609d191eb7a.js"></script>
 <!-- FINAL_PREVIEW_END -->
 <!-- ICRP145_BEGIN -->
 <script>
@@ -8380,6 +8384,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     }
     ctx.putImageData(im,0,0);const out=canvases[j].getContext('2d');out.imageSmoothingEnabled=false;
     out.drawImage(buffer,0,0,canvases[j].width,canvases[j].height);
+    window.GANTRY_PIXEL_GRID?.render(canvas,h.counts,n,height);
     if(!archive&&session?.mode==='scan'&&!session.finished){
       const y=(session.row-session.crop.y)/session.crop.h*height;
       out.strokeStyle='#58dcb4';out.lineWidth=1;out.beginPath();out.moveTo(0,y);out.lineTo(n,y);out.stroke();
@@ -8420,6 +8425,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
         canvas.width=window.GANTRY_LIVE.settings.matrix;canvas.height=wantWhole?Math.round(canvas.width*2.5):canvas.width;
         canvas.style&&(canvas.style.aspectRatio=canvas.width+' / '+canvas.height);
         canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+        window.GANTRY_PIXEL_GRID?.clear(canvas);
         el('boneAcqTitle'+(j+1)).textContent='ADQUISICIÓN · DETECTOR '+(j+1);
         el('boneAcqInfo'+(j+1)).textContent='Esperando adquisición';el('boneAcqProgress'+(j+1)).value=0;
       });

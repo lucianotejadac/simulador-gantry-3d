@@ -129,6 +129,7 @@
     }
     ctx.putImageData(im,0,0);const out=canvases[j].getContext('2d');out.imageSmoothingEnabled=false;
     out.drawImage(buffer,0,0,canvases[j].width,canvases[j].height);
+    window.GANTRY_PIXEL_GRID?.render(canvas,h.counts,n,height);
     if(!archive&&session?.mode==='scan'&&!session.finished){
       const y=(session.row-session.crop.y)/session.crop.h*height;
       out.strokeStyle='#58dcb4';out.lineWidth=1;out.beginPath();out.moveTo(0,y);out.lineTo(n,y);out.stroke();
@@ -169,6 +170,7 @@
         canvas.width=window.GANTRY_LIVE.settings.matrix;canvas.height=wantWhole?Math.round(canvas.width*2.5):canvas.width;
         canvas.style&&(canvas.style.aspectRatio=canvas.width+' / '+canvas.height);
         canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+        window.GANTRY_PIXEL_GRID?.clear(canvas);
         el('boneAcqTitle'+(j+1)).textContent='ADQUISICIÓN · DETECTOR '+(j+1);
         el('boneAcqInfo'+(j+1)).textContent='Esperando adquisición';el('boneAcqProgress'+(j+1)).value=0;
       });
