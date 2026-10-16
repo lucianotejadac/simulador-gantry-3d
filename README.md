@@ -229,8 +229,9 @@ absoluta del simulador contra adquisiciones clínicas.
 La suma usa eventos nuevos de Poisson sobre los campos lineales del fantoma;
 no acumula capturas de la ventana de persistencia. **Avance rápido** ofrece
 1×, 10×, 30× y 60× mediante un botón cíclico y un selector. **Adquisición
-instantánea**, junto a **Iniciar adquisición**, permite configurar nombres y
-objetivo y completar la nueva adquisición; durante una adquisición completa
+instantánea**, junto a **Iniciar adquisición**, inicia directamente con los nombres,
+velocidad u objetivo actuales y completa la nueva adquisición. Si falta un dato
+o no puede iniciarse, muestra el motivo y abre la configuración. Durante una adquisición completa
 el tiempo o las cuentas restantes con el campo y los ajustes del momento.
 Si no hay señal, no inventa cuentas para alcanzar la meta.
 

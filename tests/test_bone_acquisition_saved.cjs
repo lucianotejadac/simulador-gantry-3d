@@ -39,7 +39,9 @@ function environment(whole=false){
  const directWhole=environment(true);directWhole.window.GANTRY.G.tableZ=17;
  directWhole.window.GANTRY_LIVE.signal={mode:'final'};
  directWhole.window.GANTRY_LIVE.setSignalMode=mode=>{directWhole.window.GANTRY_LIVE.signal.mode=mode;directWhole.window.GANTRY_LIVE.update();};
- directWhole.el('boneAcqInstant').onclick();await directWhole.submit(30,'Directa cuerpo D1','Directa cuerpo D2');
+ directWhole.el('boneAcqName1').value='Directa cuerpo D1';directWhole.el('boneAcqName2').value='Directa cuerpo D2';
+ await directWhole.el('boneAcqInstant').onclick();
+ assert(directWhole.window.GANTRY_BONE_ACQ.state,'The instant button itself must start whole body without a second submit');
  assert(directWhole.window.GANTRY_BONE_ACQ.state.finished);assert.equal(directWhole.window.GANTRY.G.tableZ,16);assert.equal(directWhole.window.GANTRY_LIVE.signal.mode,'live');
  const a=environment();a.submit(3,'  ','Posterior');assert.equal(a.window.GANTRY_BONE_ACQ.state,null);
  const name='<img src=x onerror=alert(1)> Anterior';

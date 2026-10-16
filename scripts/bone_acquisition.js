@@ -389,7 +389,18 @@
   el('boneAcqFast').onclick=()=>{acquisitionView();advance();speed=({1:10,10:30,30:60,60:1})[speed]||1;paused=false;clock=performance.now();el('boneAcqSpeed').value=String(speed);paint(true);};
   el('boneAcqPause').onclick=()=>{if(paused)acquisitionView();advance();paused=!paused;note='';clock=performance.now();paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
-  el('boneAcqInstant').onclick=()=>session&&!session.finished?instant():setup(true);
+  el('boneAcqInstant').onclick=async()=>{
+    if(busy||saving||loadingSaved)return;
+    if(session&&!session.finished)return instant();
+    el('boneAcqSetupError').textContent='';instantOnStart=false;
+    if(start()){await instant();return;}
+    // Keep the reason visible even if the setup form was closed when clicked.
+    if(!el('boneAcqSetupError').textContent)el('boneAcqSetupError').textContent='No se pudo iniciar. Espera a que terminen de cargar las proyecciones y vuelve a intentar.';
+    instantOnStart=true;el('boneAcqBegin').textContent='Adquirir instantáneamente';
+    el('boneAcqSetup').hidden=false;planningInfo();
+    const missing=['boneAcqName1','boneAcqName2'].find(id=>!el(id).value.trim());
+    el(missing||(kind()==='whole'?'boneAcqVelocity':'boneAcqTarget')).focus();
+  };
   async function refreshSaved(){
     if(!store)return;
     const records=await store.list(),menu=el('boneAcqSaved'),value=menu.value||'current';

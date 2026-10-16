@@ -75,7 +75,7 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
           <div id="boneAcqControls" class="bone-acq-controls" hidden aria-label="Adquisición de detectores">
             <label id="boneAcqTypeWrap">Tipo <select id="boneAcqType" class="live-study" aria-label="Tipo de adquisición"><option value="static">Estática</option><option value="whole">Cuerpo entero</option></select></label>
             <button id="boneAcqStart" class="live-setting" type="button">Iniciar adquisición</button>
-            <button id="boneAcqInstant" class="live-setting" type="button" title="Configura y completa la adquisición, o completa la que está en curso">Adquisición instantánea</button>
+            <button id="boneAcqInstant" class="live-setting" type="button" title="Inicia con los nombres y ajustes actuales y completa la adquisición, o termina la que está en curso">Adquisición instantánea</button>
             <button id="boneAcqPause" class="live-setting" type="button" hidden>Pausar adquisición</button>
             <button id="boneAcqFinish" class="live-setting" type="button" hidden>Finalizar adquisición</button>
             <span id="boneAcqSpeedWrap"><button id="boneAcqFast" class="live-setting" type="button" disabled title="Alterna 1×, 10×, 30× y 60×">⏩ Avance rápido · 1×</button> <select id="boneAcqSpeed" class="live-study" aria-label="Velocidad de simulación" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></span>
@@ -95,8 +95,8 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
               <button id="boneAcqSuggested" class="live-setting" type="button" hidden>Usar objetivo sugerido</button>
               <button id="boneAcqBegin" class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
               <span id="boneAcqEstimate" role="status" style="flex-basis:100%;color:#9ee7c9"></span>
-              <span id="boneAcqSetupError" role="alert"></span>
             </form>
+            <span id="boneAcqSetupError" role="alert"></span>
           </div>
           <!-- BONE_ACQ_UI_END -->
 '''
