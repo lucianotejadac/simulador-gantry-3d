@@ -586,6 +586,27 @@ propia matriz. No se modifican las cuentas ni la imagen para dibujar el marco.
 Actualizar con `python scripts/embed_pixel_grid.py`; comprobación numérica:
 `node tests/test_pixel_grid.cjs`.
 
+## Carga y caché de recursos
+
+El HTML pesa aproximadamente 299 KB. La biblioteca 3D se sirve como un archivo
+independiente con hash y se precarga junto con el paciente, la sala y el equipo.
+Los atlas grandes se descargan en partes de hasta 512 KiB, con un máximo global
+de cuatro solicitudes simultáneas y descompresión durante la descarga. Las partes
+reconstruyen exactamente los archivos originales: no cambian resolución, ángulos
+ni cuentas. Sólo se solicitan los atlas del estudio seleccionado.
+
+Los recursos con hash usan `force-cache`: se reutilizan entre visitas mientras
+el navegador conserve su caché. Un cambio de contenido genera una URL nueva.
+No se usa un service worker ni se modifica el almacén de adquisiciones guardadas.
+La sala sigue activada por defecto y la ventana de carga espera a los recursos
+necesarios y al primer render completo.
+
+Después de actualizar atlas o ejecutar scripts de incrustación, ejecutar al final
+`python scripts/optimize_loading.py` para regenerar las partes y precargas.
+Comprobar con `node tests/test_asset_transport.cjs` (bytes idénticos, concurrencia,
+fallos/reintentos y descompresión) y `node tests/test_lazy_assets.cjs`.
+Los archivos originales siguen publicados para versiones anteriores en caché.
+
 ## Paciente visible
 
 Se restauró el modelo «Man» de Quaternius, anterior a la importación de Godot,

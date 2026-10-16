@@ -44,7 +44,7 @@
   function load(){
     if(poses)return Promise.resolve(poses);
     if(!pending)pending=(async()=>{
-      const response=await fetch(data.url);if(!response.ok)throw Error('No se pudo cargar MIBI ('+response.status+')');
+      const response=await (window.GANTRY_ASSETS?.fetch||fetch)(data.url);if(!response.ok)throw Error('No se pudo cargar MIBI ('+response.status+')');
       const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
       const v=new Uint16Array(buffer),n=data.width*data.height;
       if(v.length!==data.components.length*data.angles.length*n)throw Error('Atlas MIBI incompleto');

@@ -13,7 +13,7 @@ window.createSymbiaRoom = function({THREE, scene, camera, controls, renderer, fl
     const source=document.getElementById('symbiaRoomData');
     let bytes;
     if(source.dataset?.src){
-      const response=await fetch(source.dataset.src);if(!response.ok)throw Error('Sala no disponible ('+response.status+')');
+      const response=await (window.GANTRY_ASSETS?.fetch||fetch)(source.dataset.src);if(!response.ok)throw Error('Sala no disponible ('+response.status+')');
       bytes=await response.arrayBuffer();
     }else bytes=Uint8Array.from(atob(source.textContent.trim()), c=>c.charCodeAt(0));
     const raw=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();

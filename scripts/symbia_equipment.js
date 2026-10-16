@@ -8,7 +8,7 @@ window.createSymbiaEquipment = function({THREE, scene, gantry, head1, head2, sim
   let loading=null, metadata=null, enabled=false;
 
   async function load() {
-    const response=await fetch(document.getElementById('symbiaEquipmentData').dataset.src);
+    const response=await (window.GANTRY_ASSETS?.fetch||fetch)(document.getElementById('symbiaEquipmentData').dataset.src);
     if(!response.ok) throw Error('Equipo no disponible ('+response.status+')');
     const raw=await new Response(new Blob([await response.arrayBuffer()]).stream()
       .pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();

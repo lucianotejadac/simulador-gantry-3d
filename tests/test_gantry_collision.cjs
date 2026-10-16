@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const html=fs.readFileSync('index.html','utf8'),script=fs.readFileSync('scripts/gantry_collision.js','utf8');
+const html=fs.readFileSync('index.html','utf8').replace(/\r\n/g,'\n'),script=fs.readFileSync('scripts/gantry_collision.js','utf8').replace(/\r\n/g,'\n');
 const ctx={window:{},console,performance,TextDecoder,TextEncoder,ArrayBuffer,Uint8Array,Int8Array,Uint16Array,Uint32Array,Float32Array,Float64Array,DataView,URL,Blob,fetch,AbortController,Request,Response};
 vm.createContext(ctx);vm.runInContext(script,ctx);
 const C=ctx.window.GANTRY_COLLISION_CORE;
@@ -53,7 +53,8 @@ const wrap=C.sweep({...state,rot:359},{...state,rot:2},s=>[{body:{gap:1},table:{
 
 // Use the real bundled Three.js and patient GLB to exercise posed-mesh capture,
 // production rig arm transforms, contact records and mode changes (no browser).
-const bundle=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('window.GANTRY_THREE={'));
+const bundleURL=html.match(/<script src="(assets\/runtime\/three-bundle\.[\w.]+)"><\/script>/)?.[1];
+const bundle=bundleURL?fs.readFileSync(bundleURL,'utf8'):[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).find(s=>s.includes('window.GANTRY_THREE={'));
 assert(bundle);vm.runInContext(bundle,ctx);
 const {THREE,GLTFLoader}=ctx.window.GANTRY_THREE;
 const elements={};for(const id of ['collisionMode','collisionSound','collisionMessage','collisionLog','collisionD1','collisionD2'])elements[id]={value:'safe',style:{},checked:false,rows:[],addEventListener(k,f){this[k]=f;},prepend(row){this.rows.unshift(row);}};

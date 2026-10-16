@@ -9,14 +9,14 @@
     if(ready)return Promise.resolve();
     if(pending)return pending;
     button.disabled=true;button.textContent='Cargando MAG3…';
-    pending=Promise.all([data.integral?Promise.resolve():fetch(data.integralUrl).then(response=>{
+    pending=Promise.all([data.integral?Promise.resolve():(window.GANTRY_ASSETS?.fetch||fetch)(data.integralUrl).then(response=>{
       if(!response.ok)throw Error('Cinética MAG3 no disponible ('+response.status+')');return response.json();
     }).then(integral=>{data.integral=integral;}),...['down','up'].map(async name=>{
     if(poses[name])return;
-    let bytes;
-    if(data.urls){const response=await fetch(data.urls[name]);if(!response.ok)throw Error('Serie MAG3 no disponible ('+response.status+')');bytes=await response.arrayBuffer();}
-    else bytes=Uint8Array.from(atob(data.packed[name]),c=>c.charCodeAt(0));
-    const buffer=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
+    let source;
+    if(data.urls){const response=await (window.GANTRY_ASSETS?.fetch||fetch)(data.urls[name]);if(!response.ok)throw Error('Serie MAG3 no disponible ('+response.status+')');source=response.body;}
+    else source=new Blob([Uint8Array.from(atob(data.packed[name]),c=>c.charCodeAt(0))]).stream();
+    const buffer=await new Response(source.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
     const values=new Uint16Array(buffer);if(values.length!==componentCount*data.angles.length*pixels)throw Error('Serie MAG3 incompleta');
     poses[name]=Array.from({length:componentCount},(_,c)=>({width:data.width,height:data.height,scale:data.scales[name][c],window:1,
       frames:data.angles.map((_,a)=>values.subarray((c*data.angles.length+a)*pixels,(c*data.angles.length+a+1)*pixels))}));

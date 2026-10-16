@@ -33,7 +33,7 @@
     if(!pending[name])pending[name]=(async()=>{
       const p=data.poses[name],n=data.width*data.height;
       const groups=await Promise.all([['bone',data.angles,1],['organs',data.organAngles,7]].map(async([key,angles,count])=>{
-        const payload=p[key],response=await fetch(payload.url);
+        const payload=p[key],response=await (window.GANTRY_ASSETS?.fetch||fetch)(payload.url);
         if(!response.ok)throw Error('No se pudo cargar MDP ('+response.status+')');
         const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
         const values=new Uint16Array(buffer);

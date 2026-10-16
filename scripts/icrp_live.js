@@ -3,12 +3,12 @@
   'use strict';
   const poses={},pending={};
   async function decode(packed){
-    let bytes;
+    let source;
     if(packed.url){
-      const response=await fetch(packed.url);if(!response.ok)throw Error('No se pudo descargar la serie ('+response.status+')');
-      bytes=await response.arrayBuffer();
-    }else bytes=Uint8Array.from(atob(packed.deflate),c=>c.charCodeAt(0));
-    const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+      const response=await (window.GANTRY_ASSETS?.fetch||fetch)(packed.url);if(!response.ok)throw Error('No se pudo descargar la serie ('+response.status+')');
+      source=response.body;
+    }else source=new Blob([Uint8Array.from(atob(packed.deflate),c=>c.charCodeAt(0))]).stream();
+    const stream=source.pipeThrough(new DecompressionStream('deflate'));
     const buffer=await new Response(stream).arrayBuffer();
     const values=new Uint16Array(buffer),length=packed.width*packed.height;
     if(values.length!==packed.angles.length*length)throw Error('Serie ICRP incompleta');
