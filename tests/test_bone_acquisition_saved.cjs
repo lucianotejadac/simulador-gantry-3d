@@ -27,6 +27,20 @@ function environment(whole=false){
  return {el,window,storage,submit,tick:seconds=>{now+=seconds*1000;window.GANTRY_BONE_ACQ.advance();}};
 }
 (async()=>{
+ const preview=environment(true);
+ preview.window.GANTRY_LIVE.signal={mode:'final'};
+ preview.window.GANTRY_LIVE.setSignalMode=mode=>{preview.window.GANTRY_LIVE.signal.mode=mode;preview.window.GANTRY_LIVE.update();};
+ preview.submit(30,'Barrido desde imagen final D1','Barrido desde imagen final D2');
+ preview.tick(.1);
+ assert(preview.window.GANTRY_BONE_ACQ.state.travel>0,'Starting whole body from final preview must leave preview and move the table');
+ preview.el('boneAcqPause').onclick();const priorTravel=preview.window.GANTRY_BONE_ACQ.state.travel;
+ preview.el('boneAcqFast').onclick();preview.tick(.1);
+ assert(!preview.window.GANTRY_BONE_ACQ.state.paused);assert(preview.window.GANTRY_BONE_ACQ.state.travel>priorTravel);
+ const directWhole=environment(true);directWhole.window.GANTRY.G.tableZ=17;
+ directWhole.window.GANTRY_LIVE.signal={mode:'final'};
+ directWhole.window.GANTRY_LIVE.setSignalMode=mode=>{directWhole.window.GANTRY_LIVE.signal.mode=mode;directWhole.window.GANTRY_LIVE.update();};
+ directWhole.el('boneAcqInstant').onclick();await directWhole.submit(30,'Directa cuerpo D1','Directa cuerpo D2');
+ assert(directWhole.window.GANTRY_BONE_ACQ.state.finished);assert.equal(directWhole.window.GANTRY.G.tableZ,16);assert.equal(directWhole.window.GANTRY_LIVE.signal.mode,'live');
  const a=environment();a.submit(3,'  ','Posterior');assert.equal(a.window.GANTRY_BONE_ACQ.state,null);
  const name='<img src=x onerror=alert(1)> Anterior';
  a.submit(3,name,'Óseo posterior');await a.el('boneAcqInstant').onclick();await a.el('boneAcqSave').onclick();

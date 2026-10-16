@@ -4563,6 +4563,12 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const mode=el('boneAcqCriterion').value,target=Number(el('boneAcqTarget').value);
     return {mode,target};
   }
+  function acquisitionView(){
+    if(window.GANTRY_LIVE?.signal?.mode==='final'){
+      clock=performance.now();
+      window.GANTRY_LIVE.setSignalMode('live');
+    }
+  }
   function start(){
     if(!fields||busy||saving||loadingSaved||(session&&!session.finished))return;
     if(study==='bone'&&window.GANTRY_MDP?.remaining<=0){el('boneAcqSetupError').textContent='El modelo termina a las 3 horas. Elige un tiempo anterior para iniciar.';return;}
@@ -4571,6 +4577,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(nextNames.some(n=>!n||n.length>80)){el('boneAcqSetupError').textContent='Escribe un nombre para cada detector (máximo 80 caracteres).';return;}
     const {mode,target}=settings();
     if(kind()==='whole'&&!position().ok){el('boneAcqSetupError').textContent=position().reason;paint();return;}
+    acquisitionView();
     if(kind()==='whole'){
       try{session=whole.create(Number(el('boneAcqVelocity').value));session.countRate=rate;}
       catch(error){el('boneAcqSetupError').textContent=error.message;return;}
@@ -4591,6 +4598,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   async function instant(){
     if(!session||session.finished||busy||!fields||archive)return;
+    acquisitionView();
     if(session.mode==='scan'){
       busy=true;note='Cuerpo entero';paint(true);
       try{
@@ -4636,8 +4644,8 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   el('boneAcqTarget').oninput=()=>{manualGoal=true;planningInfo();};
   el('boneAcqSuggested').onclick=()=>{manualGoal=false;updateGoal();planningInfo();};
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
-  el('boneAcqFast').onclick=()=>{advance();speed=({1:10,10:30,30:60,60:1})[speed]||1;el('boneAcqSpeed').value=String(speed);paint(true);};
-  el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';clock=performance.now();paint(true);};
+  el('boneAcqFast').onclick=()=>{acquisitionView();advance();speed=({1:10,10:30,30:60,60:1})[speed]||1;paused=false;clock=performance.now();el('boneAcqSpeed').value=String(speed);paint(true);};
+  el('boneAcqPause').onclick=()=>{if(paused)acquisitionView();advance();paused=!paused;note='';clock=performance.now();paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
   el('boneAcqInstant').onclick=()=>session&&!session.finished?instant():setup(true);
   async function refreshSaved(){
