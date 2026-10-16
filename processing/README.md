@@ -14,7 +14,12 @@ El visor principal del otro repositorio permanece intacto.
 
 La pestaña carga el iframe solamente al abrirse. El controlador acepta
 adquisiciones óseas finalizadas, actuales o guardadas en IndexedDB, con señal
-en ambos detectores. Se bloquea la entrada durante una adquisición activa.
+en ambos detectores. Al abrir procesamiento se incorporan automáticamente al
+menú lateral, agrupadas por tipo, con los nombres de ambos detectores. También
+se conservan en memoria las adquisiciones terminadas durante la sesión aunque
+se inicie otra: para conservarlas tras recargar sigue siendo necesario guardarlas.
+No se requiere seleccionar ni enviar manualmente; la selección manual queda
+disponible para componer páginas. Se bloquea la entrada durante una adquisición activa.
 El renderizado 3D y la persistencia en vivo descansan durante el procesamiento;
 la posición y el proyecto se conservan al alternar pestañas. La evolución libre
 del radiofármaco queda detenida hasta que el usuario la reproduzca de nuevo.

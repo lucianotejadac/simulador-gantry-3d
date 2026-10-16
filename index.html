@@ -813,13 +813,15 @@
       <div id="boneProcessingToolbar"><strong>Procesamiento óseo</strong>
         <button id="boneProcessingBack" type="button">Volver al gantry</button>
         <button id="boneProcessingRefresh" type="button">Actualizar lista</button>
-        <button id="boneProcessingSend" type="button" disabled>Enviar seleccionadas</button>
         <button id="boneProcessingRetry" type="button" hidden>Reintentar carga</button>
         <span>El proyecto se conserva al volver al gantry. Guarda el proyecto antes de cerrar o recargar.</span>
       </div>
-      <div id="boneProcessingList" aria-label="Adquisiciones óseas finalizadas"></div>
+      <details><summary>Selección manual · las adquisiciones se cargan automáticamente en el menú izquierdo</summary>
+        <div id="boneProcessingList" aria-label="Adquisiciones óseas finalizadas"></div>
+        <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
+      </details>
       <div id="boneProcessingStatus" role="status"></div>
-      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=b2a35f938d7e92c8"></iframe>
+      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=27f975bad9fa958b"></iframe>
     </section>
     <!-- PROCESSING_UI_END -->
     <div id="gantryWorkspace" style="display:flex;gap:14px;padding:12px;height:calc(100% - 52px);box-sizing:border-box;background:#e9edf3">
@@ -4430,7 +4432,12 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       out.strokeStyle='#58dcb4';out.lineWidth=1;out.beginPath();out.moveTo(0,y);out.lineTo(n,y);out.stroke();
     }
   }
+  let processingRemembered=null;
   function paint(force=false){
+    if(session?.finished&&session.study==='bone'&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
+      window.GANTRY_PROCESSING.remember(storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id));
+      processingRemembered=session.id;
+    }
     window.GANTRY_MDP?.render();
     window.GANTRY_MIBI?.render();
     window.GANTRY_ACTIVITY?.render();
@@ -4727,7 +4734,10 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 (function(){
   'use strict';
   const el=id=>document.getElementById(id),store=window.GANTRY_BONE_STORAGE.createStore(window.indexedDB);
-  let active=false,ready=false,pending=null,loaded=false,catalog=new Map(),current=null,request=0,loadTimer;
+  let active=false,ready=false,pending=null,loaded=false,catalog=new Map(),current=null,request=0,loadTimer,refreshing=false;
+  const completed=new Map(),imported=new Set();
+  const identity=r=>(r.processing?.acquisitionId||r.id)+':'+(r.totals||r.heads.map(h=>h.total)).join(':');
+  function remember(record){if(record?.study==='bone'&&record.finished&&record.heads.every(h=>h.total>0))completed.set(identity(record),record);}
   const frame=el('boneProcessingFrame'),status=el('boneProcessingStatus');
   const busy=()=>window.GANTRY_BONE_ACQ?.active||window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
   function load(){
@@ -4736,23 +4746,33 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     loadTimer=setTimeout(()=>{if(!ready){status.textContent='El procesador no terminó de cargar. Puedes reintentar.';el('boneProcessingRetry').hidden=false;}},45000);
   }
   async function refresh(){
+    refreshing=true;
+    try{
     const selected=new Set([...el('boneProcessingList').querySelectorAll('input:checked')].map(n=>n.value));
     catalog=new Map();current=window.GANTRY_BONE_ACQ.processingCurrent();
     if(current?.study==='bone'&&current.finished&&current.heads.every(h=>h.total>0))catalog.set('current',current);
+    const seen=new Set([...catalog.values()].map(identity));
+    for(const record of completed.values())if(!seen.has(identity(record))){catalog.set(record.id,record);seen.add(identity(record));}
     const saved=await store.list();
     for(const record of saved){
       const same=record.id===current?.id||(record.processing?.acquisitionId&&record.processing.acquisitionId===current?.processing?.acquisitionId&&record.totals?.every((n,i)=>n===current.heads[i].total));
-      if(record.study==='bone'&&record.finished&&record.totals?.every(n=>n>0)&&!same)catalog.set(record.id,record);
+      if(record.study==='bone'&&record.finished&&record.totals?.every(n=>n>0)&&!same&&!seen.has(identity(record))){catalog.set(record.id,record);seen.add(identity(record));}
     }
     el('boneProcessingList').replaceChildren();
     for(const [key,record] of catalog){
       const row=document.createElement('label'),check=document.createElement('input'),text=document.createElement('span');
       check.type='checkbox';check.value=key;check.checked=selected.has(key)||(!selected.size&&key==='current');
-      text.textContent=(key==='current'?'Actual / seleccionada':'Guardada')+' · '+(record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names.join(' / ')+' · '+new Date(record.createdAt).toLocaleString('es-CL');
+      text.textContent=(key==='current'?'Actual / seleccionada':record.heads?'De esta sesión':'Guardada')+' · '+(record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names.join(' / ')+' · '+new Date(record.createdAt).toLocaleString('es-CL');
       row.append(check,text);el('boneProcessingList').append(row);
     }
     if(!catalog.size)el('boneProcessingList').textContent='Finaliza una adquisición ósea con cuentas en ambos detectores. También aparecerán aquí las adquisiciones guardadas.';
     el('boneProcessingSend').disabled=!ready||!catalog.size||!!pending;
+    }finally{refreshing=false;}
+  }
+  function sync(){
+    if(!active||!ready||pending||refreshing)return;
+    const keys=[...catalog].filter(([,r])=>!imported.has(identity(r))).map(([key])=>key).slice(0,50);
+    if(keys.length)return send(keys,true);
   }
   async function open(){
     if(busy()){el('boneProcessingNotice').textContent='Finaliza la adquisición activa antes de entrar a procesamiento.';return;}
@@ -4762,7 +4782,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     el('boneProcessingTab').setAttribute('aria-selected','true');el('boneGantryTab').setAttribute('aria-selected','false');
     window.GANTRY_MDP?.begin();window.GANTRY_MIBI?.begin();window.GANTRY3D?.pause();
     if(!loaded)load();
-    try{await refresh();}catch(error){status.textContent='No se pudo leer el catálogo local: '+error.message;}
+    try{await refresh();await sync();}catch(error){status.textContent='No se pudo leer el catálogo local: '+error.message;}
   }
   function close(){
     active=false;el('boneProcessingPane').hidden=true;el('gantryWorkspace').hidden=false;
@@ -4771,41 +4791,43 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(ready)frame.contentWindow.postMessage({type:'GANTRY_PROCESSING_HIDE',version:1},location.origin);
     window.GANTRY3D?.resume();window.GANTRY_LIVE?.update(window.GANTRY.G);
   }
-  async function send(){
+  async function send(selectedKeys,automatic=false){
     if(!ready||pending)return;
-    const keys=[...el('boneProcessingList').querySelectorAll('input:checked')].map(n=>n.value);
+    const keys=Array.isArray(selectedKeys)?selectedKeys:[...el('boneProcessingList').querySelectorAll('input:checked')].map(n=>n.value);
     if(!keys.length){status.textContent='Selecciona al menos una adquisición.';return;}
     if(keys.length>50){status.textContent='Envía hasta 50 adquisiciones por vez.';return;}
     el('boneProcessingSend').disabled=true;
     const id=++request;
+    pending={id,identities:keys.map(key=>identity(catalog.get(key)))};
     try{
       status.textContent='Preparando cuentas originales y metadatos…';
       const files=[];
       for(const key of keys){
-        const record=key==='current'?current:await store.get(key);
+        const entry=catalog.get(key),record=entry.heads?entry:await store.get(key);
         const studyUID=await window.GANTRY_PROCESSING_DICOM.uid('gantry-bone-phantom:'+new Date(record.processing?.startedAt||record.createdAt).toISOString().slice(0,10));
         files.push(...await window.GANTRY_PROCESSING_DICOM.files(record,studyUID));
       }
-      pending={id,timer:setTimeout(()=>{if(pending?.id===id){pending=null;el('boneProcessingSend').disabled=false;status.textContent='El procesador no confirmó la recepción. Puedes volver a enviar; las imágenes repetidas se omiten.';}},30000)};
-      frame.contentWindow.postMessage({type:'GANTRY_PROCESSING_IMPORT',version:1,id,files},location.origin);
+      pending.timer=setTimeout(()=>{if(pending?.id===id){pending=null;el('boneProcessingSend').disabled=false;status.textContent='El procesador no confirmó la recepción. Pulsa Actualizar lista para reintentar.';}},30000);
+      frame.contentWindow.postMessage({type:'GANTRY_PROCESSING_IMPORT',version:1,id,files,view:automatic?'acquisition':'flex'},location.origin);
       status.textContent='Enviando '+files.length+' imágenes al procesador…';
-    }catch(error){status.textContent='No se pudo enviar: '+error.message;el('boneProcessingSend').disabled=false;}
+    }catch(error){pending=null;status.textContent='No se pudo enviar: '+error.message;el('boneProcessingSend').disabled=false;}
   }
   window.addEventListener('message',event=>{
     if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.version!==1)return;
     const data=event.data;
-    if(data.type==='GANTRY_PROCESSING_READY'){ready=true;clearTimeout(loadTimer);el('boneProcessingRetry').hidden=true;status.textContent='Procesador listo. Selecciona adquisiciones y pulsa Enviar.';el('boneProcessingSend').disabled=!catalog.size;}
+    if(data.type==='GANTRY_PROCESSING_READY'){ready=true;imported.clear();clearTimeout(loadTimer);el('boneProcessingRetry').hidden=true;status.textContent='Procesador listo. Las adquisiciones aparecerán en el menú de la izquierda.';el('boneProcessingSend').disabled=!catalog.size;sync();}
     if(data.type==='GANTRY_PROCESSING_RESULT'&&data.id===pending?.id){
-      clearTimeout(pending.timer);pending=null;el('boneProcessingSend').disabled=false;
+      clearTimeout(pending.timer);if(!data.error)pending.identities.forEach(id=>imported.add(id));pending=null;el('boneProcessingSend').disabled=false;
       status.textContent=data.error?'No se pudo importar: '+data.error:data.images+' imágenes verificadas · '+data.totals.map((n,i)=>'D'+(i%2+1)+': '+n.toLocaleString('es-CL')+' cuentas').join(' · ')+'. Las cuentas originales se conservan.';
+      if(!data.error)sync();
     }
   });
   el('boneProcessingTab').onclick=open;el('boneSendProcessing').onclick=open;
   el('boneGantryTab').onclick=close;el('boneProcessingBack').onclick=close;
-  el('boneProcessingRefresh').onclick=()=>refresh().catch(e=>{status.textContent=e.message;});
+  el('boneProcessingRefresh').onclick=()=>refresh().then(sync).catch(e=>{status.textContent=e.message;});
   el('boneProcessingSend').onclick=send;
   el('boneProcessingRetry').onclick=()=>{if(!ready)load();};
-  window.GANTRY_PROCESSING={open,close,get active(){return active;}};
+  window.GANTRY_PROCESSING={open,close,remember,get active(){return active;}};
 })();
 
 </script>

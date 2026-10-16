@@ -1297,6 +1297,26 @@ tutorialToggle(false);
 (function(){
   'use strict';
   let receiving=false;
+  // Keep the native acquisition menu, with readable detector names instead of file UUIDs.
+  if(typeof updateModeUI==='function'){
+    const originalUpdate=updateModeUI;
+    updateModeUI=function(){
+      originalUpdate();
+      for(const key of Object.keys(acquisitionInstances)){
+        const states=Object.values(acquisitionInstances[key]);
+        if(!states.length||!states.every(s=>s.dataset?.string('x00110010')==='GANTRY_SIMULATION'))continue;
+        const names=states.map(s=>(value(s.dataset,'0008103e')||s.filename).replace(/^(Estática|Cuerpo entero) · /,'').replace(/ · SIMULADO$/,''));
+        const date=states[0].dataset.string('x00080022')||states[0].dataset.string('x00080020')||'';
+        $('file-'+key).textContent=names.join(' / ')+(date?' · '+date.replace(/^(\d{4})(\d{2})(\d{2})$/,'$3/$2/$1'):'');
+        $('mode-'+key).title=$('file-'+key).textContent;
+      }
+      const picker=$('acquisition-instance');
+      if(picker)for(const option of picker.options){
+        const s=acquisitionInstances[currentAcquisition]?.[option.value];
+        if(s?.dataset?.string('x00110010')==='GANTRY_SIMULATION')option.textContent=value(s.dataset,'0008103e').replace(/ · SIMULADO$/,'');
+      }
+    };
+  }
   for(const key of ['zoom','window','level'])$('flex-'+key).oninput=e=>updateFlexImage(key,e.target.value);
   const reply=data=>parent.postMessage({...data,version:1},location.origin);
   function check(file){
@@ -1332,7 +1352,12 @@ tutorialToggle(false);
       if(!flex.header)flex.header=Object.fromEntries(Object.entries({patient:'Fantoma ICRP 145 · SIMULADO',rut:'',date:'',exam:'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));
       const groups=new Map();for(const item of batch){if(!groups.has(item.file.group))groups.set(item.file.group,[]);groups.get(item.file.group).push(item);}
       for(const group of groups.values())addPage(group);
-      openFlexible();refreshFlexible();
+      if(data.view==='acquisition'){
+        const first=batch[0].file.uid;
+        const key=Object.keys(acquisitionInstances).find(k=>acquisitionInstances[k][first]);
+        if(key)selectMode(key,first);
+        refreshFlexible();
+      }else{openFlexible();refreshFlexible();}
       $('flex-message').textContent='Adquisiciones simuladas del gantry. Cuentas originales verificadas. Guarda el proyecto para conservar el procesamiento.';
       reply({type:'GANTRY_PROCESSING_RESULT',id:data.id,images:batch.length,totals:batch.map(x=>x.total)});
     }catch(error){reply({type:'GANTRY_PROCESSING_RESULT',id:data.id,error:error.message});}

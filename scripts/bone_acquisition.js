@@ -191,7 +191,12 @@
       out.strokeStyle='#58dcb4';out.lineWidth=1;out.beginPath();out.moveTo(0,y);out.lineTo(n,y);out.stroke();
     }
   }
+  let processingRemembered=null;
   function paint(force=false){
+    if(session?.finished&&session.study==='bone'&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
+      window.GANTRY_PROCESSING.remember(storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id));
+      processingRemembered=session.id;
+    }
     window.GANTRY_MDP?.render();
     window.GANTRY_MIBI?.render();
     window.GANTRY_ACTIVITY?.render();

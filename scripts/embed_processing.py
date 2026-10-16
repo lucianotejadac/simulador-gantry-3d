@@ -41,11 +41,13 @@ ui = '''<!-- PROCESSING_UI_BEGIN -->
       <div id="boneProcessingToolbar"><strong>Procesamiento óseo</strong>
         <button id="boneProcessingBack" type="button">Volver al gantry</button>
         <button id="boneProcessingRefresh" type="button">Actualizar lista</button>
-        <button id="boneProcessingSend" type="button" disabled>Enviar seleccionadas</button>
         <button id="boneProcessingRetry" type="button" hidden>Reintentar carga</button>
         <span>El proyecto se conserva al volver al gantry. Guarda el proyecto antes de cerrar o recargar.</span>
       </div>
-      <div id="boneProcessingList" aria-label="Adquisiciones óseas finalizadas"></div>
+      <details><summary>Selección manual · las adquisiciones se cargan automáticamente en el menú izquierdo</summary>
+        <div id="boneProcessingList" aria-label="Adquisiciones óseas finalizadas"></div>
+        <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
+      </details>
       <div id="boneProcessingStatus" role="status"></div>
       <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=VERSION"></iframe>
     </section>

@@ -67,9 +67,11 @@ print('pydicom: pixel totals, dimensions, duration and dose verified')`],{input:
  assert.equal(result.status,0,result.stderr);console.log(result.stdout.trim());
  // Run the actual receiver against the actual parser with a minimal viewer shell.
  const imports=[],listeners={},replies=[],parent={postMessage:m=>replies.push(m)};
+ const selectedModes=[];
  const globals={window:{addEventListener:(n,fn)=>listeners[n]=fn},parent,location:{origin:'http://local'},dicomParser:parser,ArrayBuffer,Uint8Array,DataView,File,
+   acquisitionInstances:{static:{}},selectMode:(...args)=>selectedModes.push(args),
    flex:{assets:[],pages:[],serial:0,header:null},PAGE:{top:100},$:()=>({textContent:''}),stopDynamic(){},openFlexible(){},refreshFlexible(){},arrangeFlexible(){},
-   async loadFile(file,ds){imports.push(file);globals.flex.assets.push({uid:ds.string('x00080018'),id:ds.string('x00080018')+':0',rows:ds.uint16('x00280010'),cols:ds.uint16('x00280011'),window:50,level:25});},
+   async loadFile(file,ds){imports.push(file);globals.acquisitionInstances.static[ds.string('x00080018')]={};globals.flex.assets.push({uid:ds.string('x00080018'),id:ds.string('x00080018')+':0',rows:ds.uint16('x00280010'),cols:ds.uint16('x00280011'),window:50,level:25});},
    flexNewPage(){const p={id:globals.flex.pages.length+1,items:[]};globals.flex.pages.push(p);return p;}};
  vm.runInContext(fs.readFileSync('scripts/processing_receiver.js','utf8'),vm.createContext(globals));
  const files=await api.files(record(),await api.uid('study')),event={source:parent,origin:'http://local',data:{type:'GANTRY_PROCESSING_IMPORT',version:1,id:1,files}};
@@ -77,6 +79,9 @@ print('pydicom: pixel totals, dimensions, duration and dose verified')`],{input:
  await listeners.message({...event,source:{}});assert.equal(imports.length,0);
  await listeners.message(event);assert.equal(replies.at(-1).images,2);assert.equal(globals.flex.pages.length,1);
  await listeners.message(event);assert.equal(globals.flex.pages.length,1,'Repeat must not duplicate pages');
+ await listeners.message({...event,data:{...event.data,view:'acquisition'}});
+ assert.deepEqual(selectedModes.at(-1),['static',files[0].uid],'Automatic imports open the acquisition menu, not the flexible page');
+ assert.equal(globals.flex.pages.length,1);
  const bad=structuredClone(event.data);bad.files[0].total++;
  await listeners.message({...event,data:bad});assert.match(replies.at(-1).error,/cuentas/);
  const html=fs.readFileSync('index.html','utf8');assert.match(html,/<iframe id="boneProcessingFrame"[^>]*data-src=/);

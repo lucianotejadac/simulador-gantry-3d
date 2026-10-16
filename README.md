@@ -7,9 +7,11 @@ en archivos separados del mismo repositorio, dentro de `assets/runtime/`.
 ## Procesamiento óseo integrado
 
 Finaliza una adquisición ósea y pulsa **Enviar a procesamiento**, o abre la
-pestaña **Procesamiento óseo**. Selecciona una o varias adquisiciones actuales
-o guardadas y pulsa **Enviar seleccionadas**. Se abre una página editable por
-par de detectores con las cuentas originales, también para cuerpo entero.
+pestaña **Procesamiento óseo**. Las adquisiciones terminadas durante la sesión
+y las guardadas aparecen automáticamente en el menú lateral, agrupadas como
+estáticas o de cuerpo entero y rotuladas con los nombres de los detectores.
+Selecciona la adquisición y su imagen desde ese menú. **Página flexible**
+conserva una composición editable por par de detectores con las cuentas originales.
 Ventana/nivel, inversión, zoom, composición, **Guardar proyecto** y
 **Exportar PNG** reutilizan el visor de `simulador-cintigrafia-osea`.
 
