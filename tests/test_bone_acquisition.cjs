@@ -5,10 +5,23 @@ const engine=fs.readFileSync('scripts/bone_acquisition.js','utf8').replace(/\r\n
 assert(html.includes(engine));
 const ctx=vm.createContext({window:{},document:{getElementById:()=>null}});
 vm.runInContext(engine,ctx);
-const {Acquisition,poisson}=ctx.window.GANTRY_BONE_CORE;
+const {Acquisition,poisson,suggestedGoal,estimatedSeconds}=ctx.window.GANTRY_BONE_CORE;
 function seeded(seed=145){return ()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return (seed+.5)/4294967296;};}
 function point(index,sum=2000000){const values=new Float32Array(128*128),cdf=new Float64Array(values.length);values[index]=sum;cdf.fill(sum,index);return {values,cdf,sum};}
 const a=point(10),b=point(20,1000000),zero=point(0,0);
+assert.equal(suggestedGoal('bone','Cabeza',7200).counts,400000);
+assert.equal(suggestedGoal('bone','Torax',7200).counts,1000000);
+assert.equal(suggestedGoal('bone','Piernas / pies',7200).counts,250000);
+assert.equal(suggestedGoal('bone','Cabeza',7199).delayed,false);
+assert.equal(suggestedGoal('mibi','Torax',7200).counts,100000);
+assert.equal(estimatedSeconds(a,1000,400000),400);
+assert.equal(estimatedSeconds(b,1000,400000),800);
+assert.equal(estimatedSeconds(zero,1000,400000),Infinity);
+// Same rate and clock: a larger goal takes proportionally longer; no fake delay.
+const smallGoal=new Acquisition(128,'counts',100000,seeded());
+const largeGoal=new Acquisition(128,'counts',400000,seeded());
+smallGoal.step([a,b],1000,Infinity);largeGoal.step([a,b],1000,Infinity);
+for(let j=0;j<2;j++)assert(Math.abs(largeGoal.heads[j].elapsed/smallGoal.heads[j].elapsed-4)<.04);
 for(const mu of [.2,5,30,200,10000]){
  const rng=seeded(),N=60000;let sum=0,sq=0;
  for(let i=0;i<N;i++){const x=poisson(mu,rng);assert(x>=0&&Number.isInteger(x));sum+=x;sq+=x*x;}
@@ -68,6 +81,25 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linearContext);
  const window={GANTRY:{G:{}},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync('bone',[a,b],1000);}}};
  const ui=vm.createContext({window,document,performance:{now:()=>now},setInterval:fn=>intervals.push(fn),setTimeout});
  vm.runInContext(engine,ui);
+ window.GANTRY_MDP={seconds:7200,render(){}};
+ window.GANTRY_LIVE.state={d1:{segment:'Cabeza'},d2:{segment:'Cabeza'}};
+ window.GANTRY_BONE_ACQ.sync('bone',[a,b],1000);
+ el('boneAcqStart').onclick();
+ assert.equal(el('boneAcqTarget').value,'400000');
+ assert(el('boneAcqEstimate').textContent.includes('D1: 6:40'));
+ assert(el('boneAcqEstimate').textContent.includes('D2: 13:20'));
+ el('boneAcqTarget').value='123456';el('boneAcqTarget').oninput();
+ window.GANTRY_LIVE.state.d1.segment='Torax';
+ window.GANTRY_BONE_ACQ.sync('bone',[a,b],1000);
+ assert.equal(el('boneAcqTarget').value,'123456','Movement must preserve a manually entered goal');
+ window.GANTRY_BONE_ACQ.sync('dmsa',[a,b],1000);
+ assert.equal(el('boneAcqTarget').value,'100000');
+ window.GANTRY_BONE_ACQ.sync('bone',[a,b],1000);
+ assert.equal(el('boneAcqTarget').value,'123456','Study switching must preserve the goal');
+ el('boneAcqSuggested').onclick();assert.equal(el('boneAcqTarget').value,'1000000');
+ el('boneAcqCriterion').value='time';el('boneAcqCriterion').onchange();
+ assert.equal(el('boneAcqTarget').value,'300');
+ delete window.GANTRY_MDP;
  el('boneAcqName1').value='Anterior';el('boneAcqName2').value='Posterior';
  el('boneAcqCriterion').value='time';el('boneAcqTarget').value='60';el('boneAcqSetup').onsubmit({preventDefault(){}});
  now=1000;intervals[0]();assert.equal(window.GANTRY_BONE_ACQ.state.heads[0].elapsed,1);

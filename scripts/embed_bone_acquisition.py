@@ -91,7 +91,9 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
               <label id="boneAcqCriterionWrap">Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas totales objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label id="boneAcqTargetWrap">Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
               <span id="boneAcqUnits">cuentas totales por detector</span>
+              <button id="boneAcqSuggested" class="live-setting" type="button" hidden>Usar objetivo sugerido</button>
               <button id="boneAcqBegin" class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
+              <span id="boneAcqEstimate" role="status" style="flex-basis:100%;color:#9ee7c9"></span>
               <span id="boneAcqSetupError" role="alert"></span>
             </form>
           </div>

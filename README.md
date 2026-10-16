@@ -185,6 +185,29 @@ adquisición**, selecciona cuentas objetivo o tiempo (segundos) y **Comenzar**.
 Las cuentas objetivo son por detector: cada cabezal se detiene al llegar a
 su propia meta. El tiempo también se aplica a ambos detectores.
 
+Para óseo tardío (desde 120 min), el objetivo inicial se adapta a la región:
+400.000 cuentas en cráneo/región osteoarticular, 1.000.000 en tronco y
+250.000 en piernas/pies; por tiempo se proponen 300 s. Son valores editables
+basados en los intervalos de la [guía EANM](https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/).
+La asignación por centro de campo es una aproximación: pelvis se agrupa con
+tronco y cuello/muslos con región osteoarticular. Si los detectores muestran
+regiones distintas se propone el mayor objetivo para ambos. Las fases tempranas
+y los demás estudios conservan sus objetivos iniciales anteriores.
+
+Antes de empezar se muestra la duración estimada de cada detector a 1×:
+objetivo dividido por su tasa actual. Es una estimación local, no integra la
+evolución futura del trazador; movimientos, vaciamiento vesical y cinética
+pueden modificarla. Los valores manuales se conservan al mover el equipo y al
+cambiar de estudio durante la sesión. **Usar sugerido** vuelve al objetivo
+regional automático. No cambia las metas de adquisiciones ya iniciadas.
+
+Esta revisión no introduce retardos ni reduce artificialmente las cuentas/s.
+La sensibilidad asumida de MDP/MIBI sigue siendo 100 cps/MBq antes de atenuación;
+como contraste de orden de magnitud, [Siemens publica 202 cpm/µCi para Symbia
+con LEHR a 10 cm](https://www.siemens-healthineers.com/en-iq/molecular-imaging/spect-ct-scanner/symbia-prospecta),
+equivalentes a unos 91 cps/MBq. Esa comparación no constituye una calibración
+absoluta del simulador contra adquisiciones clínicas.
+
 La suma usa eventos nuevos de Poisson sobre los campos lineales del fantoma;
 no acumula capturas de la ventana de persistencia. **Avance rápido** ofrece
 1×, 10×, 30× y 60×, sin acelerar las imágenes en vivo. **Adquisición

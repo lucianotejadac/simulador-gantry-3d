@@ -58,11 +58,23 @@
       this.finished=this.heads.every(h=>h.done);
     }
   }
-  window.GANTRY_BONE_CORE={Acquisition,poisson};
+  // EANM delayed planar bone imaging. These are editable acquisition goals,
+  // not multipliers on the physical count rate. Segment selection is heuristic.
+  function suggestedGoal(study,segment,seconds=0){
+    if(study!=='bone'||seconds<7200)return {counts:100000,time:60,delayed:false};
+    if(['Torax','Abdomen','Pelvis'].includes(segment))return {counts:1000000,time:300,delayed:true,region:'tronco'};
+    if(segment==='Piernas / pies')return {counts:250000,time:300,delayed:true,region:'extremidades distales'};
+    return {counts:400000,time:300,delayed:true,region:'cráneo / región osteoarticular'};
+  }
+  function estimatedSeconds(field,rate,target){
+    const cps=(field?.sum||0)*rate/2000000;
+    return cps>0?target/cps:Infinity;
+  }
+  window.GANTRY_BONE_CORE={Acquisition,poisson,suggestedGoal,estimatedSeconds};
   const el=id=>document.getElementById(id),bar=el('boneAcqControls');
   if(!bar)return;
   let session=null,fields=null,rate=4000,study='',clock=performance.now(),speed=1,paused=false,busy=false;
-  let note='',lastPaint=0,moving=false,lockedNodes=null;
+  let note='',lastPaint=0,moving=false,lockedNodes=null,manualGoal=false;
   let names=['Detector 1','Detector 2'],archive=null,saving=false,loadingSaved=false,selection=0;
   const sessions=new Map();
   const labels={bone:'Óseo',mibi:'MIBI',thyroid:'Tiroides',exploration:'I-131',parathyroid:'Paratiroides',dmsa:'DMSA',maa:'MAA'};
@@ -76,6 +88,35 @@
   const whole=window.GANTRY_BONE_WHOLE;
   const kind=()=>study==='bone'&&el('boneAcqType').value==='whole'?'whole':'static';
   const position=()=>whole?.position()||{ok:false,reason:'Preparando posición del paciente'};
+  function suggestion(){
+    const live=window.GANTRY_LIVE?.state,seconds=window.GANTRY_MDP?.seconds||0;
+    const goals=[live?.d1?.segment,live?.d2?.segment].map(segment=>suggestedGoal(study,segment,seconds));
+    return goals.reduce((a,b)=>a.counts>=b.counts?a:b);
+  }
+  function updateGoal(){
+    const counts=el('boneAcqCriterion').value!=='time',goal=suggestion();
+    if(session&&!session.finished)return;
+    if(!manualGoal)el('boneAcqTarget').value=String(counts?goal.counts:goal.time);
+    el('boneAcqTarget').max=counts?'10000000':'3600';
+    el('boneAcqUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';
+  }
+  function planningInfo(){
+    const wholeBody=kind()==='whole',goal=suggestion(),hint=el('boneAcqEstimate');
+    el('boneAcqSuggested').hidden=wholeBody||!goal.delayed;
+    el('boneAcqSuggested').textContent='Usar sugerido: '+(el('boneAcqCriterion').value==='counts'?format(goal.counts)+' cuentas':'5 min');
+    hint.hidden=wholeBody;
+    if(wholeBody||el('boneAcqSetup').hidden)return;
+    const {mode,target}=settings();
+    if(!Number.isInteger(target)||target<1||target>(mode==='counts'?10000000:3600)){hint.textContent='Introduce un objetivo válido.';return;}
+    if(!fields){hint.textContent='Preparando estimación…';return;}
+    const estimates=fields.map((field,j)=>{
+      const cps=field.sum*rate/2000000,seconds=mode==='counts'?estimatedSeconds(field,rate,target):target;
+      return 'D'+(j+1)+': '+(Number.isFinite(seconds)?time(Math.ceil(seconds)):'sin señal')+' · '+format(Math.round(cps))+' c/s';
+    });
+    hint.textContent='Duración a 1×, a tasa actual: '+estimates.join(' | ')+'. Puede variar con la evolución del RF y los movimientos.'+
+      (goal.delayed?' Óseo tardío · sugerencia para '+goal.region+'.':'')+
+      (goal.delayed&&mode==='counts'&&target<goal.counts?' Objetivo inferior al sugerido; terminará antes.':'');
+  }
   function lockScan(locked){
     if(!document.querySelectorAll)return;
     if(locked&&!lockedNodes){
@@ -165,6 +206,7 @@
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
     el('liveMatrix128').disabled=el('liveMatrix256').disabled=active&&running;
+    planningInfo();
     if(!session&&!archive){
       el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones…';
       if(force)canvases.forEach((canvas,j)=>{
@@ -207,13 +249,17 @@
     if(busy||saving||loadingSaved||(session?.mode==='scan'&&!session.finished))return false;
     advance();
     if(session&&!session.finished){paused=true;note='Adquisición en pausa tras cambiar de estudio';}
-    if(study)sessions.set(study,{session,names,archive,paused,note,speed,type:el('boneAcqType').value});
+    if(study)sessions.set(study,{session,names,archive,paused,note,speed,type:el('boneAcqType').value,goal:{...settings(),manual:manualGoal}});
     const saved=sessions.get(nextStudy);
     study=nextStudy;session=saved?.session||null;names=saved?.names||['Detector 1','Detector 2'];
     archive=saved?.archive||null;paused=saved?.paused||false;note=saved?.note||'';speed=saved?.speed||1;
     fields=null;clock=performance.now();selection++;
     el('boneAcqSetup').hidden=true;el('boneAcqSaved').value=archive?.id||'current';
     el('boneAcqType').value=saved?.type||'static';el('boneAcqSpeed').value=String(speed);
+    manualGoal=saved?.goal?.manual||false;
+    el('boneAcqCriterion').value=saved?.goal?.mode||'counts';
+    if(saved?.goal)el('boneAcqTarget').value=String(saved.goal.target);
+    updateGoal();
     el('boneAcqCacheStatus').textContent=session?'Adquisición del estudio conservada':'';
     paint(true);
     return true;
@@ -222,6 +268,7 @@
     if(busy)return;
     if(!selectStudy(nextStudy))return;
     fields=supported(nextStudy)&&nextFields.every(Boolean)?nextFields:null;rate=nextRate;
+    updateGoal();
     paint();
   }
   function settings(){
@@ -277,15 +324,15 @@
       }
     }finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
   }
-  el('boneAcqStart').onclick=()=>{el('boneAcqSetup').hidden=false;(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();};
+  el('boneAcqStart').onclick=()=>{updateGoal();el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();};
   el('boneAcqType').onchange=()=>{el('boneAcqSetupError').textContent='';paint(true);};
   el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
   el('boneAcqSetup').onsubmit=event=>{event.preventDefault();start();};
   el('boneAcqCriterion').onchange=()=>{
-    const counts=el('boneAcqCriterion').value==='counts';
-    el('boneAcqTarget').value=counts?'100000':'60';el('boneAcqTarget').max=counts?'10000000':'3600';
-    el('boneAcqUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';el('boneAcqSetupError').textContent='';
+    manualGoal=false;updateGoal();planningInfo();el('boneAcqSetupError').textContent='';
   };
+  el('boneAcqTarget').oninput=()=>{manualGoal=true;planningInfo();};
+  el('boneAcqSuggested').onclick=()=>{manualGoal=false;updateGoal();planningInfo();};
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
   el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';clock=performance.now();paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
@@ -317,7 +364,7 @@
   refreshSaved().catch(error=>{el('boneAcqCacheStatus').textContent='Guardado local no disponible: '+error.message;});
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();});
-  window.GANTRY_BONE_ACQ={advance,sync,selectStudy,
+  window.GANTRY_BONE_ACQ={advance,sync,selectStudy,suggestedGoal:()=>suggestion(),
     pauseForPreview(){if(busy||saving||loadingSaved||(session?.mode==='scan'&&!session.finished))return false;advance();if(session&&!session.finished){paused=true;note='Adquisición pausada para vista previa';}paint();return true;},
     get scanning(){return session?.mode==='scan'&&!session.finished;},
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},

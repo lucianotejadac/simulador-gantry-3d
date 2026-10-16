@@ -125,7 +125,7 @@
   }
   function refresh(){key='';window.GANTRY_LIVE?.update(window.GANTRY.G);}
   function init(){if(!el('finalPreviewControls'))return;
-    el('finalPreviewCriterion').onchange=()=>{el('finalPreviewTarget').value=el('finalPreviewCriterion').value==='counts'?'100000':'60';units();refresh();};
+    el('finalPreviewCriterion').onchange=()=>{const goal=window.GANTRY_BONE_ACQ?.suggestedGoal?.()||{counts:100000,time:60};el('finalPreviewTarget').value=String(goal[el('finalPreviewCriterion').value]);units();refresh();};
     el('finalPreviewTarget').oninput=refresh;el('finalPreviewTarget').onchange=refresh;
     el('finalPreviewNoise').onclick=()=>{noise++;refresh();};controls();
   }
