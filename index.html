@@ -503,10 +503,10 @@
 .bone-whole-body .live-card:not(.bone-acq-card) canvas{max-height:100%;width:100%;height:auto;object-fit:contain}
 .gantry-live.bone-acquisition{height:clamp(355px,48vh,430px)}
 .bone-acquisition .gantry-live-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-.bone-acquisition .live-card{grid-template-columns:1fr;grid-template-rows:18px minmax(0,1fr) 35px}
-.bone-acquisition .bone-acq-card{display:grid;grid-template-rows:18px minmax(0,1fr) 5px 30px}
+.bone-acquisition .live-card{grid-template-columns:1fr;grid-template-rows:18px minmax(0,1fr) 62px}
+.bone-acquisition .bone-acq-card{display:grid;grid-template-rows:18px minmax(0,1fr) 5px 55px}
 .bone-acquisition .bone-card-title{display:block;font:700 10px var(--mono);color:#87dcc1;margin:3px 6px;white-space:nowrap}
-.bone-acquisition .live-info{display:block;border-left:0;border-top:1px solid #273745;padding:3px 6px;font-size:9px;line-height:1.3}
+.bone-acquisition .live-info{display:block;border-left:0;border-top:1px solid #273745;padding:3px 6px;font-size:9px;line-height:1.3;white-space:pre-line}
 .bone-acquisition .live-info b{font-size:9px;display:inline;margin-right:5px}
 .bone-acq-card progress{height:5px;width:100%;accent-color:#53d990;align-self:center}
 @media(min-width:901px){
@@ -851,14 +851,14 @@
           #gantryLive.final-preview label:has(#bonePersistence),#gantryLive.final-preview #bonePause,#gantryLive.final-preview #boneClear{display:none!important}
           #gantryLive.final-preview #boneSignalMode{width:280px;max-width:100%}
           #gantryLive.final-preview .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
-          #gantryLive.final-preview .live-card{grid-template-columns:1fr;grid-template-rows:20px minmax(0,1fr) 40px}
+          #gantryLive.final-preview .live-card{grid-template-columns:1fr;grid-template-rows:20px minmax(0,1fr) 60px}
           #gantryLive.final-preview .bone-card-title{display:block}
-          #gantryLive.final-preview .live-info{display:block;font-size:10px}
+          #gantryLive.final-preview .live-info{display:block;font-size:10px;white-space:pre-line}
           #gantryLive.final-preview{height:clamp(440px,62vh,620px)}
           #finalPreviewStatus{color:#9ee7c9}
           </style>
           <div id="finalPreviewControls" class="bone-signal-controls" hidden aria-label="Imagen final con las condiciones actuales">
-            <label>PREVER POR <select id="finalPreviewCriterion" class="live-study"><option value="time">Tiempo de adquisición</option><option value="counts">Número de cuentas</option></select></label>
+            <label>PREVER POR <select id="finalPreviewCriterion" class="live-study"><option value="time">Tiempo de adquisición</option><option value="counts">Cuentas totales</option></select></label>
             <label>OBJETIVO <input id="finalPreviewTarget" type="number" min="1" max="3600" step="1" value="60" aria-label="Objetivo de imagen final"></label>
             <span id="finalPreviewUnits">segundos por detector</span>
             <button id="finalPreviewNoise" class="live-setting" type="button">Nueva muestra de ruido</button>
@@ -882,9 +882,9 @@
               <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
               <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label id="boneAcqVelocityWrap" hidden>Velocidad de camilla <input id="boneAcqVelocity" type="number" min="1" max="60" step="0.5" value="10" required disabled> cm/min</label>
-              <label id="boneAcqCriterionWrap">Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
+              <label id="boneAcqCriterionWrap">Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas totales objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label id="boneAcqTargetWrap">Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
-              <span id="boneAcqUnits">cuentas por detector</span>
+              <span id="boneAcqUnits">cuentas totales por detector</span>
               <button id="boneAcqBegin" class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
               <span id="boneAcqSetupError" role="alert"></span>
             </form>
@@ -5750,7 +5750,7 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="assets/runtime/image.3861454422d07e6c.png";
 <script src="assets/runtime/mibi-kinetics-engine.40358a5028ab51c0.js"></script>
 <!-- MIBI_KINETICS_END -->
 <!-- FINAL_PREVIEW_BEGIN -->
-<script src="assets/runtime/final-preview.2d16778bb5b5fe02.js"></script>
+<script src="assets/runtime/final-preview.5232e57b7e30c9ec.js"></script>
 <!-- FINAL_PREVIEW_END -->
 <!-- ICRP145_BEGIN -->
 <script>
@@ -6495,7 +6495,16 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       'X por altura: '+(heightShiftPx>=0?'+':'')+heightShiftPx.toFixed(0)+' px<br>'+
       '<span class="'+(Math.abs(metrics.energy.centerOffset)<=1?'accent':'warn')+'">E '+
       metrics.energy.center.toFixed(0)+' keV · '+metrics.energy.width+'%</span>';
-    if(!preview&&activeStudy().linear&&acquisition.study!=='mag3')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
+    if(!preview&&activeStudy().linear&&acquisition.study!=='mag3'){
+      const live=boneSignal.mode==='live',pixels=target.linearField.values.length;
+      const total=live?meta.windowCounts:meta.expectedRate;
+      const mean=(total/pixels).toLocaleString('es-CL',{maximumSignificantDigits:3});
+      target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+
+        (live?'Total en ventana: '+total.toLocaleString('es-CL')+' cuentas / '+boneSignal.duration+' s':'Tasa total esperada: '+Math.round(total).toLocaleString('es-CL')+' cuentas/s')+
+        '<br>Media: '+mean+(live?' cuentas/píxel':' cuentas/píxel/s')+' · matriz '+acquisition.matrix+'×'+acquisition.matrix+' completa'+
+        (live?'<br>Tasa total esperada: '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' cuentas/s':'');
+      target.info.title='Media = cuentas totales divididas por todos los píxeles de la matriz, incluido el fondo y los píxeles con cero cuentas. No es el valor de un píxel particular ni la media de un órgano.';
+    }
     return meta;
   }
 
@@ -8433,7 +8442,10 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     shown.heads.forEach((h,j)=>{
       draw(h,j,shown.n,shown.height||shown.n);
       const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+' · '+(labels[shown.study||shown.settings?.study||'bone']||'Estudio')+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
-      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada · M'+shown.n:h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+(shown.kind==='whole'?' · '+shown.n+'×'+shown.height:'');
+      const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
+      el('boneAcqInfo'+(j+1)).title='Media = total dividido por todos los píxeles de esta adquisición, incluidos fondo y ceros. Se usa la matriz guardada, no la matriz seleccionada para la próxima adquisición.';
+      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+
+        '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa';
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
     });
@@ -8518,7 +8530,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   el('boneAcqCriterion').onchange=()=>{
     const counts=el('boneAcqCriterion').value==='counts';
     el('boneAcqTarget').value=counts?'100000':'60';el('boneAcqTarget').max=counts?'10000000':'3600';
-    el('boneAcqUnits').textContent=counts?'cuentas por detector':'segundos por detector';el('boneAcqSetupError').textContent='';
+    el('boneAcqUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';el('boneAcqSetupError').textContent='';
   };
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
   el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';clock=performance.now();paint(true);};

@@ -191,7 +191,10 @@
     shown.heads.forEach((h,j)=>{
       draw(h,j,shown.n,shown.height||shown.n);
       const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+' · '+(labels[shown.study||shown.settings?.study||'bone']||'Estudio')+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
-      el('boneAcqInfo'+(j+1)).textContent=format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada · M'+shown.n:h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+(shown.kind==='whole'?' · '+shown.n+'×'+shown.height:'');
+      const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
+      el('boneAcqInfo'+(j+1)).title='Media = total dividido por todos los píxeles de esta adquisición, incluidos fondo y ceros. Se usa la matriz guardada, no la matriz seleccionada para la próxima adquisición.';
+      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+
+        '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa';
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
     });
@@ -276,7 +279,7 @@
   el('boneAcqCriterion').onchange=()=>{
     const counts=el('boneAcqCriterion').value==='counts';
     el('boneAcqTarget').value=counts?'100000':'60';el('boneAcqTarget').max=counts?'10000000':'3600';
-    el('boneAcqUnits').textContent=counts?'cuentas por detector':'segundos por detector';el('boneAcqSetupError').textContent='';
+    el('boneAcqUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';el('boneAcqSetupError').textContent='';
   };
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
   el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';clock=performance.now();paint(true);};

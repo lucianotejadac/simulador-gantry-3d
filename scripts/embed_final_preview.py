@@ -15,14 +15,14 @@ ui='''<!-- FINAL_PREVIEW_UI_BEGIN -->
           #gantryLive.final-preview label:has(#bonePersistence),#gantryLive.final-preview #bonePause,#gantryLive.final-preview #boneClear{display:none!important}
           #gantryLive.final-preview #boneSignalMode{width:280px;max-width:100%}
           #gantryLive.final-preview .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(0,1fr)}
-          #gantryLive.final-preview .live-card{grid-template-columns:1fr;grid-template-rows:20px minmax(0,1fr) 40px}
+          #gantryLive.final-preview .live-card{grid-template-columns:1fr;grid-template-rows:20px minmax(0,1fr) 60px}
           #gantryLive.final-preview .bone-card-title{display:block}
-          #gantryLive.final-preview .live-info{display:block;font-size:10px}
+          #gantryLive.final-preview .live-info{display:block;font-size:10px;white-space:pre-line}
           #gantryLive.final-preview{height:clamp(440px,62vh,620px)}
           #finalPreviewStatus{color:#9ee7c9}
           </style>
           <div id="finalPreviewControls" class="bone-signal-controls" hidden aria-label="Imagen final con las condiciones actuales">
-            <label>PREVER POR <select id="finalPreviewCriterion" class="live-study"><option value="time">Tiempo de adquisición</option><option value="counts">Número de cuentas</option></select></label>
+            <label>PREVER POR <select id="finalPreviewCriterion" class="live-study"><option value="time">Tiempo de adquisición</option><option value="counts">Cuentas totales</option></select></label>
             <label>OBJETIVO <input id="finalPreviewTarget" type="number" min="1" max="3600" step="1" value="60" aria-label="Objetivo de imagen final"></label>
             <span id="finalPreviewUnits">segundos por detector</span>
             <button id="finalPreviewNoise" class="live-setting" type="button">Nueva muestra de ruido</button>

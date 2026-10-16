@@ -27,10 +27,10 @@ css='''
 .bone-whole-body .live-card:not(.bone-acq-card) canvas{max-height:100%;width:100%;height:auto;object-fit:contain}
 .gantry-live.bone-acquisition{height:clamp(355px,48vh,430px)}
 .bone-acquisition .gantry-live-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-.bone-acquisition .live-card{grid-template-columns:1fr;grid-template-rows:18px minmax(0,1fr) 35px}
-.bone-acquisition .bone-acq-card{display:grid;grid-template-rows:18px minmax(0,1fr) 5px 30px}
+.bone-acquisition .live-card{grid-template-columns:1fr;grid-template-rows:18px minmax(0,1fr) 62px}
+.bone-acquisition .bone-acq-card{display:grid;grid-template-rows:18px minmax(0,1fr) 5px 55px}
 .bone-acquisition .bone-card-title{display:block;font:700 10px var(--mono);color:#87dcc1;margin:3px 6px;white-space:nowrap}
-.bone-acquisition .live-info{display:block;border-left:0;border-top:1px solid #273745;padding:3px 6px;font-size:9px;line-height:1.3}
+.bone-acquisition .live-info{display:block;border-left:0;border-top:1px solid #273745;padding:3px 6px;font-size:9px;line-height:1.3;white-space:pre-line}
 .bone-acquisition .live-info b{font-size:9px;display:inline;margin-right:5px}
 .bone-acq-card progress{height:5px;width:100%;accent-color:#53d990;align-self:center}
 @media(min-width:901px){
@@ -88,9 +88,9 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
               <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
               <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label id="boneAcqVelocityWrap" hidden>Velocidad de camilla <input id="boneAcqVelocity" type="number" min="1" max="60" step="0.5" value="10" required disabled> cm/min</label>
-              <label id="boneAcqCriterionWrap">Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
+              <label id="boneAcqCriterionWrap">Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas totales objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label id="boneAcqTargetWrap">Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
-              <span id="boneAcqUnits">cuentas por detector</span>
+              <span id="boneAcqUnits">cuentas totales por detector</span>
               <button id="boneAcqBegin" class="live-setting" type="submit">Comenzar</button><button id="boneAcqCancel" class="live-setting" type="button">Cancelar</button>
               <span id="boneAcqSetupError" role="alert"></span>
             </form>

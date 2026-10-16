@@ -65,7 +65,7 @@
     wasActive=on;
     if(!on){token++;clearTimeout(timer);key='';display=null;latest=null;}
   }
-  function units(){const counts=el('finalPreviewCriterion').value==='counts';el('finalPreviewTarget').max=counts?'10000000':'3600';el('finalPreviewUnits').textContent=counts?'cuentas por detector':'segundos por detector';}
+  function units(){const counts=el('finalPreviewCriterion').value==='counts';el('finalPreviewTarget').max=counts?'10000000':'3600';el('finalPreviewUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';}
   function prepare(images,state){
     return images.map((result,j)=>{
       const n=Math.round(Math.sqrt(result.counts.length)),buffer=document.createElement('canvas');buffer.width=buffer.height=n;
@@ -74,7 +74,10 @@
       for(let i=0;i<result.counts.length;i++){const v=Math.round(255*(result.counts[i]/peak)**.72);im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=v;im.data[i*4+3]=255;}
       out.putImageData(im,0,0);
       const meta=state?.['d'+(j+1)];
-      const caption=result.total.toLocaleString('es-CL')+' cuentas simuladas · '+clock(result.elapsed)+(result.mode==='counts'?' estimados':'')+(meta?' · a piel '+meta.effectiveDistance.toFixed(1)+' cm':'')+(!result.reached?' · objetivo no alcanzable dentro del modelo':'');
+      const mean=(result.total/result.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
+      const caption='Total: '+result.total.toLocaleString('es-CL')+' cuentas simuladas · '+clock(result.elapsed)+(result.mode==='counts'?' estimados':'')+
+        '\nMedia: '+mean+' cuentas/píxel · matriz '+n+'×'+n+' completa'+
+        (meta?' · a piel '+meta.effectiveDistance.toFixed(1)+' cm':'')+(!result.reached?' · objetivo no alcanzable dentro del modelo':'');
       return {buffer,caption};
     });
   }
@@ -82,6 +85,7 @@
     if(!active()||!latest)return;
     latest.targets.forEach((target,j)=>{
       const canvas=target.canvas,frame=display?.[j];
+      target.info.title='Media = total dividido por todos los píxeles de la imagen, incluidos fondo y ceros. No es una medida de un órgano ni de un píxel particular.';
       if(!frame){target.info.textContent=el('finalPreviewStatus').textContent;return;}
       const previous=painted.get(canvas);
       if(previous?.frame!==frame||previous.width!==canvas.width||previous.height!==canvas.height){
