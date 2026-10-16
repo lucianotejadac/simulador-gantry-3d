@@ -57,6 +57,12 @@ function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;
  assert(framing.flipped.x<0&&framing.flipped.y>0);assert.equal(framing.margin,false);assert.equal(framing.clicked,true);
  assert.equal(framing.pointer.x,.25);assert.equal(framing.pointer.y,-.25);assert.equal(framing.other.x,0);assert.equal(framing.enabled,false);
  const geometry=window.GANTRY_LIVE.mag3Geometry(2,window.GANTRY.G);assert.equal(geometry.rawAngle,180);
+ // Dose scales every dynamic frame and its expectation, not just a caption.
+ const doseSession=factor=>({n:128,geometry,cache:{},time:0,activityFactor:factor,counts:new Uint32Array(128*128),frameCounts:new Uint32Array(128*128),expected:new Float64Array(128*128),total:0,expectedTotal:0,frameIndex:0,frames:[],random:seeded()});
+ const lowDose=doseSession(1),highDose=doseSession(2);api.accumulate(lowDose,60);api.accumulate(highDose,60);
+ assert.equal(highDose.expectedTotal,lowDose.expectedTotal*2);
+ for(let i=0;i<lowDose.expected.length;i++)assert.equal(highDose.expected[i],lowDose.expected[i]*2);
+ assert.equal(highDose.frames.length,lowDose.frames.length);
  const coeff=api.coefficients(1200);assert(coeff.every(v=>v>=0));
  const s={n:128,geometry,cache:{},time:0,counts:new Uint32Array(128*128),frameCounts:new Uint32Array(128*128),expected:new Float64Array(128*128),
    total:0,expectedTotal:0,frameIndex:0,frames:[],random:seeded()};

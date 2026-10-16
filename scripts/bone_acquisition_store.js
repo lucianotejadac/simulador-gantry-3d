@@ -3,7 +3,8 @@
   'use strict';
   function snapshot(session,names,settings,now=Date.now(),id=crypto.randomUUID()){
     return {version:1,id,createdAt:now,n:session.n,height:session.height||session.n,kind:session.kind||'static',mode:session.mode,target:session.target,
-      study:session.study||settings.study||'bone',finished:session.finished,names:names.slice(),settings:structuredClone(settings),
+      study:session.study||settings.study||'bone',finished:session.finished,names:names.slice(),settings:structuredClone({...settings,...(session.administeredActivity?{administeredActivity:session.administeredActivity}:{})}),
+      ...(session.administeredActivity?{administeredActivity:structuredClone(session.administeredActivity)}:{}),
       ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mibiStart?{mibi:{start:structuredClone(session.mibiStart),end:structuredClone(session.mibiEnd||session.mibiStart),limit:!!session.mibiLimit}}:{}),
       ...(session.mode==='scan'?{scan:{velocity:session.velocity,travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),

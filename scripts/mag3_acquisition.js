@@ -54,7 +54,7 @@
   function accumulate(s,end){
     end=Math.min(end,data.duration);const bases=fields(s.geometry,s.n,s.cache);
     while(s.time<end-1e-9){
-      const stop=Math.min(end,data.edges[s.frameIndex+1]),a=coefficients(s.time),b=coefficients(stop),lambda=mix(bases,a.map((v,c)=>b[c]-v));
+      const stop=Math.min(end,data.edges[s.frameIndex+1]),a=coefficients(s.time),b=coefficients(stop),lambda=mix(bases,a.map((v,c)=>(b[c]-v)*(s.activityFactor??1)));
       for(let i=0;i<lambda.length;i++)s.expected[i]+=lambda[i];
       s.total+=poissonEvents(lambda,s.counts,s.frameCounts,s.random);s.expectedTotal+=lambda.reduce((a,b)=>a+b,0);
       s.time=stop;
@@ -88,6 +88,7 @@
   function phase(t){return t<60?'Fase vascular / arterial':'Captación y excreción';}
   function labelTime(t){return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');}
   function refresh(){
+    window.GANTRY_ACTIVITY?.render();
     syncPanel();if(!session||!panel||panel.hidden)return;const s=session,d=panel.shadowRoot,g=s.geometry,gain=Number(d.getElementById('gain').value);
     d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
     d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';d.getElementById('pause').disabled=s.finished;
@@ -97,7 +98,7 @@
     draw(d.getElementById('sum'),s.counts,s.n,gain);draw(d.getElementById('current'),f?f.counts:s.frameCounts,s.n,gain);
     d.getElementById('frameStatus').textContent=f?phase(f.start)+' · '+labelTime(f.start)+'–'+labelTime(f.end):s.finished?'Adquisición terminada; selecciona un cuadro guardado':phase(s.time)+' · cuadro '+(s.frameIndex+1)+' en curso';
   }
-  function saveJSON(){const s=session,object={tracer:'99mTc-MAG3',study:'basal',arterialModel:data.arterial,duration:s.time,detector:s.detector,matrix:s.n,total:s.total,
+  function saveJSON(){const s=session,object={tracer:'99mTc-MAG3',study:'basal',administeredActivity:s.administeredActivity,arterialModel:data.arterial,duration:s.time,detector:s.detector,matrix:s.n,total:s.total,
     sum:Array.from(s.counts),frames:s.frames.map(f=>({...f,counts:Array.from(f.counts)})),partial:{start:data.edges[s.frameIndex],end:s.time,counts:Array.from(s.frameCounts)},
     geometryHistory:s.history,coordinateSystem:'Detector pixels, no motion correction',reference:data.reference};
     const url=URL.createObjectURL(new Blob([JSON.stringify(object)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='mag3_basal_adquisicion.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -123,6 +124,7 @@
     const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
     const n=window.GANTRY_LIVE.settings.matrix,geometry=detector===1?g1:g2;
     session={detector,n,geometry,cache:{},time:0,lastClock:performance.now(),speed:1,paused:false,finished:false,
+      administeredActivity:window.GANTRY_ACTIVITY?.metadata('mag3')||null,activityFactor:window.GANTRY_ACTIVITY?.factor('mag3')??1,
       counts:new Uint32Array(n*n),frameCounts:new Uint32Array(n*n),expected:new Float64Array(n*n),total:0,expectedTotal:0,frameIndex:0,frames:[],history:[{time:0,geometry}]};
     const d=panel.shadowRoot;
     for(const id of ['sum','current']){
@@ -140,13 +142,15 @@
   const liveCaches=[{},{}];
   function renderHead(target,G){
     const g=window.GANTRY_LIVE.mag3Geometry(target.n,G),n=window.GANTRY_LIVE.settings.matrix,time=session?session.time:0;
-    const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time));draw(target.canvas,values,n);
-    target.info.textContent='DETECTOR '+target.n+' · MAG3 basal · '+Math.round(g.rawAngle)+'° · '+labelTime(time)+' · señal esperada';
-    return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate:values.reduce((a,b)=>a+b,0)};
+    const factor=session?.activityFactor??window.GANTRY_ACTIVITY?.factor('mag3')??1;
+    const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time).map(v=>v*factor));draw(target.canvas,values,n);
+    const expectedRate=values.reduce((a,b)=>a+b,0);
+    target.info.textContent='DETECTOR '+target.n+' · MAG3 basal · '+Math.round(g.rawAngle)+'° · '+labelTime(time)+' · '+Math.round(expectedRate).toLocaleString('es-CL')+' cuentas/s esperadas';
+    return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate};
   }
   button.onclick=inject;
   window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,stateChanged,renderHead,
-    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,matrix:session.n};},
+    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,matrix:session.n,administeredActivity:session.administeredActivity};},
     // Pure numerical entry points used by offline acquisition tests.
     coefficients,fields,mix,accumulate,poissonEvents,data};
   setInterval(()=>{if(!session)return;

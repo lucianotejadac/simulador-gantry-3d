@@ -138,6 +138,7 @@
   function paint(force=false){
     window.GANTRY_MDP?.render();
     window.GANTRY_MIBI?.render();
+    window.GANTRY_ACTIVITY?.render();
     const active=supported(study),running=!!session&&!session.finished;
     const displayWhole=(archive||session)?.kind==='whole'||(!archive&&!session&&kind()==='whole');
     el('gantryLive').classList.toggle('bone-whole-body',active&&displayWhole&&window.GANTRY_LIVE?.signal?.mode!=='final');
@@ -241,11 +242,13 @@
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
     session.study=study;
+    session.administeredActivity=window.GANTRY_ACTIVITY?.metadata(study)||null;
     if(study==='bone'&&window.GANTRY_MDP)session.mdpStart=window.GANTRY_MDP.begin();
     if(study==='mibi'&&window.GANTRY_MIBI)session.mibiStart=window.GANTRY_MIBI.begin();
     names=nextNames;archive=null;selection++;el('boneAcqSaved').value='current';
     el('boneAcqCacheStatus').textContent='Adquisición actual sin guardar';
     clock=performance.now();speed=1;paused=false;note='';el('boneAcqSpeed').value='1';
+    window.GANTRY_ACTIVITY?.render();
     el('boneAcqSetup').hidden=true;el('boneAcqSetupError').textContent='';paint(true);
   }
   async function instant(){

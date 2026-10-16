@@ -13,7 +13,7 @@ else:s=s.replace('<!-- ICRP145_BEGIN -->',block+'<!-- ICRP145_BEGIN -->',1)
 ui='''<!-- MDP_UI_BEGIN -->
           <style>.bone-signal-controls label[hidden],#mdpControls[hidden]{display:none!important}#mdpControls input[type=number]{background:#0e1820;color:#d6e6ef;border:1px solid #42586b;font:inherit;padding:3px}#mdpControls input[type=checkbox]{width:auto}</style>
           <div id="mdpControls" class="bone-signal-controls" hidden aria-label="Actividad y biodistribución del MDP">
-            <label>ACTIVIDAD INYECTADA <input id="mdpActivity" type="number" min="0.1" max="2000" step="any" value="740" style="width:65px" aria-label="Actividad inyectada MDP"><select id="mdpUnit" class="live-study" aria-label="Unidad de actividad"><option>MBq</option><option>mCi</option></select></label>
+            <label>ACTIVIDAD INYECTADA <input id="mdpActivity" type="number" min="0.1" max="54.054054" step="any" value="20" style="width:65px" aria-label="Actividad inyectada MDP"><select id="mdpUnit" class="live-study" aria-label="Unidad de actividad"><option>mCi</option><option>MBq</option></select></label>
             <label>INYECCIÓN–EXAMEN <input id="mdpMinutes" type="number" min="0" max="180" step="any" value="120" style="width:65px" aria-label="Minutos desde inyección"> min</label>
             <input id="mdpTimeline" type="range" min="0" max="10800" step="1" value="7200" aria-label="Tiempo MDP de 0 a 180 minutos" style="width:150px">
             <button id="mdpPlay" class="live-setting" type="button">Reproducir 0–3 h</button>

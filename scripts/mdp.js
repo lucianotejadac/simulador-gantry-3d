@@ -93,7 +93,7 @@
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;
     el('mdpControls').hidden=!active;
-    if(el('boneCountRate'))el('boneCountRate').closest('label').hidden=active||(window.GANTRY_LIVE?.settings.study==='mibi'&&!!window.GANTRY_MIBI);
+    if(el('boneCountRate'))el('boneCountRate').closest('label').hidden=true;
     for(const id of ['mdpActivity','mdpUnit','mdpMinutes','mdpTimeline','mdpPlay','mdpSpeed','mdpVoid'])el(id).disabled=!!locked;
     if(window.GANTRY_LIVE?.signal?.mode==='final')el('mdpPlay').disabled=true;
     if(document.activeElement!==el('mdpMinutes'))el('mdpMinutes').value=(state.seconds/60).toFixed(2);

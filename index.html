@@ -586,10 +586,11 @@
 </style>
 <!-- FAST_LOAD_BEGIN -->
 <link rel="preload" href="assets/runtime/final-preview.0cfe3609d191eb7a.js" as="script">
-<link rel="preload" href="assets/runtime/mdp-engine.08dd9f09004be7fb.js" as="script">
+<link rel="preload" href="assets/runtime/mdp-engine.d69bf7cfce54b6a4.js" as="script">
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.bf8c45dca62cead8.js" as="script">
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/pixel-grid.6caaccd40a9f43b3.js" as="script">
+<link rel="preload" href="assets/runtime/study-activity.ca085acb56fae58a.js" as="script">
 <link rel="preload" href="assets/runtime/symbia-equipment.00d804382ee47ab2.bin" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/symbia-room.40a36f2a15b3e0bc.bin" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/three-bundle.9848023754a347b2.js" as="script">
@@ -867,10 +868,20 @@
             <button id="boneClear" type="button" class="live-setting">Limpiar</button>
             <span id="boneSignalStatus" role="status">ICRP 145 · captación simulada</span>
           </div>
+<!-- STUDY_ACTIVITY_UI_BEGIN -->
+<style>#studyActivityControls[hidden],#studyActivityControls [hidden]{display:none!important}#studyActivityControls input{width:70px;background:#0e1820;color:#d6e6ef;border:1px solid #42586b;font:inherit;padding:3px}</style>
+<div id="studyActivityControls" class="bone-signal-controls" hidden aria-label="Actividad administrada del estudio">
+  <label><span id="studyActivityLabel">ACTIVIDAD INYECTADA</span>
+    <input id="studyActivity" type="number" min="0.001" max="54.054" step="any" value="5" aria-label="Actividad administrada">
+    <select id="studyActivityPreset" class="live-study" hidden aria-label="Actividad oral I-131"><option value="50">50</option><option value="100">100</option><option value="150">150</option><option value="200">200</option></select>
+    <select id="studyActivityUnit" class="live-study" aria-label="Unidad de actividad del estudio"><option>mCi</option><option>MBq</option></select>
+  </label><span id="studyActivityInfo"></span><span id="studyActivityNote" style="flex-basis:100%;font-size:9px;color:#a9bdce"></span>
+</div>
+<!-- STUDY_ACTIVITY_UI_END -->
 <!-- MDP_UI_BEGIN -->
           <style>.bone-signal-controls label[hidden],#mdpControls[hidden]{display:none!important}#mdpControls input[type=number]{background:#0e1820;color:#d6e6ef;border:1px solid #42586b;font:inherit;padding:3px}#mdpControls input[type=checkbox]{width:auto}</style>
           <div id="mdpControls" class="bone-signal-controls" hidden aria-label="Actividad y biodistribución del MDP">
-            <label>ACTIVIDAD INYECTADA <input id="mdpActivity" type="number" min="0.1" max="2000" step="any" value="740" style="width:65px" aria-label="Actividad inyectada MDP"><select id="mdpUnit" class="live-study" aria-label="Unidad de actividad"><option>MBq</option><option>mCi</option></select></label>
+            <label>ACTIVIDAD INYECTADA <input id="mdpActivity" type="number" min="0.1" max="54.054054" step="any" value="20" style="width:65px" aria-label="Actividad inyectada MDP"><select id="mdpUnit" class="live-study" aria-label="Unidad de actividad"><option>mCi</option><option>MBq</option></select></label>
             <label>INYECCIÓN–EXAMEN <input id="mdpMinutes" type="number" min="0" max="180" step="any" value="120" style="width:65px" aria-label="Minutos desde inyección"> min</label>
             <input id="mdpTimeline" type="range" min="0" max="10800" step="1" value="7200" aria-label="Tiempo MDP de 0 a 180 minutos" style="width:150px">
             <button id="mdpPlay" class="live-setting" type="button">Reproducir 0–3 h</button>
@@ -883,7 +894,7 @@
 <!-- MIBI_KINETICS_UI_BEGIN -->
           <style>#mibiControls[hidden],#mibiPharmNote[hidden]{display:none!important}#mibiControls input[type=number]{background:#0e1820;color:#d6e6ef;border:1px solid #42586b;font:inherit;padding:3px}#mibiControls input[type=checkbox]{width:auto}#mibiTiming{flex-basis:100%;color:#98e6be}#mibiTiming[data-phase=early],#mibiTiming[data-phase=delayed]{color:#ffd288}#mibiTiming[data-phase=prolonged]{color:#ffb2a1}@media(min-width:901px){.gantry-live.bone-acquisition:has(#mibiControls:not([hidden])){height:clamp(440px,60vh,600px)}}</style>
           <div id="mibiControls" class="bone-signal-controls" hidden aria-label="Actividad y biodistribución del MIBI cardíaco">
-            <label>ACTIVIDAD INYECTADA <input id="mibiActivity" type="number" min="0.1" max="2000" step="any" value="740" style="width:65px" aria-label="Actividad inyectada MIBI"><select id="mibiUnit" class="live-study" aria-label="Unidad MIBI"><option>MBq</option><option>mCi</option></select></label>
+            <label>ACTIVIDAD INYECTADA <input id="mibiActivity" type="number" min="0.1" max="54.054054" step="any" value="20" style="width:65px" aria-label="Actividad inyectada MIBI"><select id="mibiUnit" class="live-study" aria-label="Unidad MIBI"><option>mCi</option><option>MBq</option></select></label>
             <label>PROTOCOLO <select id="mibiProtocol" class="live-study" aria-label="Protocolo MIBI"><option value="rest">Reposo</option><option value="exercise">Ejercicio</option><option value="pharmacologic">Estrés farmacológico</option></select></label>
             <label>INYECCIÓN–EXAMEN <input id="mibiMinutes" type="number" min="0" max="720" step="any" value="60" style="width:65px" aria-label="Minutos desde inyección MIBI"> min</label>
             <input id="mibiTimeline" type="range" min="0" max="43200" step="1" value="3600" aria-label="Tiempo MIBI de 0 a 12 horas" style="width:150px">
@@ -1674,9 +1685,12 @@ window.GANTRY_LIVE_ATLAS_OSEO="assets/runtime/image.cbce9545efb9ce1f.png";
 window.GANTRY_LIVE_ATLAS_OSEO_UP="assets/runtime/image.3861454422d07e6c.png";
 </script>
 <!-- Motor de imagen en vivo incorporado. -->
+<!-- STUDY_ACTIVITY_BEGIN -->
+<script src="assets/runtime/study-activity.ca085acb56fae58a.js"></script>
+<!-- STUDY_ACTIVITY_END -->
 <!-- MDP_BEGIN -->
 <script>window.GANTRY_MDP_DATA={"width":160,"height":384,"pixelMm":6,"angles":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,350,351,352,353,354,355,356,357,358,359],"headRow":84.49215499999998,"footRow":377.8333333333333,"organAngles":[0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200,210,220,230,240,250,260,270,280,290,300,310,320,330,340,350],"components":["bone","blood","soft","kidneys","bladder","central","lungs","arteries"],"poses":{"down":{"bone":{"url":"assets/runtime/mdp-bone-down.eb8ae812f21dec21.bin","scales":[3.1688285329067867e-09]},"organs":{"url":"assets/runtime/mdp-organs-down.23220c63ee0b95ef.bin","scales":[9.601552442006778e-09,8.006708629437753e-10,3.64779637607171e-08,6.899700366602701e-08,2.670099163992745e-08,1.2494886014735584e-08,3.191201969343638e-08]}},"up":{"bone":{"url":"assets/runtime/mdp-bone-up.d9041d9b79ef7df1.bin","scales":[3.1622091611893666e-09]},"organs":{"url":"assets/runtime/mdp-organs-up.29b6278dd71a4271.bin","scales":[9.601552442006778e-09,8.006708629437753e-10,3.730846032112822e-08,6.899700366602701e-08,2.670099163992745e-08,1.2494886014735584e-08,3.191201969343638e-08]}}},"boneEmission":{"model":"continuous-skeletal-envelope-v1","voxelMm":3,"surfaceDepthMm":3,"falloffMm":3,"partialVolumeSigmaMm":1.5},"sensitivityCpsPerMBq":100,"halfLifeMinutes":360.40200000000004,"sources":["https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3c91d0d8-6cc5-834c-bda0-aa83a873b9fb","https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/"],"limitations":"Educational kinetics and assumed 100 cps/MBq LEHR sensitivity before attenuation; not a measured camera calibration. ICRP anatomy, not ICRP pharmacokinetics. Continuous skeletal-envelope emission is an educational visual model, not measured regional uptake. 6 mm spatial sampling. Bone: 360 independently projected 1 degree views. Other organ bases retain 10 degree sampling with angular interpolation. Synthetic articulated arms.","sourceHashes":{"simulador-renograma-mc\\salida_osea\\cuerpo.npz":"3559086d50328d939cb59960639946a46eb15fa5817e895e80bfddc11a6ef7db","icrp145-oseo-360\\brazos-arriba\\volumen_articulado.npz":"3a8967f4f9c6878f93ad1cf92dbf9f96998c8dc1f0c3913f6552e01dc0a6cbfc","icrp145-oseo-360\\correccion_huesos_largos.npz":"af3bb5ca3caed846600e52c81898890be8295b91f5cfdc8a1fded1143310dc29","simulador-gantry-3d\\scripts\\bone_emission.py":"4f4578ff631810274e1aafd0d0b8cc63df6c1c9d91e92de6482b6b31a08a5702","simulador-gantry-3d\\assets\\runtime\\mag3-down.ec5cc8b444b45139.deflate":"ec5cc8b444b451391c1320b7e831424f07c1d1fe44c0476f40625ba1ad2c3fb8","simulador-gantry-3d\\assets\\runtime\\mag3-up.d22362c762fc09e0.deflate":"d22362c762fc09e04c89aea126400893e31f284cad225ca80d45160f2c4d69c5"}};</script>
-<script src="assets/runtime/mdp-engine.08dd9f09004be7fb.js"></script>
+<script src="assets/runtime/mdp-engine.d69bf7cfce54b6a4.js"></script>
 <!-- MDP_END -->
 <!-- MIBI_KINETICS_BEGIN -->
 <script>window.GANTRY_MIBI_DATA={"width":160,"height":384,"pixelMm":6,"angles":[0,10,20,30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200,210,220,230,240,250,260,270,280,290,300,310,320,330,340,350],"headRow":84.49215499999998,"footRow":377.8333333333333,"components":["heart","blood","soft","liver","gallbladder","smallIntestine","colon","kidneys","bladder","glands"],"scales":[6.463119461841416e-08,9.601552442006778e-09,8.006708629437753e-10,1.1674387678795028e-08,1.863084406750204e-07,2.502845042329227e-08,5.474968745033948e-08,3.730846032112822e-08,6.899700366602701e-08,1.1436726055080726e-07],"url":"assets/runtime/mibi-kinetic-up.f4ee84c4f3c1348f.bin","posture":"Arms up; derived ICRP 145 anatomy, same enlarged asymmetric LV as existing cardiac MIBI","sensitivityCpsPerMBq":100,"halfLifeMinutes":360.402,"maxMinutes":720,"limitations":"Educational compartment kinetics, not a measured camera calibration. LV is a synthetic emitter inside the ICRP cardiac envelope. 6 mm spatial sampling, 10 degree views. Pharmacologic-stress kinetics use rest as an explicit approximation.","sources":["https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87","https://www.asnc.org/wp-content/uploads/2024/06/ASNC-SPECT-ProtocolsTracers-Guidelines2016.pdf"],"sourceHashes":{"icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\miocardio_3d.npz":"fdbc5ab65630c22758248b3947cfd879328f52e1f070d9b2f955ef01a9ef4a04","icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\volumen_mibi_brazos_arriba.npz":"a88cfbc5082614939d636ca877e85c6263629009047c5316bf5330b2cf382834","icrp145-multitrazador-ap-pa\\organos_3mm.npz":"c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b","simulador-gantry-3d\\assets\\runtime\\mag3-up.d22362c762fc09e0.deflate":"d22362c762fc09e04c89aea126400893e31f284cad225ca80d45160f2c4d69c5"}};</script>
@@ -1906,7 +1920,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     },
     exploration:{
       atlasKey:'exploration',linear:true,angles:window.GANTRY_ICRP_DATA.exploration.angles,
-      id:'exploration',label:'I-131 postratamiento',tracer:'I-131 · ICRP 145 · POSTRATAMIENTO · DÍA 5',
+      id:'exploration',label:'I-131 postratamiento',tracer:'I-131 ORAL · ICRP 145 · POSTRATAMIENTO · DÍA 7',
       energy:'high',photopeak:364,energyRange:[80,450],energyResolution:.10,
       scatterBase:0.3,recommendedCollimator:'HE',ready:false,error:false
     },
@@ -1971,7 +1985,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     targets.forEach(target=>{if(target.persistence)target.persistence.reset();});
     boneSignal.time=0;boneLastClock=performance.now();
   }
-  function effectiveCountRate(){return acquisition.study==='mibi'&&window.GANTRY_MIBI?window.GANTRY_MIBI.rate:acquisition.study==='bone'&&window.GANTRY_MDP?window.GANTRY_MDP.rate:boneSignal.rate;}
+  function effectiveCountRate(){const activityRate=window.GANTRY_ACTIVITY?.rate(acquisition.study);if(activityRate!=null)return activityRate;return acquisition.study==='mibi'&&window.GANTRY_MIBI?window.GANTRY_MIBI.rate:acquisition.study==='bone'&&window.GANTRY_MDP?window.GANTRY_MDP.rate:boneSignal.rate;}
   function syncBoneControls(){
     window.GANTRY_MDP?.render();
     window.GANTRY_MIBI?.render();
@@ -1999,7 +2013,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     }
     boneSignal.mode=['reference','final'].includes(mode)?mode:'live';clearPersistence();refreshBone();
   }
-  function setCountRate(rate){if(acquisition.study==='mibi'&&window.GANTRY_MIBI)return;if(acquisition.study==='bone'&&window.GANTRY_MDP)return;if([1000,4000,15000,50000].includes(Number(rate)))boneSignal.rate=Number(rate);clearPersistence();refreshBone();}
+  function setCountRate(rate){if(window.GANTRY_ACTIVITY?.metadata(acquisition.study))return;if(acquisition.study==='mibi'&&window.GANTRY_MIBI)return;if(acquisition.study==='bone'&&window.GANTRY_MDP)return;if([1000,4000,15000,50000].includes(Number(rate)))boneSignal.rate=Number(rate);clearPersistence();refreshBone();}
   function setPersistence(seconds){boneSignal.duration=Math.max(.25,Math.min(5,Number(seconds)||.75));refreshBone();}
   function setSignalPaused(paused){boneSignal.paused=!!paused;boneLastClock=performance.now();refreshBone();}
   boneControls.mode.onchange=()=>setSignalMode(boneControls.mode.value);
@@ -3840,7 +3854,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   function accumulate(s,end){
     end=Math.min(end,data.duration);const bases=fields(s.geometry,s.n,s.cache);
     while(s.time<end-1e-9){
-      const stop=Math.min(end,data.edges[s.frameIndex+1]),a=coefficients(s.time),b=coefficients(stop),lambda=mix(bases,a.map((v,c)=>b[c]-v));
+      const stop=Math.min(end,data.edges[s.frameIndex+1]),a=coefficients(s.time),b=coefficients(stop),lambda=mix(bases,a.map((v,c)=>(b[c]-v)*(s.activityFactor??1)));
       for(let i=0;i<lambda.length;i++)s.expected[i]+=lambda[i];
       s.total+=poissonEvents(lambda,s.counts,s.frameCounts,s.random);s.expectedTotal+=lambda.reduce((a,b)=>a+b,0);
       s.time=stop;
@@ -3874,6 +3888,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   function phase(t){return t<60?'Fase vascular / arterial':'Captación y excreción';}
   function labelTime(t){return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');}
   function refresh(){
+    window.GANTRY_ACTIVITY?.render();
     syncPanel();if(!session||!panel||panel.hidden)return;const s=session,d=panel.shadowRoot,g=s.geometry,gain=Number(d.getElementById('gain').value);
     d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
     d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';d.getElementById('pause').disabled=s.finished;
@@ -3883,7 +3898,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     draw(d.getElementById('sum'),s.counts,s.n,gain);draw(d.getElementById('current'),f?f.counts:s.frameCounts,s.n,gain);
     d.getElementById('frameStatus').textContent=f?phase(f.start)+' · '+labelTime(f.start)+'–'+labelTime(f.end):s.finished?'Adquisición terminada; selecciona un cuadro guardado':phase(s.time)+' · cuadro '+(s.frameIndex+1)+' en curso';
   }
-  function saveJSON(){const s=session,object={tracer:'99mTc-MAG3',study:'basal',arterialModel:data.arterial,duration:s.time,detector:s.detector,matrix:s.n,total:s.total,
+  function saveJSON(){const s=session,object={tracer:'99mTc-MAG3',study:'basal',administeredActivity:s.administeredActivity,arterialModel:data.arterial,duration:s.time,detector:s.detector,matrix:s.n,total:s.total,
     sum:Array.from(s.counts),frames:s.frames.map(f=>({...f,counts:Array.from(f.counts)})),partial:{start:data.edges[s.frameIndex],end:s.time,counts:Array.from(s.frameCounts)},
     geometryHistory:s.history,coordinateSystem:'Detector pixels, no motion correction',reference:data.reference};
     const url=URL.createObjectURL(new Blob([JSON.stringify(object)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='mag3_basal_adquisicion.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -3909,6 +3924,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
     const n=window.GANTRY_LIVE.settings.matrix,geometry=detector===1?g1:g2;
     session={detector,n,geometry,cache:{},time:0,lastClock:performance.now(),speed:1,paused:false,finished:false,
+      administeredActivity:window.GANTRY_ACTIVITY?.metadata('mag3')||null,activityFactor:window.GANTRY_ACTIVITY?.factor('mag3')??1,
       counts:new Uint32Array(n*n),frameCounts:new Uint32Array(n*n),expected:new Float64Array(n*n),total:0,expectedTotal:0,frameIndex:0,frames:[],history:[{time:0,geometry}]};
     const d=panel.shadowRoot;
     for(const id of ['sum','current']){
@@ -3926,13 +3942,15 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   const liveCaches=[{},{}];
   function renderHead(target,G){
     const g=window.GANTRY_LIVE.mag3Geometry(target.n,G),n=window.GANTRY_LIVE.settings.matrix,time=session?session.time:0;
-    const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time));draw(target.canvas,values,n);
-    target.info.textContent='DETECTOR '+target.n+' · MAG3 basal · '+Math.round(g.rawAngle)+'° · '+labelTime(time)+' · señal esperada';
-    return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate:values.reduce((a,b)=>a+b,0)};
+    const factor=session?.activityFactor??window.GANTRY_ACTIVITY?.factor('mag3')??1;
+    const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time).map(v=>v*factor));draw(target.canvas,values,n);
+    const expectedRate=values.reduce((a,b)=>a+b,0);
+    target.info.textContent='DETECTOR '+target.n+' · MAG3 basal · '+Math.round(g.rawAngle)+'° · '+labelTime(time)+' · '+Math.round(expectedRate).toLocaleString('es-CL')+' cuentas/s esperadas';
+    return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate};
   }
   button.onclick=inject;
   window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,stateChanged,renderHead,
-    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,matrix:session.n};},
+    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,matrix:session.n,administeredActivity:session.administeredActivity};},
     // Pure numerical entry points used by offline acquisition tests.
     coefficients,fields,mix,accumulate,poissonEvents,data};
   setInterval(()=>{if(!session)return;
@@ -4123,7 +4141,8 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   'use strict';
   function snapshot(session,names,settings,now=Date.now(),id=crypto.randomUUID()){
     return {version:1,id,createdAt:now,n:session.n,height:session.height||session.n,kind:session.kind||'static',mode:session.mode,target:session.target,
-      study:session.study||settings.study||'bone',finished:session.finished,names:names.slice(),settings:structuredClone(settings),
+      study:session.study||settings.study||'bone',finished:session.finished,names:names.slice(),settings:structuredClone({...settings,...(session.administeredActivity?{administeredActivity:session.administeredActivity}:{})}),
+      ...(session.administeredActivity?{administeredActivity:structuredClone(session.administeredActivity)}:{}),
       ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mibiStart?{mibi:{start:structuredClone(session.mibiStart),end:structuredClone(session.mibiEnd||session.mibiStart),limit:!!session.mibiLimit}}:{}),
       ...(session.mode==='scan'?{scan:{velocity:session.velocity,travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
@@ -4326,6 +4345,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   function paint(force=false){
     window.GANTRY_MDP?.render();
     window.GANTRY_MIBI?.render();
+    window.GANTRY_ACTIVITY?.render();
     const active=supported(study),running=!!session&&!session.finished;
     const displayWhole=(archive||session)?.kind==='whole'||(!archive&&!session&&kind()==='whole');
     el('gantryLive').classList.toggle('bone-whole-body',active&&displayWhole&&window.GANTRY_LIVE?.signal?.mode!=='final');
@@ -4429,11 +4449,13 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
     session.study=study;
+    session.administeredActivity=window.GANTRY_ACTIVITY?.metadata(study)||null;
     if(study==='bone'&&window.GANTRY_MDP)session.mdpStart=window.GANTRY_MDP.begin();
     if(study==='mibi'&&window.GANTRY_MIBI)session.mibiStart=window.GANTRY_MIBI.begin();
     names=nextNames;archive=null;selection++;el('boneAcqSaved').value='current';
     el('boneAcqCacheStatus').textContent='Adquisición actual sin guardar';
     clock=performance.now();speed=1;paused=false;note='';el('boneAcqSpeed').value='1';
+    window.GANTRY_ACTIVITY?.render();
     el('boneAcqSetup').hidden=true;el('boneAcqSetupError').textContent='';paint(true);
   }
   async function instant(){

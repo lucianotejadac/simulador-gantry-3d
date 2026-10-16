@@ -586,9 +586,54 @@ propia matriz. No se modifican las cuentas ni la imagen para dibujar el marco.
 Actualizar con `python scripts/embed_pixel_grid.py`; comprobación numérica:
 `node tests/test_pixel_grid.cjs`.
 
+## Actividad administrada por estudio
+
+Todos los estudios muestran mCi por defecto, con conversión a MBq (1 mCi = 37 MBq).
+Los valores iniciales son escenarios docentes de adulto:
+
+| Estudio | Actividad inicial | Momento representado |
+| --- | --- | --- |
+| Óseo, MDP | 20 mCi IV | 120 min; conserva su cinética de 0–3 h |
+| MIBI cardíaco | 20 mCi IV | 60 min; conserva protocolos y cinética |
+| Pertecnetato | 5 mCi IV | Atlas a 20 min |
+| Paratiroides, MIBI | 20 mCi IV | Atlas compartido con MIBI a 60 min |
+| DMSA | 3 mCi IV | Atlas a 3 h |
+| MAA | 3 mCi IV | Atlas a 5 min |
+| MAG3 | 5 mCi IV en bolo | Basal dinámico desde la inyección |
+| I-131 postratamiento | 100 mCi oral | 7 días; selector de 50, 100, 150 o 200 mCi |
+
+Referencias de actividad adulta: [pertecnetato, 1–10 mCi](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=3ae14c6b-3daf-4dd1-bbdb-e990fe8100e4),
+[DMSA, 2–6 mCi](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=ddd90c4a-5792-49c9-837f-710d1a604742),
+[MAA, 1–4 mCi](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=bbefaa05-1dc0-3ae7-7264-ce1eddf0da2b),
+[paratiroides con MIBI, 20–30 mCi](https://tech.snmjournals.org/content/40/2/111),
+[MIBI cardíaco, 10–30 mCi](https://dailymed.nlm.nih.gov/dailymed/lookup.cfm?setid=07c893fc-cfba-1d98-0232-6448463afb87),
+[MAG3, 5–10 mCi](https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=d497f2a2-8e8d-4372-ba09-f8e6b22d2cf8).
+Los cuatro escenarios de I-131 y los 7 días son los solicitados para este simulador;
+la [ficha de I-131](https://dailymed.nlm.nih.gov/dailymed/getFile.cfm?setid=380e8e26-0625-4233-b36e-afb9f66e8a77)
+documenta la vía oral y su semivida física de 8,02 días.
+
+En los atlas estáticos, la tasa de referencia previa (4.000 c/s en la normalización
+del motor) se escala por actividad administrada / actividad inicial del estudio.
+No hay una calibración absoluta de sensibilidad de un equipo real ni redistribución
+biológica nueva. I-131 conserva la distribución del atlas del día 5, escalada por
+`2^(-2/8.02)` para representar el decaimiento físico hasta el día 7; esto no equivale
+a estimar retención corporal o eliminación biológica. La interfaz identifica esta
+limitación. MDP y MIBI mantienen sus modelos de captación y aclaramiento existentes.
+
+MAG3 conserva las curvas temporales originales y escala sus integrales por la
+actividad elegida respecto a 5 mCi; no vuelve a aplicar el decaimiento ya incluido.
+La actividad queda fijada al iniciar cada adquisición y se conserva en el guardado
+local o JSON de MAG3. Duplicarla duplica las cuentas esperadas para tiempo fijo;
+un objetivo fijo de cuentas reduce el tiempo necesario. Las cuentas observadas
+mantienen ruido de Poisson y los ajustes de ventana, colimador y geometría.
+
+Actualizar con `python scripts/embed_study_activity.py`, seguido de
+`python scripts/optimize_loading.py`. Verificar con `node tests/test_study_activity.cjs`
+y `node tests/test_mag3_acquisition.cjs`.
+
 ## Carga y caché de recursos
 
-El HTML pesa aproximadamente 299 KB. La biblioteca 3D se sirve como un archivo
+El HTML pesa aproximadamente 301 KB. La biblioteca 3D se sirve como un archivo
 independiente con hash y se precarga junto con el paciente, la sala y el equipo.
 Los atlas grandes se descargan en partes de hasta 512 KiB, con un máximo global
 de cuatro solicitudes simultáneas y descompresión durante la descarga. Las partes
