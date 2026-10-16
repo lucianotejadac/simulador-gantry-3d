@@ -88,6 +88,20 @@
   const whole=window.GANTRY_BONE_WHOLE;
   const kind=()=>study==='bone'&&el('boneAcqType').value==='whole'?'whole':'static';
   const position=()=>whole?.position()||{ok:false,reason:'Preparando posición del paciente'};
+  function recordProcessingGeometry(){
+    if(!session||session.finished)return;
+    const live=window.GANTRY_LIVE,meta=live?.state;
+    const sample={settings:JSON.parse(JSON.stringify(live?.settings||{})),geometry:{...(meta?.state||window.GANTRY.G)},
+      detectors:[meta?.d1,meta?.d2].map(d=>d?{view:d.view,angle:d.angle,rawAngle:d.rawAngle,crop:d.crop,
+        distance:d.effectiveDistance,segment:d.segment,orientationMatched:d.orientationMatched}:null)};
+    const signature=JSON.stringify([sample.settings,sample.geometry]);
+    if(!session.processing||session.heads.every(h=>h.total===0))session.processing={acquisitionId:session.id,startedAt:session.createdAt,first:sample,last:sample,varied:false};
+    else {
+      if(session.mode!=='scan'&&signature!==session.processingSignature)session.processing.varied=true;
+      session.processing.last=sample;
+    }
+    session.processingSignature=signature;
+  }
   function suggestion(){
     const live=window.GANTRY_LIVE?.state,seconds=window.GANTRY_MDP?.seconds||0;
     const goals=[live?.d1?.segment,live?.d2?.segment].map(segment=>suggestedGoal(study,segment,seconds));
@@ -141,6 +155,7 @@
     if(window.GANTRY_LIVE?.signal?.mode==='final'){clock=now;return;}
     const dt=Math.max(0,(now-clock)/1000);clock=now;
     if(session&&!session.finished&&!paused&&!busy&&supported(study)&&!document.hidden&&fields&&dt>0){
+      recordProcessingGeometry();
       if(session.mode==='scan'){
         moving=true;
         try{
@@ -181,6 +196,7 @@
     window.GANTRY_MIBI?.render();
     window.GANTRY_ACTIVITY?.render();
     const active=supported(study),running=!!session&&!session.finished;
+    const processingButton=el('boneSendProcessing');if(processingButton)processingButton.hidden=study!=='bone';
     const displayWhole=(archive||session)?.kind==='whole'||(!archive&&!session&&kind()==='whole');
     el('gantryLive').classList.toggle('bone-whole-body',active&&displayWhole&&window.GANTRY_LIVE?.signal?.mode!=='final');
     const check=position(),wantWhole=kind()==='whole';
@@ -289,7 +305,9 @@
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
     session.study=study;
+    session.id=window.crypto?.randomUUID?.()||'acq-'+Date.now()+'-'+Math.random().toString(36).slice(2);session.createdAt=Date.now();
     session.administeredActivity=window.GANTRY_ACTIVITY?.metadata(study)||null;
+    recordProcessingGeometry();
     if(study==='bone'&&window.GANTRY_MDP)session.mdpStart=window.GANTRY_MDP.begin();
     if(study==='mibi'&&window.GANTRY_MIBI)session.mibiStart=window.GANTRY_MIBI.begin();
     names=nextNames;archive=null;selection++;el('boneAcqSaved').value='current';
@@ -305,6 +323,7 @@
       note='Sin señal en un detector: mueve el campo o ajusta la energía';paint(true);return;
     }
     busy=true;note=session.kind==='whole'?'Cuerpo entero':'Posición actual';paint(true);
+    recordProcessingGeometry();
     try{
       await new Promise(resolve=>setTimeout(resolve,0));
       if(study==='bone'&&window.GANTRY_MDP&&snapshot.every(f=>f.mdpBases)){
@@ -365,10 +384,15 @@
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();});
   window.GANTRY_BONE_ACQ={advance,sync,selectStudy,suggestedGoal:()=>suggestion(),
+    processingCurrent(){
+      if(archive)return structuredClone(archive);
+      if(!session)return null;
+      return storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id);
+    },
     pauseForPreview(){if(busy||saving||loadingSaved||(session?.mode==='scan'&&!session.finished))return false;advance();if(session&&!session.finished){paused=true;note='Adquisición pausada para vista previa';}paint();return true;},
     get scanning(){return session?.mode==='scan'&&!session.finished;},
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
     get state(){return session&&{study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
-  setInterval(()=>{advance();paint();},100);
+  setInterval(()=>{if(window.GANTRY_PROCESSING?.active){clock=performance.now();return;}advance();paint();},100);
   window.GANTRY_LIVE?.update(window.GANTRY.G);
 })();

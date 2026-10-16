@@ -84,5 +84,18 @@ function environment(whole=false){
  assert.equal(d.window.GANTRY_BONE_ACQ.state.heads[0].total,12);
  d.window.GANTRY_LIVE.settings.study='mibi';d.window.GANTRY_LIVE.update();
  assert(d.window.GANTRY_BONE_ACQ.state.paused);assert.equal(d.window.GANTRY_BONE_ACQ.state.heads[0].total,beforeSwitch);
+ const geometry=environment();
+ geometry.window.GANTRY_LIVE.state={d1:{view:'AP',angle:0},d2:{view:'PA',angle:180}};
+ geometry.submit(100000,'Geometry D1','Geometry D2');geometry.tick(.2);
+ geometry.window.GANTRY.G.rot=45;geometry.window.GANTRY_LIVE.state.d1={view:'OAD 45 grados',angle:45};geometry.tick(.2);
+ geometry.el('boneAcqFinish').onclick();
+ const exported=geometry.window.GANTRY_BONE_ACQ.processingCurrent();
+ assert(exported.processing.varied);assert.equal(exported.processing.first.detectors[0].view,'AP');
+ assert.equal(exported.processing.last.detectors[0].view,'OAD 45 grados');
+ const originalTotal=geometry.window.GANTRY_BONE_ACQ.state.heads[0].total;
+ exported.heads[0].counts.fill(0);assert.equal(geometry.window.GANTRY_BONE_ACQ.state.heads[0].total,originalTotal);
+ await geometry.el('boneAcqSave').onclick();assert([...database.values()].at(-1).processing.varied);
+ geometry.el('boneAcqSaved').value=first.id;await geometry.el('boneAcqSaved').onchange();
+ assert.equal(geometry.window.GANTRY_BONE_ACQ.processingCurrent().id,first.id,'Export the archive being viewed, not the current acquisition');
  console.log('OK: names required, literal safe labels, immutable snapshots, prior image browsing without replacing current data, pause for review, quota failure preserves current, catalogue after new controller, corrupt-record rejection. IndexedDB reload checked separately in Chrome.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -80,6 +80,7 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
             <label id="boneAcqSpeedWrap">Avance rápido <select id="boneAcqSpeed" class="live-study" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></label>
             <button id="boneAcqInstant" class="live-setting" type="button" hidden title="Completa lo que falta usando la posición y ajustes actuales">Adquisición instantánea</button>
             <button id="boneAcqSave" class="live-setting" type="button" disabled>Guardar adquisición</button>
+            <button id="boneSendProcessing" class="live-setting" type="button">Enviar a procesamiento</button>
             <label>Guardadas <select id="boneAcqSaved" class="live-study" aria-label="Adquisiciones guardadas"><option value="current">Adquisición actual</option></select></label>
             <span id="boneAcqCacheStatus" role="status" title="Se conserva en este navegador y sitio; borrar los datos del sitio elimina las adquisiciones guardadas."></span>
             <span id="boneAcqStatus" role="status">Preparando proyecciones…</span>

@@ -4,6 +4,22 @@ Simulador de posicionamiento del gantry y adquisición gammagráfica.
 El HTML contiene la interfaz; las proyecciones, imágenes y modelos están
 en archivos separados del mismo repositorio, dentro de `assets/runtime/`.
 
+## Procesamiento óseo integrado
+
+Finaliza una adquisición ósea y pulsa **Enviar a procesamiento**, o abre la
+pestaña **Procesamiento óseo**. Selecciona una o varias adquisiciones actuales
+o guardadas y pulsa **Enviar seleccionadas**. Se abre una página editable por
+par de detectores con las cuentas originales, también para cuerpo entero.
+Ventana/nivel, inversión, zoom, composición, **Guardar proyecto** y
+**Exportar PNG** reutilizan el visor de `simulador-cintigrafia-osea`.
+
+**Volver al gantry** conserva el procesamiento durante la sesión. Para
+conservarlo tras recargar, usa **Guardar proyecto** (`.dicomproject`) y después
+**Abrir proyecto**. Las imágenes originales siguen en el catálogo de
+adquisiciones. El visor se descarga al entrar a procesamiento y el 3D descansa
+mientras se trabaja allí. Detalles, procedencia y límites del intercambio en
+[processing/README.md](processing/README.md).
+
 ## Ejecución
 
 Abra la versión de GitHub Pages. Para uso local, descargue el repositorio
