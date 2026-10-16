@@ -150,6 +150,19 @@
     if(result.height!==session.height){paused=true;note='Restablece la postura de brazos inicial para reanudar.';return null;}
     return result.fields;
   }
+  function advanceScan(seconds){
+    moving=true;
+    try{
+      const mdp=window.GANTRY_MDP;
+      while(seconds>1e-9&&!session.finished){
+        const dt=Math.min(.5,seconds,mdp?.remaining??Infinity);
+        if(!(dt>0)){session.finished=true;session.mdpLimit=true;break;}
+        whole.advance(session,mdp?.rate??session.countRate,dt);
+        if(mdp){mdp.advance(dt);session.mdpEnd=mdp.metadata();if(mdp.remaining<=0){session.finished=true;session.mdpLimit=true;}}
+        seconds-=dt;
+      }
+    }finally{moving=false;}
+  }
   function advance(now=performance.now()){
     if(moving)return;
     if(window.GANTRY_LIVE?.signal?.mode==='final'){clock=now;return;}
@@ -157,13 +170,7 @@
     if(session&&!session.finished&&!paused&&!busy&&supported(study)&&!document.hidden&&fields&&dt>0){
       recordProcessingGeometry();
       if(session.mode==='scan'){
-        moving=true;
-        try{
-          const mdp=window.GANTRY_MDP,seconds=mdp?Math.min(.5,dt,mdp.remaining):dt;
-          whole.advance(session,mdp?.rate??session.countRate,seconds);
-          if(mdp){mdp.advance(seconds);if(mdp.remaining<=0){session.finished=true;session.mdpLimit=true;}}
-        }catch(error){paused=true;note=error.message;}
-        finally{moving=false;}
+        try{advanceScan(Math.min(.5,dt)*speed);}catch(error){paused=true;note=error.message;}
       }else {const current=acquisitionFields();if(current){
         if(study==='bone'&&window.GANTRY_MDP&&current.every(f=>f.mdpBases))window.GANTRY_MDP.step(session,current,dt*speed);
         else if(study==='mibi'&&window.GANTRY_MIBI&&current.every(f=>f.mibiBases))window.GANTRY_MIBI.step(session,current,dt*speed);
@@ -212,17 +219,19 @@
     for(const id of ['boneAcqCriterionWrap','boneAcqTargetWrap','boneAcqUnits'])el(id).hidden=wantWhole;
     el('boneAcqCriterion').disabled=el('boneAcqTarget').disabled=wantWhole;
     el('boneAcqVelocityWrap').hidden=!wantWhole;el('boneAcqVelocity').disabled=!wantWhole;
-    el('boneAcqSpeedWrap').hidden=wantWhole||scanning;
+    el('boneAcqSpeedWrap').hidden=false;
+    el('boneAcqFast').textContent='⏩ Avance rápido · '+speed+'×';
     el('boneAcqType').disabled=running||busy||saving||loadingSaved;
     el('boneAcqBegin').disabled=wantWhole&&!check.ok;
     el('gantryLive').classList.toggle('bone-acquisition',active);bar.hidden=!active;
     el('boneAcqStart').disabled=running||!fields||saving||loadingSaved||(wantWhole&&!check.ok);
-    el('boneAcqPause').hidden=el('boneAcqFinish').hidden=el('boneAcqInstant').hidden=!running;
-    if(scanning)el('boneAcqInstant').hidden=true;
+    el('boneAcqPause').hidden=el('boneAcqFinish').hidden=!running;
+    el('boneAcqInstant').hidden=false;
     el('boneAcqPause').textContent=paused?'Reanudar adquisición':'Pausar adquisición';
     for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])el(id).disabled=busy;
-    el('boneAcqSpeed').disabled=!running||busy;
-    for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])if(archive||loadingSaved)el(id).disabled=true;
+    el('boneAcqFast').disabled=el('boneAcqSpeed').disabled=!running||busy;
+    el('boneAcqInstant').disabled=busy||saving||loadingSaved||!fields||(!running&&wantWhole&&!check.ok)||(running&&!!archive);
+    for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqFast'])if(archive||loadingSaved)el(id).disabled=true;
     el('boneAcqSave').disabled=!store||!session||busy||saving||!!archive||loadingSaved;
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
@@ -320,9 +329,18 @@
     clock=performance.now();speed=1;paused=false;note='';el('boneAcqSpeed').value='1';
     window.GANTRY_ACTIVITY?.render();
     el('boneAcqSetup').hidden=true;el('boneAcqSetupError').textContent='';paint(true);
+    return true;
   }
   async function instant(){
-    if(!session||session.finished||busy||!fields||session.mode==='scan')return;
+    if(!session||session.finished||busy||!fields||archive)return;
+    if(session.mode==='scan'){
+      busy=true;note='Cuerpo entero';paint(true);
+      try{
+        while(!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+      }catch(error){paused=true;note=error.message;}
+      finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
+      return;
+    }
     advance();const snapshot=acquisitionFields(),currentRate=rate;if(!snapshot){paint(true);return;}
     if(!(study==='bone'&&window.GANTRY_MDP)&&!(study==='mibi'&&window.GANTRY_MIBI)&&session.mode==='counts'&&session.heads.some((h,i)=>!h.done&&!(snapshot[i].sum*currentRate>0))){
       note='Sin señal en un detector: mueve el campo o ajusta la energía';paint(true);return;
@@ -348,19 +366,22 @@
       }
     }finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
   }
-  el('boneAcqStart').onclick=()=>{updateGoal();el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();};
+  let instantOnStart=false;
+  function setup(instantMode=false){instantOnStart=instantMode;updateGoal();el('boneAcqBegin').textContent=instantMode?'Adquirir instantáneamente':'Comenzar';el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();}
+  el('boneAcqStart').onclick=()=>setup(false);
   el('boneAcqType').onchange=()=>{el('boneAcqSetupError').textContent='';paint(true);};
   el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
-  el('boneAcqSetup').onsubmit=event=>{event.preventDefault();start();};
+  el('boneAcqSetup').onsubmit=async event=>{event.preventDefault();if(start()&&instantOnStart){instantOnStart=false;await instant();}};
   el('boneAcqCriterion').onchange=()=>{
     manualGoal=false;updateGoal();planningInfo();el('boneAcqSetupError').textContent='';
   };
   el('boneAcqTarget').oninput=()=>{manualGoal=true;planningInfo();};
   el('boneAcqSuggested').onclick=()=>{manualGoal=false;updateGoal();planningInfo();};
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
+  el('boneAcqFast').onclick=()=>{advance();speed=({1:10,10:30,30:60,60:1})[speed]||1;el('boneAcqSpeed').value=String(speed);paint(true);};
   el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';clock=performance.now();paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
-  el('boneAcqInstant').onclick=instant;
+  el('boneAcqInstant').onclick=()=>session&&!session.finished?instant():setup(true);
   async function refreshSaved(){
     if(!store)return;
     const records=await store.list(),menu=el('boneAcqSaved'),value=menu.value||'current';

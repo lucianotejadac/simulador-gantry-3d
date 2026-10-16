@@ -2,7 +2,9 @@
 (function(){
   'use strict';
   const data=window.GANTRY_MAG3_DATA,poses={},button=document.getElementById('injectMAG3');
-  let session=null,panel=null,ready=false;
+  let session=null,panel=null,ready=false,busy=false;
+  const instantButton=document.createElement('button');instantButton.id='injectMAG3Instant';instantButton.type='button';instantButton.className='live-setting';instantButton.textContent='Adquisición instantánea';instantButton.hidden=true;
+  button.insertAdjacentElement('afterend',instantButton);
   const pixels=data.width*data.height,componentCount=data.scales.down.length;
   let pending=null;
   function load(){
@@ -64,7 +66,7 @@
   }
   function advance(now=performance.now()){
     if(!session)return;const dt=Math.max(0,(now-session.lastClock)/1000);session.lastClock=now;
-    if(!session.paused&&!session.finished&&dt>0)accumulate(session,session.time+dt*session.speed);
+    if(!busy&&!session.paused&&!session.finished&&dt>0)accumulate(session,session.time+dt*session.speed);
   }
   function stateChanged(G){
     syncPanel();if(!session||session.finished)return;advance();
@@ -78,7 +80,9 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px;flex:1;min-height:0}article{border:1px solid #293b4a;background:#0b1218;display:flex;flex-direction:column;min-width:0;min-height:0}h2{font-size:11px;margin:4px 7px;font-weight:normal;color:#7fdfc8}canvas{display:block;width:100%;flex:1;min-height:0;object-fit:contain;background:black}small{font-size:10px;padding:3px 7px;color:#a9bdce;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   </style><div class="bar" aria-label="Controles MAG3 basal">
   <button id="pause" type="button">Pausar</button><button id="finish" type="button">Finalizar</button>
+  <button id="fast" type="button" title="Alterna 1×, 10×, 30× y 60×">⏩ Avance rápido · 1×</button>
   <label>Velocidad <select id="speed"><option value="1">1×</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></label>
+  <button id="instant" type="button">Adquisición instantánea</button>
   <label>Ganancia <input id="gain" type="range" min=".3" max="3" step=".1" value="1"></label>
   <label>Cuadro <select id="frame"><option value="current">En curso</option></select></label>
   <button id="png" type="button">Guardar suma PNG</button><button id="export" type="button">Descargar JSON</button>
@@ -91,7 +95,9 @@
     window.GANTRY_ACTIVITY?.render();
     syncPanel();if(!session||!panel||panel.hidden)return;const s=session,d=panel.shadowRoot,g=s.geometry,gain=Number(d.getElementById('gain').value);
     d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
-    d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';d.getElementById('pause').disabled=s.finished;
+    d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';
+    for(const id of ['pause','finish','speed','fast','instant'])d.getElementById(id).disabled=s.finished||busy;
+    d.getElementById('fast').textContent='⏩ Avance rápido · '+s.speed+'×';
     d.getElementById('detector').textContent='Cabezal '+s.detector+' · posterior al inicio · matriz '+s.n+' × '+s.n;
     const select=d.getElementById('frame');while(select.options.length<s.frames.length+1){const i=select.options.length-1,o=document.createElement('option');o.value=i;o.textContent=(i+1)+' · '+labelTime(s.frames[i].start)+'–'+labelTime(s.frames[i].end);select.append(o);}
     const f=select.value==='current'?null:s.frames[Number(select.value)];
@@ -111,6 +117,7 @@
     document.getElementById('gantryLive').append(panel);
   }
   function syncPanel(){
+    instantButton.hidden=window.GANTRY_LIVE.settings.study!=='mag3';instantButton.disabled=busy;
     if(!panel)return;
     const active=!!session&&window.GANTRY_LIVE.settings.study==='mag3';
     panel.hidden=!active;
@@ -134,10 +141,19 @@
     }
     d.getElementById('pause').onclick=()=>{advance();session.paused=!session.paused;refresh();};
     d.getElementById('finish').onclick=()=>{advance();session.finished=true;session.paused=true;refresh();};
-    d.getElementById('speed').onchange=e=>{advance();session.speed=Number(e.target.value);};
+    d.getElementById('speed').onchange=e=>{advance();session.speed=Number(e.target.value);refresh();};
+    d.getElementById('fast').onclick=()=>{advance();session.speed=({1:10,10:30,30:60,60:1})[session.speed]||1;d.getElementById('speed').value=String(session.speed);refresh();};
+    d.getElementById('instant').onclick=instant;
     d.getElementById('gain').oninput=refresh;d.getElementById('frame').onchange=refresh;d.getElementById('export').onclick=saveJSON;
     d.getElementById('png').onclick=()=>{const a=document.createElement('a');a.href=d.getElementById('sum').toDataURL();a.download='mag3_basal_suma.png';a.click();};
     window.GANTRY_LIVE.setStudy('mag3');document.getElementById('mag3Status').textContent='MAG3 basal · adquiriendo en cabezal '+detector;refresh();
+  }
+  async function instant(){
+    if(!session||session.finished||busy)return;
+    advance();busy=true;refresh();
+    try{
+      while(!session.finished){accumulate(session,Math.min(data.duration,session.time+10));refresh();await new Promise(resolve=>setTimeout(resolve,0));}
+    }finally{busy=false;session.lastClock=performance.now();refresh();}
   }
   const liveCaches=[{},{}];
   function renderHead(target,G){
@@ -149,8 +165,9 @@
     return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate};
   }
   button.onclick=inject;
-  window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,stateChanged,renderHead,
-    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,matrix:session.n,administeredActivity:session.administeredActivity};},
+  instantButton.onclick=async()=>{await inject();await instant();};
+  window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,instant,stateChanged,renderHead,
+    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
     // Pure numerical entry points used by offline acquisition tests.
     coefficients,fields,mix,accumulate,poissonEvents,data};
   setInterval(()=>{if(!session)return;

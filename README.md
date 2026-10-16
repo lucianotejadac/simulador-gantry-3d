@@ -228,9 +228,11 @@ absoluta del simulador contra adquisiciones clínicas.
 
 La suma usa eventos nuevos de Poisson sobre los campos lineales del fantoma;
 no acumula capturas de la ventana de persistencia. **Avance rápido** ofrece
-1×, 10×, 30× y 60×, sin acelerar las imágenes en vivo. **Adquisición
-instantánea** completa el tiempo o las cuentas restantes con el campo y los
-ajustes del momento. Si no hay señal, no inventa cuentas para alcanzar la meta.
+1×, 10×, 30× y 60× mediante un botón cíclico y un selector. **Adquisición
+instantánea**, junto a **Iniciar adquisición**, permite configurar nombres y
+objetivo y completar la nueva adquisición; durante una adquisición completa
+el tiempo o las cuentas restantes con el campo y los ajustes del momento.
+Si no hay señal, no inventa cuentas para alcanzar la meta.
 
 Mover el equipo, cambiar el zoom, recentrar o ajustar la energía afecta sólo
 las cuentas nuevas. La matriz queda fijada durante la adquisición. Puedes
@@ -277,7 +279,12 @@ que aún no entran en el detector permanecen vacías; regiones fuera del campo
 durante todo el recorrido (por ejemplo manos muy por encima del cráneo) no
 reciben cuentas inventadas. Una línea indica el centro del barrido. Una
 velocidad menor aumenta el tiempo de exposición y las cuentas esperadas.
-No hay objetivo por cuentas/tiempo, avance rápido ni instantánea en este modo.
+No hay objetivo por cuentas/tiempo en este modo. **Avance rápido** acelera el
+reloj simulado (1×/10×/30×/60×) conservando la velocidad física de camilla
+elegida. **Adquisición instantánea** calcula el recorrido restante en pasos
+de hasta 0,5 segundos simulados, con captación, evolución MDP, alineación y
+comprobaciones de colisión en cada paso; cede el control entre bloques para
+mantener la interfaz disponible. Un impedimento de seguridad detiene el barrido.
 El zoom se fija a 1× y se bloquean posición, orientación y ajustes durante el
 barrido; **Pausar**, **Reanudar**, **Finalizar** y **Guardar adquisición** siguen
 disponibles. Pausar o esconder la pestaña suspende tanto movimiento como
@@ -396,7 +403,8 @@ El montaje original permanece intacto y `index.html` funciona sin conexión.
 
 Pulsa **inyectar MAG3** para iniciar un basal de 20 minutos. La suma acumulada
 y el cuadro dinámico se muestran en los dos recuadros de **Imagen en vivo**,
-con pausa, finalización, velocidad, ganancia, selección de cuadro y exportación
+con pausa, finalización, avance rápido (1×/10×/30×/60×), adquisición instantánea,
+ganancia, selección de cuadro y exportación
 PNG/JSON en la misma barra. La vista 3D y el mando permanecen accesibles.
 
 El cabezal más próximo a posterior al inyectar queda vinculado a la adquisición
@@ -409,6 +417,9 @@ Cambiar de estudio muestra sus detectores y mantiene el basal en marcha.
 Seleccionar **MAG3 basal** recupera las cuentas y controles, también al finalizar.
 Pulsar **inyectar MAG3** durante un basal activo conserva la misma adquisición;
 después de finalizar inicia una nueva.
+En MAG3, el botón **Adquisición instantánea** junto a **inyectar MAG3** inicia
+un basal o completa el activo. El botón de la barra dinámica completa sólo el
+basal activo. Se conserva la suma previa y se calculan todos los cuadros restantes.
 Se guardan 30 cuadros de 2 s, 24 de 10 s y 30 de 30 s. Sólo se incluye el basal.
 Antes de inyectar se muestra la señal esperada; al inyectar, los recuadros
 muestran las cuentas acumuladas con estadística de Poisson. La ganancia de visualización no altera las cuentas.

@@ -75,10 +75,10 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
           <div id="boneAcqControls" class="bone-acq-controls" hidden aria-label="Adquisición de detectores">
             <label id="boneAcqTypeWrap">Tipo <select id="boneAcqType" class="live-study" aria-label="Tipo de adquisición"><option value="static">Estática</option><option value="whole">Cuerpo entero</option></select></label>
             <button id="boneAcqStart" class="live-setting" type="button">Iniciar adquisición</button>
+            <button id="boneAcqInstant" class="live-setting" type="button" title="Configura y completa la adquisición, o completa la que está en curso">Adquisición instantánea</button>
             <button id="boneAcqPause" class="live-setting" type="button" hidden>Pausar adquisición</button>
             <button id="boneAcqFinish" class="live-setting" type="button" hidden>Finalizar adquisición</button>
-            <label id="boneAcqSpeedWrap">Avance rápido <select id="boneAcqSpeed" class="live-study" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></label>
-            <button id="boneAcqInstant" class="live-setting" type="button" hidden title="Completa lo que falta usando la posición y ajustes actuales">Adquisición instantánea</button>
+            <span id="boneAcqSpeedWrap"><button id="boneAcqFast" class="live-setting" type="button" disabled title="Alterna 1×, 10×, 30× y 60×">⏩ Avance rápido · 1×</button> <select id="boneAcqSpeed" class="live-study" aria-label="Velocidad de simulación" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></span>
             <button id="boneAcqSave" class="live-setting" type="button" disabled>Guardar adquisición</button>
             <button id="boneSendProcessing" class="live-setting" type="button">Enviar a procesamiento</button>
             <label>Guardadas <select id="boneAcqSaved" class="live-study" aria-label="Adquisiciones guardadas"><option value="current">Adquisición actual</option></select></label>

@@ -963,10 +963,10 @@
           <div id="boneAcqControls" class="bone-acq-controls" hidden aria-label="Adquisición de detectores">
             <label id="boneAcqTypeWrap">Tipo <select id="boneAcqType" class="live-study" aria-label="Tipo de adquisición"><option value="static">Estática</option><option value="whole">Cuerpo entero</option></select></label>
             <button id="boneAcqStart" class="live-setting" type="button">Iniciar adquisición</button>
+            <button id="boneAcqInstant" class="live-setting" type="button" title="Configura y completa la adquisición, o completa la que está en curso">Adquisición instantánea</button>
             <button id="boneAcqPause" class="live-setting" type="button" hidden>Pausar adquisición</button>
             <button id="boneAcqFinish" class="live-setting" type="button" hidden>Finalizar adquisición</button>
-            <label id="boneAcqSpeedWrap">Avance rápido <select id="boneAcqSpeed" class="live-study" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></label>
-            <button id="boneAcqInstant" class="live-setting" type="button" hidden title="Completa lo que falta usando la posición y ajustes actuales">Adquisición instantánea</button>
+            <span id="boneAcqSpeedWrap"><button id="boneAcqFast" class="live-setting" type="button" disabled title="Alterna 1×, 10×, 30× y 60×">⏩ Avance rápido · 1×</button> <select id="boneAcqSpeed" class="live-study" aria-label="Velocidad de simulación" disabled><option value="1">1× (tiempo real)</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></span>
             <button id="boneAcqSave" class="live-setting" type="button" disabled>Guardar adquisición</button>
             <button id="boneSendProcessing" class="live-setting" type="button">Enviar a procesamiento</button>
             <label>Guardadas <select id="boneAcqSaved" class="live-study" aria-label="Adquisiciones guardadas"><option value="current">Adquisición actual</option></select></label>
@@ -3835,7 +3835,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 (function(){
   'use strict';
   const data=window.GANTRY_MAG3_DATA,poses={},button=document.getElementById('injectMAG3');
-  let session=null,panel=null,ready=false;
+  let session=null,panel=null,ready=false,busy=false;
+  const instantButton=document.createElement('button');instantButton.id='injectMAG3Instant';instantButton.type='button';instantButton.className='live-setting';instantButton.textContent='Adquisición instantánea';instantButton.hidden=true;
+  button.insertAdjacentElement('afterend',instantButton);
   const pixels=data.width*data.height,componentCount=data.scales.down.length;
   let pending=null;
   function load(){
@@ -3897,7 +3899,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   function advance(now=performance.now()){
     if(!session)return;const dt=Math.max(0,(now-session.lastClock)/1000);session.lastClock=now;
-    if(!session.paused&&!session.finished&&dt>0)accumulate(session,session.time+dt*session.speed);
+    if(!busy&&!session.paused&&!session.finished&&dt>0)accumulate(session,session.time+dt*session.speed);
   }
   function stateChanged(G){
     syncPanel();if(!session||session.finished)return;advance();
@@ -3911,7 +3913,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:7px;flex:1;min-height:0}article{border:1px solid #293b4a;background:#0b1218;display:flex;flex-direction:column;min-width:0;min-height:0}h2{font-size:11px;margin:4px 7px;font-weight:normal;color:#7fdfc8}canvas{display:block;width:100%;flex:1;min-height:0;object-fit:contain;background:black}small{font-size:10px;padding:3px 7px;color:#a9bdce;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   </style><div class="bar" aria-label="Controles MAG3 basal">
   <button id="pause" type="button">Pausar</button><button id="finish" type="button">Finalizar</button>
+  <button id="fast" type="button" title="Alterna 1×, 10×, 30× y 60×">⏩ Avance rápido · 1×</button>
   <label>Velocidad <select id="speed"><option value="1">1×</option><option value="10">10×</option><option value="30">30×</option><option value="60">60×</option></select></label>
+  <button id="instant" type="button">Adquisición instantánea</button>
   <label>Ganancia <input id="gain" type="range" min=".3" max="3" step=".1" value="1"></label>
   <label>Cuadro <select id="frame"><option value="current">En curso</option></select></label>
   <button id="png" type="button">Guardar suma PNG</button><button id="export" type="button">Descargar JSON</button>
@@ -3924,7 +3928,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     window.GANTRY_ACTIVITY?.render();
     syncPanel();if(!session||!panel||panel.hidden)return;const s=session,d=panel.shadowRoot,g=s.geometry,gain=Number(d.getElementById('gain').value);
     d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
-    d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';d.getElementById('pause').disabled=s.finished;
+    d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';
+    for(const id of ['pause','finish','speed','fast','instant'])d.getElementById(id).disabled=s.finished||busy;
+    d.getElementById('fast').textContent='⏩ Avance rápido · '+s.speed+'×';
     d.getElementById('detector').textContent='Cabezal '+s.detector+' · posterior al inicio · matriz '+s.n+' × '+s.n;
     const select=d.getElementById('frame');while(select.options.length<s.frames.length+1){const i=select.options.length-1,o=document.createElement('option');o.value=i;o.textContent=(i+1)+' · '+labelTime(s.frames[i].start)+'–'+labelTime(s.frames[i].end);select.append(o);}
     const f=select.value==='current'?null:s.frames[Number(select.value)];
@@ -3944,6 +3950,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     document.getElementById('gantryLive').append(panel);
   }
   function syncPanel(){
+    instantButton.hidden=window.GANTRY_LIVE.settings.study!=='mag3';instantButton.disabled=busy;
     if(!panel)return;
     const active=!!session&&window.GANTRY_LIVE.settings.study==='mag3';
     panel.hidden=!active;
@@ -3967,10 +3974,19 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     }
     d.getElementById('pause').onclick=()=>{advance();session.paused=!session.paused;refresh();};
     d.getElementById('finish').onclick=()=>{advance();session.finished=true;session.paused=true;refresh();};
-    d.getElementById('speed').onchange=e=>{advance();session.speed=Number(e.target.value);};
+    d.getElementById('speed').onchange=e=>{advance();session.speed=Number(e.target.value);refresh();};
+    d.getElementById('fast').onclick=()=>{advance();session.speed=({1:10,10:30,30:60,60:1})[session.speed]||1;d.getElementById('speed').value=String(session.speed);refresh();};
+    d.getElementById('instant').onclick=instant;
     d.getElementById('gain').oninput=refresh;d.getElementById('frame').onchange=refresh;d.getElementById('export').onclick=saveJSON;
     d.getElementById('png').onclick=()=>{const a=document.createElement('a');a.href=d.getElementById('sum').toDataURL();a.download='mag3_basal_suma.png';a.click();};
     window.GANTRY_LIVE.setStudy('mag3');document.getElementById('mag3Status').textContent='MAG3 basal · adquiriendo en cabezal '+detector;refresh();
+  }
+  async function instant(){
+    if(!session||session.finished||busy)return;
+    advance();busy=true;refresh();
+    try{
+      while(!session.finished){accumulate(session,Math.min(data.duration,session.time+10));refresh();await new Promise(resolve=>setTimeout(resolve,0));}
+    }finally{busy=false;session.lastClock=performance.now();refresh();}
   }
   const liveCaches=[{},{}];
   function renderHead(target,G){
@@ -3982,8 +3998,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate};
   }
   button.onclick=inject;
-  window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,stateChanged,renderHead,
-    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,matrix:session.n,administeredActivity:session.administeredActivity};},
+  instantButton.onclick=async()=>{await inject();await instant();};
+  window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,instant,stateChanged,renderHead,
+    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
     // Pure numerical entry points used by offline acquisition tests.
     coefficients,fields,mix,accumulate,poissonEvents,data};
   setInterval(()=>{if(!session)return;
@@ -4391,6 +4408,19 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(result.height!==session.height){paused=true;note='Restablece la postura de brazos inicial para reanudar.';return null;}
     return result.fields;
   }
+  function advanceScan(seconds){
+    moving=true;
+    try{
+      const mdp=window.GANTRY_MDP;
+      while(seconds>1e-9&&!session.finished){
+        const dt=Math.min(.5,seconds,mdp?.remaining??Infinity);
+        if(!(dt>0)){session.finished=true;session.mdpLimit=true;break;}
+        whole.advance(session,mdp?.rate??session.countRate,dt);
+        if(mdp){mdp.advance(dt);session.mdpEnd=mdp.metadata();if(mdp.remaining<=0){session.finished=true;session.mdpLimit=true;}}
+        seconds-=dt;
+      }
+    }finally{moving=false;}
+  }
   function advance(now=performance.now()){
     if(moving)return;
     if(window.GANTRY_LIVE?.signal?.mode==='final'){clock=now;return;}
@@ -4398,13 +4428,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(session&&!session.finished&&!paused&&!busy&&supported(study)&&!document.hidden&&fields&&dt>0){
       recordProcessingGeometry();
       if(session.mode==='scan'){
-        moving=true;
-        try{
-          const mdp=window.GANTRY_MDP,seconds=mdp?Math.min(.5,dt,mdp.remaining):dt;
-          whole.advance(session,mdp?.rate??session.countRate,seconds);
-          if(mdp){mdp.advance(seconds);if(mdp.remaining<=0){session.finished=true;session.mdpLimit=true;}}
-        }catch(error){paused=true;note=error.message;}
-        finally{moving=false;}
+        try{advanceScan(Math.min(.5,dt)*speed);}catch(error){paused=true;note=error.message;}
       }else {const current=acquisitionFields();if(current){
         if(study==='bone'&&window.GANTRY_MDP&&current.every(f=>f.mdpBases))window.GANTRY_MDP.step(session,current,dt*speed);
         else if(study==='mibi'&&window.GANTRY_MIBI&&current.every(f=>f.mibiBases))window.GANTRY_MIBI.step(session,current,dt*speed);
@@ -4453,17 +4477,19 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     for(const id of ['boneAcqCriterionWrap','boneAcqTargetWrap','boneAcqUnits'])el(id).hidden=wantWhole;
     el('boneAcqCriterion').disabled=el('boneAcqTarget').disabled=wantWhole;
     el('boneAcqVelocityWrap').hidden=!wantWhole;el('boneAcqVelocity').disabled=!wantWhole;
-    el('boneAcqSpeedWrap').hidden=wantWhole||scanning;
+    el('boneAcqSpeedWrap').hidden=false;
+    el('boneAcqFast').textContent='⏩ Avance rápido · '+speed+'×';
     el('boneAcqType').disabled=running||busy||saving||loadingSaved;
     el('boneAcqBegin').disabled=wantWhole&&!check.ok;
     el('gantryLive').classList.toggle('bone-acquisition',active);bar.hidden=!active;
     el('boneAcqStart').disabled=running||!fields||saving||loadingSaved||(wantWhole&&!check.ok);
-    el('boneAcqPause').hidden=el('boneAcqFinish').hidden=el('boneAcqInstant').hidden=!running;
-    if(scanning)el('boneAcqInstant').hidden=true;
+    el('boneAcqPause').hidden=el('boneAcqFinish').hidden=!running;
+    el('boneAcqInstant').hidden=false;
     el('boneAcqPause').textContent=paused?'Reanudar adquisición':'Pausar adquisición';
     for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])el(id).disabled=busy;
-    el('boneAcqSpeed').disabled=!running||busy;
-    for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqInstant'])if(archive||loadingSaved)el(id).disabled=true;
+    el('boneAcqFast').disabled=el('boneAcqSpeed').disabled=!running||busy;
+    el('boneAcqInstant').disabled=busy||saving||loadingSaved||!fields||(!running&&wantWhole&&!check.ok)||(running&&!!archive);
+    for(const id of ['boneAcqPause','boneAcqFinish','boneAcqSpeed','boneAcqFast'])if(archive||loadingSaved)el(id).disabled=true;
     el('boneAcqSave').disabled=!store||!session||busy||saving||!!archive||loadingSaved;
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
@@ -4561,9 +4587,18 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     clock=performance.now();speed=1;paused=false;note='';el('boneAcqSpeed').value='1';
     window.GANTRY_ACTIVITY?.render();
     el('boneAcqSetup').hidden=true;el('boneAcqSetupError').textContent='';paint(true);
+    return true;
   }
   async function instant(){
-    if(!session||session.finished||busy||!fields||session.mode==='scan')return;
+    if(!session||session.finished||busy||!fields||archive)return;
+    if(session.mode==='scan'){
+      busy=true;note='Cuerpo entero';paint(true);
+      try{
+        while(!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+      }catch(error){paused=true;note=error.message;}
+      finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
+      return;
+    }
     advance();const snapshot=acquisitionFields(),currentRate=rate;if(!snapshot){paint(true);return;}
     if(!(study==='bone'&&window.GANTRY_MDP)&&!(study==='mibi'&&window.GANTRY_MIBI)&&session.mode==='counts'&&session.heads.some((h,i)=>!h.done&&!(snapshot[i].sum*currentRate>0))){
       note='Sin señal en un detector: mueve el campo o ajusta la energía';paint(true);return;
@@ -4589,19 +4624,22 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       }
     }finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
   }
-  el('boneAcqStart').onclick=()=>{updateGoal();el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();};
+  let instantOnStart=false;
+  function setup(instantMode=false){instantOnStart=instantMode;updateGoal();el('boneAcqBegin').textContent=instantMode?'Adquirir instantáneamente':'Comenzar';el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();}
+  el('boneAcqStart').onclick=()=>setup(false);
   el('boneAcqType').onchange=()=>{el('boneAcqSetupError').textContent='';paint(true);};
   el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
-  el('boneAcqSetup').onsubmit=event=>{event.preventDefault();start();};
+  el('boneAcqSetup').onsubmit=async event=>{event.preventDefault();if(start()&&instantOnStart){instantOnStart=false;await instant();}};
   el('boneAcqCriterion').onchange=()=>{
     manualGoal=false;updateGoal();planningInfo();el('boneAcqSetupError').textContent='';
   };
   el('boneAcqTarget').oninput=()=>{manualGoal=true;planningInfo();};
   el('boneAcqSuggested').onclick=()=>{manualGoal=false;updateGoal();planningInfo();};
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
+  el('boneAcqFast').onclick=()=>{advance();speed=({1:10,10:30,30:60,60:1})[speed]||1;el('boneAcqSpeed').value=String(speed);paint(true);};
   el('boneAcqPause').onclick=()=>{advance();paused=!paused;note='';clock=performance.now();paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
-  el('boneAcqInstant').onclick=instant;
+  el('boneAcqInstant').onclick=()=>session&&!session.finished?instant():setup(true);
   async function refreshSaved(){
     if(!store)return;
     const records=await store.list(),menu=el('boneAcqSaved'),value=menu.value||'current';

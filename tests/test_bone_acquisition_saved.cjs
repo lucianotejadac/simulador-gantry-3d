@@ -23,7 +23,7 @@ function environment(whole=false){
  storage.createStore=()=>memoryStore;
  vm.runInContext(engine,context);
  if(whole){el('boneAcqType').value='whole';el('boneAcqVelocity').value='10';el('boneAcqType').onchange();}
- const submit=(count,name1,name2)=>{el('boneAcqCriterion').value='counts';el('boneAcqTarget').value=String(count);el('boneAcqName1').value=name1;el('boneAcqName2').value=name2;el('boneAcqSetup').onsubmit({preventDefault(){}});};
+ const submit=(count,name1,name2)=>{el('boneAcqCriterion').value='counts';el('boneAcqTarget').value=String(count);el('boneAcqName1').value=name1;el('boneAcqName2').value=name2;return el('boneAcqSetup').onsubmit({preventDefault(){}});};
  return {el,window,storage,submit,tick:seconds=>{now+=seconds*1000;window.GANTRY_BONE_ACQ.advance();}};
 }
 (async()=>{
@@ -58,9 +58,12 @@ function environment(whole=false){
  c.submit(30,'Cuerpo anterior','Cuerpo posterior');assert.equal(c.window.GANTRY_BONE_ACQ.state.height,320);
  c.window.GANTRY.G.tableZ=180;c.tick(1);assert(c.window.GANTRY_BONE_ACQ.state.paused);assert.equal(c.window.GANTRY_BONE_ACQ.state.heads[0].total,0);
  await c.el('boneAcqInstant').onclick();assert(!c.window.GANTRY_BONE_ACQ.state.finished);
- c.window.GANTRY.G.tableZ=184;await c.el('boneAcqInstant').onclick();assert(!c.window.GANTRY_BONE_ACQ.state.finished);
- c.el('boneAcqPause').onclick();c.tick(10);c.el('boneAcqPause').onclick();const stoppedZ=c.window.GANTRY.G.tableZ;c.tick(100);assert.equal(c.window.GANTRY.G.tableZ,stoppedZ);
- c.el('boneAcqPause').onclick();c.tick(1200);assert(c.window.GANTRY_BONE_ACQ.state.finished);assert.equal(c.window.GANTRY.G.tableZ,16);await c.el('boneAcqSave').onclick();
+ c.window.GANTRY.G.tableZ=184;
+ c.el('boneAcqPause').onclick();c.tick(.1);c.el('boneAcqPause').onclick();const stoppedZ=c.window.GANTRY.G.tableZ;c.tick(100);assert.equal(c.window.GANTRY.G.tableZ,stoppedZ);
+ c.el('boneAcqPause').onclick();const beforeFast=c.window.GANTRY_BONE_ACQ.state.heads[0].elapsed;
+ c.el('boneAcqFast').onclick();c.tick(.1);assert.equal(c.window.GANTRY_BONE_ACQ.state.speed,10);assert(Math.abs(c.window.GANTRY_BONE_ACQ.state.heads[0].elapsed-beforeFast-1)<1e-8);
+ assert(!c.el('boneAcqInstant').hidden);assert(!c.el('boneAcqSpeedWrap').hidden);
+ await c.el('boneAcqInstant').onclick();assert(c.window.GANTRY_BONE_ACQ.state.finished);assert.equal(c.window.GANTRY.G.tableZ,16);await c.el('boneAcqSave').onclick();
  const wholeRecord=[...database.values()].at(-1);assert.equal(wholeRecord.height,320);assert.equal(wholeRecord.kind,'whole');c.storage.validate(wholeRecord);
  assert.equal(wholeRecord.mode,'scan');assert.equal(wholeRecord.scan.velocity,10);assert.equal(wholeRecord.scan.travel,(184-16)*175/184);
  c.el('boneAcqType').value='static';c.submit(5,'Estática anterior','Estática posterior');await c.el('boneAcqInstant').onclick();
@@ -72,6 +75,7 @@ function environment(whole=false){
   d.window.GANTRY_LIVE.settings.study=study;d.window.GANTRY_LIVE.update();
   assert.equal(d.window.GANTRY_BONE_ACQ.state,null);
   d.submit(12,study+' D1',study+' D2');
+  d.el('boneAcqFast').onclick();assert.equal(d.window.GANTRY_BONE_ACQ.state.speed,10);
   assert.equal(d.window.GANTRY_BONE_ACQ.state.study,study);
   assert.equal(d.window.GANTRY_BONE_ACQ.state.kind,'static');
   await d.el('boneAcqInstant').onclick();assert(d.window.GANTRY_BONE_ACQ.state.heads.every(h=>h.total===12));
@@ -101,5 +105,10 @@ function environment(whole=false){
  geometry.el('boneAcqSaved').value=first.id;await geometry.el('boneAcqSaved').onchange();
  assert.equal(geometry.window.GANTRY_BONE_ACQ.processingCurrent().id,first.id,'Export the archive being viewed, not the current acquisition');
  assert.equal(remembered[0].names[0],'Geometry D1','The session catalogue retains the completed acquisition independently of the viewed archive');
+ const direct=environment();
+ assert(!direct.el('boneAcqInstant').hidden);direct.el('boneAcqInstant').onclick();
+ await direct.submit(9,'','Posterior');assert.equal(direct.window.GANTRY_BONE_ACQ.state,null);
+ await direct.submit(9,'Instantánea D1','Instantánea D2');
+ assert(direct.window.GANTRY_BONE_ACQ.state.finished);assert(direct.window.GANTRY_BONE_ACQ.state.heads.every(h=>h.total===9));
  console.log('OK: names required, literal safe labels, immutable snapshots, prior image browsing without replacing current data, pause for review, quota failure preserves current, catalogue after new controller, corrupt-record rejection. IndexedDB reload checked separately in Chrome.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
