@@ -1,0 +1,20 @@
+/* Keep source commands available to their engines, but show only menus. */
+.console-menu-source { display:none!important; }
+.console-menu {
+  background:#0e1820;color:#d6e6ef;border:1px solid #526b7b;
+  font:inherit;font-size:11px;min-height:26px;padding:3px 20px 3px 6px;
+  width:auto!important;max-width:230px;cursor:pointer;
+}
+.console-menu:focus-visible { outline:2px solid #83e7b5;outline-offset:1px; }
+.console-menu:disabled { opacity:.5;cursor:default; }
+.console-menu[hidden] { display:none!important; }
+.pixel-panel .console-menu { width:100%!important;max-width:100%;font-size:10px; }
+#gantryLive .live-energy { background:none;border:0;padding:0;width:auto; }
+#gantryLive #boneAcqSetup .console-menu { max-width:180px; }
+.console-custom-dialog { background:#14232d;color:#d6e6ef;border:1px solid #83e7b5;max-width:360px;padding:22px;font:14px sans-serif; }
+.console-custom-dialog::backdrop { background:#0009; }
+.console-custom-dialog form { display:grid;gap:12px; }
+.console-custom-dialog h3 { margin:0 0 8px;font-size:16px; }
+.console-custom-dialog label { display:grid;gap:6px; }
+.console-custom-dialog input { background:#0e1820;color:#fff;border:1px solid #526b7b;padding:8px;font:inherit;width:100%;box-sizing:border-box; }
+.console-custom-error { color:#ffadad;margin:0; }
