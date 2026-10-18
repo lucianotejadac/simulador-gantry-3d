@@ -2,8 +2,8 @@
    Only text readouts are observed; no canvas pixels or acquisition data are read. */
 (function(){
   'use strict';
-  const duration=1100,states=new WeakMap();
-  let revision=0,lastChange=-Infinity,observer;
+  const duration=1100,states=new WeakMap(),pending=new Map();
+  let lastChange=-Infinity,observer,timer;
   const selector=[
     '#liveInfoD1','#liveInfoD2','#boneAcqInfo1','#boneAcqInfo2',
     '#boneAcqEstimate','#g3dHud','#liveEnergyValue','#bonePersistenceValue',
@@ -21,9 +21,45 @@
   }
   function changed(){
     const now=performance.now();
-    // A slider drag or held remote key is one adjustment, not many flashes.
-    if(now-lastChange>350)revision++;
+    // Capture the pre-adjustment value, before persistence is cleared to zero.
+    // Further adjustments while refilling retain this original baseline.
+    document.querySelectorAll(selector).forEach(host=>{
+      const baseline=states.get(host)?.values;
+      if(baseline?.length&&!pending.has(host))pending.set(host,{
+        baseline:baseline.slice(),study:window.GANTRY_LIVE?.settings.study,
+        mode:window.GANTRY_LIVE?.signal.mode,readySince:now
+      });
+      states.get(host)?.marks.clear();
+    });
     lastChange=now;
+    schedule();
+  }
+  function schedule(){
+    clearTimeout(timer);
+    if(pending.size)timer=setTimeout(()=>{
+      observer.disconnect();
+      try{for(const host of pending.keys()){
+        if(host.isConnected)paint(host);else pending.delete(host);
+      }}finally{observe();}
+      schedule();
+    },100);
+  }
+  function settledChanges(host,values,now){
+    const p=pending.get(host);if(!p)return null;
+    const live=window.GANTRY_LIVE;
+    if(now-lastChange>30000||p.study!==live?.settings.study||p.mode!==live?.signal.mode){pending.delete(host);return null;}
+    const imageReadout=/^liveInfoD[12]$/.test(host.id)||host.matches('.pixel-total,.pixel-panel td');
+    if(imageReadout&&live?.ready===false){p.readySince=null;return null;}
+    if(p.readySince===null)p.readySince=now;
+    const refill=/^liveInfoD[12]$/.test(host.id)&&live?.signal.mode==='live';
+    const delay=refill?Math.max(350,(live.signal.duration||.75)*1000+250):350;
+    if(now-Math.max(lastChange,p.readySince)<delay)return null;
+    // An asynchronous final prediction keeps the old image while calculating.
+    if(imageReadout&&window.GANTRY_FINAL_PREVIEW?.active&&
+      !document.getElementById('finalPreviewStatus')?.textContent.startsWith('Vista previa'))return null;
+    if(values.length!==p.baseline.length)return null;
+    pending.delete(host);
+    return values.map((value,i)=>numericValue(value)-numericValue(p.baseline[i]));
   }
   function tokens(host){
     const walker=document.createTreeWalker(host,NodeFilter.SHOW_TEXT),result=[];
@@ -36,19 +72,12 @@
   }
   function paint(host){
     const list=tokens(host),values=list.map(t=>t.value),old=states.get(host),now=performance.now();
-    const state={values,revision:old?.revision??revision,marks:old?.marks||new Map()};
-    if(old&&old.values.length===values.length&&state.revision!==revision&&now-lastChange<(window.GANTRY_FINAL_PREVIEW?.active?30000:1800)){
-      const changedIndices=values.map((v,i)=>v!==old.values[i]?i:-1).filter(i=>i>=0);
-      if(changedIndices.length){
-        state.revision=revision;
-        for(const i of changedIndices){
-          const delta=numericValue(values[i])-numericValue(old.values[i]);
-          if(delta)state.marks.set(i,{started:now,direction:delta>0?'increase':'decrease'});
-        }
-      }
-    }else if(!old||old.values.length!==values.length){
-      state.revision=revision;state.marks=new Map();
-    }
+    const state={values,marks:old?.marks||new Map()};
+    if(old&&old.values.length!==values.length)state.marks=new Map();
+    const deltas=settledChanges(host,values,now);
+    deltas?.forEach((delta,i)=>{
+      if(delta)state.marks.set(i,{started:now,direction:delta>0?'increase':'decrease'});
+    });
     states.set(host,state);
     for(const [i,mark] of state.marks)if(now-mark.started>=duration)state.marks.delete(i);
     if(!state.marks.size&&!host.querySelector('.value-change-flash'))return;
