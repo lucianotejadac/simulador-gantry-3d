@@ -1,0 +1,779 @@
+{
+    "date":  "2026-10-18",
+    "baselineCommit":  "40490115a6abe0e09409ce51141b10d841fa1a2e",
+    "scope":  "Median CPU ms for two detector fields after a table move; decoded ICRP atlas, 120 min MDP, excludes browser painting/WebGL/network",
+    "node":  "v24.19.0",
+    "note":  "Local Node benchmark, not browser FPS. Same atlas, physics and output counts. Median of three moved positions; two heads at 5 and 30 cm, arms up, 120 min MDP. Runtime and system load affect absolute timings.",
+    "before":  [
+                   {
+                       "n":  128,
+                       "energy":  80,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  164.5,
+                       "posteriorCps":  28.605
+                   },
+                   {
+                       "n":  128,
+                       "energy":  80,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  166.24,
+                       "posteriorCps":  21.5792
+                   },
+                   {
+                       "n":  128,
+                       "energy":  80,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  167,
+                       "posteriorCps":  14.6814
+                   },
+                   {
+                       "n":  128,
+                       "energy":  120,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  134.52,
+                       "posteriorCps":  371.5294
+                   },
+                   {
+                       "n":  128,
+                       "energy":  120,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  136.83,
+                       "posteriorCps":  265.1116
+                   },
+                   {
+                       "n":  128,
+                       "energy":  120,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  152.65,
+                       "posteriorCps":  169.4253
+                   },
+                   {
+                       "n":  128,
+                       "energy":  140,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  110.01,
+                       "posteriorCps":  3356.133
+                   },
+                   {
+                       "n":  128,
+                       "energy":  140,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  116.86,
+                       "posteriorCps":  2347.5
+                   },
+                   {
+                       "n":  128,
+                       "energy":  140,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  97.65,
+                       "posteriorCps":  1463.927
+                   },
+                   {
+                       "n":  128,
+                       "energy":  200,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  169.41,
+                       "posteriorCps":  20.8142
+                   },
+                   {
+                       "n":  128,
+                       "energy":  200,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  174.42,
+                       "posteriorCps":  15.7065
+                   },
+                   {
+                       "n":  128,
+                       "energy":  200,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  175.71,
+                       "posteriorCps":  10.6796
+                   },
+                   {
+                       "n":  128,
+                       "energy":  450,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  162.31,
+                       "posteriorCps":  20.8142
+                   },
+                   {
+                       "n":  128,
+                       "energy":  450,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  172.63,
+                       "posteriorCps":  15.7065
+                   },
+                   {
+                       "n":  128,
+                       "energy":  450,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  173.63,
+                       "posteriorCps":  10.6796
+                   },
+                   {
+                       "n":  256,
+                       "energy":  80,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  816.79,
+                       "posteriorCps":  29.3354
+                   },
+                   {
+                       "n":  256,
+                       "energy":  80,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  846.38,
+                       "posteriorCps":  22.1459
+                   },
+                   {
+                       "n":  256,
+                       "energy":  80,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  898.79,
+                       "posteriorCps":  15.0797
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  683.47,
+                       "posteriorCps":  373.0264
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  685.24,
+                       "posteriorCps":  266.2727
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  729.93,
+                       "posteriorCps":  170.2391
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  385.89,
+                       "posteriorCps":  3358.1063
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  412.69,
+                       "posteriorCps":  2349.1478
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  453.61,
+                       "posteriorCps":  1465.0689
+                   },
+                   {
+                       "n":  256,
+                       "energy":  200,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  833.25,
+                       "posteriorCps":  21.3457
+                   },
+                   {
+                       "n":  256,
+                       "energy":  200,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  827.87,
+                       "posteriorCps":  16.1189
+                   },
+                   {
+                       "n":  256,
+                       "energy":  200,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  852.62,
+                       "posteriorCps":  10.9693
+                   },
+                   {
+                       "n":  256,
+                       "energy":  450,
+                       "width":  20,
+                       "col":  "LEHR",
+                       "ms":  779.36,
+                       "posteriorCps":  21.3457
+                   },
+                   {
+                       "n":  256,
+                       "energy":  450,
+                       "width":  20,
+                       "col":  "MELP",
+                       "ms":  817.38,
+                       "posteriorCps":  16.1189
+                   },
+                   {
+                       "n":  256,
+                       "energy":  450,
+                       "width":  20,
+                       "col":  "HE",
+                       "ms":  915.76,
+                       "posteriorCps":  10.9693
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  10,
+                       "col":  "LEHR",
+                       "ms":  766.11,
+                       "posteriorCps":  69.8982
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  10,
+                       "col":  "MELP",
+                       "ms":  825.07,
+                       "posteriorCps":  51.8524
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  10,
+                       "col":  "HE",
+                       "ms":  830.98,
+                       "posteriorCps":  34.6517
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  10,
+                       "col":  "LEHR",
+                       "ms":  391.35,
+                       "posteriorCps":  2603.0365
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  10,
+                       "col":  "MELP",
+                       "ms":  445.93,
+                       "posteriorCps":  1820.8992
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  10,
+                       "col":  "HE",
+                       "ms":  425.12,
+                       "posteriorCps":  1135.5946
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  15,
+                       "col":  "LEHR",
+                       "ms":  719.95,
+                       "posteriorCps":  164.9032
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  15,
+                       "col":  "MELP",
+                       "ms":  877.88,
+                       "posteriorCps":  119.6558
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  15,
+                       "col":  "HE",
+                       "ms":  826.68,
+                       "posteriorCps":  77.9834
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  15,
+                       "col":  "LEHR",
+                       "ms":  392.08,
+                       "posteriorCps":  3156.5788
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  15,
+                       "col":  "MELP",
+                       "ms":  419.44,
+                       "posteriorCps":  2208.1629
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  15,
+                       "col":  "HE",
+                       "ms":  496.01,
+                       "posteriorCps":  1377.1314
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  25,
+                       "col":  "LEHR",
+                       "ms":  607.52,
+                       "posteriorCps":  759.2801
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  25,
+                       "col":  "MELP",
+                       "ms":  656.15,
+                       "posteriorCps":  537.0171
+                   },
+                   {
+                       "n":  256,
+                       "energy":  120,
+                       "width":  25,
+                       "col":  "HE",
+                       "ms":  642.88,
+                       "posteriorCps":  339.5093
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  25,
+                       "col":  "LEHR",
+                       "ms":  480.94,
+                       "posteriorCps":  3436.7803
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  25,
+                       "col":  "MELP",
+                       "ms":  517.54,
+                       "posteriorCps":  2406.2776
+                   },
+                   {
+                       "n":  256,
+                       "energy":  140,
+                       "width":  25,
+                       "col":  "HE",
+                       "ms":  564.77,
+                       "posteriorCps":  1502.311
+                   }
+               ],
+    "after":  [
+                  {
+                      "n":  128,
+                      "energy":  80,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  37.36,
+                      "posteriorCps":  28.605
+                  },
+                  {
+                      "n":  128,
+                      "energy":  80,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  37.09,
+                      "posteriorCps":  21.5792
+                  },
+                  {
+                      "n":  128,
+                      "energy":  80,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  37.46,
+                      "posteriorCps":  14.6814
+                  },
+                  {
+                      "n":  128,
+                      "energy":  120,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  30.72,
+                      "posteriorCps":  371.5294
+                  },
+                  {
+                      "n":  128,
+                      "energy":  120,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  32.71,
+                      "posteriorCps":  265.1116
+                  },
+                  {
+                      "n":  128,
+                      "energy":  120,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  33.12,
+                      "posteriorCps":  169.4253
+                  },
+                  {
+                      "n":  128,
+                      "energy":  140,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  20.47,
+                      "posteriorCps":  3356.133
+                  },
+                  {
+                      "n":  128,
+                      "energy":  140,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  21.64,
+                      "posteriorCps":  2347.5
+                  },
+                  {
+                      "n":  128,
+                      "energy":  140,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  22.95,
+                      "posteriorCps":  1463.927
+                  },
+                  {
+                      "n":  128,
+                      "energy":  200,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  39.09,
+                      "posteriorCps":  20.8142
+                  },
+                  {
+                      "n":  128,
+                      "energy":  200,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  36.72,
+                      "posteriorCps":  15.7065
+                  },
+                  {
+                      "n":  128,
+                      "energy":  200,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  40.62,
+                      "posteriorCps":  10.6796
+                  },
+                  {
+                      "n":  128,
+                      "energy":  450,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  38.88,
+                      "posteriorCps":  20.8142
+                  },
+                  {
+                      "n":  128,
+                      "energy":  450,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  39.11,
+                      "posteriorCps":  15.7065
+                  },
+                  {
+                      "n":  128,
+                      "energy":  450,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  39.92,
+                      "posteriorCps":  10.6796
+                  },
+                  {
+                      "n":  256,
+                      "energy":  80,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  199.11,
+                      "posteriorCps":  29.3354
+                  },
+                  {
+                      "n":  256,
+                      "energy":  80,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  186.94,
+                      "posteriorCps":  22.1459
+                  },
+                  {
+                      "n":  256,
+                      "energy":  80,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  197.43,
+                      "posteriorCps":  15.0797
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  148.61,
+                      "posteriorCps":  373.0264
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  160.74,
+                      "posteriorCps":  266.2727
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  165.58,
+                      "posteriorCps":  170.2391
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  91.04,
+                      "posteriorCps":  3358.1063
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  95.44,
+                      "posteriorCps":  2349.1478
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  99.5,
+                      "posteriorCps":  1465.0689
+                  },
+                  {
+                      "n":  256,
+                      "energy":  200,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  178.91,
+                      "posteriorCps":  21.3457
+                  },
+                  {
+                      "n":  256,
+                      "energy":  200,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  186.34,
+                      "posteriorCps":  16.1189
+                  },
+                  {
+                      "n":  256,
+                      "energy":  200,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  202.06,
+                      "posteriorCps":  10.9693
+                  },
+                  {
+                      "n":  256,
+                      "energy":  450,
+                      "width":  20,
+                      "col":  "LEHR",
+                      "ms":  239,
+                      "posteriorCps":  21.3457
+                  },
+                  {
+                      "n":  256,
+                      "energy":  450,
+                      "width":  20,
+                      "col":  "MELP",
+                      "ms":  202.1,
+                      "posteriorCps":  16.1189
+                  },
+                  {
+                      "n":  256,
+                      "energy":  450,
+                      "width":  20,
+                      "col":  "HE",
+                      "ms":  198.64,
+                      "posteriorCps":  10.9693
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  10,
+                      "col":  "LEHR",
+                      "ms":  179.06,
+                      "posteriorCps":  69.8982
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  10,
+                      "col":  "MELP",
+                      "ms":  187.05,
+                      "posteriorCps":  51.8524
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  10,
+                      "col":  "HE",
+                      "ms":  198.52,
+                      "posteriorCps":  34.6517
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  10,
+                      "col":  "LEHR",
+                      "ms":  105.09,
+                      "posteriorCps":  2603.0365
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  10,
+                      "col":  "MELP",
+                      "ms":  110.35,
+                      "posteriorCps":  1820.8992
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  10,
+                      "col":  "HE",
+                      "ms":  115.99,
+                      "posteriorCps":  1135.5946
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  15,
+                      "col":  "LEHR",
+                      "ms":  197.9,
+                      "posteriorCps":  164.9032
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  15,
+                      "col":  "MELP",
+                      "ms":  219.67,
+                      "posteriorCps":  119.6558
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  15,
+                      "col":  "HE",
+                      "ms":  212.91,
+                      "posteriorCps":  77.9834
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  15,
+                      "col":  "LEHR",
+                      "ms":  100.29,
+                      "posteriorCps":  3156.5788
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  15,
+                      "col":  "MELP",
+                      "ms":  117.11,
+                      "posteriorCps":  2208.1629
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  15,
+                      "col":  "HE",
+                      "ms":  108.56,
+                      "posteriorCps":  1377.1314
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  25,
+                      "col":  "LEHR",
+                      "ms":  147.45,
+                      "posteriorCps":  759.2801
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  25,
+                      "col":  "MELP",
+                      "ms":  148.78,
+                      "posteriorCps":  537.0171
+                  },
+                  {
+                      "n":  256,
+                      "energy":  120,
+                      "width":  25,
+                      "col":  "HE",
+                      "ms":  158.52,
+                      "posteriorCps":  339.5093
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  25,
+                      "col":  "LEHR",
+                      "ms":  118.32,
+                      "posteriorCps":  3436.7803
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  25,
+                      "col":  "MELP",
+                      "ms":  125.62,
+                      "posteriorCps":  2406.2776
+                  },
+                  {
+                      "n":  256,
+                      "energy":  140,
+                      "width":  25,
+                      "col":  "HE",
+                      "ms":  139.21,
+                      "posteriorCps":  1502.311
+                  }
+              ]
+}

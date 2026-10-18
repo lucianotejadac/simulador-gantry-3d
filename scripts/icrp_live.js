@@ -26,13 +26,26 @@
     for(let k=-radius;k<=radius;k++)weights.push(Math.exp(-k*k/(2*sigma*sigma)));
     const norm=weights.reduce((a,b)=>a+b,0);weights.forEach((v,i)=>weights[i]=v/norm);
     const temp=new Float32Array(input.length),result=new Float32Array(input.length);
+    // Keep the exact Gaussian and zero-padded edges. Bound the valid taps once,
+    // instead of testing every tap; the wide off-photopeak halo is costly here.
+    const first=new Int32Array(w),last=new Int32Array(w);
+    for(let x=0;x<w;x++){first[x]=Math.max(-radius,-x);last[x]=Math.min(radius,w-1-x);}
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-      let v=0;for(let k=-radius;k<=radius;k++)if(x+k>=0&&x+k<w)v+=input[y*w+x+k]*weights[k+radius];
-      temp[y*w+x]=v;
+      const i=y*w+x;let v=0;
+      for(let k=first[x];k<=last[x];k++)v+=input[i+k]*weights[k+radius];
+      temp[i]=v;
     }
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-      let v=0;for(let k=-radius;k<=radius;k++)if(y+k>=0&&y+k<h)v+=temp[(y+k)*w+x]*weights[k+radius];
-      result[y*w+x]=v;
+    // Traverse each source row contiguously. Float64 accumulation retains the
+    // original tap order/precision, with one Float32 rounding at the end.
+    const row=new Float64Array(w);
+    for(let y=0;y<h;y++){
+      row.fill(0);
+      const first=Math.max(-radius,-y),last=Math.min(radius,h-1-y);
+      for(let k=first;k<=last;k++){
+        const offset=(y+k)*w,weight=weights[k+radius];
+        for(let x=0;x<w;x++)row[x]+=temp[offset+x]*weight;
+      }
+      result.set(row,y*w);
     }
     return result;
   }
@@ -52,7 +65,7 @@
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const px=crop.x+((flipX?w-1-x:x)+.5)/w*crop.w-.5;
       const py=crop.y+((flipY?h-1-y:y)+.5)/h*crop.h-.5;
-      values[y*w+x]=(sample(a,px,py)*(1-pair.mix)+sample(b,px,py)*pair.mix)*factor;
+      values[y*w+x]=(pair.mix===0?sample(a,px,py):sample(a,px,py)*(1-pair.mix)+sample(b,px,py)*pair.mix)*factor;
     }
     const sharp=blur(values,w,h,sigma);
     const halo=metrics.haloAlpha>0?blur(values,w,h,sigma+metrics.haloBlur):null;

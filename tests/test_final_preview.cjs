@@ -11,6 +11,12 @@ assert.equal(near[0].sum,600);assert.equal(far[0].sum,300);
 const counted=P.predict([field,{values:Float32Array.from([.5,1,1.5,2]),sum:5}],{mode:'counts',target:1000,rate:2000000});
 assert.equal(counted[0].elapsed,100);assert.equal(counted[1].elapsed,200);
 const zero=P.predict([{values:new Float32Array(4),sum:0}],{mode:'counts',target:100,rate:1})[0];assert.equal(zero.reached,false);assert.equal(zero.sum,0);
+// Zero-weight components must remain lazy, including in final-image mode.
+const lazy=[new Float32Array([1]),null];
+Object.defineProperty(lazy,1,{get(){throw Error('inactive component was projected');}});
+const lazyPreview=P.predict([{values:new Float32Array(1),mdpBases:lazy}],{
+ mode:'time',target:60,rate:100,model:'bone',start:7200,limit:10800,weights:()=>[1,0]});
+assert.equal(lazyPreview[0].sum,6000);
 for(const [name,M,count,key,limit] of [['bone',ctx.window.GANTRY_MDP,8,'mdpBases',10800],['mibi',ctx.window.GANTRY_MIBI,10,'mibiBases',43200]]){
  const before=JSON.stringify(M.metadata()),bases=Array.from({length:count},(_,c)=>Float32Array.from({length:count},(_,j)=>j===c?1:0));
  const f={values:new Float32Array(count),sum:0,[key]:bases};

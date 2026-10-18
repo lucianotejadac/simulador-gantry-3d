@@ -7,7 +7,9 @@
     return fields.map(field=>{
       const bases=model?field[model==='bone'?'mdpBases':'mibiBases']:[field.values];
       if(!bases?.length)throw Error('Preparando bases del estudio');
-      const sums=bases.map(b=>b.reduce((a,v)=>a+v,0)),coeff=new Float64Array(bases.length);
+      // Do not materialize absent late-MDP components merely to sum them.
+      const sums=new Array(bases.length),sumAt=c=>sums[c]??(sums[c]=bases[c].reduce((a,v)=>a+v,0));
+      const coeff=new Float64Array(bases.length);
       const horizon=Math.max(0,limit-start);let elapsed=0,total=0;
       if(!model){
         const cps=field.sum*rate/2000000;
@@ -19,14 +21,17 @@
           const current=start+elapsed,quantum=current<60?1:5;
           const next=(Math.floor((current+1e-7)/quantum)+1)*quantum;
           let dt=Math.min(next-current,horizon-elapsed,mode==='time'?target-elapsed:Infinity);
-          const w=weights(current+dt/2),cps=rate*w.reduce((a,v,c)=>a+v*sums[c],0);
+          const w=weights(current+dt/2),cps=rate*w.reduce((a,v,c)=>v?a+v*sumAt(c):a,0);
           if(mode==='counts'&&cps>0)dt=Math.min(dt,(target-total)/cps);
           for(let c=0;c<coeff.length;c++)coeff[c]+=w[c]*rate*dt;
           total+=cps*dt;elapsed+=dt;
         }
       }
       const values=new Float64Array(field.values.length);let sum=0;
-      for(let c=0;c<bases.length;c++)if(coeff[c])for(let i=0;i<values.length;i++)values[i]+=bases[c][i]*coeff[c];
+      for(let c=0;c<bases.length;c++)if(coeff[c]){
+        const base=bases[c];
+        for(let i=0;i<values.length;i++)values[i]+=base[i]*coeff[c];
+      }
       for(const v of values)sum+=v;
       return {values,sum,elapsed,reached:mode==='time'?elapsed>=target-1e-6:total>=target-1e-6,mode,target};
     });

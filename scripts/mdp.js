@@ -55,10 +55,16 @@
     const mapped={x:data.width/2+(crop.x-pose.width/2)*ratio,y:data.headRow+(crop.y-pose.headRow)*ratio,w:crop.w*ratio,h:crop.h*ratio};
     const key=JSON.stringify([name,angle,mapped,w,h,flipX,flipY,metrics,sigma]);
     if(cache.key!==key){
-      const bases=poses[name].map(p=>{
+      // Late MDP has no focal vascular activity. Project only the components
+      // requested by the kinetics, retaining lazy access for clock rewinds,
+      // subsequent bladder filling and acquisition/final-image integration.
+      const bases=new Array(poses[name].length),spatialMetrics={...metrics};
+      poses[name].forEach((p,c)=>Object.defineProperty(bases,c,{enumerable:true,configurable:true,get(){
         const pos=angle*p.angles.length/360,lo=Math.floor(pos),angular={lo,hi:(lo+1)%p.angles.length,mix:pos-lo};
-        return window.GANTRY_ICRP.field(p,angular,mapped,w,h,flipX,flipY,metrics,sigma).values;
-      });
+        const value=window.GANTRY_ICRP.field(p,angular,mapped,w,h,flipX,flipY,spatialMetrics,sigma).values;
+        Object.defineProperty(bases,c,{value,enumerable:true,configurable:true});
+        return value;
+      }}));
       cache.key=key;cache.bases=bases;
       cache.result=null;
     }
@@ -70,7 +76,10 @@
   function mix(bases,seconds=state.seconds){
     const weights=fractions(seconds,state.voidAt120).weights;
     const values=new Float32Array(bases[0].length),cdf=new Float64Array(values.length);
-    for(let c=0;c<8;c++)if(weights[c]>0)for(let i=0;i<values.length;i++)values[i]+=bases[c][i]*weights[c]*2000000;
+    for(let c=0;c<8;c++)if(weights[c]>0){
+      const base=bases[c];
+      for(let i=0;i<values.length;i++)values[i]+=base[i]*weights[c]*2000000;
+    }
     let sum=0,peak=0;for(let i=0;i<values.length;i++){cdf[i]=sum+=values[i];peak=Math.max(peak,values[i]);}
     return {values,cdf,sum,window:Math.max(1,peak*.8),mdpBases:bases};
   }
