@@ -11,6 +11,14 @@
     '#studyActivityInfo','.pixel-total','.pixel-panel td'
   ].join(',');
   const roots=[];
+  function numericValue(text){
+    text=text.replace('−','-');
+    if(text.includes(':'))return text.split(':').reduce((sum,part)=>sum*60+Number(part),0);
+    // Readouts mix es-CL formatting with toFixed decimals (distance, energy).
+    if(text.includes(','))return Number(text.replaceAll('.','').replace(',','.'));
+    if(/^[+-]?[1-9]\d{0,2}(?:\.\d{3})+$/.test(text))return Number(text.replaceAll('.',''));
+    return Number(text);
+  }
   function changed(){
     const now=performance.now();
     // A slider drag or held remote key is one adjustment, not many flashes.
@@ -21,7 +29,7 @@
     const walker=document.createTreeWalker(host,NodeFilter.SHOW_TEXT),result=[];
     while(walker.nextNode()){
       const node=walker.currentNode;
-      for(const match of node.data.matchAll(/\d+(?:[.,:]\d+)*/g))
+      for(const match of node.data.matchAll(/[+−-]?\d+(?:[.,:]\d+)*/g))
         result.push({node,start:match.index,end:match.index+match[0].length,value:match[0]});
     }
     return result;
@@ -33,13 +41,16 @@
       const changedIndices=values.map((v,i)=>v!==old.values[i]?i:-1).filter(i=>i>=0);
       if(changedIndices.length){
         state.revision=revision;
-        for(const i of changedIndices)state.marks.set(i,now);
+        for(const i of changedIndices){
+          const delta=numericValue(values[i])-numericValue(old.values[i]);
+          if(delta)state.marks.set(i,{started:now,direction:delta>0?'increase':'decrease'});
+        }
       }
     }else if(!old||old.values.length!==values.length){
       state.revision=revision;state.marks=new Map();
     }
     states.set(host,state);
-    for(const [i,started] of state.marks)if(now-started>=duration)state.marks.delete(i);
+    for(const [i,mark] of state.marks)if(now-mark.started>=duration)state.marks.delete(i);
     if(!state.marks.size&&!host.querySelector('.value-change-flash'))return;
     // Unwrap our own spans before rebuilding. Application renders may replace
     // text every frame; a negative animation delay preserves the original fade.
@@ -47,12 +58,13 @@
     host.normalize();
     const fresh=tokens(host);
     for(let i=fresh.length-1;i>=0;i--){
-      const started=state.marks.get(i);
-      if(started===undefined)continue;
+      const mark=state.marks.get(i);
+      if(!mark)continue;
       const t=fresh[i];t.node.splitText(t.end);
       const number=t.node.splitText(t.start);
-      const span=document.createElement('span');span.className='value-change-flash';
-      span.style.animationDelay=-(now-started)+'ms';
+      const span=document.createElement('span');span.className='value-change-flash value-change-'+mark.direction;
+      span.style.animationDelay=-(now-mark.started)+'ms';
+      span.title=mark.direction==='increase'?'Aumentó':'Disminuyó';
       span.textContent=number.data;number.replaceWith(span);
     }
   }
