@@ -1,0 +1,16 @@
+/* One gentle pulse on changed numeric readouts; never flash the image itself. */
+.value-change-flash {
+  border-radius: 2px;
+  animation: gantry-value-change 1100ms ease-out both;
+}
+@keyframes gantry-value-change {
+  0%, 28% { background-color: #ffe3a0; color: #16232e; box-shadow: 0 0 5px #ffd77a80; }
+  100% { background-color: transparent; color: inherit; box-shadow: 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .value-change-flash { animation-timing-function: step-end; }
+  @keyframes gantry-value-change {
+    0% { background-color: #ffe3a0; color: #16232e; box-shadow: none; }
+    100% { background-color: transparent; color: inherit; box-shadow: none; }
+  }
+}
