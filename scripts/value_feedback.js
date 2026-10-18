@@ -2,7 +2,7 @@
    Only text readouts are observed; no canvas pixels or acquisition data are read. */
 (function(){
   'use strict';
-  const duration=1100,states=new WeakMap(),pending=new Map();
+  const duration=2500,resultPause=600,states=new WeakMap(),pending=new Map();
   let lastChange=-Infinity,observer,timer;
   const selector=[
     '#liveInfoD1','#liveInfoD2','#boneAcqInfo1','#boneAcqInfo2',
@@ -30,6 +30,7 @@
         mode:window.GANTRY_LIVE?.signal.mode,readySince:now,
         started:now,waiting:new Set()
       });
+      if(pending.has(host))delete pending.get(host).result;
       states.get(host)?.marks.clear();
     });
     lastChange=now;
@@ -50,17 +51,21 @@
     const live=window.GANTRY_LIVE;
     if(now-lastChange>30000||p.study!==live?.settings.study||p.mode!==live?.signal.mode){pending.delete(host);return null;}
     const imageReadout=/^liveInfoD[12]$/.test(host.id)||host.matches('.pixel-total,.pixel-panel td');
-    if(imageReadout&&live?.ready===false){p.readySince=null;return null;}
+    if(imageReadout&&live?.ready===false){p.readySince=null;delete p.result;return null;}
     if(p.readySince===null)p.readySince=now;
     const refill=/^liveInfoD[12]$/.test(host.id)&&live?.signal.mode==='live';
     const delay=refill?Math.max(350,(live.signal.duration||.75)*1000+250):350;
     if(now-Math.max(lastChange,p.readySince)<delay)return null;
     // An asynchronous final prediction keeps the old image while calculating.
     if(imageReadout&&window.GANTRY_FINAL_PREVIEW?.active&&
-      !document.getElementById('finalPreviewStatus')?.textContent.startsWith('Vista previa'))return null;
+      !document.getElementById('finalPreviewStatus')?.textContent.startsWith('Vista previa')){delete p.result;return null;}
     if(values.length!==p.baseline.length)return null;
+    // Keep the yellow feedback briefly after calculation, then hold the result.
+    // Preserve its comparison while ordinary live-count noise continues.
+    p.result??={at:now,deltas:values.map((value,i)=>numericValue(value)-numericValue(p.baseline[i]))};
+    if(now-p.result.at<resultPause)return null;
     pending.delete(host);
-    return values.map((value,i)=>numericValue(value)-numericValue(p.baseline[i]));
+    return p.result.deltas;
   }
   function tokens(host){
     const walker=document.createTreeWalker(host,NodeFilter.SHOW_TEXT),result=[];

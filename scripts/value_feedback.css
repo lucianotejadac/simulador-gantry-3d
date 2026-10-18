@@ -3,7 +3,7 @@
   --value-flash-color: #89e7ab;
   --value-flash-glow: #50dc8980;
   border-radius: 2px;
-  animation: gantry-value-change 1100ms ease-out both;
+  animation: gantry-value-change 2500ms ease-out both;
 }
 .value-change-decrease { --value-flash-color: #ff9292; --value-flash-glow: #ff505080; }
 .value-change-pending {
@@ -15,7 +15,7 @@
   50% { background-color: #b79c32; box-shadow: none; }
 }
 @keyframes gantry-value-change {
-  0%, 28% { background-color: var(--value-flash-color); color: #16232e; box-shadow: 0 0 5px var(--value-flash-glow); }
+  0%, 70% { background-color: var(--value-flash-color); color: #16232e; box-shadow: 0 0 5px var(--value-flash-glow); }
   100% { background-color: transparent; color: inherit; box-shadow: 0 0 0 transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
