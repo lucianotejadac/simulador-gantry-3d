@@ -27,7 +27,8 @@
       const baseline=states.get(host)?.values;
       if(baseline?.length&&!pending.has(host))pending.set(host,{
         baseline:baseline.slice(),study:window.GANTRY_LIVE?.settings.study,
-        mode:window.GANTRY_LIVE?.signal.mode,readySince:now
+        mode:window.GANTRY_LIVE?.signal.mode,readySince:now,
+        started:now,waiting:new Set()
       });
       states.get(host)?.marks.clear();
     });
@@ -70,6 +71,14 @@
     }
     return result;
   }
+  function pendingMarks(host,values){
+    const p=pending.get(host);
+    if(!p||values.length!==p.baseline.length)return null;
+    values.forEach((value,i)=>{
+      if(numericValue(value)!==numericValue(p.baseline[i]))p.waiting.add(i);
+    });
+    return p;
+  }
   function paint(host){
     const list=tokens(host),values=list.map(t=>t.value),old=states.get(host),now=performance.now();
     const state={values,marks:old?.marks||new Map()};
@@ -78,22 +87,23 @@
     deltas?.forEach((delta,i)=>{
       if(delta)state.marks.set(i,{started:now,direction:delta>0?'increase':'decrease'});
     });
+    const waiting=pendingMarks(host,values);
     states.set(host,state);
     for(const [i,mark] of state.marks)if(now-mark.started>=duration)state.marks.delete(i);
-    if(!state.marks.size&&!host.querySelector('.value-change-flash'))return;
+    if(!state.marks.size&&!waiting?.waiting.size&&!host.querySelector('.value-change-flash'))return;
     // Unwrap our own spans before rebuilding. Application renders may replace
     // text every frame; a negative animation delay preserves the original fade.
     host.querySelectorAll('.value-change-flash').forEach(span=>span.replaceWith(document.createTextNode(span.textContent)));
     host.normalize();
     const fresh=tokens(host);
     for(let i=fresh.length-1;i>=0;i--){
-      const mark=state.marks.get(i);
+      const mark=waiting?.waiting.has(i)?{started:waiting.started,direction:'pending'}:state.marks.get(i);
       if(!mark)continue;
       const t=fresh[i];t.node.splitText(t.end);
       const number=t.node.splitText(t.start);
       const span=document.createElement('span');span.className='value-change-flash value-change-'+mark.direction;
       span.style.animationDelay=-(now-mark.started)+'ms';
-      span.title=mark.direction==='increase'?'Aumentó':'Disminuyó';
+      span.title=mark.direction==='pending'?'Calculando valor final…':mark.direction==='increase'?'Aumentó':'Disminuyó';
       span.textContent=number.data;number.replaceWith(span);
     }
   }

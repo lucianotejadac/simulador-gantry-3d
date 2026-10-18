@@ -8,7 +8,7 @@ const context={window:{GANTRY_LIVE:live,GANTRY_FINAL_PREVIEW:{active:false}},
   document:{readyState:'loading',addEventListener(){},querySelectorAll:()=>[host],
     getElementById:()=>({textContent:status})}};
 const source=fs.readFileSync('scripts/value_feedback.js','utf8')
-  .replace('window.GANTRY_VALUE_FEEDBACK={changed};','window.GANTRY_VALUE_FEEDBACK={changed,settledChanges,states,pending};');
+  .replace('window.GANTRY_VALUE_FEEDBACK={changed};','window.GANTRY_VALUE_FEEDBACK={changed,settledChanges,pendingMarks,states,pending};');
 vm.runInNewContext(source,context);
 const api=context.window.GANTRY_VALUE_FEEDBACK;
 function begin(values=['1.000']){
@@ -18,9 +18,13 @@ function begin(values=['1.000']){
 }
 function sample(values,elapsed){now+=elapsed;return api.settledChanges(host,values,now);}
 for(const [end,delta] of [['600',-400],['1.400',400],['1.000',0],['0',-1000]]){
-  begin();assert.equal(sample(['0'],100),null,'ignore cleared window');
+  begin();assert.equal(api.pendingMarks(host,['1.000']).waiting.size,0,'unchanged initial value does not blink');
+  assert.equal(sample(['0'],100),null,'ignore cleared window');
+  assert(api.pendingMarks(host,['0']).waiting.has(0),'zero immediately enters yellow pending state');
   assert.equal(sample(['200'],400),null,'ignore partial refill');
+  assert(api.pendingMarks(host,['200']).waiting.has(0),'yellow persists while refilling');
   assert.equal(sample([end],600)[0],delta,'compare final to pre-adjustment value');
+  assert.equal(api.pendingMarks(host,[end]),null,'yellow ends when the final value is known');
   assert.equal(sample(['900'],200),null,'ordinary subsequent noise cannot trigger another flash');
 }
 begin();sample(['0'],100);api.states.get(host).values=['0'];
