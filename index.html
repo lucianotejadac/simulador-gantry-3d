@@ -535,8 +535,11 @@
 @media(prefers-reduced-motion:reduce){#startupSpinner{animation:none}}
 /* STARTUP_LOADING_CSS_END */
 </style>
+<!-- WORKSPACE_LAYOUT_BEGIN -->
+<link rel="stylesheet" href="assets/runtime/gantry-workspace.28729c7d87c214f5.css">
+<!-- WORKSPACE_LAYOUT_END -->
 <!-- FAST_LOAD_BEGIN -->
-<link rel="preload" href="assets/runtime/final-preview.f0969e459a9ca08b.js" as="script">
+<link rel="preload" href="assets/runtime/final-preview.a5bb25c2364341d4.js" as="script">
 <link rel="preload" href="assets/runtime/mdp-engine.f59aa9ee40f6fe6b.js" as="script">
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.bf8c45dca62cead8.js" as="script">
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
@@ -588,9 +591,6 @@
 })();
 </script>
 <!-- FAST_LOAD_END -->
-<!-- WORKSPACE_LAYOUT_BEGIN -->
-<link rel="stylesheet" href="assets/runtime/gantry-workspace.28729c7d87c214f5.css">
-<!-- WORKSPACE_LAYOUT_END -->
 </head>
 <body>
 <!-- STARTUP_LOADING_BEGIN -->
@@ -801,6 +801,11 @@
                color:#9fb4cc;font:12px/1.6 var(--mono);text-align:center;padding:24px;background:#0b0f14">Cargando motor 3D…</div>
         </div>
         <section class="gantry-live" id="gantryLive" aria-label="Imagen en vivo de los detectores">
+<section id="examSafetyBanner" hidden role="alert" style="padding:10px;background:#641f28;color:#fff;border:2px solid #ff6f7d;font:12px sans-serif">
+      <strong id="examSafetyMessage"></strong>
+      <p id="examSafetyHint">Libera el contacto y reinicia para comenzar un nuevo examen. Las adquisiciones anteriores guardadas se conservan.</p>
+      <button type="button" class="btn" id="examRestart">Reiniciar examen</button>
+    </section>
           <div class="gantry-live-head">
             <span class="live-dot" aria-hidden="true"></span>
             <span><span id="liveDisplayMode">IMAGEN EN VIVO</span> &middot; <span id="liveStudyTracer">99mTc-PERTECNETATO &middot; 10 MIN</span></span>
@@ -985,8 +990,8 @@
           <details id="collisionOptions" style="position:relative;font:11px var(--mono)">
             <summary style="cursor:pointer;padding:4px">Colisiones</summary>
             <div style="position:absolute;bottom:100%;left:0;width:320px;max-height:260px;overflow:auto;padding:10px;background:#11202c;border:1px solid #617e94;color:#e6eff6;z-index:40;box-shadow:0 3px 16px #0008">
-              <label>Modo <select id="collisionMode" aria-label="Modo de colisiones"><option value="safe">Protección</option><option value="training">Entrenamiento: hasta 10 mm</option></select></label>
-              <p>La penetración es geométrica; no calcula fuerza ni daño. La camilla siempre conserva su protección.</p>
+              <label>Modo <select id="collisionMode" aria-label="Modo de colisiones"><option value="safe">Protección</option><option value="training">Entrenamiento: hasta 10 mm</option><option value="sentinel">Evento centinela en modo rápido</option></select></label>
+              <p>La penetración es geométrica; no calcula fuerza ni daño. En el modo centinela, el contacto durante movimiento rápido cancela el examen. Es una regla docente del simulador.</p>
               <label><input id="collisionSound" type="checkbox"> Alarma sonora</label>
               <details><summary>Registro de contactos (esta sesión)</summary><ol id="collisionLog" style="padding-left:18px;max-height:115px;overflow:auto"></ol></details>
             </div>
@@ -1038,6 +1043,9 @@
   </div>
 
 
+<!-- EXAM_SAFETY_BEGIN -->
+<script src="assets/runtime/exam-safety.a78c9282e6822d66.js"></script>
+<!-- EXAM_SAFETY_END -->
 <script>
 
 /* ===== Ventana de posicionamiento del gantry (control remoto) ===== */
@@ -1245,7 +1253,7 @@
     if(v===G[g]) return false;
     const cand=Object.assign({},G); cand[g]=v;
     if(view3d()?.collision){
-      const result=view3d().collision.move(G,cand);
+      const result=view3d().collision.move(G,cand,{fast:rapido});
       Object.assign(G,result.state);render();
       return !result.blocked;
     }
@@ -1429,7 +1437,7 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="assets/runtime/image.3861454422d07e6c.png";
 <script src="assets/runtime/pixel-grid.6caaccd40a9f43b3.js"></script>
 <!-- PIXEL_GRID_END -->
 <!-- FINAL_PREVIEW_BEGIN -->
-<script src="assets/runtime/final-preview.f0969e459a9ca08b.js"></script>
+<script src="assets/runtime/final-preview.a5bb25c2364341d4.js"></script>
 <!-- FINAL_PREVIEW_END -->
 <!-- ICRP145_BEGIN -->
 <script>
@@ -1740,13 +1748,14 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     boneControls.pause.setAttribute('aria-pressed',String(boneSignal.paused));
     for(const key of ['rate','duration','pause','clear'])boneControls[key].disabled=boneSignal.mode!=='live';
     boneControls.rate.disabled=boneSignal.mode==='reference';
-    const finalOption=boneControls.mode.querySelector('option[value=final]');if(finalOption)finalOption.disabled=!!window.GANTRY_BONE_ACQ?.scanning;
+    const finalOption=boneControls.mode.querySelector('option[value=final]');if(finalOption)finalOption.disabled=!!window.GANTRY_EXAM?.blocked||!!window.GANTRY_BONE_ACQ?.scanning;
     window.GANTRY_FINAL_PREVIEW?.controls();
     boneControls.status.textContent=boneSignal.mode==='final'?'Imagen final prevista':boneSignal.mode==='reference'?'Referencia · sin ruido':
       boneSignal.paused?'Señal congelada':'● En vivo · ventana móvil';
   }
   function refreshBone(){syncBoneControls();update(lastState || (window.GANTRY && window.GANTRY.G));}
   function setSignalMode(mode){
+    if(mode==='final'&&window.GANTRY_EXAM?.blocked){boneControls.mode.value=boneSignal.mode;return;}
     if(mode==='final'){
       if(window.GANTRY_BONE_ACQ?.pauseForPreview()===false){boneControls.mode.value=boneSignal.mode;return;}
       if(acquisition.study==='bone')window.GANTRY_MDP?.begin();
@@ -3159,24 +3168,24 @@ function init(){
     }
     return {detector,body,table,limit:Math.max(.12,body.required+MARGIN,table.required+MARGIN)};
   }
-  function worsens(next,prior,training){
+  function worsens(next,prior,training,contact=false){
     for(let i=0;i<2;i++)for(const surface of ['body','table']){
-      const threshold=surface==='body'&&training?-TRAINING_DEPTH:MARGIN;
+      const threshold=contact?0:surface==='body'&&training?-TRAINING_DEPTH:MARGIN;
       if(next[i][surface].gap<threshold-1e-8 && next[i][surface].gap<prior[i][surface].gap-1e-8)
         return {detector:i+1,surface,hit:next[i][surface]};
     }
     return null;
   }
-  function sweep(from,to,evaluate,training=false){
+  function sweep(from,to,evaluate,training=false,contact=false){
     let angle=((to.rot-from.rot+540)%360)-180;
     const count=Math.max(1,Math.ceil(Math.abs(angle)/.25),...['tableH','tableZ','detDist1','detDist2'].map(k=>Math.ceil(Math.abs(to[k]-from[k])/.1)));
     const at=t=>{const s={...from};for(const k of ['tableH','tableZ','detDist1','detDist2'])s[k]=from[k]+(to[k]-from[k])*t;s.rot=(from.rot+angle*t+360)%360;return s;};
     let last=from,prior=evaluate(from),f=0;
     for(let i=1;i<=count;i++){
-      const next=at(i/count),hits=evaluate(next),blocked=worsens(hits,prior,training);
+      const next=at(i/count),hits=evaluate(next),blocked=worsens(hits,prior,training,contact);
       if(blocked){
         let lo=f,hi=i/count;
-        for(let j=0;j<9;j++){const m=(lo+hi)/2;if(worsens(evaluate(at(m)),prior,training))hi=m;else lo=m;}
+        for(let j=0;j<9;j++){const m=(lo+hi)/2;if(worsens(evaluate(at(m)),prior,training,contact))hi=m;else lo=m;}
         return {state:at(lo),blocked};
       }
       last=next;prior=hits;f=i/count;
@@ -3294,18 +3303,26 @@ function init(){
         else if(mm>5)episodes[i]=null;
       });
       const key=JSON.stringify(hits.map(h=>[h.body.gap<0,h.table.gap<0]));
-      if(key!==lastKey){lastKey=key;message.textContent=hits.some(h=>h.body.gap<0||h.table.gap<0)?'Retira el detector o la camilla para liberar el contacto.':training?'Entrenamiento: penetración geométrica máxima de 10 mm; no representa fuerza ni daño.':'Protección activa · margen de 2,5 mm.';}
+      if(key!==lastKey){lastKey=key;message.textContent=hits.some(h=>h.body.gap<0||h.table.gap<0)?'Retira el detector o la camilla para liberar el contacto.':training?'Entrenamiento: penetración geométrica máxima de 10 mm; no representa fuerza ni daño.':mode.value==='sentinel'?'Centinela activo: el contacto en movimiento rápido cancela el examen.':'Protección activa · margen de 2,5 mm.';}
       return hits;
     }
-    function move(from,to){
-      const result=sweep(from,to,evaluate,mode.value==='training');
+    function move(from,to,{fast=false}={}){
+      const sentinel=mode.value==='sentinel'&&fast&&!window.GANTRY_EXAM?.blocked;
+      const result=sweep(from,to,evaluate,mode.value==='training',sentinel);
       lastKey='';
       update(result.state);
       if(result.blocked){
         const {detector,hit,surface}=result.blocked;
         message.textContent='Movimiento detenido · D'+detector+' · '+hit.region+' · '+(mode.value==='training'&&surface==='body'?'límite de compresión simulada (10 mm).':'contacto evitado.');
-        event(detector,evaluate(result.state)[detector-1][surface],mode.value==='training'&&surface==='body'?'Compresión simulada':'Contacto evitado');
+        event(detector,evaluate(result.state)[detector-1][surface],sentinel?'Evento centinela simulado':mode.value==='training'&&surface==='body'?'Compresión simulada':'Contacto evitado');
         if(hit.point){markers[detector-1].visible=true;markers[detector-1].position.set(...hit.point);markers[detector-1].material.color.set(0xff4141);}
+      }
+      if(sentinel&&result.blocked){
+        const {detector,surface,hit}=result.blocked;
+        // The swept path has crossed zero clearance, not merely the safety margin.
+        window.GANTRY_EXAM?.cancel({detector,surface,region:hit.region,axis:'movimiento rápido'});
+        message.textContent='Evento centinela simulado · examen cancelado. Retira el contacto y reinicia el examen.';
+        shock();
       }
       return result;
     }
@@ -3531,6 +3548,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(s.time>=data.duration){s.finished=true;s.paused=true;}
   }
   function advance(now=performance.now()){
+    if(window.GANTRY_EXAM?.blocked)return;
     if(!session)return;const dt=Math.max(0,(now-session.lastClock)/1000);session.lastClock=now;
     if(!busy&&!session.paused&&!session.finished&&dt>0)accumulate(session,session.time+dt*session.speed);
   }
@@ -3560,7 +3578,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   function refresh(){
     window.GANTRY_ACTIVITY?.render();
     syncPanel();if(!session||!panel||panel.hidden)return;const s=session,d=panel.shadowRoot,g=s.geometry,gain=Number(d.getElementById('gain').value);
-    d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
+    d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.cancelled?' · Cancelada por evento centinela':s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
     d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';
     for(const id of ['pause','finish','speed','fast','instant'])d.getElementById(id).disabled=s.finished||busy;
     d.getElementById('fast').textContent='⏩ Avance rápido · '+s.speed+'×';
@@ -3583,15 +3601,20 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     document.getElementById('gantryLive').append(panel);
   }
   function syncPanel(){
-    instantButton.hidden=window.GANTRY_LIVE.settings.study!=='mag3';instantButton.disabled=busy;
+    instantButton.hidden=window.GANTRY_LIVE.settings.study!=='mag3';instantButton.disabled=busy||!!window.GANTRY_EXAM?.blocked;
+    window.GANTRY_EXAM?.refresh();
     if(!panel)return;
+    for(const id of ['pause','finish','fast','speed','instant','export','png']){const node=panel.shadowRoot.getElementById(id);if(node&&window.GANTRY_EXAM?.blocked)node.disabled=true;}
     const active=!!session&&window.GANTRY_LIVE.settings.study==='mag3';
     panel.hidden=!active;
     document.getElementById('gantryLive').classList.toggle('mag3-acquisition',active);
     document.querySelector('#gantryLive .gantry-live-grid').style.display=active?'none':'';
   }
   async function inject(){
+    if(window.GANTRY_EXAM?.blocked)return;
+    const examRevision=window.GANTRY_EXAM?.revision;
     if(!ready){try{await load();}catch(error){document.getElementById('mag3Status').textContent='No se pudo cargar MAG3. Pulsa inyectar para reintentar.';console.error(error);return;}}
+    if(window.GANTRY_EXAM?.blocked||examRevision!==window.GANTRY_EXAM?.revision)return;
     if(session&&!session.finished){window.GANTRY_LIVE.setStudy('mag3');refresh();return;}
     ensurePanel();panel.shadowRoot.innerHTML=html;
     const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
@@ -3615,10 +3638,11 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     window.GANTRY_LIVE.setStudy('mag3');document.getElementById('mag3Status').textContent='MAG3 basal · adquiriendo en cabezal '+detector;refresh();
   }
   async function instant(){
+    if(window.GANTRY_EXAM?.blocked)return;
     if(!session||session.finished||busy)return;
     advance();busy=true;refresh();
     try{
-      while(!session.finished){accumulate(session,Math.min(data.duration,session.time+10));refresh();await new Promise(resolve=>setTimeout(resolve,0));}
+      while(!window.GANTRY_EXAM?.blocked&&!session.finished){accumulate(session,Math.min(data.duration,session.time+10));refresh();await new Promise(resolve=>setTimeout(resolve,0));}
     }finally{busy=false;session.lastClock=performance.now();refresh();}
   }
   const liveCaches=[{},{}];
@@ -3633,12 +3657,14 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   button.onclick=inject;
   instantButton.onclick=async()=>{await inject();await instant();};
   window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,instant,stateChanged,renderHead,
-    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
+    get state(){return session&&{cancelled:!!session.cancelled,time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
+    cancelExam(){if(session&&!session.finished){session.cancelled=true;session.finished=true;session.paused=true;}refresh();},
+    resetExam(){if(session?.cancelled){session=null;if(panel)panel.hidden=true;}syncPanel();},
     // Pure numerical entry points used by offline acquisition tests.
     coefficients,fields,mix,accumulate,poissonEvents,data};
   setInterval(()=>{if(!session)return;
     advance();refresh();if(window.GANTRY_LIVE.settings.study==='mag3')window.GANTRY_LIVE.update(window.GANTRY.G);
-    document.getElementById('mag3Status').textContent='MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.finished?' · finalizada':session.paused?' · pausada':'');
+    document.getElementById('mag3Status').textContent='MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.cancelled?' · cancelada por evento centinela':session.finished?' · finalizada':session.paused?' · pausada':'');
   },100);
 })();
 
@@ -4042,6 +4068,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     return result.fields;
   }
   function advanceScan(seconds){
+    if(window.GANTRY_EXAM?.blocked)return;
     moving=true;
     try{
       const mdp=window.GANTRY_MDP;
@@ -4055,6 +4082,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     }finally{moving=false;}
   }
   function advance(now=performance.now()){
+    if(window.GANTRY_EXAM?.blocked){clock=now;return;}
     if(moving)return;
     if(window.GANTRY_LIVE?.signal?.mode==='final'){clock=now;return;}
     const dt=Math.max(0,(now-clock)/1000);clock=now;
@@ -4091,7 +4119,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   let processingRemembered=null;
   function paint(force=false){
-    if(session?.finished&&session.study==='bone'&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
+    if(session?.finished&&!session.cancelled&&session.study==='bone'&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
       window.GANTRY_PROCESSING.remember(storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id));
       processingRemembered=session.id;
     }
@@ -4128,6 +4156,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     el('boneAcqSaved').disabled=busy||loadingSaved;
     el('liveMatrix128').disabled=el('liveMatrix256').disabled=active&&running;
     planningInfo();
+    window.GANTRY_EXAM?.refresh();
     if(!session&&!archive){
       el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones…';
       if(force)canvases.forEach((canvas,j)=>{
@@ -4144,7 +4173,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(!session)el('boneAcqStatus').textContent='Sin adquisición actual';
     else {
     const positioning={retracting:'Separando detectores para girar',aligning:'Alineando detectores con el paciente',positioning:'Acercando detectores'};
-    const state=busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&positioning[session.phase]?positioning[session.phase]:'Adquiriendo';
+    const state=session.cancelled?'Cancelada por evento centinela':busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&positioning[session.phase]?positioning[session.phase]:'Adquiriendo';
     el('boneAcqStatus').textContent=state+' · '+(session.mode==='scan'?session.velocity+' cm/min · '+session.travel.toFixed(1)+' / '+session.target.toFixed(1)+' cm':session.mode==='counts'?format(session.target)+' cuentas por detector':time(session.target)+' por detector')+(note?' · '+note:'');
     }
     if(archive)el('boneAcqStatus').textContent='Viendo guardada · '+new Date(archive.createdAt).toLocaleString('es-CL')+(running?' · actual en pausa':'');
@@ -4159,7 +4188,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+' · '+(labels[shown.study||shown.settings?.study||'bone']||'Estudio')+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
       const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
       el('boneAcqInfo'+(j+1)).title='Media = total dividido por todos los píxeles de esta adquisición, incluidos fondo y ceros. Se usa la matriz guardada, no la matriz seleccionada para la próxima adquisición.';
-      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+
+      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':shown.cancelled?'Cancelada':h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+
         '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa';
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
@@ -4203,6 +4232,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     }
   }
   function start(){
+    if(window.GANTRY_EXAM?.blocked)return false;
     if(!fields||busy||saving||loadingSaved||(session&&!session.finished))return;
     if(study==='bone'&&window.GANTRY_MDP?.remaining<=0){el('boneAcqSetupError').textContent='El modelo termina a las 3 horas. Elige un tiempo anterior para iniciar.';return;}
     if(study==='mibi'&&window.GANTRY_MIBI?.remaining<=0){el('boneAcqSetupError').textContent='El modelo MIBI termina a las 12 horas. Elige un tiempo anterior para iniciar.';return;}
@@ -4230,12 +4260,13 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     return true;
   }
   async function instant(){
+    if(window.GANTRY_EXAM?.blocked)return;
     if(!session||session.finished||busy||!fields||archive)return;
     acquisitionView();
     if(session.mode==='scan'){
       busy=true;note='Cuerpo entero';paint(true);
       try{
-        while(!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+        while(!window.GANTRY_EXAM?.blocked&&!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
       }catch(error){paused=true;note=error.message;}
       finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
       return;
@@ -4248,25 +4279,26 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     recordProcessingGeometry();
     try{
       await new Promise(resolve=>setTimeout(resolve,0));
+      if(window.GANTRY_EXAM?.blocked)return;
       if(study==='bone'&&window.GANTRY_MDP&&snapshot.every(f=>f.mdpBases)){
-        while(!session.finished){
+        while(!window.GANTRY_EXAM?.blocked&&!session.finished){
           window.GANTRY_MDP.step(session,snapshot,30);session.mdpEnd=window.GANTRY_MDP.metadata();
           paint();await new Promise(resolve=>setTimeout(resolve,0));
         }
       }else if(study==='mibi'&&window.GANTRY_MIBI&&snapshot.every(f=>f.mibiBases)){
-        while(!session.finished){
+        while(!window.GANTRY_EXAM?.blocked&&!session.finished){
           window.GANTRY_MIBI.step(session,snapshot,30);session.mibiEnd=window.GANTRY_MIBI.metadata();
           paint();await new Promise(resolve=>setTimeout(resolve,0));
         }
       }else if(session.mode==='time')session.step(snapshot,currentRate,session.target);
-      else while(!session.finished){
+      else while(!window.GANTRY_EXAM?.blocked&&!session.finished){
         if(session.kind==='whole'&&!position().ok){paused=true;note=position().reason;break;}
         session.step(snapshot,currentRate,Infinity,20000);paint();await new Promise(resolve=>setTimeout(resolve,0));
       }
     }finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
   }
   let instantOnStart=false;
-  function setup(instantMode=false){instantOnStart=instantMode;updateGoal();el('boneAcqBegin').textContent=instantMode?'Adquirir instantáneamente':'Comenzar';el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();}
+  function setup(instantMode=false){if(window.GANTRY_EXAM?.blocked)return;instantOnStart=instantMode;updateGoal();el('boneAcqBegin').textContent=instantMode?'Adquirir instantáneamente':'Comenzar';el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();}
   el('boneAcqStart').onclick=()=>setup(false);
   el('boneAcqType').onchange=()=>{el('boneAcqSetupError').textContent='';paint(true);};
   el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
@@ -4281,7 +4313,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   el('boneAcqPause').onclick=()=>{if(paused)acquisitionView();advance();paused=!paused;note='';clock=performance.now();paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
   el('boneAcqInstant').onclick=async()=>{
-    if(busy||saving||loadingSaved)return;
+    if(window.GANTRY_EXAM?.blocked||busy||saving||loadingSaved)return;
     if(session&&!session.finished)return instant();
     el('boneAcqSetupError').textContent='';instantOnStart=false;
     if(start()){await instant();return;}
@@ -4300,7 +4332,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     menu.value=records.some(r=>r.id===value)?value:'current';
   }
   el('boneAcqSave').onclick=async()=>{
-    if(!session||archive||busy||saving||!store)return;
+    if(!session||session.cancelled||archive||busy||saving||!store)return;
     advance();
     saving=true;el('boneAcqCacheStatus').textContent='Guardando en este navegador…';paint();
     try{const record=storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G});await store.save(record);await refreshSaved();el('boneAcqCacheStatus').textContent='Adquisición guardada en este navegador';}
@@ -4320,15 +4352,25 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();});
   window.GANTRY_BONE_ACQ={advance,sync,selectStudy,suggestedGoal:()=>suggestion(),
+    cancelExam(){
+      const cancel=s=>{if(s&&!s.finished){s.cancelled=true;s.finished=true;}};
+      cancel(session);for(const saved of sessions.values()){cancel(saved.session);saved.paused=true;}
+      paused=true;note='Examen cancelado';el('boneAcqSetup').hidden=true;lockScan(false);paint(true);
+    },
+    resetExam(){
+      for(const [key,saved] of sessions)if(saved.session?.cancelled)sessions.delete(key);
+      if(session?.cancelled){session=null;archive=null;}
+      paused=false;note='';clock=performance.now();paint(true);
+    },
     processingCurrent(){
       if(archive)return structuredClone(archive);
-      if(!session)return null;
+      if(!session||session.cancelled)return null;
       return storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id);
     },
     pauseForPreview(){if(busy||saving||loadingSaved||(session?.mode==='scan'&&!session.finished))return false;advance();if(session&&!session.finished){paused=true;note='Adquisición pausada para vista previa';}paint();return true;},
     get scanning(){return session?.mode==='scan'&&!session.finished;},
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
-    get state(){return session&&{study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
+    get state(){return session&&{cancelled:!!session.cancelled,study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
   setInterval(()=>{if(window.GANTRY_PROCESSING?.active){clock=performance.now();return;}advance();paint();},100);
   window.GANTRY_LIVE?.update(window.GANTRY.G);
 })();

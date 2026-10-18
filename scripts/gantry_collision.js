@@ -81,24 +81,24 @@
     }
     return {detector,body,table,limit:Math.max(.12,body.required+MARGIN,table.required+MARGIN)};
   }
-  function worsens(next,prior,training){
+  function worsens(next,prior,training,contact=false){
     for(let i=0;i<2;i++)for(const surface of ['body','table']){
-      const threshold=surface==='body'&&training?-TRAINING_DEPTH:MARGIN;
+      const threshold=contact?0:surface==='body'&&training?-TRAINING_DEPTH:MARGIN;
       if(next[i][surface].gap<threshold-1e-8 && next[i][surface].gap<prior[i][surface].gap-1e-8)
         return {detector:i+1,surface,hit:next[i][surface]};
     }
     return null;
   }
-  function sweep(from,to,evaluate,training=false){
+  function sweep(from,to,evaluate,training=false,contact=false){
     let angle=((to.rot-from.rot+540)%360)-180;
     const count=Math.max(1,Math.ceil(Math.abs(angle)/.25),...['tableH','tableZ','detDist1','detDist2'].map(k=>Math.ceil(Math.abs(to[k]-from[k])/.1)));
     const at=t=>{const s={...from};for(const k of ['tableH','tableZ','detDist1','detDist2'])s[k]=from[k]+(to[k]-from[k])*t;s.rot=(from.rot+angle*t+360)%360;return s;};
     let last=from,prior=evaluate(from),f=0;
     for(let i=1;i<=count;i++){
-      const next=at(i/count),hits=evaluate(next),blocked=worsens(hits,prior,training);
+      const next=at(i/count),hits=evaluate(next),blocked=worsens(hits,prior,training,contact);
       if(blocked){
         let lo=f,hi=i/count;
-        for(let j=0;j<9;j++){const m=(lo+hi)/2;if(worsens(evaluate(at(m)),prior,training))hi=m;else lo=m;}
+        for(let j=0;j<9;j++){const m=(lo+hi)/2;if(worsens(evaluate(at(m)),prior,training,contact))hi=m;else lo=m;}
         return {state:at(lo),blocked};
       }
       last=next;prior=hits;f=i/count;
@@ -216,18 +216,26 @@
         else if(mm>5)episodes[i]=null;
       });
       const key=JSON.stringify(hits.map(h=>[h.body.gap<0,h.table.gap<0]));
-      if(key!==lastKey){lastKey=key;message.textContent=hits.some(h=>h.body.gap<0||h.table.gap<0)?'Retira el detector o la camilla para liberar el contacto.':training?'Entrenamiento: penetración geométrica máxima de 10 mm; no representa fuerza ni daño.':'Protección activa · margen de 2,5 mm.';}
+      if(key!==lastKey){lastKey=key;message.textContent=hits.some(h=>h.body.gap<0||h.table.gap<0)?'Retira el detector o la camilla para liberar el contacto.':training?'Entrenamiento: penetración geométrica máxima de 10 mm; no representa fuerza ni daño.':mode.value==='sentinel'?'Centinela activo: el contacto en movimiento rápido cancela el examen.':'Protección activa · margen de 2,5 mm.';}
       return hits;
     }
-    function move(from,to){
-      const result=sweep(from,to,evaluate,mode.value==='training');
+    function move(from,to,{fast=false}={}){
+      const sentinel=mode.value==='sentinel'&&fast&&!window.GANTRY_EXAM?.blocked;
+      const result=sweep(from,to,evaluate,mode.value==='training',sentinel);
       lastKey='';
       update(result.state);
       if(result.blocked){
         const {detector,hit,surface}=result.blocked;
         message.textContent='Movimiento detenido · D'+detector+' · '+hit.region+' · '+(mode.value==='training'&&surface==='body'?'límite de compresión simulada (10 mm).':'contacto evitado.');
-        event(detector,evaluate(result.state)[detector-1][surface],mode.value==='training'&&surface==='body'?'Compresión simulada':'Contacto evitado');
+        event(detector,evaluate(result.state)[detector-1][surface],sentinel?'Evento centinela simulado':mode.value==='training'&&surface==='body'?'Compresión simulada':'Contacto evitado');
         if(hit.point){markers[detector-1].visible=true;markers[detector-1].position.set(...hit.point);markers[detector-1].material.color.set(0xff4141);}
+      }
+      if(sentinel&&result.blocked){
+        const {detector,surface,hit}=result.blocked;
+        // The swept path has crossed zero clearance, not merely the safety margin.
+        window.GANTRY_EXAM?.cancel({detector,surface,region:hit.region,axis:'movimiento rápido'});
+        message.textContent='Evento centinela simulado · examen cancelado. Retira el contacto y reinicia el examen.';
+        shock();
       }
       return result;
     }

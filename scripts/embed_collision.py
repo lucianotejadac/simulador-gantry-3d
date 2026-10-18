@@ -29,8 +29,8 @@ if 'id="collisionMode"' not in html:
     controls='''<details id="collisionOptions" style="position:relative;font:11px var(--mono)">
             <summary style="cursor:pointer;padding:4px">Colisiones</summary>
             <div style="position:absolute;bottom:100%;left:0;width:320px;max-height:260px;overflow:auto;padding:10px;background:#11202c;border:1px solid #617e94;color:#e6eff6;z-index:40;box-shadow:0 3px 16px #0008">
-              <label>Modo <select id="collisionMode" aria-label="Modo de colisiones"><option value="safe">Protección</option><option value="training">Entrenamiento: hasta 10 mm</option></select></label>
-              <p>La penetración es geométrica; no calcula fuerza ni daño. La camilla siempre conserva su protección.</p>
+              <label>Modo <select id="collisionMode" aria-label="Modo de colisiones"><option value="safe">Protección</option><option value="training">Entrenamiento: hasta 10 mm</option><option value="sentinel">Evento centinela en modo rápido</option></select></label>
+              <p>La penetración es geométrica; no calcula fuerza ni daño. En el modo centinela, el contacto durante movimiento rápido cancela el examen. Es una regla docente del simulador.</p>
               <label><input id="collisionSound" type="checkbox"> Alarma sonora</label>
               <details><summary>Registro de contactos (esta sesión)</summary><ol id="collisionLog" style="padding-left:18px;max-height:115px;overflow:auto"></ol></details>
             </div>

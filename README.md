@@ -724,3 +724,24 @@ Contacto: lucianotejada@uchile.cl
 
 Simulación exclusivamente educativa. No es un dispositivo médico ni debe
 utilizarse para tomar decisiones clínicas o asistenciales.
+
+### Evento centinela simulado
+
+En **Colisiones → Evento centinela en modo rápido**, un movimiento manual con
+**Movimiento rápido** activado que alcance contacto geométrico de los detectores
+con el paciente o la camilla cancela el examen. La proximidad al margen de
+seguridad y el avance rápido de adquisición no disparan esta regla. Se usa el
+recorrido barrido existente y se detiene el movimiento en el contacto, sin
+simular lesiones ni establecer una clasificación clínica real.
+
+Las adquisiciones estáticas, de cuerpo entero y MAG3 dejan de acumular cuentas;
+se bloquean nuevos inicios, instantáneas y la imagen final prevista en todos los
+estudios. Las adquisiciones incompletas se rotulan canceladas y no se envían como
+resultados finalizados al procesamiento. El bloqueo permanece al cambiar de
+estudio, cambiar el modo de colisiones y recargar la misma pestaña (sessionStorage).
+Se puede retirar el detector/camilla. **Reiniciar examen** exige liberar el margen
+de seguridad y esperar a que cualquier tarea instantánea termine de cancelarse;
+descarta las sesiones canceladas, conservando las adquisiciones guardadas.
+
+Motor: `scripts/exam_safety.js`; actualizar con `python scripts/embed_exam_safety.py`.
+Pruebas: `node tests/test_exam_safety.cjs`, colisiones, adquisición estática y MAG3.

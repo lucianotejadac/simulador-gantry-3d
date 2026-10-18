@@ -65,6 +65,7 @@
     if(s.time>=data.duration){s.finished=true;s.paused=true;}
   }
   function advance(now=performance.now()){
+    if(window.GANTRY_EXAM?.blocked)return;
     if(!session)return;const dt=Math.max(0,(now-session.lastClock)/1000);session.lastClock=now;
     if(!busy&&!session.paused&&!session.finished&&dt>0)accumulate(session,session.time+dt*session.speed);
   }
@@ -94,7 +95,7 @@
   function refresh(){
     window.GANTRY_ACTIVITY?.render();
     syncPanel();if(!session||!panel||panel.hidden)return;const s=session,d=panel.shadowRoot,g=s.geometry,gain=Number(d.getElementById('gain').value);
-    d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
+    d.getElementById('stats').textContent=phase(s.time)+' · '+labelTime(s.time)+' / 20:00 · '+s.total.toLocaleString('es-CL')+' cuentas'+(s.cancelled?' · Cancelada por evento centinela':s.finished?' · Finalizada':s.paused?' · Pausada':' · Adquiriendo');
     d.getElementById('pause').textContent=s.paused?'Reanudar':'Pausar';
     for(const id of ['pause','finish','speed','fast','instant'])d.getElementById(id).disabled=s.finished||busy;
     d.getElementById('fast').textContent='⏩ Avance rápido · '+s.speed+'×';
@@ -117,15 +118,20 @@
     document.getElementById('gantryLive').append(panel);
   }
   function syncPanel(){
-    instantButton.hidden=window.GANTRY_LIVE.settings.study!=='mag3';instantButton.disabled=busy;
+    instantButton.hidden=window.GANTRY_LIVE.settings.study!=='mag3';instantButton.disabled=busy||!!window.GANTRY_EXAM?.blocked;
+    window.GANTRY_EXAM?.refresh();
     if(!panel)return;
+    for(const id of ['pause','finish','fast','speed','instant','export','png']){const node=panel.shadowRoot.getElementById(id);if(node&&window.GANTRY_EXAM?.blocked)node.disabled=true;}
     const active=!!session&&window.GANTRY_LIVE.settings.study==='mag3';
     panel.hidden=!active;
     document.getElementById('gantryLive').classList.toggle('mag3-acquisition',active);
     document.querySelector('#gantryLive .gantry-live-grid').style.display=active?'none':'';
   }
   async function inject(){
+    if(window.GANTRY_EXAM?.blocked)return;
+    const examRevision=window.GANTRY_EXAM?.revision;
     if(!ready){try{await load();}catch(error){document.getElementById('mag3Status').textContent='No se pudo cargar MAG3. Pulsa inyectar para reintentar.';console.error(error);return;}}
+    if(window.GANTRY_EXAM?.blocked||examRevision!==window.GANTRY_EXAM?.revision)return;
     if(session&&!session.finished){window.GANTRY_LIVE.setStudy('mag3');refresh();return;}
     ensurePanel();panel.shadowRoot.innerHTML=html;
     const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
@@ -149,10 +155,11 @@
     window.GANTRY_LIVE.setStudy('mag3');document.getElementById('mag3Status').textContent='MAG3 basal · adquiriendo en cabezal '+detector;refresh();
   }
   async function instant(){
+    if(window.GANTRY_EXAM?.blocked)return;
     if(!session||session.finished||busy)return;
     advance();busy=true;refresh();
     try{
-      while(!session.finished){accumulate(session,Math.min(data.duration,session.time+10));refresh();await new Promise(resolve=>setTimeout(resolve,0));}
+      while(!window.GANTRY_EXAM?.blocked&&!session.finished){accumulate(session,Math.min(data.duration,session.time+10));refresh();await new Promise(resolve=>setTimeout(resolve,0));}
     }finally{busy=false;session.lastClock=performance.now();refresh();}
   }
   const liveCaches=[{},{}];
@@ -167,11 +174,13 @@
   button.onclick=inject;
   instantButton.onclick=async()=>{await inject();await instant();};
   window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,instant,stateChanged,renderHead,
-    get state(){return session&&{time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
+    get state(){return session&&{cancelled:!!session.cancelled,time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
+    cancelExam(){if(session&&!session.finished){session.cancelled=true;session.finished=true;session.paused=true;}refresh();},
+    resetExam(){if(session?.cancelled){session=null;if(panel)panel.hidden=true;}syncPanel();},
     // Pure numerical entry points used by offline acquisition tests.
     coefficients,fields,mix,accumulate,poissonEvents,data};
   setInterval(()=>{if(!session)return;
     advance();refresh();if(window.GANTRY_LIVE.settings.study==='mag3')window.GANTRY_LIVE.update(window.GANTRY.G);
-    document.getElementById('mag3Status').textContent='MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.finished?' · finalizada':session.paused?' · pausada':'');
+    document.getElementById('mag3Status').textContent='MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.cancelled?' · cancelada por evento centinela':session.finished?' · finalizada':session.paused?' · pausada':'');
   },100);
 })();

@@ -151,6 +151,7 @@
     return result.fields;
   }
   function advanceScan(seconds){
+    if(window.GANTRY_EXAM?.blocked)return;
     moving=true;
     try{
       const mdp=window.GANTRY_MDP;
@@ -164,6 +165,7 @@
     }finally{moving=false;}
   }
   function advance(now=performance.now()){
+    if(window.GANTRY_EXAM?.blocked){clock=now;return;}
     if(moving)return;
     if(window.GANTRY_LIVE?.signal?.mode==='final'){clock=now;return;}
     const dt=Math.max(0,(now-clock)/1000);clock=now;
@@ -200,7 +202,7 @@
   }
   let processingRemembered=null;
   function paint(force=false){
-    if(session?.finished&&session.study==='bone'&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
+    if(session?.finished&&!session.cancelled&&session.study==='bone'&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
       window.GANTRY_PROCESSING.remember(storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id));
       processingRemembered=session.id;
     }
@@ -237,6 +239,7 @@
     el('boneAcqSaved').disabled=busy||loadingSaved;
     el('liveMatrix128').disabled=el('liveMatrix256').disabled=active&&running;
     planningInfo();
+    window.GANTRY_EXAM?.refresh();
     if(!session&&!archive){
       el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones…';
       if(force)canvases.forEach((canvas,j)=>{
@@ -253,7 +256,7 @@
     if(!session)el('boneAcqStatus').textContent='Sin adquisición actual';
     else {
     const positioning={retracting:'Separando detectores para girar',aligning:'Alineando detectores con el paciente',positioning:'Acercando detectores'};
-    const state=busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&positioning[session.phase]?positioning[session.phase]:'Adquiriendo';
+    const state=session.cancelled?'Cancelada por evento centinela':busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&positioning[session.phase]?positioning[session.phase]:'Adquiriendo';
     el('boneAcqStatus').textContent=state+' · '+(session.mode==='scan'?session.velocity+' cm/min · '+session.travel.toFixed(1)+' / '+session.target.toFixed(1)+' cm':session.mode==='counts'?format(session.target)+' cuentas por detector':time(session.target)+' por detector')+(note?' · '+note:'');
     }
     if(archive)el('boneAcqStatus').textContent='Viendo guardada · '+new Date(archive.createdAt).toLocaleString('es-CL')+(running?' · actual en pausa':'');
@@ -268,7 +271,7 @@
       const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+' · '+(labels[shown.study||shown.settings?.study||'bone']||'Estudio')+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
       const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
       el('boneAcqInfo'+(j+1)).title='Media = total dividido por todos los píxeles de esta adquisición, incluidos fondo y ceros. Se usa la matriz guardada, no la matriz seleccionada para la próxima adquisición.';
-      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+
+      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':shown.cancelled?'Cancelada':h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+
         '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa';
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
@@ -312,6 +315,7 @@
     }
   }
   function start(){
+    if(window.GANTRY_EXAM?.blocked)return false;
     if(!fields||busy||saving||loadingSaved||(session&&!session.finished))return;
     if(study==='bone'&&window.GANTRY_MDP?.remaining<=0){el('boneAcqSetupError').textContent='El modelo termina a las 3 horas. Elige un tiempo anterior para iniciar.';return;}
     if(study==='mibi'&&window.GANTRY_MIBI?.remaining<=0){el('boneAcqSetupError').textContent='El modelo MIBI termina a las 12 horas. Elige un tiempo anterior para iniciar.';return;}
@@ -339,12 +343,13 @@
     return true;
   }
   async function instant(){
+    if(window.GANTRY_EXAM?.blocked)return;
     if(!session||session.finished||busy||!fields||archive)return;
     acquisitionView();
     if(session.mode==='scan'){
       busy=true;note='Cuerpo entero';paint(true);
       try{
-        while(!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+        while(!window.GANTRY_EXAM?.blocked&&!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
       }catch(error){paused=true;note=error.message;}
       finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
       return;
@@ -357,25 +362,26 @@
     recordProcessingGeometry();
     try{
       await new Promise(resolve=>setTimeout(resolve,0));
+      if(window.GANTRY_EXAM?.blocked)return;
       if(study==='bone'&&window.GANTRY_MDP&&snapshot.every(f=>f.mdpBases)){
-        while(!session.finished){
+        while(!window.GANTRY_EXAM?.blocked&&!session.finished){
           window.GANTRY_MDP.step(session,snapshot,30);session.mdpEnd=window.GANTRY_MDP.metadata();
           paint();await new Promise(resolve=>setTimeout(resolve,0));
         }
       }else if(study==='mibi'&&window.GANTRY_MIBI&&snapshot.every(f=>f.mibiBases)){
-        while(!session.finished){
+        while(!window.GANTRY_EXAM?.blocked&&!session.finished){
           window.GANTRY_MIBI.step(session,snapshot,30);session.mibiEnd=window.GANTRY_MIBI.metadata();
           paint();await new Promise(resolve=>setTimeout(resolve,0));
         }
       }else if(session.mode==='time')session.step(snapshot,currentRate,session.target);
-      else while(!session.finished){
+      else while(!window.GANTRY_EXAM?.blocked&&!session.finished){
         if(session.kind==='whole'&&!position().ok){paused=true;note=position().reason;break;}
         session.step(snapshot,currentRate,Infinity,20000);paint();await new Promise(resolve=>setTimeout(resolve,0));
       }
     }finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
   }
   let instantOnStart=false;
-  function setup(instantMode=false){instantOnStart=instantMode;updateGoal();el('boneAcqBegin').textContent=instantMode?'Adquirir instantáneamente':'Comenzar';el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();}
+  function setup(instantMode=false){if(window.GANTRY_EXAM?.blocked)return;instantOnStart=instantMode;updateGoal();el('boneAcqBegin').textContent=instantMode?'Adquirir instantáneamente':'Comenzar';el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();}
   el('boneAcqStart').onclick=()=>setup(false);
   el('boneAcqType').onchange=()=>{el('boneAcqSetupError').textContent='';paint(true);};
   el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
@@ -390,7 +396,7 @@
   el('boneAcqPause').onclick=()=>{if(paused)acquisitionView();advance();paused=!paused;note='';clock=performance.now();paint(true);};
   el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
   el('boneAcqInstant').onclick=async()=>{
-    if(busy||saving||loadingSaved)return;
+    if(window.GANTRY_EXAM?.blocked||busy||saving||loadingSaved)return;
     if(session&&!session.finished)return instant();
     el('boneAcqSetupError').textContent='';instantOnStart=false;
     if(start()){await instant();return;}
@@ -409,7 +415,7 @@
     menu.value=records.some(r=>r.id===value)?value:'current';
   }
   el('boneAcqSave').onclick=async()=>{
-    if(!session||archive||busy||saving||!store)return;
+    if(!session||session.cancelled||archive||busy||saving||!store)return;
     advance();
     saving=true;el('boneAcqCacheStatus').textContent='Guardando en este navegador…';paint();
     try{const record=storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G});await store.save(record);await refreshSaved();el('boneAcqCacheStatus').textContent='Adquisición guardada en este navegador';}
@@ -429,15 +435,25 @@
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();});
   window.GANTRY_BONE_ACQ={advance,sync,selectStudy,suggestedGoal:()=>suggestion(),
+    cancelExam(){
+      const cancel=s=>{if(s&&!s.finished){s.cancelled=true;s.finished=true;}};
+      cancel(session);for(const saved of sessions.values()){cancel(saved.session);saved.paused=true;}
+      paused=true;note='Examen cancelado';el('boneAcqSetup').hidden=true;lockScan(false);paint(true);
+    },
+    resetExam(){
+      for(const [key,saved] of sessions)if(saved.session?.cancelled)sessions.delete(key);
+      if(session?.cancelled){session=null;archive=null;}
+      paused=false;note='';clock=performance.now();paint(true);
+    },
     processingCurrent(){
       if(archive)return structuredClone(archive);
-      if(!session)return null;
+      if(!session||session.cancelled)return null;
       return storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id);
     },
     pauseForPreview(){if(busy||saving||loadingSaved||(session?.mode==='scan'&&!session.finished))return false;advance();if(session&&!session.finished){paused=true;note='Adquisición pausada para vista previa';}paint();return true;},
     get scanning(){return session?.mode==='scan'&&!session.finished;},
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
-    get state(){return session&&{study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
+    get state(){return session&&{cancelled:!!session.cancelled,study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
   setInterval(()=>{if(window.GANTRY_PROCESSING?.active){clock=performance.now();return;}advance();paint();},100);
   window.GANTRY_LIVE?.update(window.GANTRY.G);
 })();

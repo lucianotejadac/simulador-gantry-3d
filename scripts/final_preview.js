@@ -54,7 +54,7 @@
   const el=id=>document.getElementById(id);
   let key='',token=0,timer=null,display=null,latest=null,noise=1,wasActive=false;
   const painted=new WeakMap();
-  const active=()=>window.GANTRY_LIVE?.signal.mode==='final'&&supported.has(window.GANTRY_LIVE.settings.study);
+  const active=()=>!window.GANTRY_EXAM?.blocked&&window.GANTRY_LIVE?.signal.mode==='final'&&supported.has(window.GANTRY_LIVE.settings.study);
   const clock=s=>Number.isFinite(s)?Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0'):'—';
   function controls(){
     if(!el('finalPreviewControls'))return;
@@ -105,6 +105,7 @@
     });
   }
   function sync(study,targets,rate,state){
+    if(window.GANTRY_EXAM?.blocked){token++;clearTimeout(timer);key='';return;}
     controls();if(!active())return;
     latest={targets,state};
     if(!window.GANTRY_LIVE.ready||targets.some(t=>!t.linearField)){token++;clearTimeout(timer);key='';el('finalPreviewStatus').textContent='Preparando proyecciones…'+(display?' Se mantiene la última imagen.':'');draw();return;}
@@ -120,8 +121,8 @@
           const options={mode,target,rate,model:model?study:null,start:m?.seconds||0,limit:model?(study==='bone'?10800:43200):Infinity,
             weights:model?(s=>study==='bone'?model.fractions(s,m.voidAt120).weights:model.fractions(s,m.protocol,m.voidEvery120).weights):null};
           const expected=predict(fields,options),images=[];
-          for(let j=0;j<expected.length;j++){const image=await sample(expected[j],noise*104729+j*7919,()=>current!==token);if(!image||current!==token)return;images.push(image);}
-          if(current!==token)return;display=prepare(images,state);
+          for(let j=0;j<expected.length;j++){const image=await sample(expected[j],noise*104729+j*7919,()=>current!==token||window.GANTRY_EXAM?.blocked);if(!image||current!==token||window.GANTRY_EXAM?.blocked)return;images.push(image);}
+          if(current!==token||window.GANTRY_EXAM?.blocked)return;display=prepare(images,state);
           el('finalPreviewStatus').textContent='Vista previa · posición fija · '+(m?'evolución del RF incluida · ':'')+'no inicia ni guarda una adquisición';draw();
         }catch(error){if(current===token){el('finalPreviewStatus').textContent=error.message;draw();}}
       },150);
@@ -134,6 +135,6 @@
     el('finalPreviewTarget').oninput=refresh;el('finalPreviewTarget').onchange=refresh;
     el('finalPreviewNoise').onclick=()=>{noise++;refresh();};controls();
   }
-  window.GANTRY_FINAL_PREVIEW={predict,sample,sync,controls,get active(){return active();}};
+  window.GANTRY_FINAL_PREVIEW={cancel(){token++;clearTimeout(timer);key='';controls();},predict,sample,sync,controls,get active(){return active();}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

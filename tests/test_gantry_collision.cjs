@@ -97,6 +97,16 @@ new GLTFLoader().parse(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+byte
   let tones=0;
   ctx.window.AudioContext=class {constructor(){this.currentTime=0;}resume(){return Promise.resolve();}createOscillator(){return {frequency:{value:0},connect(){},start(){tones++;},stop(){}};}createGain(){return {gain:{setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){}};}};
   elements.collisionSound.checked=true;elements.collisionSound.change();assert.equal(tones,1,'Optional alarm is activated by a user gesture');
+  // Slow moves stop at the margin; only swept contact in fast sentinel mode cancels.
+  let sentinelEvents=[];ctx.window.GANTRY_EXAM={blocked:false,cancel:e=>sentinelEvents.push(e)};
+  elements.collisionMode.value='sentinel';elements.collisionMode.change();
+  move=api.move(s,{...s,detDist1:12},{fast:false});Object.assign(s,move.state);
+  assert(move.blocked);assert.equal(sentinelEvents.length,0);
+  assert(api.evaluate(s)[0].body.gap>0.0024);
+  move=api.move(s,{...s,detDist1:12},{fast:true});Object.assign(s,move.state);
+  assert(move.blocked);assert.equal(sentinelEvents.length,1);assert.equal(sentinelEvents[0].surface,'body');
+  assert(Math.abs(api.evaluate(s)[0].body.gap)<0.00001);
+  move=api.move(s,{...s,detDist1:45},{fast:true});assert(!move.blocked);assert.equal(sentinelEvents.length,1);
   assert(html.includes(script),'Embedded runtime is current');
   console.log(JSON.stringify({result:'OK',finite_footprints:true,triangle_crossings:true,regional_mesh:true,postures_and_flips:true,housing_overhang:true,swept_motion:true,training_cap_and_retreat:true,table_always_protected:true,real_patient_GLTF:true,contact_episode_log:true,real_mesh_80_queries_ms:Math.round(elapsed)},null,2));
  }catch(e){console.error(e);process.exitCode=1;}
