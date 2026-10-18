@@ -35,7 +35,7 @@ def optimize():
     for url in sorted(urls):
         if url.endswith('.js'):
             preloads.append(f'<link rel="preload" href="{url}" as="script">')
-        elif any(tag in url for tag in ('/patient.', '/symbia-room.', '/symbia-equipment.')):
+        elif any(tag in url for tag in ('/patient.', '/symbia-room.')):
             preloads.append(f'<link rel="preload" href="{url}" as="fetch" crossorigin>')
     transport = (ROOT / 'scripts/asset_transport.js').read_text(encoding='utf-8')
     block = '<!-- FAST_LOAD_BEGIN -->\n' + '\n'.join(preloads)

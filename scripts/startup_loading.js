@@ -58,7 +58,7 @@
     if(initial&&scene){
       done.add('scene');
       watch('room',scene.room.ready,()=>!!scene.room.metadata&&scene.room.enabled);
-      const simple=new URLSearchParams(location.search).get('equipo')==='simple';
+      const simple=scene.equipment.kind==='simple'||new URLSearchParams(location.search).get('equipo')==='simple';
       watch('equipment',scene.equipment.ready,()=>simple||!!scene.equipment.metadata&&scene.equipment.enabled);
       if(scene.patientLoadState==='ready')done.add('patient');
       if(scene.patientLoadState==='error'){fail('No se pudo cargar el paciente.');return;}

@@ -60,21 +60,15 @@ dibujo en el navegador. No mide tiempo GPU ni garantiza el mismo rendimiento
 en todos los equipos. La colocación del entorno es visual; no cambia los
 límites mecánicos del simulador. [Fuentes y adaptaciones](assets/symbia-room/CREDITS.md).
 
-### Equipo Symbia
+### Equipo y control genéricos
 
-El gantry de SymbiaRoom aparece por defecto y se descarga en segundo plano
-(312 kB, tres grupos, 21.630 triángulos). **Usar equipo simple** permite volver
-al modelo anterior sin recargar ni interrumpir la adquisición. Para iniciar
-sin descargar Symbia, añada `?equipo=simple` a la dirección.
-
-Los cabezales importados siguen el giro y el desplazamiento radial existentes,
-incluido el posicionamiento automático al iniciar cuerpo entero. Se conserva
-la camilla funcional y el tablero telescópico del simulador. Es una adaptación
-visual: conserva los atlas y el campo de visión. Los límites de aproximación
-usan las envolventes de las piezas visibles. [Procedencia y alcance](assets/symbia-equipment/CREDITS.md).
-
-Tras editar su motor: `python scripts/build_symbia_equipment.py`.
-Prueba: `node tests/test_symbia_equipment.cjs`.
+El simulador usa exclusivamente el gantry simple generado con primitivas 3D.
+El mando es un diseño original HTML/CSS: giro, distancia de ambos detectores,
+altura y recorrido de camilla, con movimiento continuo y modo rápido.
+No se descarga geometría CAD de Siemens ni la fotografía del mando.
+Los créditos de paciente y mobiliario están en **Derechos de autor** y en
+[assets/CREDITS.md](assets/CREDITS.md), con autores, fuentes, licencias y cambios.
+La licencia MIT del código no sustituye las licencias de esos recursos.
 
 ### Colisiones y entrenamiento
 
@@ -89,7 +83,7 @@ penetrar la envolvente del paciente durante movimientos manuales.
 
 El cálculo utiliza los triángulos del muñeco 3D en cada postura, incluidos
 los brazos y las manos elevados, y cajas conservadoras por componente del
-detector Symbia. Recorta cada triángulo al área que ocupa la pieza; no utiliza
+detector simple. Recorta cada triángulo al área que ocupa la pieza; no utiliza
 el ancho máximo del cuerpo para todas las regiones. Las posturas se preparan
 una vez y se indexan por posición longitudinal. El recorrido manual se revisa
 en incrementos máximos de 1 mm o 0,25° y se refina al encontrar el límite.
@@ -102,8 +96,7 @@ La distancia es una aproximación geométrica, no una medida calibrada del
 equipo real. Las cajas rellenan curvas y huecos de las piezas; no se modelan
 deformación de tejidos, fuerzas, lesiones ni todas las colisiones del gantry
 con la sala. Los atlas ICRP no son la superficie de colisión: lo es el muñeco
-visible. Cambiar el equipo durante un barrido requiere finalizar/reiniciar
-la adquisición, evitando continuar con una geometría diferente.
+visible. El gantry simple es el único equipo disponible.
 
 Actualizar motor: `python scripts/embed_collision.py`.
 Prueba numérica y con GLB real: `node tests/test_gantry_collision.cjs`.

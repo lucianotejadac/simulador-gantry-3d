@@ -11,13 +11,8 @@
   El decúbito supino/prono, que allá vivía en la ficha del paciente, está
   aquí en la columna derecha porque el motor 3D lo necesita.
 
-  La columna derecha ya no lleva botones sueltos: es una réplica del mando de
-  mano del equipo. Se dibujan TODAS sus teclas, pero sólo se encienden y sólo
-  responden las once que el equipo deja operar desde aquí (giro del estativo,
-  distancia de cada detector, altura y eje Z de la camilla, y el ▶▶ de
-  movimiento rápido); las otras dieciocho quedan grabadas en gris e inertes.
-  Como en el aparato real no hay pasos sueltos: se mantiene pulsada la tecla
-  y el eje se mueve mientras dure.
+  Control genérico original con movimiento continuo para detectores y camilla.
+  No usa fotografías ni geometría de un mando de fabricante.
 
   © 2026 Luciano Tejada Castro. Distribuido bajo licencia MIT.
   Contacto: lucianotejada@uchile.cl
@@ -284,64 +279,20 @@
 
   /* ===================================================================== */
   /* ============  MANDO (control remoto de mano)  ======================= */
-  /* Réplica del mando físico. Se dibujan todos los botones del aparato;   */
-  /* los que el equipo no deja operar desde aquí llevan .off: apagados,    */
-  /* sin puntero y sin foco. Los vivos se encienden en ámbar.              */
-  .mando-wrap{flex:none;display:flex;justify-content:center;padding:2px 0 0;perspective:700px}
-  #mando{width:100%;max-width:190px;height:auto;display:block;touch-action:none;
-    user-select:none;filter:drop-shadow(0 8px 12px rgba(0,0,0,.52))}
-  /* superficies de las teclas */
-  #mando .cap,#mando .cap-p{fill:url(#mTecla);stroke:#202224;stroke-width:1.35;
-    filter:url(#mSombra)}
-  #mando .aro{fill:url(#mDisco);stroke:#252729;stroke-width:1.25}
-  /* grabados: ámbar en las teclas vivas, gris hundido en las apagadas */
-  #mando .ico{fill:#ff9d16;stroke:#ff9d16;filter:drop-shadow(0 0 1.8px #ff9700aa)}
-  #mando .ico-t{fill:#ff9d16;font:700 15px var(--sans);text-anchor:middle;
-    filter:drop-shadow(0 0 1.5px #ff970088)}
-  #mando .ico-t.big{font-size:20px}
-  #mando .off .ico{fill:#8a5c2c;stroke:#8a5c2c;opacity:.58;filter:none}
-  #mando .off .ico-t{fill:#8a5c2c;opacity:.58;filter:none}
-  #mando [data-mb="1-centro"] .ico-t,#mando [data-mb="2-centro"] .ico-t{
-    fill:#222426;opacity:1;filter:none}
-  #mando [data-mb="camilla-centro"] .ico{fill:#242628;stroke:#242628;opacity:1;filter:none}
-  #mandoMarca{fill:#1f2123;font:800 11px/1 var(--sans);letter-spacing:2.2px;text-anchor:middle}
-  #mandoBordeInterno{fill:none;stroke:#ffffff24;stroke-width:1;pointer-events:none}
-  #mando .testigo{fill:#242628;stroke:#797b7d;stroke-width:.65}
-  #mando .testigo.on{fill:#202225;stroke:#202225}
-  /* grabado central al ras de la carcasa (no es una tecla): el paciente
-     acostado con los pies hacia el rectangulo que representa el gantry */
-  #mandoOmega{fill:none;stroke:#45474a;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-  /* halo: el resplandor de la tecla encendida, invisible en reposo */
-  #mando .halo,#mando .halo-p{fill:url(#mHalo);opacity:0;pointer-events:none;
-    transition:opacity .12s}
-  /* teclas vivas: puntero, y al pulsar se hunden y se encienden */
-  #mando .mb{cursor:pointer}
-  #mando .mb:hover .cap,#mando .mb:hover .cap-p{filter:url(#mSombra) brightness(1.14)}
-  #mando .mb:focus{outline:none}
-  #mando .mb:focus-visible .halo,#mando .mb:focus-visible .halo-p{opacity:.55}
-  #mando .mb.on .halo,#mando .mb.on .halo-p{opacity:1}
-  #mando .mb.on .cap,#mando .mb.on .cap-p{filter:none;stroke:#f6a01f;stroke-width:1.5}
-  #mando .mb.on .ico{fill:#ffd479;stroke:#ffd479}
-  #mando .mb.on .ico-t{fill:#ffd479}
-  /* teclas apagadas: dibujadas, pero muertas */
-  #mando .mb.off{cursor:default;pointer-events:none}
-  /* tecla bloqueada por el interlock: destella en rojo */
-  #mando .mb.nope .cap,#mando .mb.nope .cap-p{stroke:#e0483a;stroke-width:1.6}
-  #mando .mb.nope .ico{fill:#e0483a;stroke:#e0483a}
-  /* La fotografía es la superficie visible; estas zonas transparentes son los
-     únicos controles que reciben puntero y teclado. */
-  #mando .hit{fill:transparent;stroke:transparent;stroke-width:7;pointer-events:all;
-    vector-effect:non-scaling-stroke;transition:fill .12s,stroke .12s}
-  #mando .mb:hover .hit,#mando .mb:focus-visible .hit{fill:#ff9d1614;stroke:#ffb02b88}
-  #mando .mb.on .hit{fill:#ff9d1628;stroke:#ffc05acc}
-  #mando .mb.nope .hit{fill:#e0483a20;stroke:#e0483acc}
-  #mando .foto-halo{fill:url(#mHaloFoto) !important}
-  /* modo rápido activo: la tecla ▶▶ parpadea, como en el mando real */
-  #mando #mbRapido.armado .ico{fill:#ffd479;stroke:#ffd479}
-  #mando #mbRapido.armado .halo{animation:mandoLatido .85s steps(1,end) infinite}
-  @keyframes mandoLatido{0%,49%{opacity:1}50%,100%{opacity:.12}}
-  .mando-funcion{margin:0 2px;padding:5px 7px;min-height:26px;box-sizing:border-box;
-    color:#20252c;background:#f3f0d6;border:1px solid #777;font:700 11px/1.35 var(--sans)}
+  /* Control genérico original, construido con HTML y CSS. */
+  .mando-wrap{display:flex;justify-content:center}
+  #mando{width:100%;box-sizing:border-box;padding:9px;background:#152936;color:#e7f1f5;border:1px solid #6b8796;border-radius:10px;box-shadow:0 4px 15px #0007;font:11px var(--sans)}
+  #mando .remote-title{display:block;text-align:center;font-size:10px;letter-spacing:1px;margin-bottom:6px;color:#9ddfcf}
+  #mando fieldset{background:transparent!important;box-shadow:none!important;border:0;padding:0;margin:7px 0 0;min-width:0}
+  #mando legend{background:transparent!important;padding:0 0 3px;color:#c6dbe6;font-size:10px}
+  #mando .remote-pair{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  #mando .mb{border:1px solid #6a8594;border-radius:4px;background:#2d4655;color:#fff;min-height:28px;padding:3px 2px;cursor:pointer;touch-action:none;user-select:none;font:600 11px var(--sans)}
+  #mando .mb:hover{background:#416273}
+  #mando .mb:focus-visible{outline:2px solid #a9ffe1;outline-offset:2px}
+  #mando .mb.on,#mando .mb.armado{background:#20694f;border-color:#8befc2}
+  #mando .mb.nope{background:#852e30;border-color:#ff9c9c}
+  #mando #mbRapido{width:100%;margin-top:7px;font-size:10px}
+  #mando .remote-help{margin:6px 0 0;text-align:center;color:#b9ced9;font-size:9px}
   /* cajón de lo que el mando físico no tiene */
   .mando-extra{border:1px solid var(--rule);background:#dfe4ec;padding:5px 8px}
   .mando-extra>summary{font-size:12px;font-weight:700;color:#13294a;cursor:pointer}
@@ -591,7 +542,6 @@
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/pixel-grid.6caaccd40a9f43b3.js" as="script">
 <link rel="preload" href="assets/runtime/study-activity.ca085acb56fae58a.js" as="script">
-<link rel="preload" href="assets/runtime/symbia-equipment.00d804382ee47ab2.bin" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/symbia-room.40a36f2a15b3e0bc.bin" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/three-bundle.9848023754a347b2.js" as="script">
 <script>window.GANTRY_ASSET_PARTS={"assets/runtime/icrp-dmsa.3d2c79304fe0e707.deflate":[["assets/runtime/atlas-part.90c41548da20b8a8.bin",524288],["assets/runtime/atlas-part.daf8a3f8fded1818.bin",524288],["assets/runtime/atlas-part.3f6e3fea4103cf05.bin",524288],["assets/runtime/atlas-part.71e8e3ba9b289c4c.bin",524288],["assets/runtime/atlas-part.1f549de6be8d2331.bin",43671]],"assets/runtime/icrp-down.3c325b71e8182fe7.deflate":[["assets/runtime/atlas-part.a9140685feb2784c.bin",524288],["assets/runtime/atlas-part.3c6c81274ee1aa41.bin",524288],["assets/runtime/atlas-part.f8d7b25cf08160d1.bin",524288],["assets/runtime/atlas-part.10b7b76859ad55d7.bin",524288],["assets/runtime/atlas-part.b987f0c87183b22e.bin",524288],["assets/runtime/atlas-part.fa921f3e2068f1fa.bin",524288],["assets/runtime/atlas-part.5fe51779f9b627d8.bin",524288],["assets/runtime/atlas-part.a63c1920e4c0ba07.bin",524288],["assets/runtime/atlas-part.dc2caeca8c7b1942.bin",524288],["assets/runtime/atlas-part.ead52bdb82b98d5d.bin",524288],["assets/runtime/atlas-part.d0d4b605f1595466.bin",524288],["assets/runtime/atlas-part.02eae76dab032f90.bin",524288],["assets/runtime/atlas-part.f3a7472bbb8432a9.bin",524288],["assets/runtime/atlas-part.62255a08c8b2e901.bin",524288],["assets/runtime/atlas-part.4ed258f6cee7bd55.bin",319664]],"assets/runtime/icrp-exploration.fd924e7a42519d86.deflate":[["assets/runtime/atlas-part.fec74c9435a9130f.bin",524288],["assets/runtime/atlas-part.e5baf8a13357a348.bin",524288],["assets/runtime/atlas-part.9769513574929705.bin",524288],["assets/runtime/atlas-part.28424a6d6e407f63.bin",524288],["assets/runtime/atlas-part.019fe55129307af2.bin",447186]],"assets/runtime/icrp-mibi_up.1011b494f9753c3d.deflate":[["assets/runtime/atlas-part.65d96106bfcb497b.bin",524288],["assets/runtime/atlas-part.c2dd46a02877e398.bin",524288],["assets/runtime/atlas-part.31f0c710ac08df3d.bin",524288],["assets/runtime/atlas-part.ae167bb46b8482e3.bin",524288],["assets/runtime/atlas-part.bf600b8c2e6ae3d4.bin",524288],["assets/runtime/atlas-part.3b884bdddc550199.bin",524288],["assets/runtime/atlas-part.81c87136a8f2d669.bin",524288],["assets/runtime/atlas-part.1bdab81812d16226.bin",524288],["assets/runtime/atlas-part.dab67fc586be5d33.bin",524288],["assets/runtime/atlas-part.692e1b4eb2790446.bin",524288],["assets/runtime/atlas-part.3547800c576169e3.bin",524288],["assets/runtime/atlas-part.427cb8e0bed20800.bin",524288],["assets/runtime/atlas-part.280b0f73d3504323.bin",524288],["assets/runtime/atlas-part.0590505fac94b3cd.bin",524288],["assets/runtime/atlas-part.c99dac38bb8db93e.bin",524288],["assets/runtime/atlas-part.e637b8dedeacbc15.bin",524288],["assets/runtime/atlas-part.d0dc0ad1cca0279e.bin",201154]],"assets/runtime/icrp-thyroid.1ce883a6a0893e81.deflate":[["assets/runtime/atlas-part.f90ff4e9c81dc85d.bin",524288],["assets/runtime/atlas-part.fdb970558767c38e.bin",524288],["assets/runtime/atlas-part.941f811a6472a0b5.bin",524288],["assets/runtime/atlas-part.b0b6667cdd07846e.bin",524288],["assets/runtime/atlas-part.e2b22931d2088dd4.bin",524288],["assets/runtime/atlas-part.8c146ed503eecfac.bin",524288],["assets/runtime/atlas-part.8c222863ca09957c.bin",524288],["assets/runtime/atlas-part.47ea0b91dda95315.bin",524288],["assets/runtime/atlas-part.9066a43845cbda6c.bin",319600]],"assets/runtime/icrp-up.07cc6e9a570a3d2a.deflate":[["assets/runtime/atlas-part.46eabf44e5b77f9c.bin",524288],["assets/runtime/atlas-part.2074c1c1cfc440c3.bin",524288],["assets/runtime/atlas-part.7795d96fd28a52d5.bin",524288],["assets/runtime/atlas-part.10ab48cfcbfa154c.bin",524288],["assets/runtime/atlas-part.c60f3be0ea59a650.bin",524288],["assets/runtime/atlas-part.8917bbb10857ad58.bin",524288],["assets/runtime/atlas-part.4d23ec6c6fa9e5c1.bin",524288],["assets/runtime/atlas-part.98db513134d6a309.bin",524288],["assets/runtime/atlas-part.573cf1b755ca79f0.bin",524288],["assets/runtime/atlas-part.ca54d8c1df585c71.bin",524288],["assets/runtime/atlas-part.e9ef1dbb2f3a7a32.bin",524288],["assets/runtime/atlas-part.bea0b80a2333575e.bin",524288],["assets/runtime/atlas-part.9a2d06d5c8b7282b.bin",524288],["assets/runtime/atlas-part.ec802b459e007e16.bin",524288],["assets/runtime/atlas-part.10889df46a57a7e4.bin",524288],["assets/runtime/atlas-part.a7f4a52d152bbdf3.bin",524288],["assets/runtime/atlas-part.d9f535a5ae1e8dbe.bin",132194]],"assets/runtime/mag3-down.ec5cc8b444b45139.deflate":[["assets/runtime/atlas-part.09b5671c70f95d0b.bin",524288],["assets/runtime/atlas-part.5cdaedefc7c8bc50.bin",524288],["assets/runtime/atlas-part.8e179310a6df7625.bin",524288],["assets/runtime/atlas-part.8d0592ece8f2c906.bin",524288],["assets/runtime/atlas-part.39685c5e26f237ec.bin",524288],["assets/runtime/atlas-part.2fe81c779c337a34.bin",430760]],"assets/runtime/mag3-up.d22362c762fc09e0.deflate":[["assets/runtime/atlas-part.e6b5b5ac6ba55360.bin",524288],["assets/runtime/atlas-part.c9c456ec16bfe1d1.bin",524288],["assets/runtime/atlas-part.c1ba34600b47ebc8.bin",524288],["assets/runtime/atlas-part.e41a5d998be29b03.bin",524288],["assets/runtime/atlas-part.b55832e2e754fa83.bin",524288],["assets/runtime/atlas-part.2fa994a16dcfd7b9.bin",524288],["assets/runtime/atlas-part.9d017245eea671fd.bin",218546]],"assets/runtime/mdp-bone-down.eb8ae812f21dec21.bin":[["assets/runtime/atlas-part.9c60e0b6e187dfa2.bin",524288],["assets/runtime/atlas-part.530badf6954f1034.bin",524288],["assets/runtime/atlas-part.7513d5ed4e23bd56.bin",524288],["assets/runtime/atlas-part.af7c19baddab5900.bin",524288],["assets/runtime/atlas-part.aa06a9fc35fc7421.bin",524288],["assets/runtime/atlas-part.48d785b35d7af45e.bin",524288],["assets/runtime/atlas-part.2be45c5f6c4610fb.bin",524288],["assets/runtime/atlas-part.7b370c514ea55b05.bin",524288],["assets/runtime/atlas-part.33a2c1cc7928bce5.bin",524288],["assets/runtime/atlas-part.99850cedb7014622.bin",524288],["assets/runtime/atlas-part.ba136b90ddbc6d71.bin",524288],["assets/runtime/atlas-part.933e5fa6b9bd96e8.bin",524288],["assets/runtime/atlas-part.0ade1ecda5c6963e.bin",524288],["assets/runtime/atlas-part.a500c08a0a64233c.bin",524288],["assets/runtime/atlas-part.18deae3009e54dbe.bin",524288],["assets/runtime/atlas-part.1a61cdedaa57cd0a.bin",26956]],"assets/runtime/mdp-bone-up.d9041d9b79ef7df1.bin":[["assets/runtime/atlas-part.04b90298b6d174b2.bin",524288],["assets/runtime/atlas-part.9e296631426abf09.bin",524288],["assets/runtime/atlas-part.90d6ae93384353fa.bin",524288],["assets/runtime/atlas-part.ec0b8a2c6ad10626.bin",524288],["assets/runtime/atlas-part.1bc37e20634cbee1.bin",524288],["assets/runtime/atlas-part.ad3f1876aa95eeaa.bin",524288],["assets/runtime/atlas-part.375f04e5123510f2.bin",524288],["assets/runtime/atlas-part.9b6236ff2d82e7c8.bin",524288],["assets/runtime/atlas-part.e181f80b10f13156.bin",524288],["assets/runtime/atlas-part.7199ecdaba0f664d.bin",524288],["assets/runtime/atlas-part.10bf89428042ee00.bin",524288],["assets/runtime/atlas-part.0a11535c60c8ccef.bin",524288],["assets/runtime/atlas-part.c86421fbf19b20ff.bin",524288],["assets/runtime/atlas-part.b5870c760504c9f7.bin",524288],["assets/runtime/atlas-part.8b0257ea7e20c339.bin",524288],["assets/runtime/atlas-part.78d2c8e6bab197eb.bin",354514]],"assets/runtime/mdp-organs-down.23220c63ee0b95ef.bin":[["assets/runtime/atlas-part.cb7f2d0a64856422.bin",524288],["assets/runtime/atlas-part.969360d2e1d42b2f.bin",524288],["assets/runtime/atlas-part.33d5d3f2ca15c49b.bin",524288],["assets/runtime/atlas-part.9aed01e52000943a.bin",524288],["assets/runtime/atlas-part.c18817e525259939.bin",502410]],"assets/runtime/mdp-organs-up.29b6278dd71a4271.bin":[["assets/runtime/atlas-part.51cc57c23c2913b0.bin",524288],["assets/runtime/atlas-part.c31a29483dd87a10.bin",524288],["assets/runtime/atlas-part.7a7c90bb7ec24887.bin",524288],["assets/runtime/atlas-part.de3fcae76147b080.bin",524288],["assets/runtime/atlas-part.7a267705f1b74b6e.bin",524288],["assets/runtime/atlas-part.f3f626e34690b2df.bin",304309]],"assets/runtime/mibi-kinetic-up.f4ee84c4f3c1348f.bin":[["assets/runtime/atlas-part.288b97f7aa14f4d2.bin",524288],["assets/runtime/atlas-part.665a871c721f0b17.bin",524288],["assets/runtime/atlas-part.c8f25e707a7d2c97.bin",524288],["assets/runtime/atlas-part.3e19175861a3bdb8.bin",524288],["assets/runtime/atlas-part.a0d91d152014aae9.bin",524288],["assets/runtime/atlas-part.4014774f2d25024d.bin",100716]]};
@@ -639,7 +589,7 @@
 </script>
 <!-- FAST_LOAD_END -->
 <!-- WORKSPACE_LAYOUT_BEGIN -->
-<link rel="stylesheet" href="assets/runtime/gantry-workspace.9927cf3159e731c1.css">
+<link rel="stylesheet" href="assets/runtime/gantry-workspace.28729c7d87c214f5.css">
 <!-- WORKSPACE_LAYOUT_END -->
 </head>
 <body>
@@ -714,7 +664,7 @@
     if(initial&&scene){
       done.add('scene');
       watch('room',scene.room.ready,()=>!!scene.room.metadata&&scene.room.enabled);
-      const simple=new URLSearchParams(location.search).get('equipo')==='simple';
+      const simple=scene.equipment.kind==='simple'||new URLSearchParams(location.search).get('equipo')==='simple';
       watch('equipment',scene.equipment.ready,()=>simple||!!scene.equipment.metadata&&scene.equipment.enabled);
       if(scene.patientLoadState==='ready')done.add('patient');
       if(scene.patientLoadState==='error'){fail('No se pudo cargar el paciente.');return;}
@@ -790,11 +740,16 @@
         <p>Toda copia o parte sustancial debe conservar este aviso de copyright y los avisos de terceros.</p>
         <h3>Componentes de terceros</h3>
         <p><strong>Three.js v0.185.1</strong> — © 2010–2026 three.js authors; distribuido bajo <a href="https://opensource.org/license/mit" target="_blank" rel="noopener noreferrer">licencia MIT</a>.</p>
-        <p><strong>Modelo humano «Man» de Quaternius</strong> — distribuido bajo <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener noreferrer">CC0 1.0 Universal</a>.</p>
         <p><strong>Anatomía ósea ICRP 145, MRCP_AM.</strong> ICRP, 2020. <a href="https://www.icrp.org/publication.asp?id=ICRP+Publication+145" target="_blank" rel="noopener noreferrer">Adult mesh-type reference computational phantoms</a>. ICRP Publication 145, Ann. ICRP 49(3). Las proyecciones se calcularon desde una voxelización local a 3 mm. La postura de brazos elevados es una rearticulación docente aproximada de húmeros, antebrazos y manos; no es una postura oficial certificada por ICRP. Clavículas y escápulas permanecen en la posición original.</p>
         <p><strong>MIBI cardíaco.</strong> 72 proyecciones cada 5° con brazos arriba. VI sintético ampliado un 25 % y descendido 6 mm hacia el hígado, con captación irregular. La serie usa la misma ventana de persistencia en vivo. Es un modelo emisor docente derivado de ICRP; no una segmentación ventricular original ni una reconstrucción SPECT.</p>
         <p>La captación ósea, los eventos de Poisson y la persistencia son simulados. Se dispone de 80 direcciones por postura, con interpolación lineal de intensidad entre vistas vecinas. La ventana conserva eventos de los últimos 0,25–5 s y se actualiza aproximadamente a 10 Hz. La tasa de cuentas se refiere al cuerpo completo anterior; el recorte, la distancia, el colimador y la ventana energética cambian las cuentas recibidas. El modelo humano 3D es un indicador de postura, no la malla anatómica ICRP.</p>
         <p>Esos componentes conservan sus condiciones originales y no quedan sometidos a la licencia MIT del simulador. Las marcas o nombres de terceros se mencionan sólo con fines descriptivos y no implican afiliación, patrocinio ni aprobación.</p>
+        <h3 id="assetCredits">Modelos 3D y adaptaciones</h3>
+        <p><strong>Gantry simple, camilla y control genérico:</strong> geometría procedural y diseño de interfaz del simulador, © 2026 Luciano Tejada Castro, MIT.</p>
+        <p><strong>Paciente:</strong> <a href="https://poly.pizza/m/HMnuH5geEG" target="_blank" rel="noopener">Man</a>, Quaternius — <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0</a>. Escalado, orientación y postura de brazos adaptados para la camilla.</p>
+        <p><strong>Sala:</strong> arquitectura adaptada de SymbiaRoom a partir de dimensiones aportadas por el autor. Mobiliario de terceros:</p>
+<ul><li><a href="https://sketchfab.com/3d-models/medical-cabinet-f47142facdf14e1e92f91f916940cfb9" target="_blank" rel="noopener">Medical Cabinet</a>, conndavis20 — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/hospital-medical-trolley-cf02b01766534fe28a57e5e23e8c3f06" target="_blank" rel="noopener">Hospital medical Trolley</a>, Chenchanchong — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/iv-pole-76521e2f71704b1986cf5ac54368b14f" target="_blank" rel="noopener">IV Pole</a>, Mouch — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/8d3a49b665184ccd97cf69118186e046" target="_blank" rel="noopener">Clinical Hospital bin white</a> y <a href="https://sketchfab.com/3d-models/195d03993e2741fdbe4f0d218d2970a6" target="_blank" rel="noopener">Clinical waste Hospital bin yellow</a>, Keith_Pamment, derivados de <a href="https://skfb.ly/XIsz" target="_blank" rel="noopener">Hospital Bin</a>, teeart — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.</li><li><a href="https://www.sweethome3d.com/wp-content/themes/sweet-home-3d/theme/assets/models/scopia/shower-armchair.zip" target="_blank" rel="noopener">Shower armchair</a>, Scopia Visual Interfaces Systems, s.l. y Space Mushrooms — <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>. Asiento continuo adaptado en SymbiaRoom.</li><li><a href="https://3dassets.dev/assets/clinic-and-veterinary-practice-clinical-hand-wash-basi-8eaa7002" target="_blank" rel="noopener">Clinical hand wash basin</a>, 3D Assets (fuente declarada asistida por IA) — <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0</a>.</li></ul>
+        <p>Adaptación web del mobiliario: escala y colocación visual, texturas convertidas a colores por vértice, normales cuantizadas, mallas agrupadas y acabados simplificados. Los recursos originales conservan las licencias enlazadas. <a href="assets/CREDITS.md" target="_blank" rel="noopener">Registro completo de créditos</a>.</p>
         <h3>Uso educativo y limitación de responsabilidad</h3>
         <p>Este software es una simulación educativa y no es un dispositivo médico ni sustituye protocolos institucionales, formación profesional, juicio clínico o instrucciones del fabricante. Se proporciona sin garantía sobre su idoneidad para decisiones clínicas o asistenciales.</p>
       </div>
@@ -830,7 +785,7 @@
     <div id="gantryWorkspace" style="display:flex;gap:14px;padding:12px;height:calc(100% - 52px);box-sizing:border-box;background:#e9edf3">
       <div id="gantryWorkArea" style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">
         <div id="g3dStage" style="flex:1;background:#0b0f14;border:1px solid #2a3a52;border-radius:4px;position:relative;min-height:0;overflow:hidden">
-          <details id="roomPerformance" style="position:absolute;bottom:6px;left:8px;z-index:3;color:#c8d8e8;background:#101b25da;padding:3px 6px;font:11px monospace;max-width:90%"><summary style="cursor:pointer">Rendimiento</summary><output id="roomMetrics" aria-live="off">Midiendo…</output><div>Tiempo CPU de la escena 3D; no mide el tiempo GPU.</div><details style="max-width:540px"><summary>Créditos de la sala y equipo</summary><div style="max-height:150px;overflow:auto">Equipo visual derivado del modelo Siemens 13041; <a href="assets/symbia-equipment/CREDITS.md" target="_blank" rel="noopener" style="color:#b6d8ff">procedencia y adaptaci&oacute;n</a>. Entorno adaptado de SymbiaRoom; colores por vértice y acabados simplificados. Mobiliario de colocación visual.<ul><li><a href="https://sketchfab.com/3d-models/medical-cabinet-f47142facdf14e1e92f91f916940cfb9" target="_blank" rel="noopener" style="color:#b6d8ff">Medical Cabinet</a>, conndavis20 — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/hospital-medical-trolley-cf02b01766534fe28a57e5e23e8c3f06" target="_blank" rel="noopener" style="color:#b6d8ff">Hospital medical Trolley</a>, Chenchanchong — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/iv-pole-76521e2f71704b1986cf5ac54368b14f" target="_blank" rel="noopener" style="color:#b6d8ff">IV Pole</a>, Mouch — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/8d3a49b665184ccd97cf69118186e046" target="_blank" rel="noopener" style="color:#b6d8ff">Clinical Hospital bin white</a> y <a href="https://sketchfab.com/3d-models/195d03993e2741fdbe4f0d218d2970a6" target="_blank" rel="noopener" style="color:#b6d8ff">Clinical waste Hospital bin yellow</a>, Keith_Pamment, derivados de <a href="https://skfb.ly/XIsz" target="_blank" rel="noopener" style="color:#b6d8ff">Hospital Bin</a>, teeart — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 4.0</a>.</li><li><a href="https://www.sweethome3d.com/wp-content/themes/sweet-home-3d/theme/assets/models/scopia/shower-armchair.zip" target="_blank" rel="noopener" style="color:#b6d8ff">Shower armchair</a>, Scopia Visual Interfaces Systems, s.l. y Space Mushrooms — <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 3.0</a>. Asiento continuo adaptado en SymbiaRoom.</li><li><a href="https://3dassets.dev/assets/clinic-and-veterinary-practice-clinical-hand-wash-basi-8eaa7002" target="_blank" rel="noopener" style="color:#b6d8ff">Clinical hand wash basin</a>, 3D Assets (fuente declarada asistida por IA) — <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC0 1.0</a>.</li></ul></div></details></details>
+          <details id="roomPerformance" style="position:absolute;bottom:6px;left:8px;z-index:3;color:#c8d8e8;background:#101b25da;padding:3px 6px;font:11px monospace;max-width:90%"><summary style="cursor:pointer">Rendimiento</summary><output id="roomMetrics" aria-live="off">Midiendo…</output><div>Tiempo CPU de la escena 3D; no mide el tiempo GPU.</div><details style="max-width:540px"><summary>Créditos de la sala y equipo</summary><div style="max-height:150px;overflow:auto">Gantry y control genéricos del simulador. <a href="assets/CREDITS.md" target="_blank" rel="noopener" style="color:#b6d8ff">Créditos de los modelos 3D</a>. Entorno adaptado de SymbiaRoom; colores por vértice y acabados simplificados. Mobiliario de colocación visual.<ul><li><a href="https://sketchfab.com/3d-models/medical-cabinet-f47142facdf14e1e92f91f916940cfb9" target="_blank" rel="noopener" style="color:#b6d8ff">Medical Cabinet</a>, conndavis20 — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/hospital-medical-trolley-cf02b01766534fe28a57e5e23e8c3f06" target="_blank" rel="noopener" style="color:#b6d8ff">Hospital medical Trolley</a>, Chenchanchong — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/iv-pole-76521e2f71704b1986cf5ac54368b14f" target="_blank" rel="noopener" style="color:#b6d8ff">IV Pole</a>, Mouch — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 4.0</a>.</li><li><a href="https://sketchfab.com/3d-models/8d3a49b665184ccd97cf69118186e046" target="_blank" rel="noopener" style="color:#b6d8ff">Clinical Hospital bin white</a> y <a href="https://sketchfab.com/3d-models/195d03993e2741fdbe4f0d218d2970a6" target="_blank" rel="noopener" style="color:#b6d8ff">Clinical waste Hospital bin yellow</a>, Keith_Pamment, derivados de <a href="https://skfb.ly/XIsz" target="_blank" rel="noopener" style="color:#b6d8ff">Hospital Bin</a>, teeart — <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 4.0</a>.</li><li><a href="https://www.sweethome3d.com/wp-content/themes/sweet-home-3d/theme/assets/models/scopia/shower-armchair.zip" target="_blank" rel="noopener" style="color:#b6d8ff">Shower armchair</a>, Scopia Visual Interfaces Systems, s.l. y Space Mushrooms — <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC BY 3.0</a>. Asiento continuo adaptado en SymbiaRoom.</li><li><a href="https://3dassets.dev/assets/clinic-and-veterinary-practice-clinical-hand-wash-basi-8eaa7002" target="_blank" rel="noopener" style="color:#b6d8ff">Clinical hand wash basin</a>, 3D Assets (fuente declarada asistida por IA) — <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener" style="color:#b6d8ff">CC0 1.0</a>.</li></ul></div></details></details>
           <canvas id="g3dCanvas" style="width:100%;height:100%;display:block;touch-action:none"></canvas>
           <div id="g3dLbl" style="position:absolute;left:8px;top:6px;color:#7fe0a8;font:700 11px var(--mono);pointer-events:none;
                background:rgba(6,12,17,.62);padding:3px 6px;border-radius:3px">VISTA 3D — SPECT/CT</div>
@@ -1026,8 +981,7 @@
           <button class="btn" id="roomToggle" type="button" aria-pressed="false">Mostrar sala</button>
           <button class="btn" id="roomOverview" type="button" hidden>Vista sala</button>
           <span class="hint" id="roomStatus" role="status"></span>
-          <button class="btn" id="equipmentToggle" type="button" aria-pressed="false">Usar equipo Symbia</button>
-          <span class="hint" id="equipmentStatus" role="status"></span>
+          <span class="hint" id="equipmentStatus" role="status">Equipo genérico</span>
           <details id="collisionOptions" style="position:relative;font:11px var(--mono)">
             <summary style="cursor:pointer;padding:4px">Colisiones</summary>
             <div style="position:absolute;bottom:100%;left:0;width:320px;max-height:260px;overflow:auto;padding:10px;background:#11202c;border:1px solid #617e94;color:#e6eff6;z-index:40;box-shadow:0 3px 16px #0008">
@@ -1041,13 +995,7 @@
           <span class="hint" style="margin-left:auto">Arrastra = orbitar · rueda = zoom</span>
         </div>
       </div>
-      <!-- ================= MANDO (control remoto de mano) ======================
-           Réplica del mando físico. Se dibujan TODOS los botones del
-           aparato real, pero sólo llevan luz —y sólo responden— los que el equipo
-           deja operar desde aquí; el resto queda apagado e inerte (clase .off).
-           Cada botón vivo lleva data-g/data-d (eje y sentido) igual que los
-           antiguos .gbtn, de modo que el motor del control remoto no cambia.
-           ===================================================================== -->
+      <!-- Control genérico: conserva ejes y límites del simulador. -->
       <div id="gantryRemote" style="width:252px;flex:none;display:flex;flex-direction:column;gap:9px;overflow:auto">
         <div style="background:#0a1a12;border:1px solid #14432b;border-radius:5px;padding:9px 12px;font-family:var(--mono);color:#43e08a;box-shadow:inset 0 0 12px #0f3d26">
           <div style="display:flex;justify-content:space-between;font-size:12.5px;margin:2px 0"><span>Distancia D1 / D2</span><b><span id="gDist1">25</span> / <span id="gDist2">25</span> cm</b></div>
@@ -1058,284 +1006,31 @@
         </div>
 
         <div class="mando-wrap">
-        <!-- Foto real editada: sólo los símbolos indicados conservan luz ámbar.
-             El viewBox recorta el margen transparente sin alterar el PNG. -->
-        <svg id="mando" viewBox="107 0 637 1791" role="group" aria-label="Control remoto de mano fotografiado">
-          <defs>
-            <radialGradient id="mHaloFoto"><stop offset="0" stop-color="#ffb11f" stop-opacity=".72"/><stop offset="1" stop-color="#ff9b00" stop-opacity="0"/></radialGradient>
-          </defs>
-          <image href="assets/runtime/image.8211eb50010b0c47.png" x="0" y="0" width="878" height="1791" preserveAspectRatio="none"/>
-          <!-- Cubierta localizada sobre la antigua marca impresa: mantiene el
-               PNG original, su transparencia y todos los controles intactos. -->
-          <rect id="mandoBrandCover" x="348" y="1664" width="182" height="52" rx="24"
-                fill="#444545" pointer-events="none"/>
-
-          <!-- La edición conservó estas dos flechas grises; se restituyen en ámbar
-               porque control.png las marca como acercar/alejar camilla. -->
-          <g aria-hidden="true" fill="#ffa313" stroke="#ffbd36" stroke-width="2">
-            <path d="M296 1216 L329 1203 L329 1229Z"/>
-            <path d="M589 1215 L556 1202 L556 1229Z"/>
-          </g>
-
-          <!-- 11 controles activos: rápido + giro(2) + D1(2) + D2(2) + camilla(4). -->
-          <g class="mb" id="mbRapido" data-mb="rapido" tabindex="0" role="button" aria-label="Modo movimiento rápido de detectores">
-            <circle class="halo foto-halo" cx="443" cy="80" r="72"/><circle class="hit" cx="443" cy="80" r="55"/>
-          </g>
-          <g class="mb" data-g="detDist1" data-d="1" tabindex="0" role="button" aria-label="Alejar detector 1">
-            <ellipse class="hit" cx="443" cy="272" rx="102" ry="58"/>
-          </g>
-          <g class="mb" data-g="detDist1" data-d="-1" tabindex="0" role="button" aria-label="Acercar detector 1">
-            <ellipse class="hit" cx="443" cy="496" rx="102" ry="58"/>
-          </g>
-          <g class="mb" id="mbRotCcw" data-g="rot" data-d="-1" tabindex="0" role="button" aria-label="Girar detectores en sentido contrario al reloj">
-            <path class="hit" d="M268 470 Q188 508 190 591 Q191 665 253 704 L299 658 Q270 590 300 514Z"/>
-          </g>
-          <g class="mb" id="mbRotCw" data-g="rot" data-d="1" tabindex="0" role="button" aria-label="Girar detectores en sentido del reloj">
-            <path class="hit" d="M618 470 Q698 508 696 591 Q695 665 633 704 L587 658 Q616 590 586 514Z"/>
-          </g>
-          <g class="mb" data-g="detDist2" data-d="-1" tabindex="0" role="button" aria-label="Acercar detector 2">
-            <ellipse class="hit" cx="443" cy="673" rx="102" ry="58"/>
-          </g>
-          <g class="mb" data-g="detDist2" data-d="1" tabindex="0" role="button" aria-label="Alejar detector 2">
-            <ellipse class="hit" cx="443" cy="910" rx="102" ry="58"/>
-          </g>
-          <g class="mb" data-g="tableH" data-d="1" tabindex="0" role="button" aria-label="Subir camilla">
-            <ellipse class="hit" cx="443" cy="1097" rx="104" ry="60"/>
-          </g>
-          <g class="mb" data-g="tableH" data-d="-1" tabindex="0" role="button" aria-label="Bajar camilla">
-            <ellipse class="hit" cx="443" cy="1346" rx="104" ry="60"/>
-          </g>
-          <g class="mb" data-g="tableZ" data-d="1" tabindex="0" role="button" aria-label="Acercar camilla al gantry">
-            <path class="hit" d="M326 1120 Q273 1163 276 1220 Q276 1282 326 1325 L372 1280 Q348 1220 373 1162Z"/>
-          </g>
-          <g class="mb" data-g="tableZ" data-d="-1" tabindex="0" role="button" aria-label="Alejar camilla del gantry">
-            <path class="hit" d="M560 1120 Q613 1163 610 1220 Q610 1282 560 1325 L514 1280 Q538 1220 513 1162Z"/>
-          </g>
-
-          <!-- Botones visibles pero inertes: permanecen grises en la fotografía. -->
-          <g class="mb off" data-mb="paro"/><g class="mb off" data-mb="c"/>
-          <g class="mb off" data-mb="1-nw"/><g class="mb off" data-mb="1-ne"/>
-          <g class="mb off" data-mb="1-left"/><g class="mb off" data-mb="1-right"/><g class="mb off" data-mb="1-centro"/>
-          <g class="mb off" data-mb="2-left"/><g class="mb off" data-mb="2-right"/><g class="mb off" data-mb="2-centro"/>
-          <g class="mb off" data-mb="2-sw"/><g class="mb off" data-mb="2-se"/><g class="mb off" data-mb="camilla-centro"/>
-          <g class="mb off" data-mb="s1"/><g class="mb off" data-mb="s2"/><g class="mb off" data-mb="s3"/>
-          <g class="mb off" data-mb="s4"/><g class="mb off" data-mb="s5"/><g class="mb off" data-mb="s6"/>
-        </svg>
-
-        <!-- Remake vectorial anterior conservado fuera de render para facilitar
-             comparación y edición futura; la interfaz usa exclusivamente la foto. -->
-        <template id="mandoVectorAnterior">
-        <svg viewBox="0 0 220 760" aria-hidden="true">
-          <defs>
-            <linearGradient id="mCuerpo" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0"   stop-color="#3b3d3f"/>
-              <stop offset=".12" stop-color="#6f7173"/>
-              <stop offset=".42" stop-color="#5e6062"/>
-              <stop offset=".72" stop-color="#545658"/>
-              <stop offset="1"   stop-color="#333537"/>
-            </linearGradient>
-            <linearGradient id="mDisco" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#636568"/><stop offset=".48" stop-color="#505255"/><stop offset="1" stop-color="#383a3d"/>
-            </linearGradient>
-            <linearGradient id="mTecla" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#77797b"/><stop offset=".20" stop-color="#696b6d"/><stop offset="1" stop-color="#414345"/>
-            </linearGradient>
-            <radialGradient id="mHalo" cx=".5" cy=".5" r=".5">
-              <stop offset="0" stop-color="#ffa61f" stop-opacity=".9"/>
-              <stop offset="1" stop-color="#ffa61f" stop-opacity="0"/>
-            </radialGradient>
-            <filter id="mSombra" x="-45%" y="-45%" width="190%" height="190%">
-              <feDropShadow dx="0" dy="1.5" stdDeviation="1.15" flood-color="#08090a" flood-opacity=".78"/>
-            </filter>
-            <!-- Una sola geometría para las cuatro teclas de cada cruceta. -->
-            <path id="mTeclaRadial" d="M-14-22 L-31-43 Q0-59 31-43 L14-22 Q0-30-14-22Z"/>
-            <path id="mHaloRadial" d="M-16-19 L-39-48 Q0-70 39-48 L16-19 Q0-33-16-19Z"/>
-            <path id="mFlechaRadial" d="M0-47 L6-36 L-6-36Z"/>
-          </defs>
-
-          <!-- Carcasa rehecha a partir de la fotografía: estrecha, larga y con
-               dos únicos ensanches, donde viven las teclas de giro del gantry. -->
-          <path id="mandoCuerpo" fill="url(#mCuerpo)" stroke="#202224" stroke-width="1.7"
-            d="M110 7 C145 7 166 22 167 47 C168 68 165 82 167 105
-               C171 133 174 183 169 210 C185 215 207 226 213 245
-               C219 264 207 282 174 292 C178 329 174 373 169 414
-               C166 447 170 478 171 516 L171 666
-               C171 714 150 744 110 750 C70 744 49 714 49 666 L49 516
-               C50 478 54 447 51 414 C46 373 42 329 46 292
-               C13 282 1 264 7 245 C13 226 35 215 51 210
-               C46 183 49 133 53 105 C55 82 52 68 53 47
-               C54 22 75 7 110 7Z"/>
-          <path id="mandoBordeInterno"
-            d="M110 13 C140 13 158 26 159 48 M57 518 L57 665 C57 704 74 729 102 739
-               M163 518 L163 665 C163 704 146 729 118 739"/>
-
-          <g aria-hidden="true">
-            <circle class="testigo" cx="51" cy="160" r="3.2"/><circle class="testigo on" cx="169" cy="160" r="3.2"/>
-            <circle class="testigo" cx="51" cy="335" r="3.2"/><circle class="testigo on" cx="169" cy="335" r="3.2"/>
-          </g>
-
-          <!-- ============ fila superior: paro · movimiento rápido · C ============ -->
-          <g class="mb off" data-mb="paro">
-            <circle class="cap" cx="68" cy="47" r="17"/>
-            <g class="ico"><rect x="60.5" y="43" width="7" height="8" rx="1"/><path d="M70.5 42.5 L76 47 L70.5 51.5Z"/></g>
-          </g>
-          <g class="mb" id="mbRapido" data-mb="rapido" tabindex="0" role="button"
-             aria-label="Modo movimiento rápido de detectores">
-            <circle class="halo" cx="110" cy="47" r="24"/>
-            <circle class="cap" cx="110" cy="47" r="17"/>
-            <g class="ico"><path d="M102.5 41.5 L108 47 L102.5 52.5Z"/><path d="M110.5 41.5 L116 47 L110.5 52.5Z"/></g>
-          </g>
-          <g class="mb off" data-mb="c">
-            <circle class="cap" cx="152" cy="47" r="17"/>
-            <text class="ico-t" x="152" y="52.5">C</text>
-          </g>
-
-          <!-- basculación superior del detector 1 -->
-          <g class="mb off" data-mb="1-nw">
-            <path class="cap-p" d="M58 111 Q78 91 103 89 L105 105 Q82 108 66 123Z"/>
-            <path class="ico" d="M87 105 L73 97 M73 97 l3 7 M73 97 l8-1" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-          <g class="mb off" data-mb="1-ne">
-            <path class="cap-p" d="M117 89 Q142 91 162 111 L154 123 Q138 108 115 105Z"/>
-            <path class="ico" d="M133 105 L147 97 M147 97 l-3 7 M147 97 l-8-1" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-
-          <!-- ============ cruceta: detector 1 ============ -->
-          <g class="cruz" transform="translate(110 160)">
-            <circle class="aro" r="51"/>
-            <g class="mb" data-g="detDist1" data-d="1" tabindex="0" role="button" aria-label="Alejar detector 1">
-              <use class="halo-p" href="#mHaloRadial"/><use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb off" data-mb="1-right" transform="rotate(90)">
-              <use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb" data-g="detDist1" data-d="-1" tabindex="0" role="button" aria-label="Acercar detector 1" transform="rotate(180)">
-              <use class="halo-p" href="#mHaloRadial"/><use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb off" data-mb="1-left" transform="rotate(270)">
-              <use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb off" data-mb="1-centro">
-              <circle class="cap" r="24"/><text class="ico-t big" x="0" y="7">1</text>
-            </g>
-          </g>
-
-          <!-- giro del estativo: teclas grandes que forman los hombros laterales -->
-          <g class="mb" id="mbRotCcw" data-g="rot" data-d="-1" tabindex="0" role="button"
-             aria-label="Girar detectores en sentido contrario al reloj">
-            <path class="halo-p" d="M54 212 Q14 219 7 244 Q1 267 28 287 L57 268 Q43 246 58 225Z"/>
-            <path class="cap-p" d="M50 218 Q22 225 16 246 Q12 263 30 278 L50 264 Q42 247 55 228Z"/>
-            <path class="ico" d="M31 233 L31 260 M31 266 l-6-8 M31 266 l6-8" fill="none" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-          <g class="mb" id="mbRotCw" data-g="rot" data-d="1" tabindex="0" role="button"
-             aria-label="Girar detectores en sentido del reloj">
-            <path class="halo-p" d="M166 212 Q206 219 213 244 Q219 267 192 287 L163 268 Q177 246 162 225Z"/>
-            <path class="cap-p" d="M170 218 Q198 225 204 246 Q208 263 190 278 L170 264 Q178 247 165 228Z"/>
-            <path class="ico" d="M189 233 L189 260 M189 266 l-6-8 M189 266 l6-8" fill="none" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-
-          <!-- grabado del paciente, al ras de la carcasa -->
-          <g id="mandoOmega">
-            <circle cx="110" cy="245" r="7.5"/>
-            <path d="M97 260 v-4 h7 M123 260 v-4 h-7 M95 260 h30"/>
-          </g>
-
-          <!-- ============ cruceta: detector 2 ============ -->
-          <g class="cruz" transform="translate(110 335)">
-            <circle class="aro" r="51"/>
-            <g class="mb" data-g="detDist2" data-d="-1" tabindex="0" role="button" aria-label="Acercar detector 2">
-              <use class="halo-p" href="#mHaloRadial"/><use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb off" data-mb="2-right" transform="rotate(90)">
-              <use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb" data-g="detDist2" data-d="1" tabindex="0" role="button" aria-label="Alejar detector 2" transform="rotate(180)">
-              <use class="halo-p" href="#mHaloRadial"/><use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb off" data-mb="2-left" transform="rotate(270)">
-              <use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb off" data-mb="2-centro">
-              <circle class="cap" r="24"/><text class="ico-t big" x="0" y="7">2</text>
-            </g>
-          </g>
-
-          <!-- arcos de basculación bajo la cruceta 2: inertes -->
-          <g class="mb off" data-mb="2-sw">
-            <path class="cap-p" d="M105 390 L103 406 Q78 403 58 383 L66 371 Q82 386 105 390Z"/>
-            <path class="ico" d="M87 389 L73 397 M73 397 l3-7 M73 397 l8 1" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-          <g class="mb off" data-mb="2-se">
-            <path class="cap-p" d="M115 390 Q138 386 154 371 L162 383 Q142 403 117 406Z"/>
-            <path class="ico" d="M133 389 L147 397 M147 397 l-3-7 M147 397 l-8 1" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-          </g>
-
-          <!-- ============ cruceta: camilla ============ -->
-          <g class="cruz" transform="translate(110 515)">
-            <circle class="aro" r="51"/>
-            <g class="mb" data-g="tableH" data-d="1" tabindex="0" role="button" aria-label="Subir camilla">
-              <use class="halo-p" href="#mHaloRadial"/><use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb" data-g="tableZ" data-d="-1" tabindex="0" role="button" aria-label="Alejar camilla del gantry">
-              <g transform="rotate(90)"><use class="halo-p" href="#mHaloRadial"/><use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/></g>
-            </g>
-            <g class="mb" data-g="tableH" data-d="-1" tabindex="0" role="button" aria-label="Bajar camilla" transform="rotate(180)">
-              <use class="halo-p" href="#mHaloRadial"/><use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/>
-            </g>
-            <g class="mb" data-g="tableZ" data-d="1" tabindex="0" role="button" aria-label="Acercar camilla al gantry">
-              <g transform="rotate(270)"><use class="halo-p" href="#mHaloRadial"/><use class="cap-p" href="#mTeclaRadial"/><use class="ico" href="#mFlechaRadial"/></g>
-            </g>
-            <g class="mb off" data-mb="camilla-centro">
-              <circle class="cap" r="24"/>
-              <g class="ico">
-                <rect x="-10" y=".5" width="20" height="4" rx="1.4"/>
-                <rect x="-3" y="4.5" width="6" height="6.5" rx="1"/>
-                <rect x="-6.6" y="-6.5" width="3.2" height="7" rx="1.2"/>
-                <circle cx="-5" cy="-9.5" r="2.4"/>
-              </g>
-            </g>
-          </g>
-
-          <!-- ============ teclas de servicio: dos filas de tres, inertes ============ -->
-          <g class="mb off" data-mb="s1">
-            <circle class="cap" cx="65" cy="634" r="17"/><g class="ico" transform="translate(13 110)">
-              <circle cx="60.5" cy="517.5" r="2.1"/><path d="M44 519.5h13 M42.5 522.5h19 M45 523l11 8.5 M56 523l-11 8.5" fill="none" stroke-width="1.8"/><circle cx="45.5" cy="533" r="1.7" fill="none"/><circle cx="55.5" cy="533" r="1.7" fill="none"/></g>
-          </g>
-          <g class="mb off" data-mb="s2">
-            <circle class="cap" cx="110" cy="634" r="17"/><g class="ico" transform="translate(10 110)">
-              <path d="M92 514.5v7 M108 514.5v7 M93.5 517.5h13 M93.5 517.5l3-2.2 M93.5 517.5l3 2.2 M106.5 517.5l-3-2.2 M106.5 517.5l-3 2.2" fill="none" stroke-width="1.7"/><circle cx="107" cy="528" r="2.2"/><path d="M90.5 531.5h10.5v-4.5h3.5v4.5" fill="none" stroke-width="2"/></g>
-          </g>
-          <g class="mb off" data-mb="s3">
-            <circle class="cap" cx="155" cy="634" r="17"/><g class="ico" transform="translate(7 110)">
-              <circle cx="148.5" cy="514.5" r="2.3"/><path d="M147.5 518l.5 5.5 6 .5" fill="none" stroke-width="2"/><circle cx="146" cy="528.5" r="5.6" fill="none" stroke-width="1.9"/><path d="M153.5 524.5l2 5.5" fill="none" stroke-width="1.9"/></g>
-          </g>
-          <g class="mb off" data-mb="s4">
-            <circle class="cap" cx="65" cy="692" r="17"/>
-            <g class="ico">
-              <rect x="-8.4" y="-4.2" width="17" height="8.4" rx="1.8" transform="translate(58.4 693.6) rotate(-46)"/>
-              <rect x="-8.6" y="-4.2" width="17" height="8.4" rx="1.8" transform="translate(71.6 693.6) rotate(46)"/>
-            </g>
-          </g>
-          <g class="mb off" data-mb="s5">
-            <circle class="cap" cx="110" cy="692" r="17"/>
-            <g class="ico">
-              <circle cx="110" cy="693" r="5.6" fill="none" stroke-width="1.9"/>
-              <rect x="107.4" y="682.5" width="5.2" height="4.6" rx="1" fill="none" stroke-width="1.7"/>
-              <path d="M110 687.1v3.4 M110 696v5.4 M101 693h6 M113 693h6" fill="none" stroke-width="1.9"/>
-            </g>
-          </g>
-          <g class="mb off" data-mb="s6">
-            <circle class="cap" cx="155" cy="692" r="17"/>
-            <g class="ico">
-              <rect x="147" y="681.5" width="16" height="7" rx="2"/><path d="M147.5 691h15 M147.5 693.5h15" fill="none" stroke-width="1.8"/><rect x="147" y="696" width="16" height="7" rx="2"/>
-            </g>
-          </g>
-
-          <!-- salida del cable -->
-          <rect x="100" y="746" width="20" height="10" rx="3.5" fill="#303234" stroke="#181a1c"/>
-          <path d="M110 755 C110 758 113 759 116 760" fill="none" stroke="#303234" stroke-width="5" stroke-linecap="round"/>
-        </svg>
-        </template>
+          <div id="mando" role="group" aria-label="Control genérico del gantry">
+            <strong class="remote-title">CONTROL GANTRY</strong>
+            <fieldset><legend>Detectores · giro</legend><div class="remote-pair">
+              <button type="button" class="mb" id="mbRotCcw" data-g="rot" data-d="-1" aria-label="Girar detectores en sentido contrario al reloj">↶ Giro</button>
+              <button type="button" class="mb" id="mbRotCw" data-g="rot" data-d="1" aria-label="Girar detectores en sentido del reloj">Giro ↷</button>
+            </div></fieldset>
+            <fieldset><legend>Detector 1</legend><div class="remote-pair">
+              <button type="button" class="mb" data-g="detDist1" data-d="-1" aria-label="Acercar detector 1">Acercar</button>
+              <button type="button" class="mb" data-g="detDist1" data-d="1" aria-label="Alejar detector 1">Alejar</button>
+            </div></fieldset>
+            <fieldset><legend>Detector 2</legend><div class="remote-pair">
+              <button type="button" class="mb" data-g="detDist2" data-d="-1" aria-label="Acercar detector 2">Acercar</button>
+              <button type="button" class="mb" data-g="detDist2" data-d="1" aria-label="Alejar detector 2">Alejar</button>
+            </div></fieldset>
+            <fieldset><legend>Camilla · altura</legend><div class="remote-pair">
+              <button type="button" class="mb" data-g="tableH" data-d="1" aria-label="Subir camilla">↑ Subir</button>
+              <button type="button" class="mb" data-g="tableH" data-d="-1" aria-label="Bajar camilla">↓ Bajar</button>
+            </div></fieldset>
+            <fieldset><legend>Camilla · recorrido</legend><div class="remote-pair">
+              <button type="button" class="mb" data-g="tableZ" data-d="1" aria-label="Acercar camilla al gantry">Entrar</button>
+              <button type="button" class="mb" data-g="tableZ" data-d="-1" aria-label="Alejar camilla del gantry">Salir</button>
+            </div></fieldset>
+            <button type="button" class="mb" id="mbRapido" data-mb="rapido" aria-label="Modo movimiento rápido" aria-pressed="false">▶▶ Movimiento rápido</button>
+            <p class="remote-help">Mantén pulsado para mover</p>
+          </div>
         </div>
 
       </div>
@@ -1569,16 +1264,13 @@
   const MS_REPITE = 80;
   let rapido = false;                       // estado del ▶▶
 
-  /* La fotografía anotada del mando se traduce también a ayuda contextual: la
-     geometría sigue limpia, pero cada tecla activa explica su función al pasar
-     el puntero o recibir foco. El <title> conserva la ayuda nativa del SVG. */
+  /* Ayuda accesible del control genérico. */
   const ayudaMando=document.getElementById('mandoFuncion');
   const ayudaBase='Pasa el puntero por una tecla activa para ver su función.';
   win.querySelectorAll('#mando .mb[aria-label]').forEach(btn=>{
     const txt=btn.getAttribute('aria-label');
     if(!txt) return;
-    const title=document.createElementNS('http://www.w3.org/2000/svg','title');
-    title.textContent=txt; btn.prepend(title);
+    btn.title=txt;
     const muestra=()=>{ if(ayudaMando) ayudaMando.textContent=txt+'.'; };
     const oculta=()=>{ if(ayudaMando) ayudaMando.textContent=ayudaBase; };
     btn.addEventListener('pointerenter',muestra);
@@ -1598,7 +1290,7 @@
     btnRapido.setAttribute('aria-pressed','false');
     btnRapido.addEventListener('click', alterna);
     btnRapido.addEventListener('keydown', e=>{
-      if(e.key===' '||e.key==='Enter'){ e.preventDefault(); alterna(); }
+      if(btnRapido.tagName!=='BUTTON'&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); alterna(); }
     });
   }
 
@@ -3007,8 +2699,8 @@ function init(){
   paro.position.set(0.335, 0.58, 0.62);
   gantry.add(paro);
 
-  const equipment=window.createSymbiaEquipment({THREE,scene,gantry,head1,head2,
-    simpleParts:[ctRing,ctShell,gantryBase,stripe,paro]});
+  // Stable acquisition/collision API; geometry is generated locally.
+  const equipment=Object.freeze({kind:'simple',enabled:false,metadata:null,ready:Promise.resolve()});
 
   /* ---------- camilla: pedestal fijo + pallet telescópico deslizante ---------- */
   const PED_X = -1.05;                                  // la cola del tablero siempre lo cubre
@@ -3633,85 +3325,6 @@ function init(){
 
 </script>
 <!-- COLLISION_ENGINE_END -->
-<!-- SYMBIA_EQUIPMENT_BEGIN -->
-<script id="symbiaEquipmentData" type="application/octet-stream" data-src="assets/runtime/symbia-equipment.00d804382ee47ab2.bin"></script>
-<script>
-/* Lightweight visual scanner. Uses the existing head transforms and table. */
-window.createSymbiaEquipment = function({THREE, scene, gantry, head1, head2, simpleParts}) {
-  const button=document.getElementById('equipmentToggle');
-  const status=document.getElementById('equipmentStatus');
-  const original=[...simpleParts,...head1.g.children.filter(c=>c!==head1.lab.spr),
-    ...head2.g.children.filter(c=>c!==head2.lab.spr)].map(node=>[node,node.visible]);
-  const meshes=[];
-  let loading=null, metadata=null, enabled=false;
-
-  async function load() {
-    const response=await (window.GANTRY_ASSETS?.fetch||fetch)(document.getElementById('symbiaEquipmentData').dataset.src);
-    if(!response.ok) throw Error('Equipo no disponible ('+response.status+')');
-    const raw=await new Response(new Blob([await response.arrayBuffer()]).stream()
-      .pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-    const size=new DataView(raw).getUint32(0,true);
-    const meta=JSON.parse(new TextDecoder().decode(new Uint8Array(raw,4,size)));
-    if(meta.version!==1 || meta.groups.length!==3) throw Error('Formato de equipo incompatible');
-    const material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.7,metalness:.05,side:THREE.DoubleSide});
-    const pending=[];
-    try {
-      for(const item of meta.groups) {
-        if(!['Gantry','Detector1','Detector2'].includes(item.name)) throw Error('Componente desconocido');
-        const geometry=new THREE.BufferGeometry();
-        const array=(key,Type)=>new Type(raw,4+size+item[key][0],item[key][1]);
-        geometry.setAttribute('position',new THREE.BufferAttribute(array('position',Float32Array),3));
-        geometry.setAttribute('normal',new THREE.BufferAttribute(array('normal',Int8Array),3,true));
-        geometry.setAttribute('color',new THREE.BufferAttribute(array('color',Uint8Array),3,true));
-        geometry.setIndex(new THREE.BufferAttribute(array('index',Uint32Array),1));
-        geometry.computeBoundingSphere();
-        const mesh=new THREE.Mesh(geometry,material);
-        mesh.name='Symbia_'+item.name; mesh.visible=false;
-        mesh.castShadow=false;mesh.receiveShadow=false;
-        mesh.matrixAutoUpdate=false;mesh.updateMatrix();
-        pending.push([item.name,mesh]);
-      }
-    } catch(error) {
-      pending.forEach(([,m])=>m.geometry.dispose());material.dispose();throw error;
-    }
-    for(const [name,mesh] of pending) {
-      (name==='Gantry'?scene:name==='Detector1'?head1.g:head2.g).add(mesh);
-      meshes.push(mesh);
-    }
-    metadata=meta;
-  }
-
-  async function setEnabled(value) {
-    if(button.disabled) return;
-    button.disabled=true;
-    try {
-      if(value && !metadata) {
-        status.textContent='Cargando equipo Symbia…';
-        if(!loading) loading=load().catch(error=>{loading=null;throw error;});
-        await loading;
-      }
-      enabled=value;
-      meshes.forEach(m=>{m.visible=enabled;});
-      original.forEach(([node,visible])=>{node.visible=enabled?false:visible;});
-      // Labels remain readable above the thicker original detector housing.
-      for(const h of [head1,head2]) h.lab.spr.position.y=enabled?.46:.37;
-      button.textContent=enabled?'Usar equipo simple':'Usar equipo Symbia';
-      button.setAttribute('aria-pressed',String(enabled));
-      status.textContent=enabled?'Symbia · modelo visual':'Equipo simple';
-      if(window.GANTRY3D?.collision){window.GANTRY3D.collision.invalidate();window.GANTRY?.render();}
-    } catch(error) {
-      status.textContent='No se pudo cargar Symbia. Se mantiene el equipo simple; puedes reintentar.';
-      console.error('Symbia:',error);
-    } finally {button.disabled=false;}
-  }
-  button.addEventListener('click',()=>setEnabled(!enabled));
-  // Nonblocking: acquisition and the simple scanner are available while loading.
-  const ready=setEnabled(new URLSearchParams(location.search).get('equipo')!=='simple');
-  return {ready,setEnabled,get enabled(){return enabled;},get metadata(){return metadata;}};
-};
-
-</script>
-<!-- SYMBIA_EQUIPMENT_END -->
 <!-- SYMBIA_ROOM_BEGIN -->
 <script id="symbiaRoomData" type="application/octet-stream" data-src="assets/runtime/symbia-room.40a36f2a15b3e0bc.bin"></script>
 <script>

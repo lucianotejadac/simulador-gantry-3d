@@ -16,7 +16,7 @@ block='<!-- COLLISION_ENGINE_BEGIN -->\n<script>\n'+js+'\n</script>\n<!-- COLLIS
 if '<!-- COLLISION_ENGINE_BEGIN -->' in html:
     html=re.sub(r'<!-- COLLISION_ENGINE_BEGIN -->.*?<!-- COLLISION_ENGINE_END -->',lambda _:block,html,flags=re.S)
 else:
-    html=html.replace('<!-- SYMBIA_EQUIPMENT_BEGIN -->',block+'\n<!-- SYMBIA_EQUIPMENT_BEGIN -->',1)
+    html=html.replace('<!-- SYMBIA_ROOM_BEGIN -->',block+'\n<!-- SYMBIA_ROOM_BEGIN -->',1)
 if 'id="collisionD1"' not in html:
     panel='''<div id="collisionFeedback" style="position:absolute;left:8px;top:34px;max-width:42%;padding:5px 7px;background:#09131de6;border:1px solid #425468;color:#b9cddd;font:10px/1.5 var(--mono);pointer-events:none">
             <div id="collisionD1">D1 · Preparando colisiones…</div>

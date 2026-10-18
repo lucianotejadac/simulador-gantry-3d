@@ -64,7 +64,7 @@ const flush=()=>new Promise(r=>setImmediate(r));
   assert(!x.node('startupRetry').hidden&&x.node('startupTitle').textContent.includes('No se pudo'));
   x.node('startupRetry').handlers.click();assert.equal(x.reloads,1);
  }
- const simple=harness('?equipo=simple');simple.window.GANTRY3D={room:{ready:Promise.resolve(),metadata:{},enabled:true},equipment:{ready:Promise.resolve()},patientLoadState:'ready'};
+ const simple=harness();simple.window.GANTRY3D={room:{ready:Promise.resolve(),metadata:{},enabled:true},equipment:{kind:'simple',enabled:false,metadata:null,ready:Promise.resolve()},patientLoadState:'ready'};
  simple.window.GANTRY_LIVE={ready:true,state:{d1:{},d2:{}}};simple.tick();await flush();simple.tick();assert(simple.frames.length,'intentional simple equipment is a ready configuration');
  const html=fs.readFileSync('index.html','utf8');assert(html.includes('id="gantryWin" inert aria-busy="true"'));
  assert(html.indexOf('<dialog id="startupLoading"')<html.indexOf('id="gantryWin" inert'));

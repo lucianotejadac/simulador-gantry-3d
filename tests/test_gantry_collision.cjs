@@ -71,7 +71,7 @@ new GLTFLoader().parse(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+byte
   const start=html.indexOf('  function aimBone('),end=html.indexOf('  /* ---------- estado y',start);
   Object.assign(ctx,{THREE,scene,flip,rig,dummyArms:[],_mi:new THREE.Matrix4(),_t:new THREE.Vector3(),_a:new THREE.Vector3(),_p:new THREE.Vector3(),_dir:new THREE.Vector3()});
   vm.runInContext(html.slice(start,end),ctx);
-  const s={...state,tableZ:175,arms:'up'},equipment={enabled:true,metadata:JSON.parse(fs.readFileSync('assets/symbia-equipment/manifest.json'))};
+  const s={...state,tableZ:175,arms:'up'},equipment={kind:'simple',enabled:false,metadata:null};
   const api=ctx.window.createGantryCollision({THREE,scene,flip,dummy:new THREE.Group(),getModel:()=>model,setArms:ctx.setArms,getState:()=>s,equipment,physical:()=>p});
   const startTime=performance.now();
   const up=api.evaluate(s);assert(up[0].body.point);assert(Number.isFinite(up[0].limit));

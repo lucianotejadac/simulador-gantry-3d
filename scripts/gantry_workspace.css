@@ -15,11 +15,11 @@
 #gantryViewControls .hint{font-size:10px}
 #gantryWorkspace #gantryRemote{
   grid-column:1;grid-row:1;align-self:end;justify-self:end;z-index:4;
-  width:clamp(76px,5.2vw,108px)!important;margin:10px;
+  width:148px!important;margin:10px;
   overflow:visible!important;gap:0!important;
 }
 #gantryRemote>div:first-child{display:none}
-#gantryWorkspace #gantryRemote #mando{width:100%;max-width:100%;max-height:34vh;filter:drop-shadow(0 3px 6px #0009)}
+#gantryWorkspace #gantryRemote #mando{width:100%;max-width:100%;max-height:none;filter:drop-shadow(0 3px 6px #0009)}
 #gantryWorkspace #g3dHud{right:8px!important;top:104px!important;font-size:10px!important;max-width:55%}
 #gantryWorkspace #collisionFeedback{font-size:9px!important}
 #gantryWorkspace #roomPerformance{max-width:calc(100% - 125px)!important;font-size:10px!important}
@@ -51,8 +51,8 @@
 @media(max-width:900px){
   #gantryWorkspace{grid-template-columns:minmax(0,1fr);grid-template-rows:440px auto auto;overflow:auto}
   #gantryWorkspace #gantryLive{grid-column:1;grid-row:3;min-height:740px;overflow:visible}
-  #gantryWorkspace #gantryRemote{width:88px!important}
-  #gantryWorkspace #gantryRemote #mando{max-height:280px}
+  #gantryWorkspace #gantryRemote{width:148px!important}
+  #gantryWorkspace #gantryRemote #mando{max-height:none}
   #gantryLive .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(300px,1fr))}
   #gantryLive.bone-whole-body .gantry-live-grid{grid-template-rows:300px minmax(500px,1fr)}
   #gantryLive.final-preview .gantry-live-grid{grid-template-rows:minmax(400px,1fr)}
