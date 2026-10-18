@@ -638,6 +638,9 @@
 })();
 </script>
 <!-- FAST_LOAD_END -->
+<!-- WORKSPACE_LAYOUT_BEGIN -->
+<link rel="stylesheet" href="assets/runtime/gantry-workspace.9927cf3159e731c1.css">
+<!-- WORKSPACE_LAYOUT_END -->
 </head>
 <body>
 <!-- STARTUP_LOADING_BEGIN -->
@@ -1012,7 +1015,7 @@
             </div>
           </div>
         </section>
-        <div style="flex:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <div id="gantryViewControls" style="flex:none;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <button class="btn g3dview active" data-g3dview="iso" style="padding:3px 9px">3D</button>
           <button class="btn g3dview" data-g3dview="axial" style="padding:3px 9px">Axial</button>
           <button class="btn g3dview" data-g3dview="lateral" style="padding:3px 9px">Lateral</button>
@@ -3301,6 +3304,7 @@ function init(){
     // distancia que le falta a la camilla para dejar el vértex craneal bajo los detectores
     const dVertex = (SCAN.zTop - st.tableZ) * (TRAVEL*100/SCAN.zTop);   // cm reales de carrera
     const txt = 'ROT ' + st.rot.toFixed(0) + '° · Z ' + st.tableZ.toFixed(0) + ' cm<br>'
+              + 'ALTURA CAMILLA ' + st.tableH.toFixed(0) + ' cm<br>'
               + 'D1 ' + f(d1,0) + '<br>'
               + 'D2 ' + f(d2,1) + '<br>'
               + (prone ? 'PRONO' : 'SUPINO') + '<br>'
@@ -3357,6 +3361,9 @@ function init(){
     if(!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w/h;
+    // Preserve horizontal framing in the tall equipment column. Orbit/dolly
+    // still controls camera distance; resizing must not crop the table ends.
+    camera.zoom = Math.min(1, camera.aspect/1.4);
     camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(stage);
