@@ -772,7 +772,9 @@ El menú conserva los números de la referencia original. La posición 4 se reti
 - **2:** D1 hacia exterior y D2 hacia isocentro; paciente de pie frente a D1.
 - **3:** D2 hacia exterior y D1 hacia isocentro; paciente de pie frente a D2.
 - **5:** Paciente en isocentro CT, con detectores en formación de **90° posterior**
-  (D1 a 135° y D2 a 225°), retirados fuera del campo del paciente. No genera imágenes CT.
+  (D1 a 135° y D2 a 225°), en el mismo plano de montaje del gantry.
+  La camilla sitúa al paciente en el isocentro CT; los detectores no se desplazan
+  longitudinalmente. La adquisición SPECT se suspende en este modo; no genera imágenes CT.
 - **6:** Detectores paralelos superior/inferior.
 - **7:** 90° anterior.
 - **8:** 90° posterior.
@@ -783,8 +785,8 @@ Son configuraciones docentes del equipo genérico, no programas certificados de
 un fabricante. `gantry_setups.js` comparte las coordenadas entre la escena,
 las colisiones y el encuadre de las proyecciones. De pie se usa el detector
 exterior y se considera el interior bloqueado por el otro cabezal; en camilla
-externa cada detector ve un tramo longitudinal distinto; en CT ambos campos
-SPECT quedan vacíos. Esta selección geométrica no calcula dispersión o
+externa cada detector ve un tramo longitudinal distinto; en CT la adquisición SPECT
+se suspende. Esta selección geométrica no calcula dispersión o
 penetración a través de las carcasas.
 
 El movimiento retira los detectores, gira y ajusta su distancia con protección

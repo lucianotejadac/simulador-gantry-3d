@@ -22,7 +22,7 @@
       const outward=(m==='standing1'&&n===1)||(m==='standing2'&&n===2);
       const angle=radial+(outward?Math.PI:0),distance=s['detDist'+n]/100;
       const c=Math.cos(angle),sn=Math.sin(angle);
-      return {n,angle,radial,outward,yaw,axes:[[1,0,0],[0,c,sn],[0,-sn,c]].map(turn),position:turn([m==='external'?(n===1?-.34:.34):m==='ct'?-1.20:0,p.iso+Math.cos(radial)*distance,Math.sin(radial)*distance])};
+      return {n,angle,radial,outward,yaw,axes:[[1,0,0],[0,c,sn],[0,-sn,c]].map(turn),position:turn([m==='external'?(n===1?-.34:.34):0,p.iso+Math.cos(radial)*distance,Math.sin(radial)*distance])};
     });
     if(s.setupHeads)heads=s.setupHeads.map((h,i)=>headPose({...h,n:i+1}));
     // Column vectors transform the original lying patient's feet-based coordinates.
@@ -41,7 +41,7 @@
     const m=mode(s);
     if(s.setupHeads||s.setupPatientOffset)return {empty:true,angle:0,progress:-10,label:'Preparando posición · adquisición suspendida'};
     if(m==='normal'&&!s.setupTransition)return null;
-    if(s.setupTransition||m==='ct')return {empty:true,angle:0,progress:-10,label:s.setupTransition?'Reconfigurando equipo':'Paciente en CT · fuera del campo SPECT'};
+    if(s.setupTransition||m==='ct')return {empty:true,angle:0,progress:-10,label:s.setupTransition?'Reconfigurando equipo':'Modo CT · adquisición SPECT suspendida'};
     if(m==='standing1'||m==='standing2'){
       const active=detector===(m==='standing1'?1:2);
       return {empty:!active,angle:0,progress:1-(1.03-.075)/1.75,label:active?'Paciente de pie · detector exterior':'Detector interior · sin campo sobre el paciente'};

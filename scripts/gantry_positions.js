@@ -108,7 +108,7 @@
     const geometry=JSON.stringify([G.setup,G.setupTransition,G.rot,G.detectorSeparation??180,G.detDist1,G.detDist2]);
     if(!target&&lastGeometry&&geometry!==lastGeometry)finishedLabel='';
     lastGeometry=geometry;
-    const special={standing1:'D1 hacia exterior · D2 hacia isocentro · paciente de pie',standing2:'D1 hacia isocentro · D2 hacia exterior · paciente de pie',external:'Ambos hacia abajo · camilla transversal',ct:'Isocentro CT · detectores 90° posterior · fuera del campo SPECT'};
+    const special={standing1:'D1 hacia exterior · D2 hacia isocentro · paciente de pie',standing2:'D1 hacia isocentro · D2 hacia exterior · paciente de pie',external:'Ambos hacia abajo · camilla transversal',ct:'Isocentro CT · detectores 90° posterior · SPECT suspendido'};
     status.textContent=(route?(routePaused?'Pausado · '+pauseReason+' · selecciona Reanudar movimiento · ':'')+route[routeIndex].label+' · ':target?phases[phase]+(G.setupTransition?' · paciente fuera del campo':'')+' · ':finishedLabel?finishedLabel+' · ':'')+
       (G.setupHeads?'Cabezas en reconfiguración':special[G.setup]||'D1 '+Math.round(wrap(G.rot))+'° · D2 '+Math.round(wrap(G.rot+(G.detectorSeparation??180)))+'° · separación '+Math.round(G.detectorSeparation??180)+'°');
   }

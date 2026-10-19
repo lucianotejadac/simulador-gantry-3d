@@ -13,6 +13,7 @@ for(const preset of presets){
     for(let i=0;i<500&&!done;i++){
       const step=nextState(G,preset,phase,.05,limits,range);done=step.done;
       assert(C.detectorGap(step.next,boxes,boxes)>=C.MARGIN,'No head-to-head collision: '+preset.id);
+      assert(window.GANTRY_SETUP.geometry(step.next).heads.every(h=>h.position[0]===0),'Every selectable preset keeps the heads in the gantry plane: '+preset.id);
       assert.equal(step.next.tableZ,200);assert.equal(step.next.tableH,80);G=step.next;
     }
     assert(done,'Preset must reach its endpoint: '+preset.id);
@@ -90,7 +91,12 @@ assert.equal(ctPreset.rot,135);assert.equal(ctPreset.separation,90);
 const ct={...from,setup:'ct',rot:ctPreset.rot,detectorSeparation:ctPreset.separation,detDist1:50,detDist2:50};
 const ctLayout=S.geometry(ct);assert(Math.abs(ctLayout.feet-1.75/2-.60)<1e-8);
 assert(S.signal(ct,1).empty&&S.signal(ct,2).empty);
-assert(ctLayout.heads.every(h=>h.position[0]+.28<ctLayout.feet-1.75));
+assert(ctLayout.heads.every(h=>h.position[0]===0),'CT heads remain in the gantry mounting plane');
+for(const rotation of [0,90,135,270])for(const distance of [12,35,50]){
+ const state={...ct,rot:rotation,detDist1:distance,detDist2:distance};
+ const ctHeads=S.geometry(state).heads,normalHeads=S.geometry({...state,setup:'normal'}).heads;
+ assert.deepEqual(ctHeads.map(h=>h.position),normalHeads.map(h=>h.position),'CT cannot translate the detector carriage longitudinally');
+}
 assert(S.signal({...from,setupTransition:true},1).empty);
 assert.equal(S.signal(external,1,{prone:true}).angle,180);
 assert(Math.abs(S.signal(external,1,{headFirst:true}).progress+S.signal(external,1).progress-1)<1e-8);

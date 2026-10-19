@@ -542,8 +542,8 @@
 <link rel="preload" href="assets/runtime/console-menus.e023e68602435270.js" as="script">
 <link rel="preload" href="assets/runtime/exam-safety.00f904169c348088.js" as="script">
 <link rel="preload" href="assets/runtime/final-preview.a5bb25c2364341d4.js" as="script">
-<link rel="preload" href="assets/runtime/gantry-positions.cb866c3c5deb6502.js" as="script">
-<link rel="preload" href="assets/runtime/gantry-setups.122adfde7b4dfeb4.js" as="script">
+<link rel="preload" href="assets/runtime/gantry-positions.b1ea2d559482b07d.js" as="script">
+<link rel="preload" href="assets/runtime/gantry-setups.106196566b709225.js" as="script">
 <link rel="preload" href="assets/runtime/mdp-engine.7735c72ba19f58cb.js" as="script">
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.78e83e536f629fd4.js" as="script">
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
@@ -3124,7 +3124,7 @@ function init(){
                  : dVertex <= 0.5 ? 'CRÁNEO BAJO LOS DETECTORES ✔'
                                   : 'CRÁNEO A ' + dVertex.toFixed(0) + ' cm DEL CAMPO');
     if(layout.mode!=='normal'||layout.hidden){
-      const labels={standing1:'DE PIE · D1 HACIA EXTERIOR',standing2:'DE PIE · D2 HACIA EXTERIOR',external:'CAMILLA TRANSVERSAL · DOS DETECTORES HACIA ABAJO',ct:'ISOCENTRO CT · DETECTORES 90° POSTERIOR · FUERA DEL CAMPO SPECT'};
+      const labels={standing1:'DE PIE · D1 HACIA EXTERIOR',standing2:'DE PIE · D2 HACIA EXTERIOR',external:'CAMILLA TRANSVERSAL · DOS DETECTORES HACIA ABAJO',ct:'ISOCENTRO CT · DETECTORES 90° POSTERIOR · SPECT SUSPENDIDO'};
       txt=(layout.hidden?'RECONFIGURANDO · PACIENTE FUERA DEL CAMPO':labels[layout.mode])+'<br>D1 '+f(d1,0)+'<br>D2 '+f(d2,1);
     }
     if(txt !== lastHud){ lastHud = txt; hudEl.innerHTML = txt; }
@@ -3198,7 +3198,7 @@ function init(){
 </script>
 
 <!-- GANTRY_SETUPS_BEGIN -->
-<script src="assets/runtime/gantry-setups.122adfde7b4dfeb4.js"></script>
+<script src="assets/runtime/gantry-setups.106196566b709225.js"></script>
 <!-- GANTRY_SETUPS_END -->
 <!-- COLLISION_ENGINE_BEGIN -->
 <script>
@@ -4780,7 +4780,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 <script src="assets/runtime/console-menus.e023e68602435270.js"></script>
 <!-- CONSOLE_MENUS_END -->
 <!-- GANTRY_POSITIONS_BEGIN -->
-<script src="assets/runtime/gantry-positions.cb866c3c5deb6502.js"></script>
+<script src="assets/runtime/gantry-positions.b1ea2d559482b07d.js"></script>
 <!-- GANTRY_POSITIONS_END -->
 </body>
 </html>
