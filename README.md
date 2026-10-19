@@ -872,9 +872,9 @@ respectivamente), con resolución geométrica de referencia de 10,8 y 13,2 mm a
 El ensanchamiento fuera de ventana y por penetración septal conserva el modelo
 docente previo. Tampoco se deduce sensibilidad absoluta de los parámetros privados.
 
-Limitaciones: la distancia a piel se usa como aproximación a distancia de la
-fuente, sin profundidad por vóxel. Por ello la FWHM nominal corresponde a una
-fuente superficial y puede subestimar el desenfoque de órganos profundos.
+Limitaciones: salvo el componente esquelético MDP descrito abajo, la distancia
+a piel se usa como aproximación a distancia de la fuente, sin profundidad por
+vóxel. En esos componentes puede subestimar el desenfoque de órganos profundos.
 Los atlas tienen su propio muestreo/desenfoque y no se reconstruye detalle ausente.
 Se mantiene el campo virtual de 560 mm del simulador, no el UFOV rectangular de
 533 × 387 mm del equipo. No equivale a una PSF medida, una cámara calibrada ni a
@@ -913,3 +913,35 @@ Validación: `node tests/test_native_bone.cjs`, `node tests/test_mdp.cjs` y
 `node tests/test_camera_response.cjs`. La comparación visual puede generarse
 con la variable `BONE_COMPARISON` apuntando a un directorio de salida; produce
 campos esperados float32 antes/después, con idénticas condiciones físicas.
+
+
+### Profundidad ósea y matrices pequeñas
+
+El componente esquelético MDP usa `bone-ray-depth-rms-v1`. El generador
+`python scripts/build_bone_depth.py` recorre el mismo volumen de 3 mm y conserva
+masa atenuada y momentos primero/segundo de profundidad desde la primera
+intersección de tejido de cada rayo (umbral mu > 0,02 cm⁻¹). Los mapas de
+momentos, con celdas de 60 × 48 mm, no reemplazan la anatomía de 3 mm.
+Se ponderan por el área del campo visible y por las cuentas atenuadas para
+obtener una PSF equivalente por campo. Es una aproximación de varianza, no una
+convolución individual de cada fuente ni una simulación Monte Carlo de dispersión.
+La distancia real de cada rayo a la superficie puede diferir de la distancia a
+piel reportada por el modelo visual del paciente.
+
+La varianza geométrica se calcula con E[(G(z) + pendiente × profundidad)²],
+conservando resolución intrínseca y penalizaciones de energía. La profundidad
+varía con ángulo, postura y región; ninguna penalización depende artificialmente
+de seleccionar 128 o 256. A 256 se integra la apertura del píxel con cuatro
+submuestras; 128 suma bloques 2×2 de esa expectativa antes del ruido Poisson.
+La cantidad de cuentas sigue siendo independiente del tamaño de matriz.
+
+Ejemplo de prueba (tórax, brazos arriba, LEHR, 2 cm a piel): profundidad media
+aproximada 56,7 mm, FWHM equivalente 6,95 mm frente a los 4,59 mm del supuesto
+superficial anterior. Es un resultado del modelo, no una medición clínica.
+Pruebas: `node tests/test_bone_depth.cjs` y `node tests/test_native_bone.cjs`.
+Al regenerar las proyecciones con `build_mdp_fine.py`, ejecutar también
+`build_bone_depth.py`, `embed_mdp.py`, `embed_camera_response.py` y
+`optimize_loading.py`.
+
+La dependencia de resolución con distancia fuente-colimador y tamaño de píxel
+se describe en [IAEA, Quality Control Atlas for Scintillation Camera Systems](https://www-pub.iaea.org/MTCD/Publications/PDF/Pub1141_web.pdf).

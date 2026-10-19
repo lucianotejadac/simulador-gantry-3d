@@ -1356,7 +1356,21 @@
           "falloffMm": 3,
           "partialVolumeSigmaMm": 1.5
         },
-        "anatomicalVoxelMm": 3
+        "anatomicalVoxelMm": 3,
+        "depth": {
+          "url": "assets/runtime/mdp-depth-down.37e36f12313bd63a.bin",
+          "width": 16,
+          "height": 48,
+          "channels": [
+            "attenuatedMass",
+            "massTimesDepthMm",
+            "massTimesDepthSquaredMm2"
+          ],
+          "tileWidthPx": 20,
+          "tileHeightPx": 16,
+          "convention": "first tissue intersection per ray; attenuation-weighted ROI moments",
+          "model": "bone-ray-depth-rms-v1"
+        }
       }
     },
     "up": {
@@ -2300,7 +2314,21 @@
           "falloffMm": 3,
           "partialVolumeSigmaMm": 1.5
         },
-        "anatomicalVoxelMm": 3
+        "anatomicalVoxelMm": 3,
+        "depth": {
+          "url": "assets/runtime/mdp-depth-up.cc0c1595156210e5.bin",
+          "width": 16,
+          "height": 48,
+          "channels": [
+            "attenuatedMass",
+            "massTimesDepthMm",
+            "massTimesDepthSquaredMm2"
+          ],
+          "tileWidthPx": 20,
+          "tileHeightPx": 16,
+          "convention": "first tissue intersection per ray; attenuation-weighted ROI moments",
+          "model": "bone-ray-depth-rms-v1"
+        }
       }
     }
   },
@@ -2327,5 +2355,6 @@
     "simulador-gantry-3d\\assets\\runtime\\mag3-up.d22362c762fc09e0.deflate": "d22362c762fc09e04c89aea126400893e31f284cad225ca80d45160f2c4d69c5"
   },
   "nativeBoneModel": "native-volume-3mm-no-camera-psf-v1",
-  "nativeGeneratorHash": "fef97af391783b9eedd69b46964a51a7d7e0e81149ae8f5db35d86a3ea16ccc9"
+  "nativeGeneratorHash": "fef97af391783b9eedd69b46964a51a7d7e0e81149ae8f5db35d86a3ea16ccc9",
+  "depthGeneratorHash": "d8b9928161da877ceb22a4624c43ba24b8a22c9eff1ccfb6abb30d12d7c6fa98"
 }

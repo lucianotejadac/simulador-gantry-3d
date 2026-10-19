@@ -169,7 +169,12 @@
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const px=crop.x+((flipX?w-1-x:x)+.5)/w*crop.w-.5;
       const py=crop.y+((flipY?h-1-y:y)+.5)/h*crop.h-.5;
-      values[y*w+x]=(pair.mix===0?sample(a,px,py):sample(a,px,py)*(1-pair.mix)+sample(b,px,py)*pair.mix)*factor;
+      const signal=(xx,yy)=>pair.mix===0?sample(a,xx,yy):sample(a,xx,yy)*(1-pair.mix)+sample(b,xx,yy)*pair.mix;
+      if(pose.nativeSampling&&w===256){
+        // Integrate the finite pixel aperture instead of a single centre sample.
+        const dx=crop.w/w/4,dy=crop.h/h/4;
+        values[y*w+x]=(signal(px-dx,py-dy)+signal(px+dx,py-dy)+signal(px-dx,py+dy)+signal(px+dx,py+dy))*factor/4;
+      }else values[y*w+x]=signal(px,py)*factor;
     }
     const physical=Number.isFinite(metrics.psfSigmaMm)&&window.GANTRY_CAMERA?
       window.GANTRY_CAMERA.sampling(pose,crop,w,h,metrics):null;

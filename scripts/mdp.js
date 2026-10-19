@@ -68,7 +68,18 @@
     if(!pending[name])pending[name]=(async()=>{
       const p=data.poses[name],n=data.width*data.height;
       const groups=await Promise.all([['bone',data.angles,1],['organs',data.organAngles,7]].map(async([key,angles,count])=>{
-        if(key==='bone'&&p.nativeBone){const b=p.nativeBone;return [{...b,angles:data.angles,window:1,nativeSampling:true,frames:new Array(360)}];}
+        if(key==='bone'&&p.nativeBone){
+          const b=p.nativeBone;let depth=null;
+          if(b.depth){
+            const response=await (window.GANTRY_ASSETS?.fetch||fetch)(b.depth.url);
+            if(!response.ok)throw Error('No se pudo cargar la profundidad ósea');
+            const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
+            const values=new Float32Array(buffer);
+            if(values.length!==360*b.depth.width*b.depth.height*3)throw Error('Profundidad ósea incompleta');
+            depth={...b.depth,values};
+          }
+          return [{...b,depth,angles:data.angles,window:1,nativeSampling:true,frames:new Array(360)}];
+        }
         const payload=p[key],response=await (window.GANTRY_ASSETS?.fetch||fetch)(payload.url);
         if(!response.ok)throw Error('No se pudo cargar MDP ('+response.status+')');
         const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
@@ -84,6 +95,20 @@
     return pending[name];
   }
   function geometry(name){return window.GANTRY_ICRP_DATA[name];}
+  function depthResponse(source,pair,crop,metrics){
+    const d=source.depth;
+    if(!d?.values||!window.GANTRY_CAMERA?.withDepth||!Number.isFinite(metrics.psfSigmaMm))return metrics;
+    let mass=0,first=0,second=0;const stride=d.width*d.height*3;
+    for(let y=0;y<d.height;y++)for(let x=0;x<d.width;x++){
+      const overlap=Math.max(0,Math.min((x+1)*d.tileWidthPx,crop.x+crop.w)-Math.max(x*d.tileWidthPx,crop.x))*
+        Math.max(0,Math.min((y+1)*d.tileHeightPx,crop.y+crop.h)-Math.max(y*d.tileHeightPx,crop.y));
+      if(!overlap)continue;
+      const k=(y*d.width+x)*3,lo=pair.lo*stride+k,hi=pair.hi*stride+k;
+      const v=c=>(d.values[lo+c]*(1-pair.mix)+d.values[hi+c]*pair.mix)*overlap;
+      mass+=v(0);first+=v(1);second+=v(2);
+    }
+    return mass>0?window.GANTRY_CAMERA.withDepth(metrics,first/mass,second/mass):metrics;
+  }
   // Keep the existing 3 mm detector coordinate convention, while mapping into
   // independently normalized 6 mm organ atlases. No fixed late bone image mixing.
   function field(pose,pair,crop,w,h,flipX,flipY,metrics,sigma,name,cache,seconds=state.seconds){
@@ -105,8 +130,10 @@
         const ratio=(pose.pixelMm||3)/(p.pixelMm||data.pixelMm);
         const local=p.nativeSampling?{x:p.width/2+(crop.x-pose.width/2)*ratio,
           y:p.headRow+(crop.y-pose.headRow)*ratio,w:crop.w*ratio,h:crop.h*ratio}:mapped;
+        const response=p.nativeSampling?depthResponse(p,angular,local,spatialMetrics):spatialMetrics;
+        if(c===0)cache.projectionResponse=response;
         Object.defineProperty(bases,c,{enumerable:true,configurable:true,get(){
-        const value=window.GANTRY_ICRP.field(source,pair,local,w,h,flipX,flipY,spatialMetrics,sigma).values;
+        const value=window.GANTRY_ICRP.field(source,pair,local,w,h,flipX,flipY,response,sigma).values;
         Object.defineProperty(bases,c,{value,enumerable:true,configurable:true});
         return value;
       }});});
@@ -116,6 +143,7 @@
     if(!cache.result||cache.seconds!==seconds||cache.voidAt120!==state.voidAt120){
       cache.result=mix(cache.bases,seconds);cache.seconds=seconds;cache.voidAt120=state.voidAt120;
     }
+    cache.result.projectionResponse=cache.projectionResponse;
     return cache.result;
   }
   function mix(bases,seconds=state.seconds){
@@ -142,7 +170,7 @@
     if(state.seconds>=LIMIT&&!session.finished){session.finished=true;session.mdpLimit=true;}
   }
   const el=id=>document.getElementById(id);
-  function metadata(){return {...state,model:'mdp-v2',projectionModel:data.nativeBoneModel||'coarse-6mm',vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
+  function metadata(){return {...state,model:'mdp-v2',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
   function render(){
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;
