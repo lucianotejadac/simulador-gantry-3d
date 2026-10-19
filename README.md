@@ -766,20 +766,18 @@ Pruebas: `node tests/test_exam_safety.cjs`, colisiones, adquisición estática y
 
 ### Posiciones automáticas de detectores
 
-El menú sigue el orden de la referencia, de izquierda a derecha y de arriba abajo:
-1. Detectores paralelos laterales.
-2. D1 hacia exterior y D2 hacia isocentro; paciente de pie frente a D1.
-3. D2 hacia exterior y D1 hacia isocentro; paciente de pie frente a D2.
-4. Ambos detectores hacia abajo, uno al lado del otro sobre el eje transversal; se
-   oculta la camilla del equipo y se coloca al paciente en una camilla externa.
-   La camilla externa y el paciente también quedan perpendiculares a la camilla original.
-5. Paciente centrado en el isocentro CT (60 cm detrás del plano SPECT) y
-   detectores retirados fuera de su campo; no se generan imágenes CT.
-6. Detectores paralelos superior/inferior.
-7. 90° anterior.
-8. 90° posterior.
-9. 76° anterior.
-10. 76° posterior.
+El menú conserva los números de la referencia original. La posición 4 se retiró:
+
+- **1:** Detectores paralelos laterales.
+- **2:** D1 hacia exterior y D2 hacia isocentro; paciente de pie frente a D1.
+- **3:** D2 hacia exterior y D1 hacia isocentro; paciente de pie frente a D2.
+- **5:** Paciente en isocentro CT, con detectores en formación de **90° posterior**
+  (D1 a 135° y D2 a 225°), retirados fuera del campo del paciente. No genera imágenes CT.
+- **6:** Detectores paralelos superior/inferior.
+- **7:** 90° anterior.
+- **8:** 90° posterior.
+- **9:** 76° anterior.
+- **10:** 76° posterior.
 
 Son configuraciones docentes del equipo genérico, no programas certificados de
 un fabricante. `gantry_setups.js` comparte las coordenadas entre la escena,
@@ -794,17 +792,9 @@ barrida contra paciente, camilla y el otro cabezal. El menú «Detener movimient
 Escape o una orden manual interrumpen la maniobra. No se puede iniciar una nueva
 adquisición mientras se posicionan ni cambiar de preset durante una adquisición.
 Las proyecciones y la geometría guardada usan el ángulo real de cada detector.
-Para entrar y salir de la posición 4, primero se separan los detectores con el
-paciente visible y se retira la camilla. Los cabezales se desplazan al frente,
-se elevan separados, basculan y se alinean antes de ingresar la camilla externa.
-La vuelta sigue la secuencia inversa. Cada tramo acelera y frena suavemente;
-las carcasas se comprueban como cajas orientadas en 3D durante la basculación.
-El traslado entre camillas se representa como preparación fuera del campo,
-sin animar al paciente atravesando los detectores. «Detener movimiento» pausa
-la maniobra transversal sin recolocarla; «Reanudar movimiento» la continúa.
-Mientras esté pausada se bloquean la adquisición y los controles manuales.
-En los otros cambios de montaje se conserva la recolocación fuera del campo
-y la cancelación que restaura la configuración previa.
+Los cambios de montaje retiran temporalmente al paciente del campo y comprueban
+el espacio antes de recolocarlo. El motor de traslado de camilla externa se
+conserva como compatibilidad interna, pero su preset ya no está disponible en el menú.
 Al volver a posiciones normales se recuperan los ajustes originales de la
 camilla y brazos. El barrido corporal requiere la camilla del equipo (posición
 1 o 6) y recupera automáticamente la separación de 180° antes de adquirir.

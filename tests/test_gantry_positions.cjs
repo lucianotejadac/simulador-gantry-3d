@@ -2,7 +2,8 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const window={},context=vm.createContext({window,document:{getElementById:()=>null}});
 for(const file of ['gantry_setups','gantry_collision','gantry_positions'])vm.runInContext(fs.readFileSync('scripts/'+file+'.js','utf8'),context);
 const {presets,nextState}=window.GANTRY_POSITION_CORE,C=window.GANTRY_COLLISION_CORE;
-assert.equal(presets.length,10);
+assert.equal(presets.length,9);
+assert(!presets.some(p=>p.id==='external'),'Position 4 is removed from the menu');
 const boxes=[{min:[-.28,0,-.36],max:[.28,.24,.36]}];
 const range={detDist1:[12,50],detDist2:[12,50]},limits=()=>({d1:20,d2:28});
 for(const preset of presets){
@@ -37,7 +38,7 @@ const S=window.GANTRY_SETUP;
 const {externalPlan,interpolateMotion}=window.GANTRY_POSITION_CORE;
 for(const start of [{...from,setup:'normal',tableZ:205,detDist1:50,detDist2:50},
  {...from,setup:'external',rot:0,detectorSeparation:0,tableH:80,setupAnchorZ:200,detDist1:50,detDist2:50}]){
- const target=presets.find(p=>p.id===(start.setup==='normal'?'external':'ap'));
+ const target=start.setup==='normal'?{id:'external',rot:0,separation:0,setup:'external'}:presets.find(p=>p.id==='ap');
  const steps=externalPlan(start,target,{tableZ:205,tableH:90,arms:'down'});
  let prior=S.geometry(start);
  for(const step of steps){
@@ -54,7 +55,7 @@ for(const start of [{...from,setup:'normal',tableZ:205,detDist1:50,detDist2:50},
   }
  }
 }
-assert.deepEqual(Array.from(presets,p=>p.id),['lateral','standing1','standing2','external','ct','ap','90a','90p','76a','76p']);
+assert.deepEqual(Array.from(presets,p=>p.id),['lateral','standing1','standing2','ct','ap','90a','90p','76a','76p']);
 for(const id of ['standing1','standing2']){
  const G={...from,setup:id,rot:90,detDist1:50,detDist2:50},layout=S.geometry(G),n=id==='standing1'?1:2;
  assert(layout.standing);assert.equal(layout.table,null);
@@ -84,7 +85,9 @@ const moved={...external,setupAnchorZ:200,tableZ:220};
 assert(S.signal(moved,1).progress<S.signal(external,1).progress,'Moving the external bed changes the acquired anatomical field');
 assert(C.detectorGap(external,boxes,boxes)>.10);
 assert(S.signal(external,1).progress<S.signal(external,2).progress,'Two successive source fields along the body');
-const ct={...from,setup:'ct',rot:90,detDist1:50,detDist2:50};
+const ctPreset=presets.find(p=>p.id==='ct');
+assert.equal(ctPreset.rot,135);assert.equal(ctPreset.separation,90);
+const ct={...from,setup:'ct',rot:ctPreset.rot,detectorSeparation:ctPreset.separation,detDist1:50,detDist2:50};
 const ctLayout=S.geometry(ct);assert(Math.abs(ctLayout.feet-1.75/2-.60)<1e-8);
 assert(S.signal(ct,1).empty&&S.signal(ct,2).empty);
 assert(ctLayout.heads.every(h=>h.position[0]+.28<ctLayout.feet-1.75));
@@ -110,7 +113,7 @@ const ui=vm.createContext({window,document:{hidden:false,getElementById:el,creat
  performance:{now:()=>now},setInterval:fn=>{callback=fn;return 1;},clearInterval:()=>{callback=null;}});
 vm.runInContext(fs.readFileSync('scripts/gantry_positions.js','utf8'),ui);
 const run=()=>{for(let i=0;window.GANTRY_AUTO.busy&&i<6000;i++){now+=50;assert(callback,el('gantryPositionStatus').textContent);callback();}assert(!window.GANTRY_AUTO.busy,el('gantryPositionStatus').textContent);};
-for(const id of ['external','ap','standing1','standing2','external','ct','ap','90a','76p']){
+for(const id of ['ct','ap','standing1','standing2','ct','ap','90a','76p']){
  assert(window.GANTRY_AUTO.start(id));run();
  const p=presets.find(p=>p.id===id);assert.equal(G.setup,p.setup,id+': '+el('gantryPositionStatus').textContent);
  assert.equal(G.setupTransition,false);assert.equal(G.detectorSeparation,p.separation);assert(Math.abs(((G.rot-p.rot+540)%360)-180)<1e-8);
@@ -119,13 +122,6 @@ for(const id of ['external','ap','standing1','standing2','external','ct','ap','9
 assert.equal(G.tableH,90);assert.equal(G.tableZ,205);
 const original=JSON.stringify(G);assert(window.GANTRY_AUTO.start('standing1'));now+=50;callback();window.GANTRY_AUTO.stop();
 assert.equal(G.setup,'normal');assert.equal(G.setupTransition,false);assert.equal(G.tableZ,205);assert.equal(G.rot,142);
-assert(window.GANTRY_AUTO.start('external'));
-for(let i=0;i<2000&&!window.GANTRY_AUTO.transferring;i++){now+=50;callback();}
-assert(window.GANTRY_AUTO.transferring);now+=50;callback();
-const beforePause=JSON.stringify(G);window.GANTRY_AUTO.stop();
-assert.equal(callback,null);assert.equal(JSON.stringify(G),beforePause,'Stop must freeze the geometry instead of resetting it');
-assert(window.GANTRY_AUTO.busy,'Acquisition remains blocked while the manoeuvre is paused');
-assert(window.GANTRY_AUTO.start('resume'));run();assert.equal(G.setup,'external');
-assert(window.GANTRY_AUTO.start('ap'));run();
+assert(!window.GANTRY_AUTO.start('external'),'Removed position cannot be selected');
 window.GANTRY_BONE_ACQ={active:true};assert(!window.GANTRY_AUTO.start('ct'));assert.equal(G.setup,'normal');
-console.log('OK: exact 1-10 order, standing exterior heads and signal, external stretcher with successive downward fields, CT excluded from SPECT and safe detector spacing.');
+console.log('OK: position 4 removed, CT at 90 degrees posterior, standing fields, legacy geometry and safe preset transitions.');

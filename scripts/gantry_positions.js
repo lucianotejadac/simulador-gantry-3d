@@ -5,8 +5,7 @@
     {id:'lateral',label:'1 · Paralelos laterales',rot:90,separation:180,setup:'normal'},
     {id:'standing1',label:'2 · D1 exterior · paciente de pie',rot:90,separation:180,setup:'standing1',park:true},
     {id:'standing2',label:'3 · D2 exterior · paciente de pie',rot:90,separation:180,setup:'standing2',park:true},
-    {id:'external',label:'4 · Ambos hacia abajo · camilla transversal',rot:0,separation:0,setup:'external'},
-    {id:'ct',label:'5 · CT · paciente en isocentro CT',rot:90,separation:180,setup:'ct',park:true},
+    {id:'ct',label:'5 · Isocentro CT · detectores 90° posterior',rot:135,separation:90,setup:'ct',park:true},
     {id:'ap',label:'6 · Paralelos superior / inferior',rot:0,separation:180,setup:'normal'},
     {id:'90a',label:'7 · 90° anterior',rot:315,separation:90,setup:'normal'},
     {id:'90p',label:'8 · 90° posterior',rot:135,separation:90,setup:'normal'},
@@ -109,7 +108,7 @@
     const geometry=JSON.stringify([G.setup,G.setupTransition,G.rot,G.detectorSeparation??180,G.detDist1,G.detDist2]);
     if(!target&&lastGeometry&&geometry!==lastGeometry)finishedLabel='';
     lastGeometry=geometry;
-    const special={standing1:'D1 hacia exterior · D2 hacia isocentro · paciente de pie',standing2:'D1 hacia isocentro · D2 hacia exterior · paciente de pie',external:'Ambos hacia abajo · camilla transversal',ct:'Paciente en isocentro CT · fuera del campo SPECT'};
+    const special={standing1:'D1 hacia exterior · D2 hacia isocentro · paciente de pie',standing2:'D1 hacia isocentro · D2 hacia exterior · paciente de pie',external:'Ambos hacia abajo · camilla transversal',ct:'Isocentro CT · detectores 90° posterior · fuera del campo SPECT'};
     status.textContent=(route?(routePaused?'Pausado · '+pauseReason+' · selecciona Reanudar movimiento · ':'')+route[routeIndex].label+' · ':target?phases[phase]+(G.setupTransition?' · paciente fuera del campo':'')+' · ':finishedLabel?finishedLabel+' · ':'')+
       (G.setupHeads?'Cabezas en reconfiguración':special[G.setup]||'D1 '+Math.round(wrap(G.rot))+'° · D2 '+Math.round(wrap(G.rot+(G.detectorSeparation??180)))+'° · separación '+Math.round(G.detectorSeparation??180)+'°');
   }
