@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import re
 import shutil
+from externalize_assets import asset
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT.parent / 'simulador-cintigrafia-osea'
@@ -16,9 +17,11 @@ if not upstream.exists():
 s = upstream.read_text(encoding='utf-8')
 s = s.replace('tutorialToggle(true);\n</script>', 'tutorialToggle(false);\n</script>')
 s = s.replace('if(window.showSaveFilePicker){', 'if(window.showSaveFilePicker&&window.top===window){')
-s = re.sub(r"status\('Versión demo\..*?;", "status('Procesamiento integrado del gantry. Envía adquisiciones desde la lista superior.');", s)
+s = re.sub(r"status\('Versión demo\..*?;", "status('Usa Adquirir para configurar una nueva adquisición en los campos de este visor.');", s)
 s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>\n<script>\n' +
               (ROOT / 'scripts/processing_compact.js').read_text(encoding='utf-8') + '\n' +
+              (ROOT / 'scripts/processing_acquisition_config.js').read_text(encoding='utf-8') + '\n' +
+              (ROOT / 'scripts/processing_acquisition_editor.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_receiver.js').read_text(encoding='utf-8') + '\n</script>\n</body>')
 # The private 32-bit teaching SOP carries administered activity in MBq, like NM.
 s = s.replace("sop==='1.2.840.10008.5.1.4.1.1.20'?'MBq'", "(sop==='1.2.840.10008.5.1.4.1.1.20'||sop==='2.25.216145721041023267506752105223475669900')?'MBq'")
@@ -72,9 +75,10 @@ if 'id="boneProcessingTab"' not in html:
 if 'id="boneSendProcessing"' not in html:
     html = html.replace('<button id="boneAcqSave"', '<button id="boneSendProcessing" class="live-setting" type="button">Enviar a procesamiento</button>\n            <button id="boneAcqSave"', 1)
 html = html.replace("if(window.GANTRY_PROCESSING?.active || document.hidden || !activeStudy().linear", "if(document.hidden || !activeStudy().linear")
-engine = '\n'.join((ROOT / 'scripts' / name).read_text(encoding='utf-8') for name in ['processing_dicom.js', 'processing_bridge.js'])
-# Small controller only; the large viewer/parser is fetched on demand via iframe.
-block = '<!-- PROCESSING_ENGINE_BEGIN -->\n<script>\n' + engine + '\n</script>\n<!-- PROCESSING_ENGINE_END -->'
+engine = '\n'.join((ROOT / 'scripts' / name).read_text(encoding='utf-8') for name in ['processing_dicom.js', 'processing_acquisition_config.js', 'processing_acquisition_bridge.js', 'processing_bridge.js'])
+# Cache the controller separately; the large viewer/parser stays lazy-loaded.
+engine_url = asset(engine.encode('utf-8'), 'processing-controller', 'js')
+block = '<!-- PROCESSING_ENGINE_BEGIN -->\n<script src="' + engine_url + '"></script>\n<!-- PROCESSING_ENGINE_END -->'
 if '<!-- PROCESSING_ENGINE_BEGIN -->' in html:
     html = re.sub(r'<!-- PROCESSING_ENGINE_BEGIN -->.*?<!-- PROCESSING_ENGINE_END -->', lambda _: block, html, flags=re.S)
 else:

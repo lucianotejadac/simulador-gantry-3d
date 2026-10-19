@@ -439,7 +439,7 @@
   el('boneAcqCriterion').onchange=()=>{
     manualGoal=false;updateGoal();planningInfo();el('boneAcqSetupError').textContent='';
   };
-  el('boneAcqTarget').oninput=()=>{manualGoal=true;planningInfo();};
+  el('boneAcqTarget').oninput=el('boneAcqTarget').onchange=()=>{manualGoal=true;planningInfo();};
   el('boneAcqSuggested').onclick=()=>{manualGoal=false;updateGoal();planningInfo();};
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
   el('boneAcqFast').onclick=()=>{acquisitionView();advance();speed=({1:10,10:30,30:60,60:1})[speed]||1;paused=false;clock=performance.now();el('boneAcqSpeed').value=String(speed);paint(true);};
@@ -485,6 +485,24 @@
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();if(document.hidden)clearScanDebt();});
   window.GANTRY_BONE_ACQ={advance,sync,selectStudy,
+    startConfigured(config){
+      if(study!=='bone'||busy||saving||loadingSaved||session&&!session.finished)throw Error('Hay una adquisición u operación en curso.');
+      el('boneAcqType').value=config.kind;
+      el('boneAcqCriterion').value=config.mode;
+      el('boneAcqTarget').value=String(config.target);manualGoal=true;
+      el('boneAcqVelocity').value=String(config.velocity);
+      el('boneAcqName1').value=config.names[0];el('boneAcqName2').value=config.names[1];
+      el('boneAcqSetupError').textContent='';instantOnStart=false;
+      if(!start())throw Error(el('boneAcqSetupError').textContent||(window.GANTRY_EXAM?.blocked?'Examen cancelado por colisión. Reinicia el examen desde el gantry.':'Las proyecciones no están listas para adquirir.'));
+      return session.id;
+    },
+    async controlFromProcessing(action){
+      if(action==='instant'){await instant();return;}
+      const id={pause:'boneAcqPause',stop:'boneAcqFinish',fast:'boneAcqFast',save:'boneAcqSave'}[action];
+      if(!id||el(id).disabled||(action!=='save'&&(!session||session.finished)))throw Error('Acción no disponible en este momento.');
+      await el(id).onclick();
+    },
+    get readyForProcessing(){return !!fields&&!busy&&!saving&&!loadingSaved&&fields.every(f=>f.values.length===window.GANTRY_LIVE.settings.matrix**2);},
     matrixChanged(previous,next){
       manualGoal=false;updateGoal();
       if(el('boneAcqVelocity')&&previous&&next)el('boneAcqVelocity').value=String(Math.max(.1,Math.min(60,Number(el('boneAcqVelocity').value)*matrixFactor(previous)/matrixFactor(next))));
@@ -508,7 +526,7 @@
     pauseForPreview(){if(busy||saving||loadingSaved||(session?.mode==='scan'&&!session.finished))return false;advance();if(session&&!session.finished){paused=true;note='Adquisición pausada para vista previa';}paint();return true;},
     get scanning(){return session?.mode==='scan'&&!session.finished;},
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
-    get state(){return session&&{cancelled:!!session.cancelled,study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
-  setInterval(()=>{if(window.GANTRY_PROCESSING?.active){clock=performance.now();return;}advance();paint();},100);
+    get state(){return session&&{id:session.id,cancelled:!!session.cancelled,study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
+  setInterval(()=>{advance();paint();},100);
   window.GANTRY_LIVE?.update(window.GANTRY.G);
 })();

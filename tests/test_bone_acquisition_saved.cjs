@@ -27,6 +27,19 @@ function environment(whole=false){
  return {el,window,storage,submit,tick:seconds=>{now+=seconds*1000;window.GANTRY_BONE_ACQ.advance();}};
 }
 (async()=>{
+ const configured=environment(),api=configured.window.GANTRY_BONE_ACQ;
+ configured.window.GANTRY_PROCESSING={active:true};
+ const cfg={kind:'static',mode:'time',target:5,velocity:10,names:['Desde visor AP','Desde visor PA']};
+ api.startConfigured(cfg);configured.window.GANTRY_LIVE.update();
+ assert.equal(api.state.target,5,'A five-second viewer goal must not be replaced by the suggested goal');
+ assert.throws(()=>api.startConfigured(cfg),'Do not replace an active acquisition');
+ configured.tick(.1);assert(api.state.heads.every(h=>h.total>0));
+ await api.controlFromProcessing('pause');assert(api.state.paused);
+ await api.controlFromProcessing('fast');assert.equal(api.state.speed,10);assert(!api.state.paused);
+ await api.controlFromProcessing('instant');assert(api.state.finished);assert(api.state.heads.every(h=>h.elapsed===5));
+ assert.equal(api.processingCurrent().names[0],'Desde visor AP');
+ assert.equal(api.processingCurrent().mode,'time');
+ configured.window.GANTRY_EXAM={blocked:true};assert.throws(()=>api.startConfigured(cfg),/colisión/);
  const preview=environment(true);
  preview.window.GANTRY_LIVE.signal={mode:'final'};
  preview.window.GANTRY_LIVE.setSignalMode=mode=>{preview.window.GANTRY_LIVE.signal.mode=mode;preview.window.GANTRY_LIVE.update();};

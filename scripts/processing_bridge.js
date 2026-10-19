@@ -5,7 +5,11 @@
   let active=false,ready=false,pending=null,loaded=false,catalog=new Map(),current=null,request=0,loadTimer,refreshing=false;
   const completed=new Map(),imported=new Set();
   const identity=r=>(r.processing?.acquisitionId||r.id)+':'+(r.totals||r.heads.map(h=>h.total)).join(':');
-  function remember(record){if(record?.study==='bone'&&record.finished&&record.heads.every(h=>h.total>0))completed.set(identity(record),record);}
+  function remember(record){
+    if(record?.study!=='bone'||!record.finished||!record.heads.every(h=>h.total>0))return;
+    completed.set(identity(record),record);
+    if(active)setTimeout(()=>refresh().then(sync).catch(error=>{status.textContent=error.message;}),0);
+  }
   const frame=el('boneProcessingFrame'),status=el('boneProcessingStatus');
   // Auxiliary tools live in the main menu; the right slot belongs to the viewer.
   const tools=document.createElement('details');tools.id='boneProcessingTools';tools.hidden=true;
@@ -50,7 +54,7 @@
     if(keys.length)return send(keys,true);
   }
   async function open(){
-    if(busy()){el('boneProcessingNotice').textContent='Finaliza la adquisición activa antes de entrar a procesamiento.';return;}
+    if(busy()&&window.GANTRY_LIVE.settings.study!=='bone'){el('boneProcessingNotice').textContent='Finaliza la adquisición del otro estudio antes de entrar a procesamiento.';return;}
     active=true;tools.hidden=false;el('boneProcessingNotice').textContent='';
     el('acquisitionMenuButton').disabled=true;
     el('gantryLive').hidden=true;el('boneProcessingPane').hidden=false;
@@ -102,4 +106,5 @@
   el('boneProcessingSend').onclick=send;
   el('boneProcessingRetry').onclick=()=>{if(!ready)load();};
   window.GANTRY_PROCESSING={open,close,remember,get active(){return active;}};
+  window.GANTRY_PROCESSING_ACQUISITION.attach(frame);
 })();

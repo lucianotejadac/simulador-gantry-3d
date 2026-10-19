@@ -53,6 +53,7 @@
     try{
       if(!Array.isArray(data.files)||!data.files.length||data.files.length>100)throw Error('Selecciona entre 1 y 50 adquisiciones.');
       const batch=data.files.map(check);
+      window.GANTRY_PROCESSING_EDITOR?.finish();
       for(const entry of batch){await loadFile(new File([entry.file.bytes],entry.file.name),entry.ds);if(!flex.assets.some(a=>a.uid===entry.file.uid))throw Error('Error al cargar '+entry.file.name);}
       if(!flex.header)flex.header=Object.fromEntries(Object.entries({patient:'Fantoma ICRP 145 · SIMULADO',rut:'',date:'',exam:'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));
       const groups=new Map();for(const item of batch){if(!groups.has(item.file.group))groups.set(item.file.group,[]);groups.get(item.file.group).push(item);}

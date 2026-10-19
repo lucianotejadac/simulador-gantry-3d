@@ -1,0 +1,26 @@
+/* Shared validation for the viewer's acquisition form and the gantry receiver. */
+(function(){
+  'use strict';
+  function validate(value){
+    if(!value||typeof value!=='object')throw Error('Parámetros de adquisición incompletos.');
+    const c={};
+    const choice=(key,values,label)=>{if(!values.includes(value[key]))throw Error(label+' no válido.');c[key]=value[key];};
+    const number=(key,min,max,label,integer=false)=>{
+      const n=value[key];
+      if(typeof n!=='number'||!Number.isFinite(n)||n<min||n>max||(integer&&!Number.isInteger(n)))throw Error(label+' fuera de rango.');
+      c[key]=n;
+    };
+    choice('kind',['static','whole'],'Tipo de adquisición');
+    choice('matrix',[64,128,256,512],'Matriz');choice('zoom',[1,1.5,1.75,2],'Zoom');
+    choice('collimator',['LEHR','MELP','HE','NONE'],'Colimador');
+    number('energyCenter',80,450,'Centro de energía',true);choice('windowWidth',[10,15,20,25],'Ancho de ventana');
+    number('activityMci',.1,2000/37,'Actividad (mCi)');number('minutes',0,179.99,'Tiempo inyección–examen (min)');
+    choice('mode',['counts','time'],'Condición de paro');
+    number('target',1,c.mode==='time'?57600:160000000,'Objetivo',true);
+    number('velocity',.1,60,'Velocidad de camilla');
+    if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
+    c.names=value.names.map(n=>n.trim());
+    return c;
+  }
+  window.GANTRY_PROCESSING_CONFIG={validate};
+})();

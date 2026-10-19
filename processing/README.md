@@ -19,10 +19,28 @@ menú lateral, agrupadas por tipo, con los nombres de ambos detectores. También
 se conservan en memoria las adquisiciones terminadas durante la sesión aunque
 se inicie otra: para conservarlas tras recargar sigue siendo necesario guardarlas.
 No se requiere seleccionar ni enviar manualmente; la selección manual queda
-disponible para componer páginas. Se bloquea la entrada durante una adquisición activa.
-El renderizado 3D y la persistencia en vivo descansan durante el procesamiento;
-la posición y el proyecto se conservan al alternar pestañas. La evolución libre
-del radiofármaco queda detenida hasta que el usuario la reproduzca de nuevo.
+disponible para componer páginas. El gantry y las vistas en vivo permanecen activos.
+Una adquisición ósea continúa al alternar pestañas; otro estudio activo impide
+iniciar una nueva adquisición ósea.
+
+## Adquirir desde el visor
+
+El menú **Adquirir** prepara una adquisición estática o de cuerpo entero en los
+mismos campos del visor. **Parámetros de cámara** configura matriz 64/128/256/512,
+zoom, colimador y ventana energética; **Información de serie** configura actividad
+MDP en mCi y tiempo inyección–examen; **Condiciones de paro** configura cuentas o
+segundos por detector, nombres de imágenes o velocidad de camilla para el barrido.
+Los campos editables corresponden exclusivamente a la nueva adquisición; los
+archivos adquiridos o abiertos mantienen sus datos de solo lectura.
+
+Iniciar, pausar, avance rápido, adquisición instantánea y finalizar usan el motor
+existente del gantry con su geometría y protecciones. Los parámetros se aplican al
+iniciar. Los cambios de posición posteriores afectan las cuentas nuevas. Durante
+la adquisición se muestran vistas de progreso reducidas; al terminar se importan
+las cuentas originales, sin reducir su matriz. **Guardar adquisición en caché**
+conserva el registro en IndexedDB; **Guardar proyecto** conserva el procesamiento.
+Las condiciones programadas quedan registradas en los metadatos privados del
+simulador, separadas de la duración efectivamente adquirida.
 
 Se generan dos archivos DICOM en memoria por adquisición, uno por detector,
 para conservar duraciones distintas. Se copian todas las cuentas sin filtros,

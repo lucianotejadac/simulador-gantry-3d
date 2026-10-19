@@ -24,6 +24,8 @@ function record(n=128,height=n,peak=50){
    assert.equal(ds.uint16('x00280010'),recordData.height);assert.equal(ds.uint16('x00280011'),recordData.n);
    assert.equal(Number(ds.string('x00181242')),Math.round(recordData.heads[j].elapsed*1000));
    assert.equal(ds.string('x00080018'),file.uid);
+   const metadata=JSON.parse(ds.string('x00111010'));
+   assert.equal(metadata.acquisition.mode,recordData.mode);assert.equal(metadata.acquisition.target,recordData.target);
    const v=new DataView(ds.byteArray.buffer,ds.byteArray.byteOffset+pixel.dataOffset,pixel.length);
    for(let i=0;i<before[j].length;i++)assert.equal(bits===16?v.getUint16(i*2,true):v.getUint32(i*4,true),before[j][i]);
    assert.equal(bits,recordData.id.endsWith('100000')?32:16);
