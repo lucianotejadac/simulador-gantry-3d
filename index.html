@@ -536,7 +536,7 @@
 /* STARTUP_LOADING_CSS_END */
 </style>
 <!-- WORKSPACE_LAYOUT_BEGIN -->
-<link rel="stylesheet" href="assets/runtime/gantry-workspace.669b840bc156b951.css">
+<link rel="stylesheet" href="assets/runtime/gantry-workspace.531fca31a3d635f8.css">
 <!-- WORKSPACE_LAYOUT_END -->
 <!-- FAST_LOAD_BEGIN -->
 <link rel="preload" href="assets/runtime/console-menus.e023e68602435270.js" as="script">
@@ -794,6 +794,10 @@
     <style>
     #gantryWorkspace[hidden],#boneProcessingPane[hidden]{display:none!important}
     #boneProcessingPane{height:calc(100% - 28px);display:flex;flex-direction:column;background:#c0c0c0;padding:6px;box-sizing:border-box}
+    #boneProcessingTools{position:relative;font:12px Arial;color:#000;margin-left:auto}
+    #boneProcessingTools[hidden]{display:none}
+    #boneProcessingTools>summary{cursor:pointer;padding:3px 8px}
+    #boneProcessingToolsContent{position:absolute;right:0;top:100%;z-index:100;width:min(620px,85vw);padding:8px;background:#c0c0c0;border:2px outset #fff;box-shadow:2px 3px 8px #0005}
     #boneProcessingToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:12px Arial;padding:4px}
     #boneProcessingList{max-height:92px;overflow:auto;display:grid;gap:5px;background:#eee;padding:6px;font:12px Arial}
     #boneProcessingList label{display:flex;gap:7px;align-items:center}
@@ -815,7 +819,7 @@
         <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
       </details>
       <div id="boneProcessingStatus" role="status"></div>
-      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=27f975bad9fa958b"></iframe>
+      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=012a159574f52c19"></iframe>
     </section>
     <!-- PROCESSING_UI_END -->
 <section class="gantry-live" id="gantryLive" aria-label="Controles y adquisiciones">
@@ -4684,6 +4688,13 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   const identity=r=>(r.processing?.acquisitionId||r.id)+':'+(r.totals||r.heads.map(h=>h.total)).join(':');
   function remember(record){if(record?.study==='bone'&&record.finished&&record.heads.every(h=>h.total>0))completed.set(identity(record),record);}
   const frame=el('boneProcessingFrame'),status=el('boneProcessingStatus');
+  // Auxiliary tools live in the main menu; the right slot belongs to the viewer.
+  const tools=document.createElement('details');tools.id='boneProcessingTools';tools.hidden=true;
+  const title=document.createElement('summary');title.textContent='Opciones de procesamiento';
+  const content=document.createElement('div');content.id='boneProcessingToolsContent';
+  content.append(el('boneProcessingToolbar'),el('boneProcessingList').closest('details'),status);
+  tools.append(title,content);el('boneProcessingTab').parentElement.append(tools);
+
   const busy=()=>window.GANTRY_BONE_ACQ?.active||window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
   function load(){
     loaded=true;status.textContent='Cargando procesador óseo…';el('boneProcessingRetry').hidden=true;
@@ -4721,7 +4732,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   async function open(){
     if(busy()){el('boneProcessingNotice').textContent='Finaliza la adquisición activa antes de entrar a procesamiento.';return;}
-    active=true;el('boneProcessingNotice').textContent='';
+    active=true;tools.hidden=false;el('boneProcessingNotice').textContent='';
     el('acquisitionMenuButton').disabled=true;
     el('gantryLive').hidden=true;el('boneProcessingPane').hidden=false;
     el('boneProcessingTab').setAttribute('aria-selected','true');el('boneGantryTab').setAttribute('aria-selected','false');
@@ -4729,7 +4740,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     try{await refresh();await sync();}catch(error){status.textContent='No se pudo leer el catálogo local: '+error.message;}
   }
   function close(){
-    active=false;el('boneProcessingPane').hidden=true;el('gantryLive').hidden=false;
+    active=false;tools.hidden=true;tools.open=false;el('boneProcessingPane').hidden=true;el('gantryLive').hidden=false;
     el('acquisitionMenuButton').disabled=false;
     el('boneProcessingTab').setAttribute('aria-selected','false');el('boneGantryTab').setAttribute('aria-selected','true');
     if(ready)frame.contentWindow.postMessage({type:'GANTRY_PROCESSING_HIDE',version:1},location.origin);

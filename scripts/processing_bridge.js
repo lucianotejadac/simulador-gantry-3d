@@ -7,6 +7,13 @@
   const identity=r=>(r.processing?.acquisitionId||r.id)+':'+(r.totals||r.heads.map(h=>h.total)).join(':');
   function remember(record){if(record?.study==='bone'&&record.finished&&record.heads.every(h=>h.total>0))completed.set(identity(record),record);}
   const frame=el('boneProcessingFrame'),status=el('boneProcessingStatus');
+  // Auxiliary tools live in the main menu; the right slot belongs to the viewer.
+  const tools=document.createElement('details');tools.id='boneProcessingTools';tools.hidden=true;
+  const title=document.createElement('summary');title.textContent='Opciones de procesamiento';
+  const content=document.createElement('div');content.id='boneProcessingToolsContent';
+  content.append(el('boneProcessingToolbar'),el('boneProcessingList').closest('details'),status);
+  tools.append(title,content);el('boneProcessingTab').parentElement.append(tools);
+
   const busy=()=>window.GANTRY_BONE_ACQ?.active||window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
   function load(){
     loaded=true;status.textContent='Cargando procesador óseo…';el('boneProcessingRetry').hidden=true;
@@ -44,7 +51,7 @@
   }
   async function open(){
     if(busy()){el('boneProcessingNotice').textContent='Finaliza la adquisición activa antes de entrar a procesamiento.';return;}
-    active=true;el('boneProcessingNotice').textContent='';
+    active=true;tools.hidden=false;el('boneProcessingNotice').textContent='';
     el('acquisitionMenuButton').disabled=true;
     el('gantryLive').hidden=true;el('boneProcessingPane').hidden=false;
     el('boneProcessingTab').setAttribute('aria-selected','true');el('boneGantryTab').setAttribute('aria-selected','false');
@@ -52,7 +59,7 @@
     try{await refresh();await sync();}catch(error){status.textContent='No se pudo leer el catálogo local: '+error.message;}
   }
   function close(){
-    active=false;el('boneProcessingPane').hidden=true;el('gantryLive').hidden=false;
+    active=false;tools.hidden=true;tools.open=false;el('boneProcessingPane').hidden=true;el('gantryLive').hidden=false;
     el('acquisitionMenuButton').disabled=false;
     el('boneProcessingTab').setAttribute('aria-selected','false');el('boneGantryTab').setAttribute('aria-selected','true');
     if(ready)frame.contentWindow.postMessage({type:'GANTRY_PROCESSING_HIDE',version:1},location.origin);

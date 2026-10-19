@@ -1291,8 +1291,22 @@ initTutorial();
 status('Procesamiento integrado del gantry. Envía adquisiciones desde la lista superior.');
 tutorialToggle(false);
 </script>
-<style>#open-demo{display:none!important}header h1{font-size:14px}</style>
+<style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>
 <script>
+// Keep file/project actions available without the embedded viewer title bar.
+(()=>{
+  const bar=document.querySelector('.application-bar');
+  const menu=document.createElement('select');
+  menu.id='processingFileMenu';menu.setAttribute('aria-label','Archivo y herramientas');
+  menu.innerHTML='<option value="" disabled selected>Archivo y herramientas…</option>';
+  for(const id of ['open','open-folder','save-project','open-project','open-tutorial']){
+    const button=document.getElementById(id);
+    if(button){const option=document.createElement('option');option.value=id;option.textContent=button.textContent;menu.append(option);}
+  }
+  menu.onchange=()=>{const id=menu.value;menu.value='';document.getElementById(id)?.click();};
+  bar.append(menu);
+})();
+
 /* Appended to the vendored viewer; all viewer APIs remain local to this frame. */
 (function(){
   'use strict';

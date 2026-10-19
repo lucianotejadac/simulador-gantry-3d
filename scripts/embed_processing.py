@@ -17,7 +17,8 @@ s = upstream.read_text(encoding='utf-8')
 s = s.replace('tutorialToggle(true);\n</script>', 'tutorialToggle(false);\n</script>')
 s = s.replace('if(window.showSaveFilePicker){', 'if(window.showSaveFilePicker&&window.top===window){')
 s = re.sub(r"status\('Versión demo\..*?;", "status('Procesamiento integrado del gantry. Envía adquisiciones desde la lista superior.');", s)
-s = s.replace('</body>', '<style>#open-demo{display:none!important}header h1{font-size:14px}</style>\n<script>\n' +
+s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>\n<script>\n' +
+              (ROOT / 'scripts/processing_compact.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_receiver.js').read_text(encoding='utf-8') + '\n</script>\n</body>')
 # The private 32-bit teaching SOP carries administered activity in MBq, like NM.
 s = s.replace("sop==='1.2.840.10008.5.1.4.1.1.20'?'MBq'", "(sop==='1.2.840.10008.5.1.4.1.1.20'||sop==='2.25.216145721041023267506752105223475669900')?'MBq'")
@@ -29,6 +30,10 @@ ui = '''<!-- PROCESSING_UI_BEGIN -->
     <style>
     #gantryWorkspace[hidden],#boneProcessingPane[hidden]{display:none!important}
     #boneProcessingPane{height:calc(100% - 28px);display:flex;flex-direction:column;background:#c0c0c0;padding:6px;box-sizing:border-box}
+    #boneProcessingTools{position:relative;font:12px Arial;color:#000;margin-left:auto}
+    #boneProcessingTools[hidden]{display:none}
+    #boneProcessingTools>summary{cursor:pointer;padding:3px 8px}
+    #boneProcessingToolsContent{position:absolute;right:0;top:100%;z-index:100;width:min(620px,85vw);padding:8px;background:#c0c0c0;border:2px outset #fff;box-shadow:2px 3px 8px #0005}
     #boneProcessingToolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font:12px Arial;padding:4px}
     #boneProcessingList{max-height:92px;overflow:auto;display:grid;gap:5px;background:#eee;padding:6px;font:12px Arial}
     #boneProcessingList label{display:flex;gap:7px;align-items:center}
