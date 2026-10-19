@@ -763,3 +763,24 @@ descarta las sesiones canceladas, conservando las adquisiciones guardadas.
 
 Motor: `scripts/exam_safety.js`; actualizar con `python scripts/embed_exam_safety.py`.
 Pruebas: `node tests/test_exam_safety.cjs`, colisiones, adquisición estática y MAG3.
+
+### Posiciones automáticas de detectores
+
+El menú bajo la vista 3D ofrece diez configuraciones genéricas: AP/PA, PA/AP,
+laterales en ambos sentidos, carga/descarga, estacionamiento CT y aperturas
+anteriores/posteriores de 90° y 76°. Son equivalentes docentes definidos por sus
+ángulos, no una reproducción de programas de posicionamiento de un fabricante.
+CT solo estaciona los cabezales; no realiza adquisición CT. La postura del
+paciente y la camilla no cambian con estos presets.
+
+El movimiento retira los detectores, gira y ajusta su distancia con protección
+barrida contra paciente, camilla y el otro cabezal. El menú «Detener movimiento»,
+Escape o una orden manual interrumpen la maniobra. No se puede iniciar una nueva
+adquisición mientras se posicionan ni cambiar de preset durante una adquisición.
+Las proyecciones y la geometría guardada usan el ángulo real de cada detector.
+El barrido corporal recupera automáticamente la separación de 180° antes de
+acumular cuentas o mover la camilla.
+
+Motor: `scripts/gantry_positions.js`; empaquetar con
+`python scripts/embed_gantry_positions.py`. Pruebas:
+`node tests/test_gantry_positions.cjs`, colisiones y barrido corporal.

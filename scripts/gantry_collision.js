@@ -62,7 +62,7 @@
     return [[0,1,3],[0,3,2],[4,6,7],[4,7,5],[0,4,5],[0,5,1],[2,3,7],[2,7,6],[0,2,6],[0,6,4],[1,5,7],[1,7,3]].map(ids=>({p:ids.map(i=>p[i]),region}));
   }
   function query(mesh,boxes,s,detector,physical){
-    const th=(s.rot+(detector===2?180:0))*Math.PI/180,c=Math.cos(th),n=Math.sin(th);
+    const th=(s.rot+(detector===2?(s.detectorSeparation??180):0))*Math.PI/180,c=Math.cos(th),n=Math.sin(th);
     const slideX=physical.feetX0+s.tableZ/200*physical.travel,top=s.tableH/100;
     const project=p=>[p[0],c*(p[1]-physical.iso)+n*p[2],-n*(p[1]-physical.iso)+c*p[2]];
     const toWorld=p=>[slideX+(physical.headFirst?-physical.length-p[0]:p[0]),
@@ -82,7 +82,8 @@
     return {detector,body,table,limit:Math.max(.12,body.required+MARGIN,table.required+MARGIN)};
   }
   function worsens(next,prior,training,contact=false){
-    for(let i=0;i<2;i++)for(const surface of ['body','table']){
+    for(let i=0;i<2;i++)for(const surface of ['body','table','equipment']){
+      if(!next[i][surface]||!prior[i][surface])continue;
       const threshold=contact?0:surface==='body'&&training?-TRAINING_DEPTH:MARGIN;
       if(next[i][surface].gap<threshold-1e-8 && next[i][surface].gap<prior[i][surface].gap-1e-8)
         return {detector:i+1,surface,hit:next[i][surface]};
@@ -91,8 +92,9 @@
   }
   function sweep(from,to,evaluate,training=false,contact=false){
     let angle=((to.rot-from.rot+540)%360)-180;
-    const count=Math.max(1,Math.ceil(Math.abs(angle)/.25),...['tableH','tableZ','detDist1','detDist2'].map(k=>Math.ceil(Math.abs(to[k]-from[k])/.1)));
-    const at=t=>{const s={...from};for(const k of ['tableH','tableZ','detDist1','detDist2'])s[k]=from[k]+(to[k]-from[k])*t;s.rot=(from.rot+angle*t+360)%360;return s;};
+    const separation=(to.detectorSeparation??180)-(from.detectorSeparation??180);
+    const count=Math.max(1,Math.ceil((Math.abs(angle)+Math.abs(separation))/.25),...['tableH','tableZ','detDist1','detDist2'].map(k=>Math.ceil(Math.abs(to[k]-from[k])/.1)));
+    const at=t=>{const s={...from};for(const k of ['tableH','tableZ','detDist1','detDist2'])s[k]=from[k]+(to[k]-from[k])*t;s.rot=(from.rot+angle*t+360)%360;if('detectorSeparation' in from||'detectorSeparation' in to)s.detectorSeparation=(from.detectorSeparation??180)+separation*t;return s;};
     let last=from,prior=evaluate(from),f=0;
     for(let i=1;i<=count;i++){
       const next=at(i/count),hits=evaluate(next),blocked=worsens(hits,prior,training,contact);
@@ -105,7 +107,26 @@
     }
     return {state:last,blocked:null};
   }
-  window.GANTRY_COLLISION_CORE={indexed,support,boxTriangles,query,sweep,worsens,MARGIN,TRAINING_DEPTH};
+  // Separating-axis test for the two simple detector housings in the YZ plane.
+  // Their longitudinal extents overlap; include housings and supports.
+  function detectorGap(s,boxes1,boxes2){
+    const angle1=s.rot*Math.PI/180,angle2=(s.rot+(s.detectorSeparation??180))*Math.PI/180;
+    const rectangle=(b,angle,distance)=>{
+      const c=Math.cos(angle),n=Math.sin(angle),radial=[c,n],tangent=[-n,c];
+      const r=distance/100+(b.min[1]+b.max[1])/2,t=(b.min[2]+b.max[2])/2;
+      return {center:[c*r-n*t,n*r+c*t],axes:[radial,tangent],half:[(b.max[1]-b.min[1])/2,(b.max[2]-b.min[2])/2]};
+    };
+    let gap=Infinity;
+    for(const a of boxes1)for(const b of boxes2){
+      if(a.max[0]<b.min[0]||b.max[0]<a.min[0])continue;
+      const A=rectangle(a,angle1,s.detDist1),B=rectangle(b,angle2,s.detDist2),d=B.center.map((v,i)=>v-A.center[i]);
+      const dot=(u,v)=>u[0]*v[0]+u[1]*v[1];
+      const project=(R,axis)=>R.axes.reduce((sum,u,i)=>sum+Math.abs(dot(u,axis))*R.half[i],0);
+      gap=Math.min(gap,Math.max(...[...A.axes,...B.axes].map(axis=>Math.abs(dot(d,axis))-project(A,axis)-project(B,axis))));
+    }
+    return gap;
+  }
+  window.GANTRY_COLLISION_CORE={indexed,support,boxTriangles,query,sweep,worsens,detectorGap,MARGIN,TRAINING_DEPTH};
 
   window.createGantryCollision=function({THREE,scene,flip,dummy,getModel,setArms,getState,equipment,physical}){
     const mode=document.getElementById('collisionMode'),sound=document.getElementById('collisionSound');
@@ -175,9 +196,11 @@
       return simple;
     }
     function evaluate(s,physicalOverride){
-      const mesh=pose(s.arms),p={...physical(),...physicalOverride},key=JSON.stringify([s.rot,s.tableH,s.tableZ,s.detDist1,s.detDist2,s.arms,p.headFirst,p.prone,p.bodyH,equipment.enabled]);
+      const mesh=pose(s.arms),p={...physical(),...physicalOverride},key=JSON.stringify([s.rot,s.detectorSeparation??180,s.tableH,s.tableZ,s.detDist1,s.detDist2,s.arms,p.headFirst,p.prone,p.bodyH,equipment.enabled]);
       if(results.has(key))return results.get(key);
       const hits=[1,2].map(d=>query(mesh,boxes(d),s,d,p));
+      const gap=detectorGap(s,boxes(1),boxes(2));
+      hits.forEach(h=>h.equipment={gap,region:'otro detector',point:null});
       if(results.size>256)results.clear();results.set(key,hits);return hits;
     }
     function alarm(){
@@ -203,9 +226,9 @@
     }
     function update(s){
       const hits=evaluate(s),training=mode.value==='training';
-      frame?.classList.toggle('collision-contact',hits.some(h=>h.body.gap<=0||h.table.gap<=0));
+      frame?.classList.toggle('collision-contact',hits.some(h=>Math.min(h.body.gap,h.table.gap,h.equipment.gap)<=0));
       hits.forEach((h,i)=>{
-        const hit=h.body.gap<=h.table.gap?h.body:h.table,mm=hit.gap*1000;
+        const hit=[h.body,h.table,h.equipment].reduce((a,b)=>a.gap<=b.gap?a:b),mm=hit.gap*1000;
         const critical=mm<=0,near=mm<50;
         outputs[i].textContent='D'+(i+1)+' · '+(!Number.isFinite(mm)?'Sin paciente/camilla delante':
           (critical?'CONTACTO · penetración '+Math.max(0,-mm).toFixed(1)+' mm':mm<=2.6?'Límite de seguridad · '+mm.toFixed(1)+' mm':mm.toFixed(0)+' mm libres')+' · '+hit.region);
@@ -215,8 +238,8 @@
         if(critical)event(i+1,hit,training&&hit===h.body?'Compresión simulada':'Contacto detectado');
         else if(mm>5)episodes[i]=null;
       });
-      const key=JSON.stringify(hits.map(h=>[h.body.gap<0,h.table.gap<0]));
-      if(key!==lastKey){lastKey=key;message.textContent=hits.some(h=>h.body.gap<0||h.table.gap<0)?'Retira el detector o la camilla para liberar el contacto.':training?'Entrenamiento: penetración geométrica máxima de 10 mm; no representa fuerza ni daño.':mode.value==='sentinel'?'Centinela activo: el contacto en movimiento rápido cancela el examen.':'Protección activa · margen de 2,5 mm.';}
+      const key=JSON.stringify(hits.map(h=>[h.body.gap<0,h.table.gap<0,h.equipment.gap<0]));
+      if(key!==lastKey){lastKey=key;message.textContent=hits.some(h=>Math.min(h.body.gap,h.table.gap,h.equipment.gap)<0)?'Retira el detector o la camilla para liberar el contacto.':training?'Entrenamiento: penetración geométrica máxima de 10 mm; no representa fuerza ni daño.':mode.value==='sentinel'?'Centinela activo: el contacto en movimiento rápido cancela el examen.':'Protección activa · margen de 2,5 mm.';}
       return hits;
     }
     function move(from,to,{fast=false}={}){

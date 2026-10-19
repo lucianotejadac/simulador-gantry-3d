@@ -28,7 +28,7 @@
     if(!record)return false;
     if(window.GANTRY_BONE_ACQ?.state?.busy||window.GANTRY_MAG3?.state?.busy)return false;
     const hits=window.GANTRY3D?.collision?.evaluate(window.GANTRY.G);
-    if(hits?.some(h=>h.body.gap<.0024||h.table.gap<.0024)){
+    if(hits?.some(h=>h.body.gap<.0024||h.table.gap<.0024||(h.equipment?.gap??Infinity)<.0024)){
       el('examSafetyHint').textContent='Primero retira el detector o la camilla hasta liberar el contacto y el margen de seguridad.';return false;
     }
     record=null;revision++;persist();

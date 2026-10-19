@@ -336,6 +336,7 @@
     }
   }
   function start(){
+    if(window.GANTRY_AUTO?.busy){el('boneAcqSetupError').textContent='Espera a que termine el posicionamiento automático.';return false;}
     if(window.GANTRY_EXAM?.blocked)return false;
     if(!fields||busy||saving||loadingSaved||(session&&!session.finished))return;
     if(study==='bone'&&window.GANTRY_MDP?.remaining<=0){el('boneAcqSetupError').textContent='El modelo termina a las 3 horas. Elige un tiempo anterior para iniciar.';return;}

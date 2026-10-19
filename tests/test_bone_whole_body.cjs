@@ -101,6 +101,16 @@ function rng(){let seed=123;return ()=>((seed=(Math.imul(seed,1664525)+101390422
   }
   assert(sawRotation&&sawRetraction);assert.equal(G.rot,target);assert(aligned.travel>0);
  }
+ for(const separation of [90,76]){
+  Object.assign(G,{tableZ:120,rot:322,detectorSeparation:separation,detDist1:47,detDist2:47});
+  const aligned=W.GANTRY_BONE_WHOLE.create(60);
+  for(let steps=0;aligned.travel===0&&steps<150;steps++){
+   W.GANTRY_BONE_WHOLE.advance(aligned,1000,.5);
+   if(G.detectorSeparation!==180)assert.equal(aligned.heads[0].total,0,'No scan counts before heads are opposed');
+  }
+  assert.equal(G.detectorSeparation,180);assert.equal(G.rot,360);assert(aligned.travel>0);
+ }
+ delete G.detectorSeparation;
  Object.assign(G,{tableZ:120,rot:60,detDist1:21,detDist2:26});
  const interrupted=W.GANTRY_BONE_WHOLE.create(60);G.rot=61;
  assert.throws(()=>W.GANTRY_BONE_WHOLE.advance(interrupted,1000,.5));

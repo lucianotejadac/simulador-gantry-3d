@@ -88,7 +88,7 @@
   }
   function signature(){
     const G=window.GANTRY.G,s=window.GANTRY_LIVE.settings;
-    return JSON.stringify([G.arms,G.rot,G.tableH,window.GANTRY_PATIENT3D?.headFirst,s.headFirst,s.decubitus,document.getElementById('pos')?.value,s.matrix,s.zoom,s.centers,s.collimator,s.energyCenter,s.windowWidth,window.GANTRY3D?.equipment?.enabled]);
+    return JSON.stringify([G.arms,G.rot,G.detectorSeparation??180,G.tableH,window.GANTRY_PATIENT3D?.headFirst,s.headFirst,s.decubitus,document.getElementById('pos')?.value,s.matrix,s.zoom,s.centers,s.collimator,s.energyCenter,s.windowWidth,window.GANTRY3D?.equipment?.enabled]);
   }
   function create(velocity){
     const status=position();if(!status.ok)throw Error(status.reason);
@@ -98,8 +98,9 @@
     const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ);
     // Both 0/360 and 180 put the detector faces parallel to the patient.
     scan.targetRot=Math.round(G.rot/180)*180;
-    if(Math.abs(G.rot-scan.targetRot)>.001)scan.rotationClearance=rotationTargets(G,scan.targetRot,window.GANTRY3D.limits,window.GANTRY.LIM);
-    safeTargets({...G,rot:scan.targetRot},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    if(Math.abs((G.detectorSeparation??180)-180)>.001)scan.rotationClearance={detDist1:window.GANTRY.LIM.detDist1[1],detDist2:window.GANTRY.LIM.detDist2[1]};
+    else if(Math.abs(G.rot-scan.targetRot)>.001)scan.rotationClearance=rotationTargets(G,scan.targetRot,window.GANTRY3D.limits,window.GANTRY.LIM);
+    safeTargets({...G,rot:scan.targetRot,detectorSeparation:180},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     scan.geometrySignature=signature();scan.initialGeometry={...G};
     return scan;
   }
@@ -112,7 +113,7 @@
     if(signature()!==scan.geometrySignature||Math.abs(G.tableZ-scan.tableZ)>.001)throw Error('Cambió la posición o la configuración. Finaliza el barrido antes de reposicionar.');
     const dt=Math.min(.5,seconds);
     if(!(dt>0)||scan.finished)return;
-    if(Math.abs(G.rot-scan.targetRot)>.001){
+    if(Math.abs(G.rot-scan.targetRot)>.001||Math.abs((G.detectorSeparation??180)-180)>.001){
       const targets=scan.rotationClearance;
       if(['detDist1','detDist2'].some(k=>G[k]<targets[k]-.001)){
         const next={...G};for(const k of ['detDist1','detDist2'])if(next[k]<targets[k])next[k]=approach(next[k],targets[k],dt);
@@ -120,6 +121,7 @@
         scan.phase='retracting';
       }else{
         const next={...G,rot:G.rot+Math.sign(scan.targetRot-G.rot)*Math.min(Math.abs(scan.targetRot-G.rot),12*dt)};
+        if('detectorSeparation' in G)next.detectorSeparation=(G.detectorSeparation??180)+Math.sign(180-(G.detectorSeparation??180))*Math.min(Math.abs(180-(G.detectorSeparation??180)),12*dt);
         guard(next);Object.assign(G,next);
         scan.geometrySignature=signature();scan.phase='aligning';
       }
@@ -143,7 +145,7 @@
     const gaps=window.GANTRY3D?.surfaceGaps(G);
     const physicalProne=(document.getElementById('pos')?.value||'').toLowerCase().startsWith('pron');
     const raw=G.rot+(physicalProne?180:0);
-    const pairs=[live.framePair(raw),live.framePair(raw+180)];
+    const pairs=[live.framePair(raw),live.framePair(raw+(G.detectorSeparation??180))];
     // The local skin distance varies continuously along the body. Reuse a PSF
     // within 5 mm distance bins instead of rebuilding the entire atlas field
     // for submillimetre changes. Collision checks keep their full precision.

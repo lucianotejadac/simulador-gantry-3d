@@ -128,6 +128,7 @@
     document.querySelector('#gantryLive .gantry-live-grid').style.display=active?'none':'';
   }
   async function inject(){
+    if(window.GANTRY_AUTO?.busy)return;
     if(window.GANTRY_EXAM?.blocked)return;
     const examRevision=window.GANTRY_EXAM?.revision;
     if(!ready){try{await load();}catch(error){document.getElementById('mag3Status').textContent='No se pudo cargar MAG3. Pulsa inyectar para reintentar.';console.error(error);return;}}
