@@ -794,9 +794,17 @@ barrida contra paciente, camilla y el otro cabezal. El menú «Detener movimient
 Escape o una orden manual interrumpen la maniobra. No se puede iniciar una nueva
 adquisición mientras se posicionan ni cambiar de preset durante una adquisición.
 Las proyecciones y la geometría guardada usan el ángulo real de cada detector.
-Para cambios de montaje el paciente se retira temporalmente del campo y se
-recoloca tras comprobar espacio libre; no se anima su traslado atravesando
-los detectores. Cancelar durante esa fase restaura la configuración previa.
+Para entrar y salir de la posición 4, primero se separan los detectores con el
+paciente visible y se retira la camilla. Los cabezales se desplazan al frente,
+se elevan separados, basculan y se alinean antes de ingresar la camilla externa.
+La vuelta sigue la secuencia inversa. Cada tramo acelera y frena suavemente;
+las carcasas se comprueban como cajas orientadas en 3D durante la basculación.
+El traslado entre camillas se representa como preparación fuera del campo,
+sin animar al paciente atravesando los detectores. «Detener movimiento» pausa
+la maniobra transversal sin recolocarla; «Reanudar movimiento» la continúa.
+Mientras esté pausada se bloquean la adquisición y los controles manuales.
+En los otros cambios de montaje se conserva la recolocación fuera del campo
+y la cancelación que restaura la configuración previa.
 Al volver a posiciones normales se recuperan los ajustes originales de la
 camilla y brazos. El barrido corporal requiere la camilla del equipo (posición
 1 o 6) y recupera automáticamente la separación de 180° antes de adquirir.

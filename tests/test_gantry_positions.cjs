@@ -33,6 +33,27 @@ const html=fs.readFileSync('index.html','utf8');
 assert(html.includes('target.n===2 ? (G.detectorSeparation??180) : 0'));
 assert(html.includes('th + (st.detectorSeparation??180)*Math.PI/180'));
 const S=window.GANTRY_SETUP;
+// No teleporting heads at the setup boundary, including the return journey.
+const {externalPlan,interpolateMotion}=window.GANTRY_POSITION_CORE;
+for(const start of [{...from,setup:'normal',tableZ:205,detDist1:50,detDist2:50},
+ {...from,setup:'external',rot:0,detectorSeparation:0,tableH:80,setupAnchorZ:200,detDist1:50,detDist2:50}]){
+ const target=presets.find(p=>p.id===(start.setup==='normal'?'external':'ap'));
+ const steps=externalPlan(start,target,{tableZ:205,tableH:90,arms:'down'});
+ let prior=S.geometry(start);
+ for(const step of steps){
+  const frames=Math.max(1,Math.ceil(step.duration/.05));
+  for(let i=1;i<=frames;i++){
+   const state=interpolateMotion(step,i/frames),layout=S.geometry(state);
+   for(let n=0;n<2;n++){
+    assert(Math.hypot(...layout.heads[n].position.map((v,j)=>v-prior.heads[n].position[j]))<.04,step.label+': continuous position');
+    for(let a=0;a<3;a++)assert(Math.hypot(...layout.heads[n].axes[a].map((v,j)=>v-prior.heads[n].axes[a][j]))<.04,step.label+': continuous orientation');
+   }
+   if(!layout.hidden&&!prior.hidden)assert(Math.hypot(...layout.origin.map((v,j)=>v-prior.origin[j]))<.04,step.label+': patient travels with bed');
+   assert(C.detectorGap(state,boxes,boxes)>=C.MARGIN,step.label+': housing clearance');
+   prior=layout;
+  }
+ }
+}
 assert.deepEqual(Array.from(presets,p=>p.id),['lateral','standing1','standing2','external','ct','ap','90a','90p','76a','76p']);
 for(const id of ['standing1','standing2']){
  const G={...from,setup:id,rot:90,detDist1:50,detDist2:50},layout=S.geometry(G),n=id==='standing1'?1:2;
@@ -88,8 +109,8 @@ window.GANTRY3D={collision:{ready:true,evaluate:hits,guard:(a,b)=>C.sweep(a,b,hi
 const ui=vm.createContext({window,document:{hidden:false,getElementById:el,createElement:()=>el('panel'),addEventListener(){}},
  performance:{now:()=>now},setInterval:fn=>{callback=fn;return 1;},clearInterval:()=>{callback=null;}});
 vm.runInContext(fs.readFileSync('scripts/gantry_positions.js','utf8'),ui);
-const run=()=>{for(let i=0;window.GANTRY_AUTO.busy&&i<1200;i++){now+=50;callback();}assert(!window.GANTRY_AUTO.busy);};
-for(const id of ['standing1','standing2','external','ct','ap','90a','76p']){
+const run=()=>{for(let i=0;window.GANTRY_AUTO.busy&&i<6000;i++){now+=50;assert(callback,el('gantryPositionStatus').textContent);callback();}assert(!window.GANTRY_AUTO.busy,el('gantryPositionStatus').textContent);};
+for(const id of ['external','ap','standing1','standing2','external','ct','ap','90a','76p']){
  assert(window.GANTRY_AUTO.start(id));run();
  const p=presets.find(p=>p.id===id);assert.equal(G.setup,p.setup,id+': '+el('gantryPositionStatus').textContent);
  assert.equal(G.setupTransition,false);assert.equal(G.detectorSeparation,p.separation);assert(Math.abs(((G.rot-p.rot+540)%360)-180)<1e-8);
@@ -98,5 +119,13 @@ for(const id of ['standing1','standing2','external','ct','ap','90a','76p']){
 assert.equal(G.tableH,90);assert.equal(G.tableZ,205);
 const original=JSON.stringify(G);assert(window.GANTRY_AUTO.start('standing1'));now+=50;callback();window.GANTRY_AUTO.stop();
 assert.equal(G.setup,'normal');assert.equal(G.setupTransition,false);assert.equal(G.tableZ,205);assert.equal(G.rot,142);
+assert(window.GANTRY_AUTO.start('external'));
+for(let i=0;i<2000&&!window.GANTRY_AUTO.transferring;i++){now+=50;callback();}
+assert(window.GANTRY_AUTO.transferring);now+=50;callback();
+const beforePause=JSON.stringify(G);window.GANTRY_AUTO.stop();
+assert.equal(callback,null);assert.equal(JSON.stringify(G),beforePause,'Stop must freeze the geometry instead of resetting it');
+assert(window.GANTRY_AUTO.busy,'Acquisition remains blocked while the manoeuvre is paused');
+assert(window.GANTRY_AUTO.start('resume'));run();assert.equal(G.setup,'external');
+assert(window.GANTRY_AUTO.start('ap'));run();
 window.GANTRY_BONE_ACQ={active:true};assert(!window.GANTRY_AUTO.start('ct'));assert.equal(G.setup,'normal');
 console.log('OK: exact 1-10 order, standing exterior heads and signal, external stretcher with successive downward fields, CT excluded from SPECT and safe detector spacing.');

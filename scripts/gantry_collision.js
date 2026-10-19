@@ -62,7 +62,7 @@
     return [[0,1,3],[0,3,2],[4,6,7],[4,7,5],[0,4,5],[0,5,1],[2,3,7],[2,7,6],[0,2,6],[0,6,4],[1,5,7],[1,7,3]].map(ids=>({p:ids.map(i=>p[i]),region}));
   }
   function query(mesh,boxes,s,detector,physical){
-    if(s.setupTransition||(s.setup&&s.setup!=='normal'))return setupQuery(mesh,boxes,s,detector,physical);
+    if(s.setupTransition||s.setupHeads||s.setupPatientOffset||(s.setup&&s.setup!=='normal'))return setupQuery(mesh,boxes,s,detector,physical);
     const th=(s.rot+(detector===2?(s.detectorSeparation??180):0))*Math.PI/180,c=Math.cos(th),n=Math.sin(th);
     const slideX=physical.feetX0+s.tableZ/200*physical.travel,top=s.tableH/100;
     const project=p=>[p[0],c*(p[1]-physical.iso)+n*p[2],-n*(p[1]-physical.iso)+c*p[2]];
@@ -108,8 +108,14 @@
   function sweep(from,to,evaluate,training=false,contact=false){
     let angle=((to.rot-from.rot+540)%360)-180;
     const separation=(to.detectorSeparation??180)-(from.detectorSeparation??180);
-    const count=Math.max(1,Math.ceil((Math.abs(angle)+Math.abs(separation))/.25),...['tableH','tableZ','detDist1','detDist2'].map(k=>Math.ceil(Math.abs(to[k]-from[k])/.1)));
-    const at=t=>{const s={...from};for(const k of ['tableH','tableZ','detDist1','detDist2'])s[k]=from[k]+(to[k]-from[k])*t;s.rot=(from.rot+angle*t+360)%360;if('detectorSeparation' in from||'detectorSeparation' in to)s.detectorSeparation=(from.detectorSeparation??180)+separation*t;return s;};
+    const poseSteps=from.setupHeads&&to.setupHeads?from.setupHeads.flatMap((h,i)=>[
+      ...h.position.map((v,j)=>Math.abs(to.setupHeads[i].position[j]-v)/.005),
+      Math.abs(to.setupHeads[i].angle-h.angle)/.01,Math.abs(to.setupHeads[i].yaw-h.yaw)/.01]):[];
+    const count=Math.ceil(Math.max(1,Math.abs((to.setupPatientOffset||0)-(from.setupPatientOffset||0))/.005,...poseSteps,Math.ceil((Math.abs(angle)+Math.abs(separation))/.25),...['tableH','tableZ','detDist1','detDist2'].map(k=>Math.ceil(Math.abs(to[k]-from[k])/.1))));
+    const at=t=>{const s={...from};for(const k of ['tableH','tableZ','detDist1','detDist2'])s[k]=from[k]+(to[k]-from[k])*t;s.rot=(from.rot+angle*t+360)%360;if('detectorSeparation' in from||'detectorSeparation' in to)s.detectorSeparation=(from.detectorSeparation??180)+separation*t;
+      if('setupPatientOffset' in to||'setupPatientOffset' in from)s.setupPatientOffset=(from.setupPatientOffset||0)+((to.setupPatientOffset||0)-(from.setupPatientOffset||0))*t;
+      if(from.setupHeads&&to.setupHeads)s.setupHeads=from.setupHeads.map((h,i)=>({...h,position:h.position.map((v,j)=>v+(to.setupHeads[i].position[j]-v)*t),angle:h.angle+(to.setupHeads[i].angle-h.angle)*t,yaw:h.yaw+(to.setupHeads[i].yaw-h.yaw)*t}));
+      return s;};
     let last=from,prior=evaluate(from),f=0;
     for(let i=1;i<=count;i++){
       const next=at(i/count),hits=evaluate(next),blocked=worsens(hits,prior,training,contact);
@@ -126,6 +132,21 @@
   // Their longitudinal extents overlap; include housings and supports.
   function detectorGap(s,boxes1,boxes2){
     const heads=window.GANTRY_SETUP?.geometry(s).heads||[1,2].map(n=>{const angle=(s.rot+(n===2?(s.detectorSeparation??180):0))*Math.PI/180;return {angle,position:[0,1.03+Math.cos(angle)*s['detDist'+n]/100,Math.sin(angle)*s['detDist'+n]/100]};});
+    if(s.setupHeads){
+      const dot=(a,b)=>a.reduce((v,x,i)=>v+x*b[i],0);
+      const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+      const obb=(b,h)=>({axes:h.axes,half:b.max.map((v,i)=>(v-b.min[i])/2),center:h.position.map((v,i)=>v+h.axes.reduce((sum,a,j)=>sum+a[i]*(b.min[j]+b.max[j])/2,0))});
+      let gap=Infinity;
+      for(const a of boxes1)for(const b of boxes2){
+        const A=obb(a,heads[0]),B=obb(b,heads[1]),d=B.center.map((v,i)=>v-A.center[i]);
+        const axes=[...A.axes,...B.axes,...A.axes.flatMap(u=>B.axes.map(v=>cross(u,v)))];
+        const radius=(box,axis)=>box.axes.reduce((sum,v,i)=>sum+Math.abs(dot(v,axis))*box.half[i],0);
+        let separation=-Infinity;
+        for(const raw of axes){const len=Math.hypot(...raw);if(len<1e-8)continue;const axis=raw.map(v=>v/len);separation=Math.max(separation,Math.abs(dot(d,axis))-radius(A,axis)-radius(B,axis));}
+        gap=Math.min(gap,separation);
+      }
+      return gap;
+    }
     // Both external heads share a rigid yaw: undo it for the fast YZ SAT.
     for(let i=0;i<heads.length;i++)if(heads[i].yaw){
       const h=heads[i],c=Math.cos(h.yaw),n=Math.sin(h.yaw),[x,y,z]=h.position;
@@ -217,7 +238,7 @@
       return simple;
     }
     function evaluate(s,physicalOverride){
-      const mesh=pose(s.arms),p={...physical(),...physicalOverride},key=JSON.stringify([s.setup,s.setupTransition,s.setupAnchorZ,s.rot,s.detectorSeparation??180,s.tableH,s.tableZ,s.detDist1,s.detDist2,s.arms,p.headFirst,p.prone,p.bodyH,equipment.enabled]);
+      const mesh=pose(s.arms),p={...physical(),...physicalOverride},key=JSON.stringify([s.setup,s.setupTransition,s.setupAnchorZ,s.setupHeads,s.setupPatientOffset,s.rot,s.detectorSeparation??180,s.tableH,s.tableZ,s.detDist1,s.detDist2,s.arms,p.headFirst,p.prone,p.bodyH,equipment.enabled]);
       if(results.has(key))return results.get(key);
       const hits=[1,2].map(d=>query(mesh,boxes(d),s,d,p));
       const gap=detectorGap(s,boxes(1),boxes(2));
