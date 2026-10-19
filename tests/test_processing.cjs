@@ -15,7 +15,7 @@ function record(n=128,height=n,peak=50){
 }
 (async()=>{
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'gantry-processing-')),checks=[];
- for(const recordData of [record(),record(256),record(128,320),record(128,128,100000)]){
+ for(const recordData of [record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000)]){
   const before=recordData.heads.map(h=>h.counts.slice()),files=await api.files(recordData,await api.uid('study'));
   const repeat=await api.files(recordData,await api.uid('study'));assert.equal(repeat[0].uid,files[0].uid);
   files.forEach((file,j)=>{
@@ -74,7 +74,7 @@ print('pydicom: pixel totals, dimensions, duration and dose verified')`],{input:
    async loadFile(file,ds){imports.push(file);globals.acquisitionInstances.static[ds.string('x00080018')]={};globals.flex.assets.push({uid:ds.string('x00080018'),id:ds.string('x00080018')+':0',rows:ds.uint16('x00280010'),cols:ds.uint16('x00280011'),window:50,level:25});},
    flexNewPage(){const p={id:globals.flex.pages.length+1,items:[]};globals.flex.pages.push(p);return p;}};
  vm.runInContext(fs.readFileSync('scripts/processing_receiver.js','utf8'),vm.createContext(globals));
- const files=await api.files(record(),await api.uid('study')),event={source:parent,origin:'http://local',data:{type:'GANTRY_PROCESSING_IMPORT',version:1,id:1,files}};
+ const files=await api.files(record(1024),await api.uid('study')),event={source:parent,origin:'http://local',data:{type:'GANTRY_PROCESSING_IMPORT',version:1,id:1,files}};
  await listeners.message({...event,origin:'http://foreign'});assert.equal(imports.length,0);
  await listeners.message({...event,source:{}});assert.equal(imports.length,0);
  await listeners.message(event);assert.equal(replies.at(-1).images,2);assert.equal(globals.flex.pages.length,1);

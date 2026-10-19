@@ -4,7 +4,7 @@
   'use strict';
   const groups=[
     ['Zoom',['liveZoom1','liveZoom15','liveZoom175','liveZoom2'],'choice'],
-    ['Matriz',['liveMatrix128','liveMatrix256'],'choice'],
+    ['Matriz',['liveMatrix128','liveMatrix256','liveMatrix512','liveMatrix1024'],'choice'],
     ['Centrado',['liveRecenter','liveResetCenter']],
     ['Imagen en vivo',['bonePause','boneClear']],
     ['MAG3',['injectMAG3','injectMAG3Instant']],
@@ -82,8 +82,8 @@
       const unit=document.getElementById(id==='mdpActivity'?'mdpUnit':id==='mibiActivity'?'mibiUnit':'studyActivityUnit');
       if(unit?.value==='MBq')list=list.map(v=>v*37);
     }else if(/Minutes$/.test(id))list=[0,1,5,10,15,20,30,45,60,90,120,150,180,240,360,480,720];
-    else if(id==='boneAcqVelocity')list=[1,2,3,5,7.5,10,12,15,20,25,30,40,50,60];
-    else list=max<=3600?[1,5,10,15,30,60,120,180,300,600,900,1200,1800,3600]:[1000,10000,50000,100000,200000,400000,500000,1000000,2000000,5000000,10000000];
+    else if(id==='boneAcqVelocity')list=[.1,.25,.5,.625,1,2,3,5,7.5,10,12,15,20,25,30,40,50,60];
+    else list=(id==='boneAcqTarget'?document.getElementById('boneAcqCriterion')?.value==='time':id==='finalPreviewTarget'?document.getElementById('finalPreviewCriterion')?.value==='time':max<=3600)?[1,5,10,15,30,60,120,180,300,600,900,1200,1800,3600,7200,14400,28800,57600]:[1000,10000,50000,100000,200000,400000,500000,1000000,2000000,5000000,10000000,16000000,40000000,160000000];
     list.push(Number(input.value));
     return [...new Set(list.filter(v=>Number.isFinite(v)&&v>=min&&v<=max))].sort((a,b)=>a-b);
   }

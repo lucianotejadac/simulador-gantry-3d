@@ -100,7 +100,27 @@
     }
     return {values,cdf,sum,window:Math.max(1e-12,peak*.8)};
   }
+  // Sample the same detector response more finely, without inventing PSF detail.
+  // Filtering stays bounded at the source's useful sampling; total rate is preserved.
+  function finerField(base,bw,bh,w,h){
+    const values=new Float32Array(w*h),cdf=new Float64Array(w*h);
+    const area=bw*bh/(w*h);let sum=0;
+    for(let y=0;y<h;y++){
+      const sy=Math.max(0,Math.min(bh-1,(y+.5)*bh/h-.5)),y0=Math.floor(sy),fy=sy-y0,y1=Math.min(bh-1,y0+1);
+      for(let x=0;x<w;x++){
+        const sx=Math.max(0,Math.min(bw-1,(x+.5)*bw/w-.5)),x0=Math.floor(sx),fx=sx-x0,x1=Math.min(bw-1,x0+1);
+        const v=((base.values[y0*bw+x0]*(1-fx)+base.values[y0*bw+x1]*fx)*(1-fy)+(base.values[y1*bw+x0]*(1-fx)+base.values[y1*bw+x1]*fx)*fy)*area;
+        values[y*w+x]=v;sum+=values[y*w+x];
+      }
+    }
+    const norm=sum>0?base.sum/sum:0;sum=0;
+    for(let i=0;i<values.length;i++){values[i]*=norm;cdf[i]=sum+=values[i];}
+    return {values,cdf,sum,window:base.window*area*norm};
+  }
   function field(pose,pair,crop,w,h,flipX,flipY,metrics,sigma){
+    if(w>256){const ratio=w/256,bh=Math.round(h/ratio);
+      return finerField(field(pose,pair,crop,256,bh,flipX,flipY,metrics,sigma/ratio),256,bh,w,h);
+    }
     if(metrics.uncollimated)return uncollimatedField(pose,pair,crop,w,h,flipX,flipY,metrics);
     const a=pose.frames[pair.lo],b=pose.frames[pair.hi],values=new Float32Array(w*h);
     // Cuenta esperada por píxel: conservar área física al cambiar matriz/zoom.
@@ -154,9 +174,10 @@
     draw(ctx,field,rate,duration,live,gain){
       const image=ctx.createImageData(this.w,this.h),pixels=image.data;
       const window=field.window*(live?rate*duration/2000000:1);
-      const values=live?this.counts:field.values;
+      const values=live?this.counts:field.values,lut=new Map([[0,0]]);
       for(let i=0;i<values.length;i++){
-        const value=Math.round(255*Math.pow(Math.max(0,Math.min(1,values[i]/Math.max(window,1e-12)*gain)),.72));
+        let value=live?lut.get(values[i]):undefined;
+        if(value===undefined){value=Math.round(255*Math.pow(Math.max(0,Math.min(1,values[i]/Math.max(window,1e-12)*gain)),.72));if(live)lut.set(values[i],value);}
         const p=i*4;pixels[p]=pixels[p+1]=pixels[p+2]=value;pixels[p+3]=255;
       }
       ctx.putImageData(image,0,0);

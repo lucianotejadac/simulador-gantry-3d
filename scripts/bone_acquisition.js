@@ -29,7 +29,7 @@
   }
   class Acquisition {
     constructor(n,mode,target,random=Math.random,height=n){
-      if(![128,256].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?10000000:3600)||!Number.isInteger(target))throw Error('Objetivo no válido');
+      if(![128,256,512,1024].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?160000000:57600)||!Number.isInteger(target))throw Error('Objetivo no válido');
       if(!Number.isInteger(height)||height<n||height>n*6)throw Error('Altura de matriz no válida');
       this.n=n;this.height=height;this.kind=height===n?'static':'whole';this.mode=mode;this.target=target;this.random=random;this.finished=false;
       this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*height),total:0,elapsed:0,done:false}));
@@ -60,7 +60,12 @@
   }
   // EANM delayed planar bone imaging. These are editable acquisition goals,
   // not multipliers on the physical count rate. Segment selection is heuristic.
-  function suggestedGoal(study,segment,seconds=0){
+  function matrixFactor(n){return Math.max(1,(n/256)**2);}
+  function suggestedGoal(study,segment,seconds=0,n=256){
+    const goal=baseGoal(study,segment,seconds),factor=matrixFactor(n);
+    return {...goal,counts:goal.counts*factor,time:goal.time*factor,factor};
+  }
+  function baseGoal(study,segment,seconds=0){
     if(study!=='bone'||seconds<7200)return {counts:100000,time:60,delayed:false};
     if(['Torax','Abdomen','Pelvis'].includes(segment))return {counts:1000000,time:300,delayed:true,region:'tronco'};
     if(segment==='Piernas / pies')return {counts:250000,time:300,delayed:true,region:'extremidades distales'};
@@ -70,7 +75,7 @@
     const cps=(field?.sum||0)*rate/2000000;
     return cps>0?target/cps:Infinity;
   }
-  window.GANTRY_BONE_CORE={Acquisition,poisson,suggestedGoal,estimatedSeconds};
+  window.GANTRY_BONE_CORE={Acquisition,poisson,suggestedGoal,estimatedSeconds,matrixFactor};
   const el=id=>document.getElementById(id),bar=el('boneAcqControls');
   if(!bar)return;
   let session=null,fields=null,rate=4000,study='',clock=performance.now(),speed=1,paused=false,busy=false;
@@ -105,30 +110,32 @@
   }
   function suggestion(){
     const live=window.GANTRY_LIVE?.state,seconds=window.GANTRY_MDP?.seconds||0;
-    const goals=[live?.d1?.segment,live?.d2?.segment].map(segment=>suggestedGoal(study,segment,seconds));
+    const goals=[live?.d1?.segment,live?.d2?.segment].map(segment=>suggestedGoal(study,segment,seconds,window.GANTRY_LIVE?.settings.matrix||256));
     return goals.reduce((a,b)=>a.counts>=b.counts?a:b);
   }
   function updateGoal(){
     const counts=el('boneAcqCriterion').value!=='time',goal=suggestion();
     if(session&&!session.finished)return;
     if(!manualGoal)el('boneAcqTarget').value=String(counts?goal.counts:goal.time);
-    el('boneAcqTarget').max=counts?'10000000':'3600';
+    el('boneAcqTarget').max=counts?'160000000':'57600';
     el('boneAcqUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';
   }
   function planningInfo(){
     const wholeBody=kind()==='whole',goal=suggestion(),hint=el('boneAcqEstimate');
     el('boneAcqSuggested').hidden=wholeBody||!goal.delayed;
-    el('boneAcqSuggested').textContent='Usar sugerido: '+(el('boneAcqCriterion').value==='counts'?format(goal.counts)+' cuentas':'5 min');
-    hint.hidden=wholeBody;
-    if(wholeBody||el('boneAcqSetup').hidden)return;
+    el('boneAcqSuggested').textContent='Usar sugerido: '+(el('boneAcqCriterion').value==='counts'?format(goal.counts)+' cuentas':time(goal.time));
+    hint.hidden=false;
+    if(el('boneAcqSetup').hidden)return;
+    if(wholeBody){hint.textContent='Matriz '+window.GANTRY_LIVE.settings.matrix+' · velocidad '+el('boneAcqVelocity').value+' cm/min. La velocidad se reduce al aumentar matriz para conservar cuentas/píxel; puedes modificarla.';return;}
     const {mode,target}=settings();
-    if(!Number.isInteger(target)||target<1||target>(mode==='counts'?10000000:3600)){hint.textContent='Introduce un objetivo válido.';return;}
+    if(!Number.isInteger(target)||target<1||target>(mode==='counts'?160000000:57600)){hint.textContent='Introduce un objetivo válido.';return;}
     if(!fields){hint.textContent='Preparando estimación…';return;}
     const estimates=fields.map((field,j)=>{
       const cps=field.sum*rate/2000000,seconds=mode==='counts'?estimatedSeconds(field,rate,target):target;
       return 'D'+(j+1)+': '+(Number.isFinite(seconds)?time(Math.ceil(seconds)):'sin señal')+' · '+format(Math.round(cps))+' c/s';
     });
     hint.textContent='Duración a 1×, a tasa actual: '+estimates.join(' | ')+'. Puede variar con la evolución del RF y los movimientos.'+
+      (goal.factor>1?' Matriz '+window.GANTRY_LIVE.settings.matrix+': meta sugerida ×'+goal.factor+' para conservar cuentas/píxel frente a 256.':'')+
       (goal.delayed?' Óseo tardío · sugerencia para '+goal.region+'.':'')+
       (goal.delayed&&mode==='counts'&&target<goal.counts?' Objetivo inferior al sugerido; terminará antes.':'');
   }
@@ -257,7 +264,7 @@
     el('boneAcqSave').disabled=!store||!session||busy||saving||!!archive||loadingSaved;
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
-    el('liveMatrix128').disabled=el('liveMatrix256').disabled=active&&running;
+    for(const n of [128,256,512,1024])if(el('liveMatrix'+n))el('liveMatrix'+n).disabled=active&&running;
     planningInfo();
     window.GANTRY_EXAM?.refresh();
     if(!session&&!archive){
@@ -291,7 +298,7 @@
       const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+' · '+(labels[shown.study||shown.settings?.study||'bone']||'Estudio')+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
       const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
       el('boneAcqInfo'+(j+1)).title='Media = total dividido por todos los píxeles de esta adquisición, incluidos fondo y ceros. Se usa la matriz guardada, no la matriz seleccionada para la próxima adquisición.';
-      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':shown.cancelled?'Cancelada':h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+
+      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':shown.cancelled?'Cancelada':h.done?'Meta alcanzada':shown.finished?'Meta no alcanzada':paused?'Pausada':'Adquiriendo')+
         '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa';
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
@@ -350,7 +357,7 @@
       try{session=whole.create(Number(el('boneAcqVelocity').value));session.countRate=rate;}
       catch(error){el('boneAcqSetupError').textContent=error.message;return;}
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
-    catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
+    catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 160.000.000 cuentas enteras.':'Introduce entre 1 y 57.600 segundos enteros.';return;}
     session.study=study;
     clearScanDebt();lastScanRender=-Infinity;
     session.id=window.crypto?.randomUUID?.()||'acq-'+Date.now()+'-'+Math.random().toString(36).slice(2);session.createdAt=Date.now();
@@ -387,7 +394,22 @@
     try{
       await new Promise(resolve=>setTimeout(resolve,0));
       if(window.GANTRY_EXAM?.blocked)return;
-      if(study==='bone'&&window.GANTRY_MDP&&snapshot.every(f=>f.mdpBases)){
+      if(session.n>=512&&window.GANTRY_FINAL_PREVIEW){
+        const model=study==='bone'?window.GANTRY_MDP:study==='mibi'?window.GANTRY_MIBI:null,m=model?.metadata(),results=[];
+        for(let j=0;j<2;j++){
+          const head=session.heads[j];if(head.done){results.push(null);continue;}
+          const target=session.target-(session.mode==='counts'?head.total:head.elapsed);
+          const options={mode:session.mode,target,rate:currentRate,model:model?study:null,start:m?.seconds||0,
+            limit:model?(study==='bone'?10800:43200):Infinity,weights:model?(t=>study==='bone'?model.fractions(t,m.voidAt120).weights:model.fractions(t,m.protocol,m.voidEvery120).weights):null};
+          const predicted=window.GANTRY_FINAL_PREVIEW.predict([snapshot[j]],options)[0];
+          const result=await window.GANTRY_FINAL_PREVIEW.sample(predicted,Math.floor(Math.random()*2147483647),()=>!!window.GANTRY_EXAM?.blocked);
+          if(!result||window.GANTRY_EXAM?.blocked)return;results.push(result);
+        }
+        let elapsed=0;
+        results.forEach((r,j)=>{if(!r)return;const h=session.heads[j];for(let i=0;i<h.counts.length;i++)h.counts[i]+=r.counts[i];h.total+=r.total;h.elapsed+=r.elapsed;h.done=r.reached;elapsed=Math.max(elapsed,r.elapsed);});
+        model?.advance(elapsed);session.finished=session.heads.every(h=>h.done)||!!model&&model.remaining<=0;
+        if(model){session[study==='bone'?'mdpEnd':'mibiEnd']=model.metadata();if(model.remaining<=0&&!session.heads.every(h=>h.done))session[study==='bone'?'mdpLimit':'mibiLimit']=true;}
+      }else if(study==='bone'&&window.GANTRY_MDP&&snapshot.every(f=>f.mdpBases)){
         while(!window.GANTRY_EXAM?.blocked&&!session.finished){
           window.GANTRY_MDP.step(session,snapshot,30);session.mdpEnd=window.GANTRY_MDP.metadata();
           paint();await new Promise(resolve=>setTimeout(resolve,0));
@@ -458,7 +480,11 @@
   refreshSaved().catch(error=>{el('boneAcqCacheStatus').textContent='Guardado local no disponible: '+error.message;});
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();if(document.hidden)clearScanDebt();});
-  window.GANTRY_BONE_ACQ={advance,sync,selectStudy,suggestedGoal:()=>suggestion(),
+  window.GANTRY_BONE_ACQ={advance,sync,selectStudy,
+    matrixChanged(previous,next){
+      manualGoal=false;updateGoal();
+      if(el('boneAcqVelocity')&&previous&&next)el('boneAcqVelocity').value=String(Math.max(.1,Math.min(60,Number(el('boneAcqVelocity').value)*matrixFactor(previous)/matrixFactor(next))));
+    },suggestedGoal:()=>suggestion(),
     cancelExam(){
       clearScanDebt();
       const cancel=s=>{if(s&&!s.finished){s.cancelled=true;s.finished=true;}};

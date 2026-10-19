@@ -3,7 +3,7 @@
   'use strict';
   const supported=new Set(['bone','mibi','thyroid','exploration','parathyroid','dmsa','maa']);
   function predict(fields,{mode,target,rate,model=null,start=0,limit=Infinity,weights=null}){
-    if(!['time','counts'].includes(mode)||!Number.isInteger(target)||target<1||target>(mode==='time'?3600:10000000)||!Number.isFinite(rate)||rate<0)throw Error('Objetivo no válido');
+    if(!['time','counts'].includes(mode)||!Number.isFinite(target)||(mode==='counts'&&!Number.isInteger(target))||target<=0||target>(mode==='time'?57600:160000000)||!Number.isFinite(rate)||rate<0)throw Error('Objetivo no válido');
     return fields.map(field=>{
       const bases=model?field[model==='bone'?'mdpBases':'mibiBases']:[field.values];
       if(!bases?.length)throw Error('Preparando bases del estudio');
@@ -39,6 +39,32 @@
   function random(seed){return ()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
   async function sample(result,seed,cancel=()=>false){
     const counts=new Uint32Array(result.values.length),rng=random(seed);
+    if(result.mode==='counts'&&result.reached&&result.sum>0&&result.target>200000&&counts.length>=512*512){
+      // Independent Poisson samples are iid multinomial conditional on their sum.
+      // Append iid events or thin uniformly to reach the exact requested total.
+      let total=0;const cdf=new Float64Array(counts.length);let sum=0;
+      for(let i=0;i<counts.length;i++){
+        counts[i]=window.GANTRY_BONE_CORE.poisson(result.values[i]*result.target/result.sum,rng);
+        total+=counts[i];cdf[i]=sum+=result.values[i];
+        if(i%32768===32767){await new Promise(r=>setTimeout(r,0));if(cancel())return null;}
+      }
+      if(total>result.target){
+        const tree=new Float64Array(counts.length+1);
+        for(let i=1;i<tree.length;i++)tree[i]=counts[i-1];
+        for(let i=1;i<tree.length;i++){const p=i+(i&-i);if(p<tree.length)tree[p]+=tree[i];}
+        let bit=1;while(bit*2<tree.length)bit*=2;
+        while(total>result.target){
+          let rank=Math.floor(rng()*total),at=0;
+          for(let step=bit;step;step>>=1){const next=at+step;if(next<tree.length&&tree[next]<=rank){rank-=tree[next];at=next;}}
+          counts[at]--;for(let k=at+1;k<tree.length;k+=k&-k)tree[k]--;total--;
+        }
+      }else while(total<result.target){
+        const value=rng()*sum;let lo=0,hi=cdf.length-1;
+        while(lo<hi){const mid=(lo+hi)>>>1;if(cdf[mid]>value)hi=mid;else lo=mid+1;}
+        counts[lo]++;total++;
+      }
+      return {...result,counts,total};
+    }
     if(result.mode==='counts'&&result.reached&&result.sum>0){
       const cdf=new Float64Array(counts.length);let sum=0;
       for(let i=0;i<cdf.length;i++)cdf[i]=sum+=result.values[i];
@@ -70,7 +96,7 @@
     wasActive=on;
     if(!on){token++;clearTimeout(timer);key='';display=null;latest=null;}
   }
-  function units(){const counts=el('finalPreviewCriterion').value==='counts';el('finalPreviewTarget').max=counts?'10000000':'3600';el('finalPreviewUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';}
+  function units(){const counts=el('finalPreviewCriterion').value==='counts';el('finalPreviewTarget').max=counts?'160000000':'57600';el('finalPreviewUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';}
   function prepare(images,state){
     return images.map((result,j)=>{
       const n=Math.round(Math.sqrt(result.counts.length)),buffer=document.createElement('canvas');buffer.width=buffer.height=n;
@@ -135,6 +161,11 @@
     el('finalPreviewTarget').oninput=refresh;el('finalPreviewTarget').onchange=refresh;
     el('finalPreviewNoise').onclick=()=>{noise++;refresh();};controls();
   }
-  window.GANTRY_FINAL_PREVIEW={cancel(){token++;clearTimeout(timer);key='';controls();},predict,sample,sync,controls,get active(){return active();}};
+  window.GANTRY_FINAL_PREVIEW={matrixChanged(previous,next){
+    if(!active())return;
+    const factor=n=>Math.max(1,(n/256)**2),input=el('finalPreviewTarget');
+    input.value=String(Math.min(el('finalPreviewCriterion').value==='counts'?160000000:57600,Math.max(1,Math.round(Number(input.value)*factor(next)/factor(previous)))));
+    units();key='';
+  },cancel(){token++;clearTimeout(timer);key='';controls();},predict,sample,sync,controls,get active(){return active();}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

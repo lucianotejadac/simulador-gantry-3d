@@ -1,6 +1,6 @@
 /* Snapshot/UI tests; IndexedDB persistence itself is checked in Chrome. */
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),{webcrypto}=require('node:crypto');
-const storeSource=fs.readFileSync('scripts/bone_acquisition_store.js','utf8');
+const storeSource=fs.readFileSync('scripts/bone_acquisition_store.js','utf8').replace(/\r\n/g,'\n');
 const engine=fs.readFileSync('scripts/bone_acquisition.js','utf8');
 const html=fs.readFileSync('index.html','utf8');assert(html.includes(storeSource));
 const database=new Map();let failSave=false;
@@ -13,8 +13,8 @@ function environment(whole=false){
  const field={values,cdf,sum:2000000};
  const G={rot:0,tableZ:184};
  const wholeValues=new Float32Array(128*320),wholeCdf=new Float64Array(wholeValues.length);wholeValues[5]=2000000;wholeCdf.fill(2000000,5);
- const window={GANTRY:{G},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync(window.GANTRY_LIVE.settings.study||'bone',[field,field],1000);}},GANTRY_BONE_WHOLE:{position:()=>({ok:G.tableZ>16,reason:'Centra en cráneo'}),fields:()=>({height:320,fields:[1,2].map(()=>({values:wholeValues,cdf:wholeCdf,sum:2000000}))})}};
- const context=vm.createContext({window,document,performance:{now:()=>now},crypto:webcrypto,structuredClone,Uint32Array,setInterval(){},setTimeout});
+ const window={GANTRY:{G,render(){}},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync(window.GANTRY_LIVE.settings.study||'bone',[field,field],1000);}},GANTRY_BONE_WHOLE:{position:()=>({ok:G.tableZ>16,reason:'Centra en cráneo'}),fields:()=>({height:320,fields:[1,2].map(()=>({values:wholeValues,cdf:wholeCdf,sum:2000000}))})}};
+ const context=vm.createContext({window,document,performance:{now:()=>now},crypto:webcrypto,structuredClone,Uint32Array,setInterval(){},setTimeout,clearTimeout});
  vm.runInContext(fs.readFileSync('scripts/bone_whole_body.js','utf8'),context);
  const {Scan}=window.GANTRY_BONE_WHOLE;
  window.GANTRY_BONE_WHOLE={position:()=>({ok:G.tableZ>16,reason:'Centra en cráneo'}),create:velocity=>new Scan(128,velocity,{width:256,height:640,headRow:27,footRow:614},G.tableZ),advance(scan,rate,dt){if(Math.abs(G.tableZ-scan.tableZ)>.001)throw Error('Posición modificada');scan.step([1,2].map(()=>({values:wholeValues})),rate,dt);G.tableZ=scan.tableZ;window.GANTRY_BONE_ACQ.advance();}};
@@ -68,9 +68,9 @@ function environment(whole=false){
  const broken=structuredClone(first);broken.heads[0].counts[5]=999;assert.throws(()=>b.storage.validate(broken));
  assert.throws(()=>b.storage.validate({...first,version:2}));
  const c=environment(true);assert(!c.el('boneAcqStart').disabled);
- c.window.GANTRY.G.tableZ=16;c.window.GANTRY_LIVE.update();assert(c.el('boneAcqStart').disabled);
+ c.window.GANTRY.G.tableZ=16;c.tick(.11);c.window.GANTRY_LIVE.update();assert(c.el('boneAcqStart').disabled);
  c.submit(30,'Cuerpo anterior','Cuerpo posterior');assert.equal(c.window.GANTRY_BONE_ACQ.state,null);
- c.window.GANTRY.G.tableZ=184;c.window.GANTRY_LIVE.update();assert(!c.el('boneAcqStart').disabled);
+ c.window.GANTRY.G.tableZ=184;c.tick(.11);c.window.GANTRY_LIVE.update();assert(!c.el('boneAcqStart').disabled);
  c.submit(30,'Cuerpo anterior','Cuerpo posterior');assert.equal(c.window.GANTRY_BONE_ACQ.state.height,320);
  c.window.GANTRY.G.tableZ=180;c.tick(1);assert(c.window.GANTRY_BONE_ACQ.state.paused);assert.equal(c.window.GANTRY_BONE_ACQ.state.heads[0].total,0);
  await c.el('boneAcqInstant').onclick();assert(!c.window.GANTRY_BONE_ACQ.state.finished);

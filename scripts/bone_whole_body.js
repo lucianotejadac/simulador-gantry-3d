@@ -22,7 +22,7 @@
   }
   class Scan {
     constructor(n,velocity,pose,startZ=200,random=Math.random){
-      if(![128,256].includes(n)||!Number.isFinite(velocity)||velocity<1||velocity>60)throw Error('Introduce una velocidad entre 1 y 60 cm/min.');
+      if(![128,256,512,1024].includes(n)||!Number.isFinite(velocity)||velocity<.1||velocity>60)throw Error('Introduce una velocidad entre 0,1 y 60 cm/min.');
       if(!Number.isFinite(startZ)||startZ<=16)throw Error('No queda recorrido hacia los pies desde esta posición.');
       Object.assign(this,geometry(pose,n));
       this.n=n;this.kind='whole';this.mode='scan';this.velocity=velocity;this.startZ=startZ;this.endZ=16;

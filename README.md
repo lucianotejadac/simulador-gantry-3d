@@ -809,3 +809,36 @@ camilla y brazos. El barrido corporal requiere la camilla del equipo (posición
 Motor: `scripts/gantry_positions.js`; empaquetar con
 `python scripts/embed_gantry_positions.py`. Pruebas:
 `node tests/test_gantry_positions.cjs`, colisiones y barrido corporal.
+
+
+### Matrices de 512 y 1024
+
+El menú Matriz admite 128, 256, 512 y 1024. Las adquisiciones y los archivos DICOM
+conservan arrays de cuentas con esas dimensiones; cuerpo entero conserva su
+relación de aspecto longitudinal. La tasa total depende del radiofármaco y de la
+geometría, no de la matriz.
+
+Para 512 y 1024, las metas sugeridas de cuentas/tiempo se multiplican por 4 y 16
+respecto de 256 para mantener la media de cuentas por píxel. Se pueden modificar:
+con igual meta de cuentas totales, la duración permanece igual y disminuye la
+estadística por píxel. Al cambiar matriz, el barrido reduce su velocidad por el
+mismo factor; esa velocidad sigue siendo editable. En MAG3 se conserva el protocolo
+temporal basal: aumentar la matriz reduce las cuentas por píxel de cada cuadro,
+sin alargar artificialmente las fases fisiológicas.
+
+El tiempo real puede crecer más que el factor nominal por la evolución biológica
+y el decaimiento. Se respetan los límites del modelo (MDP hasta 3 h, MIBI hasta
+12 h); el examen puede terminar antes de alcanzar la meta. La imagen final usa
+los mismos criterios y señala metas no alcanzables dentro del modelo.
+
+La matriz fina sobremuestrea la respuesta esperada del detector con conservación
+de la suma y ruido independiente por píxel. No crea detalle anatómico superior al
+atlas ni mejora la resolución física del colimador. La proyección y el filtrado se
+mantienen en una malla de hasta 256 columnas para evitar que el costo del filtro
+crezca con la matriz; después se interpola la expectativa y se normaliza su suma.
+La adquisición instantánea de alta matriz integra la cinética y usa muestreo
+Poisson con ajuste multinomial exacto de la meta, sin simular millones de eventos
+uno por uno.
+
+Referencia docente: [IAEA, Nuclear Medicine Resources Manual](https://www-pub.iaea.org/MTCD/Publications/PDF/Pub1198_web.pdf),
+sección 5.1.3 (matriz, densidad de cuentas y duración).

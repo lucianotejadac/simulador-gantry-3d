@@ -539,15 +539,15 @@
 <link rel="stylesheet" href="assets/runtime/gantry-workspace.531fca31a3d635f8.css">
 <!-- WORKSPACE_LAYOUT_END -->
 <!-- FAST_LOAD_BEGIN -->
-<link rel="preload" href="assets/runtime/console-menus.e023e68602435270.js" as="script">
+<link rel="preload" href="assets/runtime/console-menus.8eba554d6a579db0.js" as="script">
 <link rel="preload" href="assets/runtime/exam-safety.00f904169c348088.js" as="script">
-<link rel="preload" href="assets/runtime/final-preview.a5bb25c2364341d4.js" as="script">
+<link rel="preload" href="assets/runtime/final-preview.9dd0587d5dcc6b8a.js" as="script">
 <link rel="preload" href="assets/runtime/gantry-positions.b1ea2d559482b07d.js" as="script">
 <link rel="preload" href="assets/runtime/gantry-setups.85ca7f8a091ad28d.js" as="script">
 <link rel="preload" href="assets/runtime/mdp-engine.7735c72ba19f58cb.js" as="script">
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.78e83e536f629fd4.js" as="script">
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
-<link rel="preload" href="assets/runtime/pixel-grid.4984a3c344b18d0e.js" as="script">
+<link rel="preload" href="assets/runtime/pixel-grid.5deb9cb3b664c472.js" as="script">
 <link rel="preload" href="assets/runtime/study-activity.ca085acb56fae58a.js" as="script">
 <link rel="preload" href="assets/runtime/symbia-room.40a36f2a15b3e0bc.bin" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/three-bundle.9848023754a347b2.js" as="script">
@@ -819,7 +819,7 @@
         <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
       </details>
       <div id="boneProcessingStatus" role="status"></div>
-      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=012a159574f52c19"></iframe>
+      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=2038c759ebd7e616"></iframe>
     </section>
     <!-- PROCESSING_UI_END -->
 <section class="gantry-live" id="gantryLive" aria-label="Controles y adquisiciones">
@@ -872,6 +872,9 @@
               <span class="control-label">MATRIZ</span>
               <button class="live-setting" id="liveMatrix128" type="button" aria-pressed="false">128</button>
               <button class="live-setting active" id="liveMatrix256" type="button" aria-pressed="true">256</button>
+              <button class="live-setting" id="liveMatrix512" type="button" aria-pressed="false">512×512</button>
+              <button class="live-setting" id="liveMatrix1024" type="button" aria-pressed="false">1024×1024</button>
+              <span id="matrixQualityHint" role="status" style="flex-basis:100%;font-size:12px;color:#b9d6e4"></span>
             </div>
             <button id="injectMAG3" class="live-setting" type="button" disabled>inyectar MAG3</button><span id="mag3Status" role="status"></span>
             <span class="live-status" id="liveStatus">Cargando atlas angular...</span>
@@ -962,7 +965,7 @@
             <form id="boneAcqSetup" hidden aria-label="Configurar adquisición">
               <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
               <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
-              <label id="boneAcqVelocityWrap" hidden>Velocidad de camilla <input id="boneAcqVelocity" type="number" min="1" max="60" step="0.5" value="10" required disabled> cm/min</label>
+              <label id="boneAcqVelocityWrap" hidden>Velocidad de camilla <input id="boneAcqVelocity" type="number" min="0.1" max="60" step="0.025" value="10" required disabled> cm/min</label>
               <label id="boneAcqCriterionWrap">Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas totales objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label id="boneAcqTargetWrap">Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
               <span id="boneAcqUnits">cuentas totales por detector</span>
@@ -1461,10 +1464,10 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="assets/runtime/image.3861454422d07e6c.png";
 <!-- MIBI_KINETICS_END -->
 <!-- PIXEL_GRID_BEGIN -->
 <link rel="stylesheet" href="assets/runtime/pixel-grid.32ff43dc68d1438d.css">
-<script src="assets/runtime/pixel-grid.4984a3c344b18d0e.js"></script>
+<script src="assets/runtime/pixel-grid.5deb9cb3b664c472.js"></script>
 <!-- PIXEL_GRID_END -->
 <!-- FINAL_PREVIEW_BEGIN -->
-<script src="assets/runtime/final-preview.a5bb25c2364341d4.js"></script>
+<script src="assets/runtime/final-preview.9dd0587d5dcc6b8a.js"></script>
 <!-- FINAL_PREVIEW_END -->
 <!-- ICRP145_BEGIN -->
 <script>
@@ -1571,7 +1574,27 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     }
     return {values,cdf,sum,window:Math.max(1e-12,peak*.8)};
   }
+  // Sample the same detector response more finely, without inventing PSF detail.
+  // Filtering stays bounded at the source's useful sampling; total rate is preserved.
+  function finerField(base,bw,bh,w,h){
+    const values=new Float32Array(w*h),cdf=new Float64Array(w*h);
+    const area=bw*bh/(w*h);let sum=0;
+    for(let y=0;y<h;y++){
+      const sy=Math.max(0,Math.min(bh-1,(y+.5)*bh/h-.5)),y0=Math.floor(sy),fy=sy-y0,y1=Math.min(bh-1,y0+1);
+      for(let x=0;x<w;x++){
+        const sx=Math.max(0,Math.min(bw-1,(x+.5)*bw/w-.5)),x0=Math.floor(sx),fx=sx-x0,x1=Math.min(bw-1,x0+1);
+        const v=((base.values[y0*bw+x0]*(1-fx)+base.values[y0*bw+x1]*fx)*(1-fy)+(base.values[y1*bw+x0]*(1-fx)+base.values[y1*bw+x1]*fx)*fy)*area;
+        values[y*w+x]=v;sum+=values[y*w+x];
+      }
+    }
+    const norm=sum>0?base.sum/sum:0;sum=0;
+    for(let i=0;i<values.length;i++){values[i]*=norm;cdf[i]=sum+=values[i];}
+    return {values,cdf,sum,window:base.window*area*norm};
+  }
   function field(pose,pair,crop,w,h,flipX,flipY,metrics,sigma){
+    if(w>256){const ratio=w/256,bh=Math.round(h/ratio);
+      return finerField(field(pose,pair,crop,256,bh,flipX,flipY,metrics,sigma/ratio),256,bh,w,h);
+    }
     if(metrics.uncollimated)return uncollimatedField(pose,pair,crop,w,h,flipX,flipY,metrics);
     const a=pose.frames[pair.lo],b=pose.frames[pair.hi],values=new Float32Array(w*h);
     // Cuenta esperada por píxel: conservar área física al cambiar matriz/zoom.
@@ -1625,9 +1648,10 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     draw(ctx,field,rate,duration,live,gain){
       const image=ctx.createImageData(this.w,this.h),pixels=image.data;
       const window=field.window*(live?rate*duration/2000000:1);
-      const values=live?this.counts:field.values;
+      const values=live?this.counts:field.values,lut=new Map([[0,0]]);
       for(let i=0;i<values.length;i++){
-        const value=Math.round(255*Math.pow(Math.max(0,Math.min(1,values[i]/Math.max(window,1e-12)*gain)),.72));
+        let value=live?lut.get(values[i]):undefined;
+        if(value===undefined){value=Math.round(255*Math.pow(Math.max(0,Math.min(1,values[i]/Math.max(window,1e-12)*gain)),.72));if(live)lut.set(values[i],value);}
         const p=i*4;pixels[p]=pixels[p+1]=pixels[p+2]=value;pixels[p+3]=255;
       }
       ctx.putImageData(image,0,0);
@@ -1692,7 +1716,8 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     recenter:document.getElementById('liveRecenter'),
     resetCenter:document.getElementById('liveResetCenter'),
     matrix128:document.getElementById('liveMatrix128'),
-    matrix256:document.getElementById('liveMatrix256')
+    matrix256:document.getElementById('liveMatrix256'),
+    matrix512:document.getElementById('liveMatrix512'),matrix1024:document.getElementById('liveMatrix1024')
   };
   // IMAGE_FRAMING_BEGIN
   const imageCenters={1:{x:0,y:0},2:{x:0,y:0}};
@@ -2100,10 +2125,10 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       if(output.width!==target.canvas.width)output.width=target.canvas.width;
       if(output.height!==target.canvas.height)output.height=target.canvas.height;
     }
-    const scale=acquisition.matrix===128 ? 0.5 : 1;
+    const scale=acquisition.matrix/output.width;
     const renderCanvas=scale===1 ? output : target.buffer;
-    renderCanvas.width=Math.round(output.width*scale);
-    renderCanvas.height=Math.round(output.height*scale);
+    renderCanvas.width=acquisition.matrix;
+    renderCanvas.height=acquisition.matrix;
     const ctx=renderCanvas.getContext('2d',{willReadFrequently:true});
     const w=renderCanvas.width, h=renderCanvas.height;
     ctx.save();
@@ -2328,6 +2353,9 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   }
 
   function syncControls(){
+    const quality=document.getElementById('matrixQualityHint'),n=acquisition.matrix;
+    if(quality){quality.hidden=n<=256;quality.textContent=acquisition.study==='mag3'?n+'×'+n+' · MAG3 conserva los tiempos de sus cuadros; una matriz mayor reduce las cuentas por píxel.':n+'×'+n+' · metas sugeridas ×'+((n/256)**2)+' para mantener cuentas/píxel frente a 256. La tasa total no cambia; con una meta fija se conserva el tiempo y bajan las cuentas/píxel. El colimador y el atlas limitan el detalle físico.';}
+
     syncBoneControls();
     const fixedArms=['mibi','parathyroid'].includes(acquisition.study);
     // STATIC_POSTURES_ENABLED
@@ -2357,7 +2385,8 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       [controls.zoom175,acquisition.zoom===1.75],
       [controls.recenter,recenterEnabled],
       [controls.matrix128,acquisition.matrix===128],
-      [controls.matrix256,acquisition.matrix===256]
+      [controls.matrix256,acquisition.matrix===256],
+      [controls.matrix512,acquisition.matrix===512],[controls.matrix1024,acquisition.matrix===1024]
     ];
     states.forEach(([button,active])=>{
       if(!button) return;
@@ -2368,7 +2397,10 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
 
   function setMatrix(matrix){
     if(acquisition.study!=='mag3' && window.GANTRY_BONE_ACQ?.active)return;
-    acquisition.matrix=matrix===128 ? 128 : 256;
+    const previous=acquisition.matrix;
+    acquisition.matrix=[128,256,512,1024].includes(matrix)?matrix:256;
+    window.GANTRY_BONE_ACQ?.matrixChanged(previous,acquisition.matrix);
+    window.GANTRY_FINAL_PREVIEW?.matrixChanged(previous,acquisition.matrix);
     syncControls();
     update(lastState || (window.GANTRY && window.GANTRY.G));
   }
@@ -2443,7 +2475,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   controls.resetCenter.addEventListener('click',resetImageCenter);
   targets.forEach(target=>target.canvas.addEventListener('click',event=>recenterFromCanvas(target.n,event)));
   if(controls.matrix128) controls.matrix128.addEventListener('click',()=>setMatrix(128));
-  if(controls.matrix256) controls.matrix256.addEventListener('click',()=>setMatrix(256));
+  for(const n of [256,512,1024])if(controls['matrix'+n])controls['matrix'+n].addEventListener('click',()=>setMatrix(n));
   syncControls();
   if(studyTracer) studyTracer.textContent=activeStudy().tracer;
 
@@ -3885,7 +3917,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   class Scan {
     constructor(n,velocity,pose,startZ=200,random=Math.random){
-      if(![128,256].includes(n)||!Number.isFinite(velocity)||velocity<1||velocity>60)throw Error('Introduce una velocidad entre 1 y 60 cm/min.');
+      if(![128,256,512,1024].includes(n)||!Number.isFinite(velocity)||velocity<.1||velocity>60)throw Error('Introduce una velocidad entre 0,1 y 60 cm/min.');
       if(!Number.isFinite(startZ)||startZ<=16)throw Error('No queda recorrido hacia los pies desde esta posición.');
       Object.assign(this,geometry(pose,n));
       this.n=n;this.kind='whole';this.mode='scan';this.velocity=velocity;this.startZ=startZ;this.endZ=16;
@@ -4052,11 +4084,11 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   function validate(record){
     if(!record||record.version!==1||typeof record.id!=='string'||!Number.isFinite(record.createdAt)||
-      ![128,256].includes(record.n)||!['counts','time','scan'].includes(record.mode)||!Number.isFinite(record.target)||(record.mode==='scan'?record.target<=0:record.target<1)||
+      ![128,256,512,1024].includes(record.n)||!['counts','time','scan'].includes(record.mode)||!Number.isFinite(record.target)||(record.mode==='scan'?record.target<=0:record.target<1)||
       !Array.isArray(record.names)||record.names.length!==2||record.names.some(n=>typeof n!=='string'||!n.trim()||n.length>80)||
       !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
     const height=record.height??record.n,kind=record.kind??'static';
-    if(record.mode==='scan'&&(kind!=='whole'||!record.scan||!Number.isFinite(record.scan.velocity)||record.scan.velocity<1||record.scan.velocity>60||!Number.isFinite(record.scan.travel)||record.scan.travel<0||record.scan.travel>record.target))throw Error('Datos de barrido no válidos');
+    if(record.mode==='scan'&&(kind!=='whole'||!record.scan||!Number.isFinite(record.scan.velocity)||record.scan.velocity<.1||record.scan.velocity>60||!Number.isFinite(record.scan.travel)||record.scan.travel<0||record.scan.travel>record.target))throw Error('Datos de barrido no válidos');
     if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
       (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
     record.heads.forEach((h,i)=>{
@@ -4138,7 +4170,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   class Acquisition {
     constructor(n,mode,target,random=Math.random,height=n){
-      if(![128,256].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?10000000:3600)||!Number.isInteger(target))throw Error('Objetivo no válido');
+      if(![128,256,512,1024].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?160000000:57600)||!Number.isInteger(target))throw Error('Objetivo no válido');
       if(!Number.isInteger(height)||height<n||height>n*6)throw Error('Altura de matriz no válida');
       this.n=n;this.height=height;this.kind=height===n?'static':'whole';this.mode=mode;this.target=target;this.random=random;this.finished=false;
       this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*height),total:0,elapsed:0,done:false}));
@@ -4169,7 +4201,12 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   // EANM delayed planar bone imaging. These are editable acquisition goals,
   // not multipliers on the physical count rate. Segment selection is heuristic.
-  function suggestedGoal(study,segment,seconds=0){
+  function matrixFactor(n){return Math.max(1,(n/256)**2);}
+  function suggestedGoal(study,segment,seconds=0,n=256){
+    const goal=baseGoal(study,segment,seconds),factor=matrixFactor(n);
+    return {...goal,counts:goal.counts*factor,time:goal.time*factor,factor};
+  }
+  function baseGoal(study,segment,seconds=0){
     if(study!=='bone'||seconds<7200)return {counts:100000,time:60,delayed:false};
     if(['Torax','Abdomen','Pelvis'].includes(segment))return {counts:1000000,time:300,delayed:true,region:'tronco'};
     if(segment==='Piernas / pies')return {counts:250000,time:300,delayed:true,region:'extremidades distales'};
@@ -4179,7 +4216,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const cps=(field?.sum||0)*rate/2000000;
     return cps>0?target/cps:Infinity;
   }
-  window.GANTRY_BONE_CORE={Acquisition,poisson,suggestedGoal,estimatedSeconds};
+  window.GANTRY_BONE_CORE={Acquisition,poisson,suggestedGoal,estimatedSeconds,matrixFactor};
   const el=id=>document.getElementById(id),bar=el('boneAcqControls');
   if(!bar)return;
   let session=null,fields=null,rate=4000,study='',clock=performance.now(),speed=1,paused=false,busy=false;
@@ -4214,30 +4251,32 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   function suggestion(){
     const live=window.GANTRY_LIVE?.state,seconds=window.GANTRY_MDP?.seconds||0;
-    const goals=[live?.d1?.segment,live?.d2?.segment].map(segment=>suggestedGoal(study,segment,seconds));
+    const goals=[live?.d1?.segment,live?.d2?.segment].map(segment=>suggestedGoal(study,segment,seconds,window.GANTRY_LIVE?.settings.matrix||256));
     return goals.reduce((a,b)=>a.counts>=b.counts?a:b);
   }
   function updateGoal(){
     const counts=el('boneAcqCriterion').value!=='time',goal=suggestion();
     if(session&&!session.finished)return;
     if(!manualGoal)el('boneAcqTarget').value=String(counts?goal.counts:goal.time);
-    el('boneAcqTarget').max=counts?'10000000':'3600';
+    el('boneAcqTarget').max=counts?'160000000':'57600';
     el('boneAcqUnits').textContent=counts?'cuentas totales por detector':'segundos por detector';
   }
   function planningInfo(){
     const wholeBody=kind()==='whole',goal=suggestion(),hint=el('boneAcqEstimate');
     el('boneAcqSuggested').hidden=wholeBody||!goal.delayed;
-    el('boneAcqSuggested').textContent='Usar sugerido: '+(el('boneAcqCriterion').value==='counts'?format(goal.counts)+' cuentas':'5 min');
-    hint.hidden=wholeBody;
-    if(wholeBody||el('boneAcqSetup').hidden)return;
+    el('boneAcqSuggested').textContent='Usar sugerido: '+(el('boneAcqCriterion').value==='counts'?format(goal.counts)+' cuentas':time(goal.time));
+    hint.hidden=false;
+    if(el('boneAcqSetup').hidden)return;
+    if(wholeBody){hint.textContent='Matriz '+window.GANTRY_LIVE.settings.matrix+' · velocidad '+el('boneAcqVelocity').value+' cm/min. La velocidad se reduce al aumentar matriz para conservar cuentas/píxel; puedes modificarla.';return;}
     const {mode,target}=settings();
-    if(!Number.isInteger(target)||target<1||target>(mode==='counts'?10000000:3600)){hint.textContent='Introduce un objetivo válido.';return;}
+    if(!Number.isInteger(target)||target<1||target>(mode==='counts'?160000000:57600)){hint.textContent='Introduce un objetivo válido.';return;}
     if(!fields){hint.textContent='Preparando estimación…';return;}
     const estimates=fields.map((field,j)=>{
       const cps=field.sum*rate/2000000,seconds=mode==='counts'?estimatedSeconds(field,rate,target):target;
       return 'D'+(j+1)+': '+(Number.isFinite(seconds)?time(Math.ceil(seconds)):'sin señal')+' · '+format(Math.round(cps))+' c/s';
     });
     hint.textContent='Duración a 1×, a tasa actual: '+estimates.join(' | ')+'. Puede variar con la evolución del RF y los movimientos.'+
+      (goal.factor>1?' Matriz '+window.GANTRY_LIVE.settings.matrix+': meta sugerida ×'+goal.factor+' para conservar cuentas/píxel frente a 256.':'')+
       (goal.delayed?' Óseo tardío · sugerencia para '+goal.region+'.':'')+
       (goal.delayed&&mode==='counts'&&target<goal.counts?' Objetivo inferior al sugerido; terminará antes.':'');
   }
@@ -4366,7 +4405,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     el('boneAcqSave').disabled=!store||!session||busy||saving||!!archive||loadingSaved;
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
-    el('liveMatrix128').disabled=el('liveMatrix256').disabled=active&&running;
+    for(const n of [128,256,512,1024])if(el('liveMatrix'+n))el('liveMatrix'+n).disabled=active&&running;
     planningInfo();
     window.GANTRY_EXAM?.refresh();
     if(!session&&!archive){
@@ -4400,7 +4439,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+' · '+(labels[shown.study||shown.settings?.study||'bone']||'Estudio')+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
       const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
       el('boneAcqInfo'+(j+1)).title='Media = total dividido por todos los píxeles de esta adquisición, incluidos fondo y ceros. Se usa la matriz guardada, no la matriz seleccionada para la próxima adquisición.';
-      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':shown.cancelled?'Cancelada':h.done?'Meta alcanzada':shown.finished?'Finalizada':paused?'Pausada':'Adquiriendo')+
+      el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':shown.cancelled?'Cancelada':h.done?'Meta alcanzada':shown.finished?'Meta no alcanzada':paused?'Pausada':'Adquiriendo')+
         '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa';
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
@@ -4459,7 +4498,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       try{session=whole.create(Number(el('boneAcqVelocity').value));session.countRate=rate;}
       catch(error){el('boneAcqSetupError').textContent=error.message;return;}
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
-    catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
+    catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 160.000.000 cuentas enteras.':'Introduce entre 1 y 57.600 segundos enteros.';return;}
     session.study=study;
     clearScanDebt();lastScanRender=-Infinity;
     session.id=window.crypto?.randomUUID?.()||'acq-'+Date.now()+'-'+Math.random().toString(36).slice(2);session.createdAt=Date.now();
@@ -4496,7 +4535,22 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     try{
       await new Promise(resolve=>setTimeout(resolve,0));
       if(window.GANTRY_EXAM?.blocked)return;
-      if(study==='bone'&&window.GANTRY_MDP&&snapshot.every(f=>f.mdpBases)){
+      if(session.n>=512&&window.GANTRY_FINAL_PREVIEW){
+        const model=study==='bone'?window.GANTRY_MDP:study==='mibi'?window.GANTRY_MIBI:null,m=model?.metadata(),results=[];
+        for(let j=0;j<2;j++){
+          const head=session.heads[j];if(head.done){results.push(null);continue;}
+          const target=session.target-(session.mode==='counts'?head.total:head.elapsed);
+          const options={mode:session.mode,target,rate:currentRate,model:model?study:null,start:m?.seconds||0,
+            limit:model?(study==='bone'?10800:43200):Infinity,weights:model?(t=>study==='bone'?model.fractions(t,m.voidAt120).weights:model.fractions(t,m.protocol,m.voidEvery120).weights):null};
+          const predicted=window.GANTRY_FINAL_PREVIEW.predict([snapshot[j]],options)[0];
+          const result=await window.GANTRY_FINAL_PREVIEW.sample(predicted,Math.floor(Math.random()*2147483647),()=>!!window.GANTRY_EXAM?.blocked);
+          if(!result||window.GANTRY_EXAM?.blocked)return;results.push(result);
+        }
+        let elapsed=0;
+        results.forEach((r,j)=>{if(!r)return;const h=session.heads[j];for(let i=0;i<h.counts.length;i++)h.counts[i]+=r.counts[i];h.total+=r.total;h.elapsed+=r.elapsed;h.done=r.reached;elapsed=Math.max(elapsed,r.elapsed);});
+        model?.advance(elapsed);session.finished=session.heads.every(h=>h.done)||!!model&&model.remaining<=0;
+        if(model){session[study==='bone'?'mdpEnd':'mibiEnd']=model.metadata();if(model.remaining<=0&&!session.heads.every(h=>h.done))session[study==='bone'?'mdpLimit':'mibiLimit']=true;}
+      }else if(study==='bone'&&window.GANTRY_MDP&&snapshot.every(f=>f.mdpBases)){
         while(!window.GANTRY_EXAM?.blocked&&!session.finished){
           window.GANTRY_MDP.step(session,snapshot,30);session.mdpEnd=window.GANTRY_MDP.metadata();
           paint();await new Promise(resolve=>setTimeout(resolve,0));
@@ -4567,7 +4621,11 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   refreshSaved().catch(error=>{el('boneAcqCacheStatus').textContent='Guardado local no disponible: '+error.message;});
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();if(document.hidden)clearScanDebt();});
-  window.GANTRY_BONE_ACQ={advance,sync,selectStudy,suggestedGoal:()=>suggestion(),
+  window.GANTRY_BONE_ACQ={advance,sync,selectStudy,
+    matrixChanged(previous,next){
+      manualGoal=false;updateGoal();
+      if(el('boneAcqVelocity')&&previous&&next)el('boneAcqVelocity').value=String(Math.max(.1,Math.min(60,Number(el('boneAcqVelocity').value)*matrixFactor(previous)/matrixFactor(next))));
+    },suggestedGoal:()=>suggestion(),
     cancelExam(){
       clearScanDebt();
       const cancel=s=>{if(s&&!s.finished){s.cancelled=true;s.finished=true;}};
@@ -4789,7 +4847,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 <!-- PROCESSING_ENGINE_END -->
 <!-- CONSOLE_MENUS_BEGIN -->
 <link rel="stylesheet" data-console-menus href="assets/runtime/console-menus.c37f7a3a5078c291.css">
-<script src="assets/runtime/console-menus.e023e68602435270.js"></script>
+<script src="assets/runtime/console-menus.8eba554d6a579db0.js"></script>
 <!-- CONSOLE_MENUS_END -->
 <!-- GANTRY_POSITIONS_BEGIN -->
 <script src="assets/runtime/gantry-positions.b1ea2d559482b07d.js"></script>
