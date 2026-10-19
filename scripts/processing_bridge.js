@@ -46,18 +46,17 @@
     if(busy()){el('boneProcessingNotice').textContent='Finaliza la adquisición activa antes de entrar a procesamiento.';return;}
     active=true;el('boneProcessingNotice').textContent='';
     el('acquisitionMenuButton').disabled=true;
-    el('gantryWorkspace').hidden=true;el('boneProcessingPane').hidden=false;
+    el('gantryLive').hidden=true;el('boneProcessingPane').hidden=false;
     el('boneProcessingTab').setAttribute('aria-selected','true');el('boneGantryTab').setAttribute('aria-selected','false');
-    window.GANTRY_MDP?.begin();window.GANTRY_MIBI?.begin();window.GANTRY3D?.pause();
     if(!loaded)load();
     try{await refresh();await sync();}catch(error){status.textContent='No se pudo leer el catálogo local: '+error.message;}
   }
   function close(){
-    active=false;el('boneProcessingPane').hidden=true;el('gantryWorkspace').hidden=false;
+    active=false;el('boneProcessingPane').hidden=true;el('gantryLive').hidden=false;
     el('acquisitionMenuButton').disabled=false;
     el('boneProcessingTab').setAttribute('aria-selected','false');el('boneGantryTab').setAttribute('aria-selected','true');
     if(ready)frame.contentWindow.postMessage({type:'GANTRY_PROCESSING_HIDE',version:1},location.origin);
-    window.GANTRY3D?.resume();window.GANTRY_LIVE?.update(window.GANTRY.G);
+    window.GANTRY_LIVE?.update(window.GANTRY.G);
   }
   async function send(selectedKeys,automatic=false){
     if(!ready||pending)return;

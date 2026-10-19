@@ -36,13 +36,14 @@ ui = '''<!-- PROCESSING_UI_BEGIN -->
     #boneProcessingFrame{flex:1;min-height:280px;width:100%;border:1px solid #777;background:#008080}
     #boneProcessingNotice{color:#8b2300;font:12px Arial}
     #boneGantryTab[aria-selected=true],#boneProcessingTab[aria-selected=true]{font-weight:bold;color:#000080}
+    :is(#boneGantryTab,#boneProcessingTab):is(:hover,:focus){color:#fff}
     </style>
     <section id="boneProcessingPane" hidden aria-label="Procesamiento óseo">
       <div id="boneProcessingToolbar"><strong>Procesamiento óseo</strong>
-        <button id="boneProcessingBack" type="button">Volver al gantry</button>
+        <button id="boneProcessingBack" type="button">Volver a adquisición</button>
         <button id="boneProcessingRefresh" type="button">Actualizar lista</button>
         <button id="boneProcessingRetry" type="button" hidden>Reintentar carga</button>
-        <span>El proyecto se conserva al volver al gantry. Guarda el proyecto antes de cerrar o recargar.</span>
+        <span>El proyecto se conserva al volver a adquisición. Guarda el proyecto antes de cerrar o recargar.</span>
       </div>
       <details><summary>Selección manual · las adquisiciones se cargan automáticamente en el menú izquierdo</summary>
         <div id="boneProcessingList" aria-label="Adquisiciones óseas finalizadas"></div>
@@ -53,10 +54,11 @@ ui = '''<!-- PROCESSING_UI_BEGIN -->
     </section>
     <!-- PROCESSING_UI_END -->
 '''.replace('VERSION', version)
-if '<!-- PROCESSING_UI_BEGIN -->' in html:
-    html = re.sub(r'<!-- PROCESSING_UI_BEGIN -->.*?<!-- PROCESSING_UI_END -->\n', lambda _: ui, html, flags=re.S)
-else:
-    html = html.replace('    <div id="gantryWorkspace"', ui + '    <div id="gantryWorkspace"', 1)
+# Keep the processor in the right-hand workspace slot, beside the live monitors.
+html = re.sub(r'<!-- PROCESSING_UI_BEGIN -->.*?<!-- PROCESSING_UI_END -->\n?', '', html, flags=re.S)
+anchor = '<section class="gantry-live" id="gantryLive"'
+assert anchor in html
+html = html.replace(anchor, ui + anchor, 1)
 if 'id="boneProcessingTab"' not in html:
     html = html.replace('      <button class="rights-trigger" id="copyrightOpen"', '''      <button class="rights-trigger" id="boneGantryTab" type="button" aria-selected="true">Gantry</button>
       <button class="rights-trigger" id="boneProcessingTab" type="button" aria-selected="false">Procesamiento óseo</button>
@@ -64,7 +66,7 @@ if 'id="boneProcessingTab"' not in html:
       <button class="rights-trigger" id="copyrightOpen"''', 1)
 if 'id="boneSendProcessing"' not in html:
     html = html.replace('<button id="boneAcqSave"', '<button id="boneSendProcessing" class="live-setting" type="button">Enviar a procesamiento</button>\n            <button id="boneAcqSave"', 1)
-html = html.replace("if(document.hidden || !activeStudy().linear", "if(window.GANTRY_PROCESSING?.active || document.hidden || !activeStudy().linear")
+html = html.replace("if(window.GANTRY_PROCESSING?.active || document.hidden || !activeStudy().linear", "if(document.hidden || !activeStudy().linear")
 engine = '\n'.join((ROOT / 'scripts' / name).read_text(encoding='utf-8') for name in ['processing_dicom.js', 'processing_bridge.js'])
 # Small controller only; the large viewer/parser is fetched on demand via iframe.
 block = '<!-- PROCESSING_ENGINE_BEGIN -->\n<script>\n' + engine + '\n</script>\n<!-- PROCESSING_ENGINE_END -->'
