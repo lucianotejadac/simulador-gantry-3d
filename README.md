@@ -725,6 +725,24 @@ Contacto: lucianotejada@uchile.cl
 Simulación exclusivamente educativa. No es un dispositivo médico ni debe
 utilizarse para tomar decisiones clínicas o asistenciales.
 
+### Opción sin colimador
+
+El selector **Colimador → Sin colimador** calcula una distribución de fluencia
+amplia desde todo el atlas, incluyendo actividad fuera del campo nominal. El
+motor compartido se usa en vivo, imagen final, adquisición estática, barrido y
+MAG3. Mantiene las cinéticas, el decaimiento y la selección de energía existentes.
+
+Es una aproximación docente: integra `z / (2π r³)` sobre una fuente planar
+atenuada, con profundidad efectiva de 10 cm y sensibilidad relativa supuesta de
+30 antes de integrar el ángulo sólido. Estos parámetros no son una calibración
+de cámara; no se modelan nuevas trayectorias de atenuación oblicua, tiempo muerto
+ni apilamiento de pulsos. No debe interpretarse como una imagen anatómica
+localizada. Véase el uso experimental de una cámara sin colimador como detector
+de actividad [en esta publicación](https://pubmed.ncbi.nlm.nih.gov/10400152/).
+
+Pruebas: `node tests/test_no_collimator.cjs` (campo amplio, fuentes fuera del
+recorte, distancia, orientación, matriz, energía y reutilización del cálculo).
+
 ### Evento centinela simulado
 
 En **Colisiones → Evento centinela en modo rápido**, un movimiento manual con

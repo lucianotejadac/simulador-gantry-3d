@@ -48,7 +48,7 @@
       const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
       const v=new Uint16Array(buffer),n=data.width*data.height;
       if(v.length!==data.components.length*data.angles.length*n)throw Error('Atlas MIBI incompleto');
-      poses=data.scales.map((scale,c)=>({width:data.width,height:data.height,scale,window:1,frames:data.angles.map((_,a)=>v.subarray((c*data.angles.length+a)*n,(c*data.angles.length+a+1)*n))}));
+      poses=data.scales.map((scale,c)=>({width:data.width,height:data.height,pixelMm:data.pixelMm,scale,window:1,frames:data.angles.map((_,a)=>v.subarray((c*data.angles.length+a)*n,(c*data.angles.length+a+1)*n))}));
       return poses;
     })().catch(e=>{pending=null;throw e;});
     return pending;

@@ -49,7 +49,59 @@
     }
     return result;
   }
+  const uncollimatedSources=new WeakMap();
+  function uncollimatedField(pose,pair,crop,w,h,flipX,flipY,metrics){
+    // Educational planar fluence, not a reconstructed anatomical image.
+    // Integrate the entire attenuated atlas, including sources outside the crop.
+    // Coarse source cells and a fixed physical sampling grid bound the work even
+    // at high matrices. The response is z/(2*pi*r^3), including incidence angle.
+    const mm=pose.pixelMm||3,cm=mm/10,cols=8,rows=32;
+    const signature=pair.lo+':'+pair.hi+':'+pair.mix;
+    let sourceCache=uncollimatedSources.get(pose);
+    if(!sourceCache){sourceCache=new Map();uncollimatedSources.set(pose,sourceCache);}
+    let cached=sourceCache.get(signature);
+    if(!cached){
+    const mass=new Float64Array(cols*rows),sx=new Float64Array(mass.length),sy=new Float64Array(mass.length);
+    const a=pose.frames[pair.lo],b=pose.frames[pair.hi];
+    for(let y=0;y<pose.height;y++)for(let x=0;x<pose.width;x++){
+      const i=y*pose.width+x,v=(a[i]*(1-pair.mix)+b[i]*pair.mix)*pose.scale;
+      if(!v)continue;
+      const k=Math.min(rows-1,Math.floor(y*rows/pose.height))*cols+Math.min(cols-1,Math.floor(x*cols/pose.width));
+      mass[k]+=v;sx[k]+=v*(x+.5)*cm;sy[k]+=v*(y+.5)*cm;
+    }
+    const sources=[];
+    for(let k=0;k<mass.length;k++)if(mass[k]>0)sources.push([mass[k],sx[k]/mass[k],sy[k]/mass[k]]);
+    cached={sources};
+    if(sourceCache.size>=2)sourceCache.delete(sourceCache.keys().next().value);
+    sourceCache.set(signature,cached);
+    }
+    const sources=cached.sources;
+    // An effective 10 cm source depth approximates internal activity; no new
+    // ray-traced tissue attenuation or camera-specific dead-time is claimed.
+    const depth=Math.max(0,metrics.detectorDistanceCm||0)+10,z2=depth*depth;
+    const nx=16,ny=Math.max(8,Math.min(64,Math.round(nx*crop.h/crop.w)));
+    const grid=new Float64Array((nx+1)*(ny+1));
+    for(let y=0;y<=ny;y++)for(let x=0;x<=nx;x++){
+      const px=(crop.x+x/nx*crop.w)*cm,py=(crop.y+y/ny*crop.h)*cm;let total=0;
+      for(const [m,cx,cy] of sources){const r2=(px-cx)**2+(py-cy)**2+z2;total+=m*depth/(2*Math.PI*r2*Math.sqrt(r2));}
+      grid[y*(nx+1)+x]=total;
+    }
+    const values=new Float32Array(w*h),cdf=new Float64Array(w*h);
+    const area=crop.w*crop.h*cm*cm/(w*h),gain=area*metrics.countFactor;let sum=0,peak=0;
+    const xi=new Int32Array(w),xf=new Float64Array(w),row=new Float64Array(nx+1);
+    for(let x=0;x<w;x++){const u=((flipX?w-1-x:x)+.5)/w*nx;xi[x]=Math.floor(u);xf[x]=u-xi[x];}
+    for(let y=0;y<h;y++){
+      const v=((flipY?h-1-y:y)+.5)/h*ny,iy=Math.floor(v),fy=v-iy,k=iy*(nx+1);
+      for(let x=0;x<=nx;x++)row[x]=(grid[k+x]*(1-fy)+grid[k+nx+1+x]*fy)*gain;
+      for(let x=0;x<w;x++){
+        const i=y*w+x;values[i]=row[xi[x]]*(1-xf[x])+row[xi[x]+1]*xf[x];
+        cdf[i]=sum+=values[i];if(values[i]>peak)peak=values[i];
+      }
+    }
+    return {values,cdf,sum,window:Math.max(1e-12,peak*.8)};
+  }
   function field(pose,pair,crop,w,h,flipX,flipY,metrics,sigma){
+    if(metrics.uncollimated)return uncollimatedField(pose,pair,crop,w,h,flipX,flipY,metrics);
     const a=pose.frames[pair.lo],b=pose.frames[pair.hi],values=new Float32Array(w*h);
     // Cuenta esperada por píxel: conservar área física al cambiar matriz/zoom.
     const area=crop.w*crop.h/(w*h),factor=pose.scale*area;

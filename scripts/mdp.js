@@ -38,7 +38,7 @@
         const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
         const values=new Uint16Array(buffer);
         if(payload.scales.length!==count||values.length!==count*angles.length*n)throw Error('Atlas MDP incompleto');
-        return payload.scales.map((scale,c)=>({width:data.width,height:data.height,scale,window:1,angles,
+        return payload.scales.map((scale,c)=>({width:data.width,height:data.height,pixelMm:data.pixelMm,scale,window:1,angles,
           frames:angles.map((_,a)=>values.subarray((c*angles.length+a)*n,(c*angles.length+a+1)*n))}));
       }));
       poses[name]=groups.flat();

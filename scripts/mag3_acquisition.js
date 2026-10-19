@@ -20,7 +20,7 @@
     else source=new Blob([Uint8Array.from(atob(data.packed[name]),c=>c.charCodeAt(0))]).stream();
     const buffer=await new Response(source.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
     const values=new Uint16Array(buffer);if(values.length!==componentCount*data.angles.length*pixels)throw Error('Serie MAG3 incompleta');
-    poses[name]=Array.from({length:componentCount},(_,c)=>({width:data.width,height:data.height,scale:data.scales[name][c],window:1,
+    poses[name]=Array.from({length:componentCount},(_,c)=>({width:data.width,height:data.height,pixelMm:data.pixelMm,scale:data.scales[name][c],window:1,
       frames:data.angles.map((_,a)=>values.subarray((c*data.angles.length+a)*pixels,(c*data.angles.length+a+1)*pixels))}));
   })]).then(()=>{ready=true;button.title='Iniciar basal de 20 minutos desde la posición actual';window.dispatchEvent(new Event('mag3ready'));})
     .catch(e=>{pending=null;button.title='No se pudo cargar MAG3: '+e.message;throw e;})
