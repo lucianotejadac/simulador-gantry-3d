@@ -794,6 +794,11 @@ barrida contra paciente, camilla y el otro cabezal. El menú «Detener movimient
 Escape o una orden manual interrumpen la maniobra. No se puede iniciar una nueva
 adquisición mientras se posicionan ni cambiar de preset durante una adquisición.
 Las proyecciones y la geometría guardada usan el ángulo real de cada detector.
+La camilla del equipo permanece visible en todas las posiciones y durante las
+transiciones. En las posiciones de pie, su tablero queda retirado fuera del campo
+de los detectores. Las colisiones de la camilla permanecen activas incluso
+durante la preparación del paciente.
+
 Los cambios de montaje retiran temporalmente al paciente del campo y comprueban
 el espacio antes de recolocarlo. El motor de traslado de camilla externa se
 conserva como compatibilidad interna, pero su preset ya no está disponible en el menú.

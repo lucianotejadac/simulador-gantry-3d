@@ -30,12 +30,15 @@
       [[p.headFirst?-1:1,0,0],[0,p.prone?-1:1,0],[0,0,(p.headFirst?-1:1)*(p.prone?-1:1)]].map(turn);
     const origin=standing?[0,.075,side*(.50+p.bodyH+.02)]:turn([feet-(p.headFirst?p.length:0),top+(p.prone?p.bodyH:0),0]);
     const world=v=>origin.map((a,i)=>a+columns.reduce((sum,c,j)=>sum+c[i]*v[j],0));
-    const table=standing?null:m==='external'?{min:[-.32,top-.07,feet-p.length-.15],max:[.32,top,feet+.15],region:'camilla externa'}:
-      {min:[Math.min(p.tail,feet+.25-2.2-(s.arms==='up'?.30:0)),top-.05,-.28],max:[feet+.25,top,.28],region:'camilla'};
+    // The equipment bed stays present. Park its pallet outside the detector
+    // field for standing patients (and the retired external-stretcher setup).
+    const bedFeet=standing||m==='external'?p.feetX0-.25*p.travel:feet;
+    const equipmentTable={min:[Math.min(p.tail,bedFeet+.25-2.2-(s.arms==='up'?.30:0)),top-.05,-.28],max:[bedFeet+.25,top,.28],region:'camilla'};
+    const table=m==='external'?{min:[-.32,top-.07,feet-p.length-.15],max:[.32,top,feet+.15],region:'camilla externa'}:equipmentTable;
     const bedPosition=turn([feet-p.length/2,top,0]),offset=s.setupPatientOffset||0;
     origin[0]+=offset;bedPosition[0]+=offset;
-    if(table){table.min[0]+=offset;table.max[0]+=offset;}
-    return {mode:m,standing,heads,columns,origin,world,table,feet,yaw,bedPosition,hidden:!!s.setupTransition,physical:p};
+    if(m==='external'){table.min[0]+=offset;table.max[0]+=offset;}
+    return {mode:m,standing,heads,columns,origin,world,table,tables:m==='external'?[equipmentTable,table]:[table],feet,bedFeet,yaw,bedPosition,hidden:!!s.setupTransition,physical:p};
   }
   function signal(s,detector,physical={}){
     const m=mode(s);

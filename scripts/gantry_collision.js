@@ -88,8 +88,8 @@
     const project=p=>axes.map(axis=>axis.reduce((sum,v,i)=>sum+v*(p[i]-o[i]),0));
     const empty=()=>({required:-Infinity,region:null,point:null});
     const body=layout.hidden?empty():support(mesh.triangles,boxes,p=>project(layout.world(p)));
-    const t=layout.table;
-    const table=layout.hidden||!t?empty():support(boxTriangles(t.min,t.max,t.region),boxes,project);
+    // setupTransition hides only the patient; every visible bed still collides.
+    const table=support(layout.tables.flatMap(t=>boxTriangles(t.min,t.max,t.region)),boxes,project);
     for(const hit of [body,table]){
       hit.gap=-hit.required;
       if(hit.point){const local=hit.point;hit.point=o.map((v,i)=>v+axes.reduce((sum,axis,j)=>sum+axis[i]*local[j],0));}

@@ -543,7 +543,7 @@
 <link rel="preload" href="assets/runtime/exam-safety.00f904169c348088.js" as="script">
 <link rel="preload" href="assets/runtime/final-preview.a5bb25c2364341d4.js" as="script">
 <link rel="preload" href="assets/runtime/gantry-positions.b1ea2d559482b07d.js" as="script">
-<link rel="preload" href="assets/runtime/gantry-setups.106196566b709225.js" as="script">
+<link rel="preload" href="assets/runtime/gantry-setups.85ca7f8a091ad28d.js" as="script">
 <link rel="preload" href="assets/runtime/mdp-engine.7735c72ba19f58cb.js" as="script">
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.78e83e536f629fd4.js" as="script">
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
@@ -3064,10 +3064,10 @@ function init(){
 
     pedestal.scale.y  = Math.max(.05, tableTop - .14);
     pedTop.position.y = tableTop - .095;
-    slide.position.set(layout.feet, tableTop, 0);
+    slide.position.set(layout.bedFeet, tableTop, 0);
     // Reserva de tablero para las manos por encima del cráneo.
     const armsUp = st.arms === 'up';
-    setPalletLength(Math.max(PAL_MIN + (armsUp ? .30 : 0), (layout.feet + PAL_FRONT) - PAL_TAIL_X));
+    setPalletLength(Math.max(PAL_MIN + (armsUp ? .30 : 0), (layout.bedFeet + PAL_FRONT) - PAL_TAIL_X));
 
     // El boton de cambio de posicion invierte solo la figura sobre el mismo
     // tramo de camilla: cabeza y pies intercambian extremos sin trasladar G.
@@ -3088,9 +3088,8 @@ function init(){
       flip.rotation.set(0,0,0);flip.position.set(0,0,0);
     }
     patientPivot.visible=!layout.hidden;
-    const ownBed=!layout.standing&&layout.mode!=='external'&&!layout.hidden;
-    for(const item of [pedestal,pedTop,pedPad,pallet,railA,railB])item.visible=ownBed;
-    externalBed.visible=layout.mode==='external'&&!layout.hidden;
+    for(const item of [pedestal,pedTop,pedPad,pallet,railA,railB])item.visible=true;
+    externalBed.visible=layout.mode==='external';
     externalBed.position.set(...layout.bedPosition);externalBed.rotation.y=layout.yaw;
     for(const leg of externalLegs){leg.scale.y=Math.max(.1,tableTop-.20);leg.position.y=-(tableTop+.06)/2;}
     for(const wheel of externalWheels)wheel.position.y=-tableTop+.065;
@@ -3198,7 +3197,7 @@ function init(){
 </script>
 
 <!-- GANTRY_SETUPS_BEGIN -->
-<script src="assets/runtime/gantry-setups.106196566b709225.js"></script>
+<script src="assets/runtime/gantry-setups.85ca7f8a091ad28d.js"></script>
 <!-- GANTRY_SETUPS_END -->
 <!-- COLLISION_ENGINE_BEGIN -->
 <script>
@@ -3292,8 +3291,8 @@ function init(){
     const project=p=>axes.map(axis=>axis.reduce((sum,v,i)=>sum+v*(p[i]-o[i]),0));
     const empty=()=>({required:-Infinity,region:null,point:null});
     const body=layout.hidden?empty():support(mesh.triangles,boxes,p=>project(layout.world(p)));
-    const t=layout.table;
-    const table=layout.hidden||!t?empty():support(boxTriangles(t.min,t.max,t.region),boxes,project);
+    // setupTransition hides only the patient; every visible bed still collides.
+    const table=support(layout.tables.flatMap(t=>boxTriangles(t.min,t.max,t.region)),boxes,project);
     for(const hit of [body,table]){
       hit.gap=-hit.required;
       if(hit.point){const local=hit.point;hit.point=o.map((v,i)=>v+axes.reduce((sum,axis,j)=>sum+axis[i]*local[j],0));}

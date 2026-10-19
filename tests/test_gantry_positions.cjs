@@ -59,14 +59,15 @@ for(const start of [{...from,setup:'normal',tableZ:205,detDist1:50,detDist2:50},
 assert.deepEqual(Array.from(presets,p=>p.id),['lateral','standing1','standing2','ct','ap','90a','90p','76a','76p']);
 for(const id of ['standing1','standing2']){
  const G={...from,setup:id,rot:90,detDist1:50,detDist2:50},layout=S.geometry(G),n=id==='standing1'?1:2;
- assert(layout.standing);assert.equal(layout.table,null);
+ assert(layout.standing);assert(layout.table,'The equipment bed remains present for standing patients');
+ assert(layout.table.max[0]<-.28,'Standing presets park the pallet outside the heads');
  assert(layout.heads[n-1].outward);assert(!layout.heads[2-n].outward);
  assert(layout.world([-1.75,0,0])[1]>layout.world([0,0,0])[1]+1.7,'Patient must be upright');
  assert(!S.signal(G,n).empty);assert(S.signal(G,3-n).empty);
  const patient=C.indexed(C.boxTriangles([-1.75,0,-.15],[0,.30,.15],'patient'));
  const collision=C.query(patient,boxes,G,n,{bodyH:.30});
  assert(Math.abs(collision.body.gap-.02)<1e-8,'Standing patient 2 cm from outer face');
- assert.equal(collision.table.gap,Infinity,'No phantom collision with hidden equipment bed');
+ assert.equal(collision.table.gap,Infinity,'Retracted bed is clear of the standing detector');
 }
 const external={...from,setup:'external',rot:0,detectorSeparation:0,detDist1:40,detDist2:40};
 const ext=S.geometry(external);assert(ext.table);assert.equal(ext.heads[0].angle,0);assert.equal(ext.heads[1].angle,0);
@@ -98,6 +99,13 @@ for(const rotation of [0,90,135,270])for(const distance of [12,35,50]){
  assert.deepEqual(ctHeads.map(h=>h.position),normalHeads.map(h=>h.position),'CT cannot translate the detector carriage longitudinally');
 }
 assert(S.signal({...from,setupTransition:true},1).empty);
+const hiddenPatient=C.indexed(C.boxTriangles([-1.75,0,-.15],[0,.30,.15],'patient'));
+const preparation={...from,setupTransition:true};
+const clearTable=C.query(hiddenPatient,boxes,preparation,1,{});
+assert.equal(clearTable.body.gap,Infinity,'Patient preparation is independent of bed visibility');
+assert(Number.isFinite(clearTable.table.gap),'The bed remains in the collision model during reconfiguration');
+const raisedTable=C.query(hiddenPatient,boxes,{...preparation,tableH:134},1,{});
+assert(raisedTable.table.gap<0,'A bed raised into a detector is still detected during preparation');
 assert.equal(S.signal(external,1,{prone:true}).angle,180);
 assert(Math.abs(S.signal(external,1,{headFirst:true}).progress+S.signal(external,1).progress-1)<1e-8);
 // Actual menu controller: complete normal/standing/external/CT transitions,
