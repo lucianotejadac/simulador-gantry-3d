@@ -1,11 +1,23 @@
-/* One gentle pulse on changed numeric readouts; never flash the image itself. */
+/* The number's box becomes an upward/downward arrow after calculation. */
 .value-change-flash {
-  --value-flash-color: #89e7ab;
-  --value-flash-glow: #50dc8980;
-  border-radius: 2px;
+  --value-flash-color: #ffe36e;
+  position:relative;
+  display:inline-block;
+  border-radius:0;
+  z-index:1;
   animation: gantry-value-change 2500ms ease-out both;
 }
-.value-change-decrease { --value-flash-color: #ff9292; --value-flash-glow: #ff505080; }
+.value-change-increase::after,.value-change-decrease::after {
+  content:"";
+  position:absolute;left:0;width:100%;height:.45em;
+  background:var(--value-flash-color);pointer-events:none;
+  animation:gantry-value-arrow 2500ms ease-out both;
+  animation-delay:inherit;
+}
+.value-change-increase::after { bottom:100%;clip-path:polygon(50% 0,100% 100%,0 100%); }
+.value-change-decrease::after { top:100%;clip-path:polygon(0 0,100% 0,50% 100%); }
+/* Leave room for the tip in the small count-per-pixel cells. */
+.pixel-panel td { height:22px;overflow:visible; }
 .value-change-pending {
   color: #16232e;
   animation: gantry-value-pending 1000ms ease-in-out infinite;
@@ -15,14 +27,18 @@
   50% { background-color: #b79c32; box-shadow: none; }
 }
 @keyframes gantry-value-change {
-  0%, 70% { background-color: var(--value-flash-color); color: #16232e; box-shadow: 0 0 5px var(--value-flash-glow); }
-  100% { background-color: transparent; color: inherit; box-shadow: 0 0 0 transparent; }
+  0%, 70% { background-color: var(--value-flash-color); color: #16232e; }
+  100% { background-color: transparent; color: inherit; }
+}
+@keyframes gantry-value-arrow {
+  0%, 70% { opacity:1; }
+  100% { opacity:0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .value-change-flash { animation-timing-function: step-end; }
+  .value-change-flash,.value-change-flash::after { animation-timing-function: step-end; }
   .value-change-pending { animation: none; background-color: #ffe36e; color: #16232e; }
   @keyframes gantry-value-change {
-    0% { background-color: var(--value-flash-color); color: #16232e; box-shadow: none; }
-    100% { background-color: transparent; color: inherit; box-shadow: none; }
+    0% { background-color: var(--value-flash-color); color: #16232e; }
+    100% { background-color: transparent; color: inherit; }
   }
 }
