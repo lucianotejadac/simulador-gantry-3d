@@ -29,14 +29,14 @@ for(const n of [128,256,512]){
   assert(Math.abs(after.sum/before.sum-1)<1e-6,`production rate unchanged ${n}`);
   const difference=after.values.reduce((s,v,i)=>s+Math.abs(v-before.values[i]),0)/after.sum;
   assert(difference>.04,'spatial change at photopeak must be visible');
-  assert(after.projectionResponse.spatialScatterFraction>.20);
-  assert(after.projectionResponse.spatialScatterFraction<.25);
+  assert(after.projectionResponse.spatialScatterFraction>.30);
+  assert(after.projectionResponse.spatialScatterFraction<.35);
  }
  const cache={},a=project(current,{cache,seconds:7200}),bases=a.mdpBases;
  const later=project(current,{cache,seconds:7210});assert.equal(later.mdpBases,bases,'kinetics reuses spatial bases');
  const noCol=project(current,{col:'NONE'});assert.equal(noCol.projectionResponse.spatialScatterFraction,undefined);
  const narrow=project(current,{width:10}),wide=project(current,{width:25});
  assert(wide.projectionResponse.spatialScatterFraction>narrow.projectionResponse.spatialScatterFraction);
- assert(current.GANTRY_MDP.metadata().scatterAppearance.model.includes('visual-reference'));
+ assert(current.GANTRY_MDP.metadata().scatterAppearance.model==='mdp-diffuse-v2-background');
  console.log('OK: scatter tails in physical mm, 64/128/256/512 count conservation, photopeak response, window dependence, no-collimator bypass and kinetic cache.');
 })().catch(e=>{console.error(e);process.exitCode=1});

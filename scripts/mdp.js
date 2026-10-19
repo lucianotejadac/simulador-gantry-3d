@@ -3,7 +3,7 @@
   'use strict';
   const data=window.GANTRY_MDP_DATA,poses={},pending={},nativeChunks=new Map(),nativePending=new Map();
   const wrap=a=>(a%360+360)%360;
-  const scatterAppearance=Object.freeze({model:'mdp-diffuse-v1-visual-reference',oddsMultiplier:3.5,sigmaMm:22,maxFraction:.55});
+  const scatterAppearance=Object.freeze({model:'mdp-diffuse-v2-background',oddsMultiplier:6,sigmaMm:30,maxFraction:.55});
   function neededChunks(name,angles){
     const d=data.poses[name].nativeBone;if(!d)return [];
     return [...new Set(angles.flatMap(a=>[Math.floor(wrap(a)),(Math.floor(wrap(a))+1)%360]).map(a=>Math.floor(a/d.chunkSize)))];
@@ -126,7 +126,7 @@
         // Phenomenological MDP appearance, informed by local planar comparison;
         // not a measured Siemens scatter fraction. Retain the existing spectral
         // window dependence, with a nonzero diffuse component at the photopeak.
-        // 3.5 odds multiplier -> ~22% at a centred 15% Tc-99m window.
+        // 6 odds multiplier -> ~33% at a centred 15% Tc-99m window.
         const spectral=Math.max(0,Math.min(1,metrics.energy?.scatterFraction||0));
         const odds=scatterAppearance.oddsMultiplier;
         spatialMetrics.spatialScatterFraction=Math.min(scatterAppearance.maxFraction,odds*spectral/(1+(odds-1)*spectral));
