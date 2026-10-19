@@ -53,6 +53,48 @@
     return result;
   }
   const uncollimatedSources=new WeakMap();
+  // Broad scattered events are evaluated on a bounded coarse grid. This is
+  // separate from the native Gaussian PSF: changing matrix must not change the
+  // primary resolution or make a wide scatter kernel stall the gantry at 60x.
+  function redistributeScatter(input,w,h,fraction,sigmaX,sigmaY){
+    if(!(fraction>0)||!(sigmaX>0)||!(sigmaY>0))return input;
+    fraction=Math.min(1,fraction);
+    const step=Math.max(1,Math.ceil(w/96),Math.ceil(h/384));
+    const cw=Math.ceil(w/step),ch=Math.ceil(h/step),coarse=new Float32Array(cw*ch);
+    let total=0;
+    const column=new Int32Array(w);
+    for(let x=0;x<w;x++)column[x]=Math.floor(x/step);
+    for(let y=0;y<h;y++){
+      const row=Math.floor(y/step)*cw;
+      for(let x=0;x<w;x++){
+        const v=input[y*w+x];total+=v;coarse[row+column[x]]+=v;
+      }
+    }
+    if(!(total>0))return input;
+    const blurred=blur(coarse,cw,ch,sigmaX/step,sigmaY/step);
+    const tail=new Float32Array(input.length);let tailTotal=0;
+    const left=new Int32Array(w),right=new Int32Array(w),weight=new Float64Array(w);
+    for(let x=0;x<w;x++){
+      const px=(x+.5)/step-.5,ix=Math.floor(px);
+      left[x]=Math.max(0,ix);right[x]=Math.min(cw-1,ix+1);weight[x]=px-ix;
+    }
+    for(let y=0;y<h;y++){
+      const py=(y+.5)/step-.5,iy=Math.floor(py),fy=py-iy;
+      const row0=Math.max(0,iy)*cw,row1=Math.min(ch-1,iy+1)*cw;
+      for(let x=0;x<w;x++){
+        const fx=weight[x],v=(blurred[row0+left[x]]*(1-fx)+blurred[row0+right[x]]*fx)*(1-fy)+
+          (blurred[row1+left[x]]*(1-fx)+blurred[row1+right[x]]*fx)*fy;
+        tail[y*w+x]=v;tailTotal+=v;
+      }
+    }
+    if(!(tailTotal>0))return input;
+    // Conditional redistribution of the already accepted detector events.
+    // Cropped edges do not create/drop counts. This is not photon transport
+    // outside the field of view, nor a change in camera sensitivity.
+    const scale=total/tailTotal,result=new Float32Array(input.length);
+    for(let i=0;i<input.length;i++)result[i]=input[i]*(1-fraction)+tail[i]*scale*fraction;
+    return result;
+  }
   function uncollimatedField(pose,pair,crop,w,h,flipX,flipY,metrics){
     // Educational planar fluence, not a reconstructed anatomical image.
     // Integrate the entire attenuated atlas, including sources outside the crop.
@@ -169,6 +211,12 @@
       sharp[i]=(sharp[i]*metrics.contrast+(halo?halo[i]*metrics.haloAlpha:0))*metrics.countFactor;
       cdf[i]=sum+=sharp[i];
     }
+    if(metrics.spatialScatterFraction>0&&physical){
+      const mixed=redistributeScatter(sharp,w,h,metrics.spatialScatterFraction,
+        metrics.spatialScatterSigmaMm/physical.pixelXmm,metrics.spatialScatterSigmaMm/physical.pixelYmm);
+      sharp.set(mixed);sum=0;
+      for(let i=0;i<sharp.length;i++)cdf[i]=sum+=sharp[i];
+    }
     if(pose.nativeSampling&&w>256&&sum>0){
       // Scalar quadrature reference only: the high-matrix spatial distribution
       // above was independently sampled and filtered, never enlarged from 256.
@@ -214,5 +262,5 @@
       ctx.putImageData(image,0,0);
     }
   }
-  window.GANTRY_ICRP={load,get ready(){return Promise.all(Object.keys(window.GANTRY_ICRP_DATA).map(load));},poses,field,Persistence};
+  window.GANTRY_ICRP={load,get ready(){return Promise.all(Object.keys(window.GANTRY_ICRP_DATA).map(load));},poses,field,Persistence,redistributeScatter};
 })();

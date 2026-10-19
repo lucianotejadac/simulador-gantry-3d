@@ -3,6 +3,7 @@
   'use strict';
   const data=window.GANTRY_MDP_DATA,poses={},pending={},nativeChunks=new Map(),nativePending=new Map();
   const wrap=a=>(a%360+360)%360;
+  const scatterAppearance=Object.freeze({model:'mdp-diffuse-v1-visual-reference',oddsMultiplier:3.5,sigmaMm:22,maxFraction:.55});
   function neededChunks(name,angles){
     const d=data.poses[name].nativeBone;if(!d)return [];
     return [...new Set(angles.flatMap(a=>[Math.floor(wrap(a)),(Math.floor(wrap(a))+1)%360]).map(a=>Math.floor(a/d.chunkSize)))];
@@ -121,6 +122,17 @@
       // requested by the kinetics, retaining lazy access for clock rewinds,
       // subsequent bladder filling and acquisition/final-image integration.
       const bases=new Array(poses[name].length),spatialMetrics={...metrics};
+      if(!metrics.uncollimated&&Number.isFinite(metrics.psfSigmaMm)){
+        // Phenomenological MDP appearance, informed by local planar comparison;
+        // not a measured Siemens scatter fraction. Retain the existing spectral
+        // window dependence, with a nonzero diffuse component at the photopeak.
+        // 3.5 odds multiplier -> ~22% at a centred 15% Tc-99m window.
+        const spectral=Math.max(0,Math.min(1,metrics.energy?.scatterFraction||0));
+        const odds=scatterAppearance.oddsMultiplier;
+        spatialMetrics.spatialScatterFraction=Math.min(scatterAppearance.maxFraction,odds*spectral/(1+(odds-1)*spectral));
+        spatialMetrics.spatialScatterSigmaMm=scatterAppearance.sigmaMm;
+        spatialMetrics.scatterModel=scatterAppearance.model;
+      }
       poses[name].forEach((p,c)=>{
         const pos=angle*p.angles.length/360,lo=Math.floor(pos),angular={lo,hi:(lo+1)%p.angles.length,mix:pos-lo};
         // Retain frame references so later kinetic mixing is safe after LRU eviction.
@@ -170,7 +182,7 @@
     if(state.seconds>=LIMIT&&!session.finished){session.finished=true;session.mdpLimit=true;}
   }
   const el=id=>document.getElementById(id);
-  function metadata(){return {...state,model:'mdp-v2',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
+  function metadata(){return {...state,scatterAppearance:{...scatterAppearance},model:'mdp-v2',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
   function render(){
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;
