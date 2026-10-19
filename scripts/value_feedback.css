@@ -1,11 +1,10 @@
-/* The number's box becomes an upward/downward arrow after calculation. */
+/* Only a directional triangle remains when calculation finishes. */
 .value-change-flash {
   --value-flash-color: #ffe36e;
   position:relative;
   display:inline-block;
   border-radius:0;
   z-index:1;
-  animation: gantry-value-change 2500ms ease-out both;
 }
 .value-change-increase::after,.value-change-decrease::after {
   content:"";
@@ -26,10 +25,6 @@
   0%, 100% { background-color: #ffe36e; box-shadow: 0 0 5px #ffe36e80; }
   50% { background-color: #b79c32; box-shadow: none; }
 }
-@keyframes gantry-value-change {
-  0%, 70% { background-color: var(--value-flash-color); color: #16232e; }
-  100% { background-color: transparent; color: inherit; }
-}
 @keyframes gantry-value-arrow {
   0%, 70% { opacity:1; }
   100% { opacity:0; }
@@ -37,8 +32,4 @@
 @media (prefers-reduced-motion: reduce) {
   .value-change-flash,.value-change-flash::after { animation-timing-function: step-end; }
   .value-change-pending { animation: none; background-color: #ffe36e; color: #16232e; }
-  @keyframes gantry-value-change {
-    0% { background-color: var(--value-flash-color); color: #16232e; }
-    100% { background-color: transparent; color: inherit; }
-  }
 }
