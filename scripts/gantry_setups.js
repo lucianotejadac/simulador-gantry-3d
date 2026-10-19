@@ -10,20 +10,24 @@
     let feet=p.feetX0+s.tableZ/200*p.travel;
     if(m==='external')feet=p.length/2+tableOffset;
     if(m==='ct')feet=.60+p.length/2+tableOffset;
+    // The external stretcher crosses the original (X) bed axis along world Z.
+    const yaw=m==='external'?-Math.PI/2:0;
+    const turn=v=>m==='external'?[-v[2],v[1],v[0]]:v;
     const heads=[1,2].map(n=>{
       const radial=(s.rot+(n===2?(s.detectorSeparation??180):0))*Math.PI/180;
       const outward=(m==='standing1'&&n===1)||(m==='standing2'&&n===2);
       const angle=radial+(outward?Math.PI:0),distance=s['detDist'+n]/100;
-      return {n,angle,radial,outward,position:[m==='external'?(n===1?-.34:.34):m==='ct'?-1.20:0,p.iso+Math.cos(radial)*distance,Math.sin(radial)*distance]};
+      const c=Math.cos(angle),sn=Math.sin(angle);
+      return {n,angle,radial,outward,yaw,axes:[[1,0,0],[0,c,sn],[0,-sn,c]].map(turn),position:turn([m==='external'?(n===1?-.34:.34):m==='ct'?-1.20:0,p.iso+Math.cos(radial)*distance,Math.sin(radial)*distance])};
     });
     // Column vectors transform the original lying patient's feet-based coordinates.
     const columns=standing?[[0,-1,0],[0,0,-side],[side,0,0]]:
-      [[p.headFirst?-1:1,0,0],[0,p.prone?-1:1,0],[0,0,(p.headFirst?-1:1)*(p.prone?-1:1)]];
-    const origin=standing?[0,.075,side*(.50+p.bodyH+.02)]:[feet-(p.headFirst?p.length:0),top+(p.prone?p.bodyH:0),0];
+      [[p.headFirst?-1:1,0,0],[0,p.prone?-1:1,0],[0,0,(p.headFirst?-1:1)*(p.prone?-1:1)]].map(turn);
+    const origin=standing?[0,.075,side*(.50+p.bodyH+.02)]:turn([feet-(p.headFirst?p.length:0),top+(p.prone?p.bodyH:0),0]);
     const world=v=>origin.map((a,i)=>a+columns.reduce((sum,c,j)=>sum+c[i]*v[j],0));
-    const table=standing?null:m==='external'?{min:[feet-p.length-.15,top-.07,-.32],max:[feet+.15,top,.32],region:'camilla externa'}:
+    const table=standing?null:m==='external'?{min:[-.32,top-.07,feet-p.length-.15],max:[.32,top,feet+.15],region:'camilla externa'}:
       {min:[Math.min(p.tail,feet+.25-2.2-(s.arms==='up'?.30:0)),top-.05,-.28],max:[feet+.25,top,.28],region:'camilla'};
-    return {mode:m,standing,heads,columns,origin,world,table,feet,hidden:!!s.setupTransition,physical:p};
+    return {mode:m,standing,heads,columns,origin,world,table,feet,yaw,bedPosition:turn([feet-p.length/2,top,0]),hidden:!!s.setupTransition,physical:p};
   }
   function signal(s,detector,physical={}){
     const m=mode(s);if(m==='normal'&&!s.setupTransition)return null;
@@ -34,7 +38,7 @@
     }
     if(m==='external'){
       const g=geometry(s),h=g.heads[detector-1];
-      const progress=(h.position[0]-(g.feet-1.75))/1.75;
+      const progress=(h.position[2]-(g.feet-1.75))/1.75;
       return {empty:false,angle:physical.prone?180:0,progress:physical.headFirst?1-progress:progress,label:'Camilla externa · '+(detector===1?'campo 1':'campo 2')};
     }
     return null;

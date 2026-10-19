@@ -542,8 +542,8 @@
 <link rel="preload" href="assets/runtime/console-menus.e023e68602435270.js" as="script">
 <link rel="preload" href="assets/runtime/exam-safety.00f904169c348088.js" as="script">
 <link rel="preload" href="assets/runtime/final-preview.a5bb25c2364341d4.js" as="script">
-<link rel="preload" href="assets/runtime/gantry-positions.482408fefa2a1361.js" as="script">
-<link rel="preload" href="assets/runtime/gantry-setups.729351141603cef5.js" as="script">
+<link rel="preload" href="assets/runtime/gantry-positions.e3b1006737c28de9.js" as="script">
+<link rel="preload" href="assets/runtime/gantry-setups.6d1b5f82554c6876.js" as="script">
 <link rel="preload" href="assets/runtime/mdp-engine.7735c72ba19f58cb.js" as="script">
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.78e83e536f629fd4.js" as="script">
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
@@ -3090,7 +3090,7 @@ function init(){
     const ownBed=!layout.standing&&layout.mode!=='external'&&!layout.hidden;
     for(const item of [pedestal,pedTop,pedPad,pallet,railA,railB])item.visible=ownBed;
     externalBed.visible=layout.mode==='external'&&!layout.hidden;
-    externalBed.position.set(layout.feet-BODY_L/2,tableTop,0);
+    externalBed.position.set(...layout.bedPosition);externalBed.rotation.y=layout.yaw;
     for(const leg of externalLegs){leg.scale.y=Math.max(.1,tableTop-.20);leg.position.y=-(tableTop+.06)/2;}
     for(const wheel of externalWheels)wheel.position.y=-tableTop+.065;
 
@@ -3099,7 +3099,7 @@ function init(){
     const d1 = placeHead(head1, th,           st.detDist1, tableTop, prone, armsUp, z);
     const d2 = placeHead(head2, th + (st.detectorSeparation??180)*Math.PI/180, st.detDist2, tableTop, prone, armsUp, z);
     for(const [i,head] of [head1,head2].entries()){
-      const h=layout.heads[i];head.g.position.set(h.position[0],h.position[1]-ISO_Y,h.position[2]);head.g.rotation.x=h.angle;
+      const h=layout.heads[i];head.g.position.set(h.position[0],h.position[1]-ISO_Y,h.position[2]);head.g.rotation.set(h.angle,h.yaw,0,'YXZ');
     }
     const contacts=collision.update(st);
     for(const [i,d] of [d1,d2].entries()){
@@ -3123,7 +3123,7 @@ function init(){
                  : dVertex <= 0.5 ? 'CRÁNEO BAJO LOS DETECTORES ✔'
                                   : 'CRÁNEO A ' + dVertex.toFixed(0) + ' cm DEL CAMPO');
     if(layout.mode!=='normal'||layout.hidden){
-      const labels={standing1:'DE PIE · D1 HACIA EXTERIOR',standing2:'DE PIE · D2 HACIA EXTERIOR',external:'CAMILLA EXTERNA · DOS DETECTORES HACIA ABAJO',ct:'PACIENTE EN ISOCENTRO CT · FUERA DEL CAMPO SPECT'};
+      const labels={standing1:'DE PIE · D1 HACIA EXTERIOR',standing2:'DE PIE · D2 HACIA EXTERIOR',external:'CAMILLA TRANSVERSAL · DOS DETECTORES HACIA ABAJO',ct:'PACIENTE EN ISOCENTRO CT · FUERA DEL CAMPO SPECT'};
       txt=(layout.hidden?'RECONFIGURANDO · PACIENTE FUERA DEL CAMPO':labels[layout.mode])+'<br>D1 '+f(d1,0)+'<br>D2 '+f(d2,1);
     }
     if(txt !== lastHud){ lastHud = txt; hudEl.innerHTML = txt; }
@@ -3197,7 +3197,7 @@ function init(){
 </script>
 
 <!-- GANTRY_SETUPS_BEGIN -->
-<script src="assets/runtime/gantry-setups.729351141603cef5.js"></script>
+<script src="assets/runtime/gantry-setups.6d1b5f82554c6876.js"></script>
 <!-- GANTRY_SETUPS_END -->
 <!-- COLLISION_ENGINE_BEGIN -->
 <script>
@@ -3287,15 +3287,15 @@ function init(){
   }
   function setupQuery(mesh,boxes,s,detector,physical){
     const layout=window.GANTRY_SETUP.geometry(s,physical),head=layout.heads[detector-1];
-    const c=Math.cos(head.angle),n=Math.sin(head.angle),o=head.position;
-    const project=p=>[p[0]-o[0],c*(p[1]-o[1])+n*(p[2]-o[2]),-n*(p[1]-o[1])+c*(p[2]-o[2])];
+    const o=head.position,axes=head.axes;
+    const project=p=>axes.map(axis=>axis.reduce((sum,v,i)=>sum+v*(p[i]-o[i]),0));
     const empty=()=>({required:-Infinity,region:null,point:null});
     const body=layout.hidden?empty():support(mesh.triangles,boxes,p=>project(layout.world(p)));
     const t=layout.table;
     const table=layout.hidden||!t?empty():support(boxTriangles(t.min,t.max,t.region),boxes,project);
     for(const hit of [body,table]){
       hit.gap=-hit.required;
-      if(hit.point){const [x,y,z]=hit.point;hit.point=[x+o[0],o[1]+c*y-n*z,o[2]+n*y+c*z];}
+      if(hit.point){const local=hit.point;hit.point=o.map((v,i)=>v+axes.reduce((sum,axis,j)=>sum+axis[i]*local[j],0));}
     }
     return {detector,body,table,limit:Math.max(.12,s['detDist'+detector]/100-Math.min(body.gap,table.gap)+MARGIN)};
   }
@@ -3329,6 +3329,11 @@ function init(){
   // Their longitudinal extents overlap; include housings and supports.
   function detectorGap(s,boxes1,boxes2){
     const heads=window.GANTRY_SETUP?.geometry(s).heads||[1,2].map(n=>{const angle=(s.rot+(n===2?(s.detectorSeparation??180):0))*Math.PI/180;return {angle,position:[0,1.03+Math.cos(angle)*s['detDist'+n]/100,Math.sin(angle)*s['detDist'+n]/100]};});
+    // Both external heads share a rigid yaw: undo it for the fast YZ SAT.
+    for(let i=0;i<heads.length;i++)if(heads[i].yaw){
+      const h=heads[i],c=Math.cos(h.yaw),n=Math.sin(h.yaw),[x,y,z]=h.position;
+      heads[i]={...h,position:[c*x-n*z,y,n*x+c*z]};
+    }
     const rectangle=(b,head)=>{
       const angle=head.angle;
       const c=Math.cos(angle),n=Math.sin(angle),radial=[c,n],tangent=[-n,c];
@@ -4753,7 +4758,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 <script src="assets/runtime/console-menus.e023e68602435270.js"></script>
 <!-- CONSOLE_MENUS_END -->
 <!-- GANTRY_POSITIONS_BEGIN -->
-<script src="assets/runtime/gantry-positions.482408fefa2a1361.js"></script>
+<script src="assets/runtime/gantry-positions.e3b1006737c28de9.js"></script>
 <!-- GANTRY_POSITIONS_END -->
 </body>
 </html>

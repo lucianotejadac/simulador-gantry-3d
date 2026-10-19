@@ -47,7 +47,20 @@ for(const id of ['standing1','standing2']){
 }
 const external={...from,setup:'external',rot:0,detectorSeparation:0,detDist1:40,detDist2:40};
 const ext=S.geometry(external);assert(ext.table);assert.equal(ext.heads[0].angle,0);assert.equal(ext.heads[1].angle,0);
-assert(ext.heads[1].position[0]-ext.heads[0].position[0]>.56);
+assert(ext.heads[1].position[2]-ext.heads[0].position[2]>.56);
+assert(ext.heads.every(h=>h.position[0]===0&&h.axes[0][2]===1),'Both heads run across the original X bed axis');
+assert.equal(ext.world([-1.75,0,0])[0],ext.world([0,0,0])[0]);
+assert.equal(ext.world([0,0,0])[2]-ext.world([-1.75,0,0])[2],1.75);
+assert(ext.table.max[2]-ext.table.min[2]>2,'External bed is longitudinal in world Z');
+assert.equal(ext.yaw,-Math.PI/2);assert.equal(S.geometry(from).yaw,0);
+const externalPatient=C.indexed(C.boxTriangles([-1.75,0,-.15],[0,.30,.15],'patient'));
+for(const n of [1,2]){
+ const hit=C.query(externalPatient,boxes,external,n,{bodyH:.30});
+ assert(Math.abs(hit.body.gap-.23)<1e-8,'Transverse patient clearance follows the rotated head');
+ assert(Math.abs(hit.table.gap-.53)<1e-8,'Transverse table clearance');
+}
+const moved={...external,setupAnchorZ:200,tableZ:220};
+assert(S.signal(moved,1).progress<S.signal(external,1).progress,'Moving the external bed changes the acquired anatomical field');
 assert(C.detectorGap(external,boxes,boxes)>.10);
 assert(S.signal(external,1).progress<S.signal(external,2).progress,'Two successive source fields along the body');
 const ct={...from,setup:'ct',rot:90,detDist1:50,detDist2:50};

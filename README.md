@@ -770,8 +770,9 @@ El menú sigue el orden de la referencia, de izquierda a derecha y de arriba aba
 1. Detectores paralelos laterales.
 2. D1 hacia exterior y D2 hacia isocentro; paciente de pie frente a D1.
 3. D2 hacia exterior y D1 hacia isocentro; paciente de pie frente a D2.
-4. Ambos detectores hacia abajo, consecutivos sobre el eje longitudinal; se
+4. Ambos detectores hacia abajo, uno al lado del otro sobre el eje transversal; se
    oculta la camilla del equipo y se coloca al paciente en una camilla externa.
+   La camilla externa y el paciente también quedan perpendiculares a la camilla original.
 5. Paciente centrado en el isocentro CT (60 cm detrás del plano SPECT) y
    detectores retirados fuera de su campo; no se generan imágenes CT.
 6. Detectores paralelos superior/inferior.

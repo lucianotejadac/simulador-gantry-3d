@@ -84,15 +84,15 @@
   }
   function setupQuery(mesh,boxes,s,detector,physical){
     const layout=window.GANTRY_SETUP.geometry(s,physical),head=layout.heads[detector-1];
-    const c=Math.cos(head.angle),n=Math.sin(head.angle),o=head.position;
-    const project=p=>[p[0]-o[0],c*(p[1]-o[1])+n*(p[2]-o[2]),-n*(p[1]-o[1])+c*(p[2]-o[2])];
+    const o=head.position,axes=head.axes;
+    const project=p=>axes.map(axis=>axis.reduce((sum,v,i)=>sum+v*(p[i]-o[i]),0));
     const empty=()=>({required:-Infinity,region:null,point:null});
     const body=layout.hidden?empty():support(mesh.triangles,boxes,p=>project(layout.world(p)));
     const t=layout.table;
     const table=layout.hidden||!t?empty():support(boxTriangles(t.min,t.max,t.region),boxes,project);
     for(const hit of [body,table]){
       hit.gap=-hit.required;
-      if(hit.point){const [x,y,z]=hit.point;hit.point=[x+o[0],o[1]+c*y-n*z,o[2]+n*y+c*z];}
+      if(hit.point){const local=hit.point;hit.point=o.map((v,i)=>v+axes.reduce((sum,axis,j)=>sum+axis[i]*local[j],0));}
     }
     return {detector,body,table,limit:Math.max(.12,s['detDist'+detector]/100-Math.min(body.gap,table.gap)+MARGIN)};
   }
@@ -126,6 +126,11 @@
   // Their longitudinal extents overlap; include housings and supports.
   function detectorGap(s,boxes1,boxes2){
     const heads=window.GANTRY_SETUP?.geometry(s).heads||[1,2].map(n=>{const angle=(s.rot+(n===2?(s.detectorSeparation??180):0))*Math.PI/180;return {angle,position:[0,1.03+Math.cos(angle)*s['detDist'+n]/100,Math.sin(angle)*s['detDist'+n]/100]};});
+    // Both external heads share a rigid yaw: undo it for the fast YZ SAT.
+    for(let i=0;i<heads.length;i++)if(heads[i].yaw){
+      const h=heads[i],c=Math.cos(h.yaw),n=Math.sin(h.yaw),[x,y,z]=h.position;
+      heads[i]={...h,position:[c*x-n*z,y,n*x+c*z]};
+    }
     const rectangle=(b,head)=>{
       const angle=head.angle;
       const c=Math.cos(angle),n=Math.sin(angle),radial=[c,n],tangent=[-n,c];
