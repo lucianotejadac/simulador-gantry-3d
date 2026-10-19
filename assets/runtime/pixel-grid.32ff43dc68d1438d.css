@@ -1,0 +1,30 @@
+.pixel-inspector{display:grid;grid-template-columns:minmax(0,1fr) 154px;gap:5px;min-width:0;min-height:0;overflow:hidden}
+.pixel-picture{position:relative;min-width:0;min-height:0;overflow:hidden;background:#050909}
+#gantryLive .pixel-picture>canvas{width:100%;height:100%;max-height:100%;object-fit:contain;display:block;cursor:crosshair}
+.pixel-region{position:absolute;border:1px solid #ffc85c;box-shadow:0 0 0 1px #000;pointer-events:none;box-sizing:border-box;min-width:3px;min-height:3px}
+.pixel-panel{min-width:0;overflow:auto;padding:4px;color:#d7eee7;background:#101e25;border-left:1px solid #30444f;font:10px/1.3 var(--mono)}
+.pixel-panel strong{display:block;color:#8ee6bd;font-size:10px}
+.pixel-panel summary{color:#8ee6bd;font-weight:bold;cursor:pointer;padding:4px 0;line-height:1.5}
+.pixel-panel summary:focus-visible{outline:2px solid #83e7b5;outline-offset:2px}
+.pixel-content{padding-top:8px}
+/* A closed analysis menu gives its image the full available width. */
+#gantryWorkspace #gantryLive .pixel-inspector:has(>.pixel-panel:not([open])){
+  grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;
+}
+#gantryLive .pixel-panel:not([open]){overflow:visible;border-left:0;border-top:1px solid #30444f}
+.pixel-inspector:has(>.pixel-panel:not([open])) .pixel-region{display:none}
+.pixel-panel table{width:100%;table-layout:fixed;border-collapse:collapse;margin:4px 0 7px}
+.pixel-panel caption{text-align:left;color:#ffdb8e;font-weight:bold;margin-bottom:3px}
+.pixel-panel td{height:15px;border:1px solid #70928b;text-align:center;font-size:9px;padding:0;overflow:hidden}
+.pixel-panel table:first-child td{height:30px}
+.pixel-panel [hidden],.pixel-region[hidden]{display:none!important}
+.pixel-hint,.pixel-note{display:block;color:#a7bdca;font-size:9px;margin:4px 0}
+.pixel-total{white-space:pre-line;color:#d5efea}
+.pixel-panel button{white-space:normal;margin-top:5px;font-size:9px;max-width:100%}
+.gantry-live.bone-acquisition:not(.bone-whole-body):not(.final-preview){height:clamp(520px,70vh,680px);flex-shrink:0}
+/* In live mode only the two acquisition cards use the inspector. */
+#gantryLive:not(.final-preview) .live-card:not(.bone-acq-card)>.pixel-inspector{display:block}
+#gantryLive:not(.final-preview) .live-card:not(.bone-acq-card)>.pixel-inspector>.pixel-panel,
+#gantryLive:not(.final-preview) .live-card:not(.bone-acq-card) .pixel-region{display:none}
+#gantryLive:not(.final-preview) .live-card:not(.bone-acq-card) .pixel-picture{height:100%}
+@media(max-width:1100px){.pixel-inspector{grid-template-columns:minmax(0,1fr) 130px}.pixel-panel td{font-size:8px}}

@@ -26,13 +26,13 @@
     const picture=document.createElement('div');picture.className='pixel-picture';
     canvas.parentNode.insertBefore(wrapper,canvas);wrapper.append(picture);picture.append(canvas);
     const marker=document.createElement('div');marker.className='pixel-region';marker.hidden=true;picture.append(marker);
-    const aside=document.createElement('aside');aside.className='pixel-panel';
+    const aside=document.createElement('details');aside.className='pixel-panel';
     aside.setAttribute('aria-label','Cuentas por píxel de '+(canvas.getAttribute('aria-label')||canvas.id));
-    aside.innerHTML='<strong>Cuentas por píxel</strong><span class="pixel-hint">Misma zona, mismo total</span>'+
+    aside.innerHTML='<summary>Análisis cuantitativo comparativo de matrices</summary><div class="pixel-content"><strong>Cuentas por píxel</strong><span class="pixel-hint">Misma zona, mismo total</span>'+
       '<div class="pixel-empty">Se mostrará al adquirir.</div><div class="pixel-data" hidden>'+
       '<table><caption></caption><tbody></tbody></table><table><caption></caption><tbody></tbody></table>'+
       '<div class="pixel-total"></div><div class="pixel-note"></div></div>'+
-      '<button type="button" class="live-setting">Zona con más cuentas</button><span class="pixel-hint">Clic en la imagen: elegir zona.</span>';
+      '<button type="button" class="live-setting">Zona con más cuentas</button><span class="pixel-hint">Clic en la imagen: elegir zona.</span></div>';
     wrapper.append(aside);
     const tables=[...aside.querySelectorAll('table')];
     const cells=tables.map((table,k)=>{
