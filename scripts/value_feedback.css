@@ -1,4 +1,4 @@
-/* Only a directional triangle remains when calculation finishes. */
+/* A small arrow repeatedly travels in the direction of the settled change. */
 .value-change-flash {
   --value-flash-color: #ffe36e;
   position:relative;
@@ -8,15 +8,21 @@
 }
 .value-change-increase::after,.value-change-decrease::after {
   content:"";
-  position:absolute;left:0;width:100%;height:.45em;
+  position:absolute;left:50%;margin-left:-.3em;width:.6em;height:.65em;
   background:var(--value-flash-color);pointer-events:none;
-  animation:gantry-value-arrow 2500ms ease-out both;
+  animation:gantry-value-arrow 2500ms ease-out both,gantry-value-travel 625ms ease-out infinite;
   animation-delay:inherit;
 }
-.value-change-increase::after { bottom:100%;clip-path:polygon(50% 0,100% 100%,0 100%); }
-.value-change-decrease::after { top:100%;clip-path:polygon(0 0,100% 0,50% 100%); }
+.value-change-increase::after {
+  --arrow-travel:-.25em;bottom:100%;
+  clip-path:polygon(50% 0,100% 50%,65% 50%,65% 100%,35% 100%,35% 50%,0 50%);
+}
+.value-change-decrease::after {
+  --arrow-travel:.25em;top:100%;
+  clip-path:polygon(35% 0,65% 0,65% 50%,100% 50%,50% 100%,0 50%,35% 50%);
+}
 /* Leave room for the tip in the small count-per-pixel cells. */
-.pixel-panel td { height:22px;overflow:visible; }
+.pixel-panel td { height:28px;overflow:visible; }
 .value-change-pending {
   color: #16232e;
   animation: gantry-value-pending 1000ms ease-in-out infinite;
@@ -29,7 +35,11 @@
   0%, 70% { opacity:1; }
   100% { opacity:0; }
 }
+@keyframes gantry-value-travel {
+  from { transform:translateY(0); }
+  to { transform:translateY(var(--arrow-travel)); }
+}
 @media (prefers-reduced-motion: reduce) {
-  .value-change-flash,.value-change-flash::after { animation-timing-function: step-end; }
+  .value-change-flash::after { animation:gantry-value-arrow 2500ms step-end both;animation-delay:inherit; }
   .value-change-pending { animation: none; background-color: #ffe36e; color: #16232e; }
 }
