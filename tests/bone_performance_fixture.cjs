@@ -5,6 +5,7 @@ const html=fs.readFileSync('index.html','utf8');
 async function fixture(sources={},physical=true){
   const window={GANTRY_MDP_DATA:JSON.parse(html.match(/window.GANTRY_MDP_DATA=(.*?);<\/script>/)[1]),
     GANTRY_ICRP_DATA:JSON.parse(html.match(/window.GANTRY_ICRP_DATA=(.*?);\r?\n/)[1])};
+  if(!physical)for(const p of Object.values(window.GANTRY_MDP_DATA.poses))delete p.nativeBone;
   const ctx=vm.createContext({window,document:{getElementById:()=>null},Math,
     Float32Array,Float64Array,Uint8Array,Uint16Array,Uint32Array,Blob,Response,DecompressionStream,fetch:assetFetch});
   window.GANTRY_CAMERA_DATA=JSON.parse(fs.readFileSync('assets/physics/siemens-recovered-equipment.json','utf8'));

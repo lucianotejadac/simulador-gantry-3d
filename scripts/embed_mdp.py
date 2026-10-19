@@ -6,6 +6,11 @@ from externalize_assets import asset
 ROOT=Path(__file__).resolve().parents[1]
 p=ROOT/'index.html';s=p.read_text(encoding='utf-8')
 data=json.loads((ROOT/'assets/icrp145/mdp-provenance.json').read_text(encoding='utf-8'))
+# Keep audit statistics in provenance, not the synchronous HTML shell.
+for pose in data['poses'].values():
+    if 'nativeBone' in pose:
+        for key in ('viewSums','angles','emissionModel'):
+            pose['nativeBone'].pop(key,None)
 url=asset((ROOT/'scripts/mdp.js').read_bytes(),'mdp-engine','js')
 block='<!-- MDP_BEGIN -->\n<script>window.GANTRY_MDP_DATA='+json.dumps(data,separators=(',',':'))+';</script>\n<script src="'+url+'"></script>\n<!-- MDP_END -->\n'
 if '<!-- MDP_BEGIN -->' in s:s=re.sub(r'<!-- MDP_BEGIN -->.*?<!-- MDP_END -->\n',lambda _:block,s,flags=re.S)

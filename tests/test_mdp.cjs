@@ -39,8 +39,15 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
   const [loaded]=await Promise.all([M.load(name),M.load(name)]);const p=M.geometry(name),n=128,h=Math.ceil(p.height/p.width*n);
   assert.equal(loaded[0].frames.length,360);
   assert(loaded.slice(1).every(c=>c.frames.length===36),'compact background bases');
-  const hashes=loaded[0].frames.map(f=>require('node:crypto').createHash('sha256').update(f).digest('hex'));
+  const hashes=[];
+  for(let angle=0;angle<360;angle+=12){
+   await M.ensureAngles(name,[angle]);
+   for(let j=0;j<12;j++)hashes.push(require('node:crypto').createHash('sha256').update(loaded[0].frames[angle+j]).digest('hex'));
+   assert(loaded[0].frames.filter(Boolean).length<=96,'bounded decoded views');
+  }
   assert.equal(new Set(hashes).size,360,'all skeletal projections distinct');
+  assert.equal(data.poses[name].nativeBone.cameraPsfBakedMm,0);
+  await M.ensureAngles(name,[0,1,10,359]);
   const crop={x:0,y:0,w:p.width,h:p.height};
   function boneAt(angle){
    const cache={};M.field({...p,angles:[angle]},{lo:0,hi:0,mix:0},crop,n,h,false,false,metrics,1,name,cache,10800);
@@ -52,6 +59,7 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
   for(let i=0;i<seam.length;i++)assert(Math.abs(seam[i]-(a359[i]+a0[i])/2)<1e-9,'continuous 359 to 0 interpolation');
   sums[name]={};
   for(const angle of [0,90,180,270]){
+   await M.ensureAngles(name,[angle]);
    const i=p.angles.indexOf(angle),cache={};
    const f=seconds=>M.field(p,{lo:i,hi:i,mix:0},crop,n,h,false,false,metrics,1,name,cache,seconds);
    const early=f(0),late=f(10800);
@@ -64,8 +72,11 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
    sums[name][angle]={initialCps:early.sum*M.rate/2000000,threeHourCps:r2};
   }
  }
- assert.equal(downloads.length,4,'two compact payloads per selected pose, deduplicated');
- for(const name of ['down','up'])for(const key of ['bone','organs'])assert.equal(downloads.filter(u=>u===data.poses[name][key].url).length,1);
+ for(const name of ['down','up']){
+  assert.equal(downloads.filter(u=>u===data.poses[name].organs.url).length,1);
+  assert.equal(downloads.filter(u=>u===data.poses[name].bone.url).length,0,'never download coarse bones');
+  assert(M.hasAngles(name,[0,180]),'keep whole-body AP/PA available');
+ }
  // Integrating a changing distribution is different from multiplying a single late frame.
  const n=128,bases=Array.from({length:8},(_,c)=>{const a=new Float32Array(n*n);a[c]=1;return a;});
  const field=M.mix(bases),session=new ctx.window.GANTRY_BONE_CORE.Acquisition(n,'time',30);

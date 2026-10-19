@@ -1,7 +1,41 @@
 /* Organ-based 99mTc-MDP kinetics, normalized to activity at injection. */
 (function(){
   'use strict';
-  const data=window.GANTRY_MDP_DATA,poses={},pending={};
+  const data=window.GANTRY_MDP_DATA,poses={},pending={},nativeChunks=new Map(),nativePending=new Map();
+  const wrap=a=>(a%360+360)%360;
+  function neededChunks(name,angles){
+    const d=data.poses[name].nativeBone;if(!d)return [];
+    return [...new Set(angles.flatMap(a=>[Math.floor(wrap(a)),(Math.floor(wrap(a))+1)%360]).map(a=>Math.floor(a/d.chunkSize)))];
+  }
+  function hasAngles(name,angles){
+    return !data.poses[name].nativeBone||neededChunks(name,angles).every(i=>nativeChunks.has(name+':'+i));
+  }
+  async function ensureAngles(name,angles){
+    const d=data.poses[name].nativeBone;if(!d)return;
+    const needed=neededChunks(name,angles),keep=new Set(needed.map(i=>name+':'+i));
+    await Promise.all(needed.map(i=>{
+      const key=name+':'+i;
+      if(nativeChunks.has(key)){const item=nativeChunks.get(key);nativeChunks.delete(key);nativeChunks.set(key,item);return;}
+      if(!nativePending.has(key))nativePending.set(key,(async()=>{
+        const chunk=d.chunks[i],r=await (window.GANTRY_ASSETS?.fetch||fetch)(chunk.url);
+        if(!r.ok)throw Error('No se pudo cargar la proyección ósea nativa ('+r.status+')');
+        const buffer=await new Response(r.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
+        const values=new Uint16Array(buffer),n=d.width*d.height;
+        if(values.length!==chunk.count*n)throw Error('Proyección ósea nativa incompleta');
+        const bone=poses[name][0];
+        for(let j=0;j<chunk.count;j++)bone.frames[chunk.first+j]=values.subarray(j*n,(j+1)*n);
+        nativeChunks.set(key,{name,first:chunk.first,count:chunk.count});
+      })().finally(()=>nativePending.delete(key)));
+      return nativePending.get(key);
+    }));
+    // Eight chunks globally: <=48 MiB of decoded bone views, not both 360-view atlases.
+    for(const [key,item] of nativeChunks){
+      if(nativeChunks.size<=8)break;
+      if(keep.has(key)||item.first===0||item.first===180)continue;
+      for(let j=0;j<item.count;j++)poses[item.name][0].frames[item.first+j]=undefined;
+      nativeChunks.delete(key);
+    }
+  }
   const state={activityMBq:740,seconds:7200,playing:false,speed:60,voidAt120:true};
   const LIMIT=10800,HALF=360.402,SENSITIVITY=100;
   // Blood anchors ~9.4% at 1 h and 5.1% at 2 h (before physical decay).
@@ -29,10 +63,12 @@
     return {weights,decay,vascularContrast,diffuseBlood:diffuseBlood*decay,excreted:excreted*decay,blood:b.blood*decay,bone:b.bone*decay,renal:b.renal*decay,soft:b.soft*decay,bladder:(b.urine-excreted)*decay};
   }
   async function load(name){
-    if(poses[name])return poses[name];
+    if(pending[name])return pending[name];
+    if(poses[name]){await ensureAngles(name,[0,180]);return poses[name];}
     if(!pending[name])pending[name]=(async()=>{
       const p=data.poses[name],n=data.width*data.height;
       const groups=await Promise.all([['bone',data.angles,1],['organs',data.organAngles,7]].map(async([key,angles,count])=>{
+        if(key==='bone'&&p.nativeBone){const b=p.nativeBone;return [{...b,angles:data.angles,window:1,nativeSampling:true,frames:new Array(360)}];}
         const payload=p[key],response=await (window.GANTRY_ASSETS?.fetch||fetch)(payload.url);
         if(!response.ok)throw Error('No se pudo cargar MDP ('+response.status+')');
         const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
@@ -42,6 +78,7 @@
           frames:angles.map((_,a)=>values.subarray((c*angles.length+a)*n,(c*angles.length+a+1)*n))}));
       }));
       poses[name]=groups.flat();
+      await ensureAngles(name,[0,180]);
       return poses[name];
     })().catch(e=>{delete pending[name];throw e;});
     return pending[name];
@@ -59,12 +96,20 @@
       // requested by the kinetics, retaining lazy access for clock rewinds,
       // subsequent bladder filling and acquisition/final-image integration.
       const bases=new Array(poses[name].length),spatialMetrics={...metrics};
-      poses[name].forEach((p,c)=>Object.defineProperty(bases,c,{enumerable:true,configurable:true,get(){
+      poses[name].forEach((p,c)=>{
         const pos=angle*p.angles.length/360,lo=Math.floor(pos),angular={lo,hi:(lo+1)%p.angles.length,mix:pos-lo};
-        const value=window.GANTRY_ICRP.field(p,angular,mapped,w,h,flipX,flipY,spatialMetrics,sigma).values;
+        // Retain frame references so later kinetic mixing is safe after LRU eviction.
+        const source=p.nativeSampling?{...p,frames:[p.frames[angular.lo],p.frames[angular.hi]]}:p;
+        const pair=p.nativeSampling?{lo:0,hi:1,mix:angular.mix}:angular;
+        if(p.nativeSampling&&(!source.frames[0]||!source.frames[1]))throw Error('Preparando ángulo óseo nativo');
+        const ratio=(pose.pixelMm||3)/(p.pixelMm||data.pixelMm);
+        const local=p.nativeSampling?{x:p.width/2+(crop.x-pose.width/2)*ratio,
+          y:p.headRow+(crop.y-pose.headRow)*ratio,w:crop.w*ratio,h:crop.h*ratio}:mapped;
+        Object.defineProperty(bases,c,{enumerable:true,configurable:true,get(){
+        const value=window.GANTRY_ICRP.field(source,pair,local,w,h,flipX,flipY,spatialMetrics,sigma).values;
         Object.defineProperty(bases,c,{value,enumerable:true,configurable:true});
         return value;
-      }}));
+      }});});
       cache.key=key;cache.bases=bases;
       cache.result=null;
     }
@@ -97,7 +142,7 @@
     if(state.seconds>=LIMIT&&!session.finished){session.finished=true;session.mdpLimit=true;}
   }
   const el=id=>document.getElementById(id);
-  function metadata(){return {...state,model:'mdp-v2',vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
+  function metadata(){return {...state,model:'mdp-v2',projectionModel:data.nativeBoneModel||'coarse-6mm',vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
   function render(){
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;
@@ -131,7 +176,7 @@
     },100);
     render();
   }
-  window.GANTRY_MDP={load,geometry,field,mix,fractions,advance,step,render,metadata,
+  window.GANTRY_MDP={load,geometry,field,mix,fractions,advance,step,render,metadata,ensureAngles,hasAngles,hasPose:name=>!!poses[name],
     get rate(){return state.activityMBq*SENSITIVITY;},get seconds(){return state.seconds;},
     begin(){state.playing=false;return metadata();},get remaining(){return LIMIT-state.seconds;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

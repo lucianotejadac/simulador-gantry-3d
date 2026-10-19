@@ -833,9 +833,9 @@ los mismos criterios y señala metas no alcanzables dentro del modelo.
 
 La matriz fina sobremuestrea la respuesta esperada del detector con conservación
 de la suma y ruido independiente por píxel. No crea detalle anatómico superior al
-atlas ni mejora la resolución física del colimador. La proyección y el filtrado se
-mantienen en una malla de hasta 256 columnas para evitar que el costo del filtro
-crezca con la matriz; después se interpola la expectativa y se normaliza su suma.
+atlas ni mejora la resolución física del colimador. En el esqueleto MDP, la proyección se muestrea y filtra directamente en la matriz
+seleccionada. Los demás componentes y estudios conservan una malla de hasta 256
+columnas, seguida de interpolación de la expectativa y normalización de su suma.
 La adquisición instantánea de alta matriz integra la cinética y usa muestreo
 Poisson con ajuste multinomial exacto de la meta, sin simular millones de eventos
 uno por uno.
@@ -886,3 +886,30 @@ Construcción: `python scripts/embed_camera_response.py` y luego
 `node tests/test_camera_response.cjs` (fuente puntual, matriz, zoom, distancia,
 colimador y conservación de tasa). La regresión de rendimiento histórica sigue
 comprobando el operador gaussiano con sus parámetros antiguos por separado.
+
+
+### Esqueleto MDP nativo de 3 mm
+
+`build_mdp_fine.py` genera 360 vistas por postura desde el volumen original de
+3 mm, conservando su atenuación. Elimina la reducción anatómica previa a 6 mm
+y la PSF fija de cámara horneada en las imágenes. La captación ósea conserva
+el suavizado subvoxel de 1,5 mm de su modelo continuo de emisión.
+La respuesta de cámara se aplica en ejecución, según distancia y colimador.
+
+Las matrices 512/1024 muestrean la proyección de 3 mm directamente y filtran a
+su propio tamaño de píxel. Un filtro de tres cajas aproxima la gaussiana con
+costo lineal; se comprueba su varianza física. La malla de 256 sólo aporta una
+referencia escalar de integración para mantener la tasa total entre matrices;
+no determina la distribución espacial fina. Los fondos y órganos vasculares,
+renales y urinarios conservan sus bases de 6 mm. El detalle anatómico sigue
+limitado por el volumen original: 1024 no crea anatomía submilimétrica.
+
+Las vistas nativas se descargan en grupos de 12 ángulos cuando se necesitan.
+La caché mantiene hasta ocho grupos decodificados (aproximadamente 48 MiB),
+incluyendo AP/PA para el barrido corporal. Al rotar conserva la imagen anterior
+hasta tener el nuevo ángulo. No se descarga toda la serie al abrir el estudio.
+
+Validación: `node tests/test_native_bone.cjs`, `node tests/test_mdp.cjs` y
+`node tests/test_camera_response.cjs`. La comparación visual puede generarse
+con la variable `BONE_COMPARISON` apuntando a un directorio de salida; produce
+campos esperados float32 antes/después, con idénticas condiciones físicas.
