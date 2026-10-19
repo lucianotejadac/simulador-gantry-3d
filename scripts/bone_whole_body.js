@@ -103,7 +103,7 @@
     scan.geometrySignature=signature();scan.initialGeometry={...G};
     return scan;
   }
-  function advance(scan,rate,seconds){
+  function advance(scan,rate,seconds,render=true){
     const G=window.GANTRY.G;
     const guard=next=>{
       const result=window.GANTRY3D?.collision?.guard(G,next);
@@ -123,17 +123,17 @@
         guard(next);Object.assign(G,next);
         scan.geometrySignature=signature();scan.phase='aligning';
       }
-      window.GANTRY.render();return;
+      if(render)window.GANTRY.render();return;
     }
     const nextZ=Math.max(scan.endZ,G.tableZ-dt*scan.velocity/60*184/175);
     const targets=safeTargets(G,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     if(['detDist1','detDist2'].some(k=>Math.abs(G[k]-targets[k])>.001)){
       const next={...G};for(const k of ['detDist1','detDist2'])next[k]=approach(next[k],targets[k],dt);
       guard(next);Object.assign(G,next);
-      scan.phase='positioning';window.GANTRY.render();return;
+      scan.phase='positioning';if(render)window.GANTRY.render();return;
     }
     guard({...G,tableZ:nextZ});
-    scan.step(fields().fields,rate,dt);G.tableZ=scan.tableZ;window.GANTRY.render();
+    scan.step(fields().fields,rate,dt);G.tableZ=scan.tableZ;if(render)window.GANTRY.render();
   }
   function fields(){
     const live=window.GANTRY_LIVE,G=window.GANTRY.G,settings=live.settings;

@@ -79,7 +79,7 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),linearContext);
  const document={hidden:false,getElementById(id){if(!els.has(id))els.set(id,element(id));return els.get(id);},createElement:()=>element('canvas'),addEventListener(){}};
  const el=id=>document.getElementById(id);
  const window={GANTRY:{G:{}},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync('bone',[a,b],1000);}}};
- const ui=vm.createContext({window,document,performance:{now:()=>now},setInterval:fn=>intervals.push(fn),setTimeout});
+ const ui=vm.createContext({window,document,performance:{now:()=>now},setInterval:fn=>intervals.push(fn),setTimeout,clearTimeout});
  vm.runInContext(engine,ui);
  window.GANTRY_MDP={seconds:7200,render(){}};
  window.GANTRY_LIVE.state={d1:{segment:'Cabeza'},d2:{segment:'Cabeza'}};

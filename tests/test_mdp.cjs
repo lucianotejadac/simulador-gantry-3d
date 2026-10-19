@@ -98,7 +98,7 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
  const document={hidden:false,getElementById(id){if(!els.has(id))els.set(id,element(id));return els.get(id);},createElement:()=>element('canvas'),addEventListener(){}};
  const el=id=>document.getElementById(id);
  const window={GANTRY_MDP:model,GANTRY:{G:{}},GANTRY_LIVE:{settings:{study:'bone',matrix:128},update(){assert(++updates<20,'recursive live updates');window.GANTRY_BONE_ACQ.advance();window.GANTRY_BONE_ACQ.sync('bone',[field,field],model.rate);}}};
- const ui=vm.createContext({window,document,performance:{now:()=>now},setInterval:f=>timers.push(f),setTimeout});
+ const ui=vm.createContext({window,document,performance:{now:()=>now},setInterval:f=>timers.push(f),setTimeout,clearTimeout});
  vm.runInContext(fs.readFileSync('scripts/bone_acquisition.js','utf8'),ui);
  el('boneAcqName1').value='MDP AP';el('boneAcqName2').value='MDP PA';
  el('boneAcqCriterion').value='time';el('boneAcqTarget').value='60';el('boneAcqSetup').onsubmit({preventDefault(){}});

@@ -75,6 +75,7 @@
   if(!bar)return;
   let session=null,fields=null,rate=4000,study='',clock=performance.now(),speed=1,paused=false,busy=false;
   let note='',lastPaint=0,moving=false,lockedNodes=null,manualGoal=false;
+  let scanDebt=0,scanTimer=null,lastScanRender=-Infinity,lastUIPaint=-Infinity;
   let names=['Detector 1','Detector 2'],archive=null,saving=false,loadingSaved=false,selection=0;
   const sessions=new Map();
   const labels={bone:'Óseo',mibi:'MIBI',thyroid:'Tiroides',exploration:'I-131',parathyroid:'Paratiroides',dmsa:'DMSA',maa:'MAA'};
@@ -150,19 +151,37 @@
     if(result.height!==session.height){paused=true;note='Restablece la postura de brazos inicial para reanudar.';return null;}
     return result.fields;
   }
-  function advanceScan(seconds){
-    if(window.GANTRY_EXAM?.blocked)return;
+  function advanceScan(seconds,budgetMs=Infinity){
+    if(window.GANTRY_EXAM?.blocked)return 0;
+    const deadline=performance.now()+budgetMs;
     moving=true;
     try{
       const mdp=window.GANTRY_MDP;
       while(seconds>1e-9&&!session.finished){
         const dt=Math.min(.5,seconds,mdp?.remaining??Infinity);
         if(!(dt>0)){session.finished=true;session.mdpLimit=true;break;}
-        whole.advance(session,mdp?.rate??session.countRate,dt);
-        if(mdp){mdp.advance(dt);session.mdpEnd=mdp.metadata();if(mdp.remaining<=0){session.finished=true;session.mdpLimit=true;}}
+        whole.advance(session,mdp?.rate??session.countRate,dt,false);
+        if(mdp){mdp.advance(dt,false);session.mdpEnd=mdp.metadata();if(mdp.remaining<=0){session.finished=true;session.mdpLimit=true;}}
         seconds-=dt;
+        // Yield between the original physical steps; never skip their safety
+        // checks or charge unprocessed time to the acquisition.
+        if(performance.now()>=deadline)break;
       }
-    }finally{moving=false;}
+      return session.finished?0:seconds;
+    }finally{
+      try{
+        if(session.finished||performance.now()-lastScanRender>=100){lastScanRender=performance.now();window.GANTRY.render();}
+      }finally{moving=false;}
+    }
+  }
+  function clearScanDebt(){scanDebt=0;clearTimeout(scanTimer);scanTimer=null;}
+  function drainScan(){
+    clearTimeout(scanTimer);scanTimer=null;
+    if(moving)return;
+    if(!session||session.finished||session.mode!=='scan'||paused||busy||document.hidden||window.GANTRY_EXAM?.blocked){clearScanDebt();return;}
+    if(!(scanDebt>1e-9))return;
+    try{scanDebt=advanceScan(scanDebt,12);}catch(error){paused=true;note=error.message;clearScanDebt();}
+    if(scanDebt>1e-9&&!session.finished&&!paused)scanTimer=setTimeout(drainScan,0);
   }
   function advance(now=performance.now()){
     if(window.GANTRY_EXAM?.blocked){clock=now;return;}
@@ -172,7 +191,7 @@
     if(session&&!session.finished&&!paused&&!busy&&supported(study)&&!document.hidden&&fields&&dt>0){
       recordProcessingGeometry();
       if(session.mode==='scan'){
-        try{advanceScan(Math.min(.5,dt)*speed);}catch(error){paused=true;note=error.message;}
+        scanDebt+=Math.min(.5,dt)*speed;drainScan();
       }else {const current=acquisitionFields();if(current){
         if(study==='bone'&&window.GANTRY_MDP&&current.every(f=>f.mdpBases))window.GANTRY_MDP.step(session,current,dt*speed);
         else if(study==='mibi'&&window.GANTRY_MIBI&&current.every(f=>f.mibiBases))window.GANTRY_MIBI.step(session,current,dt*speed);
@@ -202,6 +221,7 @@
   }
   let processingRemembered=null;
   function paint(force=false){
+    const uiNow=performance.now();if(!force&&uiNow-lastUIPaint<100)return;lastUIPaint=uiNow;
     if(session?.finished&&!session.cancelled&&session.study==='bone'&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
       window.GANTRY_PROCESSING.remember(storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id));
       processingRemembered=session.id;
@@ -281,6 +301,7 @@
     if(nextStudy===study)return true;
     if(busy||saving||loadingSaved||(session?.mode==='scan'&&!session.finished))return false;
     advance();
+    clearScanDebt();
     if(session&&!session.finished){paused=true;note='Adquisición en pausa tras cambiar de estudio';}
     if(study)sessions.set(study,{session,names,archive,paused,note,speed,type:el('boneAcqType').value,goal:{...settings(),manual:manualGoal}});
     const saved=sessions.get(nextStudy);
@@ -330,6 +351,7 @@
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 10.000.000 cuentas enteras.':'Introduce entre 1 y 3.600 segundos enteros.';return;}
     session.study=study;
+    clearScanDebt();lastScanRender=-Infinity;
     session.id=window.crypto?.randomUUID?.()||'acq-'+Date.now()+'-'+Math.random().toString(36).slice(2);session.createdAt=Date.now();
     session.administeredActivity=window.GANTRY_ACTIVITY?.metadata(study)||null;
     recordProcessingGeometry();
@@ -347,6 +369,7 @@
     if(!session||session.finished||busy||!fields||archive)return;
     acquisitionView();
     if(session.mode==='scan'){
+      clearScanDebt();
       busy=true;note='Cuerpo entero';paint(true);
       try{
         while(!window.GANTRY_EXAM?.blocked&&!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
@@ -393,8 +416,8 @@
   el('boneAcqSuggested').onclick=()=>{manualGoal=false;updateGoal();planningInfo();};
   el('boneAcqSpeed').onchange=()=>{advance();speed=Number(el('boneAcqSpeed').value);paint(true);};
   el('boneAcqFast').onclick=()=>{acquisitionView();advance();speed=({1:10,10:30,30:60,60:1})[speed]||1;paused=false;clock=performance.now();el('boneAcqSpeed').value=String(speed);paint(true);};
-  el('boneAcqPause').onclick=()=>{if(paused)acquisitionView();advance();paused=!paused;note='';clock=performance.now();paint(true);};
-  el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;note='Detenida por el operador';paint(true);};
+  el('boneAcqPause').onclick=()=>{if(paused)acquisitionView();advance();paused=!paused;if(paused)clearScanDebt();note='';clock=performance.now();paint(true);};
+  el('boneAcqFinish').onclick=()=>{advance();session.finished=true;paused=true;clearScanDebt();note='Detenida por el operador';paint(true);};
   el('boneAcqInstant').onclick=async()=>{
     if(window.GANTRY_EXAM?.blocked||busy||saving||loadingSaved)return;
     if(session&&!session.finished)return instant();
@@ -433,9 +456,10 @@
   };
   refreshSaved().catch(error=>{el('boneAcqCacheStatus').textContent='Guardado local no disponible: '+error.message;});
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
-  document.addEventListener('visibilitychange',()=>{clock=performance.now();});
+  document.addEventListener('visibilitychange',()=>{clock=performance.now();if(document.hidden)clearScanDebt();});
   window.GANTRY_BONE_ACQ={advance,sync,selectStudy,suggestedGoal:()=>suggestion(),
     cancelExam(){
+      clearScanDebt();
       const cancel=s=>{if(s&&!s.finished){s.cancelled=true;s.finished=true;}};
       cancel(session);for(const saved of sessions.values()){cancel(saved.session);saved.paused=true;}
       paused=true;note='Examen cancelado';el('boneAcqSetup').hidden=true;lockScan(false);paint(true);

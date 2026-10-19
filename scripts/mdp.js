@@ -83,7 +83,7 @@
     let sum=0,peak=0;for(let i=0;i<values.length;i++){cdf[i]=sum+=values[i];peak=Math.max(peak,values[i]);}
     return {values,cdf,sum,window:Math.max(1,peak*.8),mdpBases:bases};
   }
-  function advance(seconds){state.seconds=Math.min(LIMIT,state.seconds+Math.max(0,seconds));if(state.seconds===LIMIT)state.playing=false;render();}
+  function advance(seconds,display=true){state.seconds=Math.min(LIMIT,state.seconds+Math.max(0,seconds));if(state.seconds===LIMIT)state.playing=false;if(display)render();}
   function step(session,fields,seconds){
     let remaining=Math.min(seconds,LIMIT-state.seconds);
     while(remaining>1e-8&&!session.finished){
