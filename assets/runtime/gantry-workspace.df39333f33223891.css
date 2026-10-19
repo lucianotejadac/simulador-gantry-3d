@@ -1,0 +1,135 @@
+/* Workspace: gantry, independent stacked live monitors, acquisition console.
+   Keep the original canvases and controls so acquisition state is preserved. */
+#gantryWorkspace{
+  display:grid!important;
+  grid-template-columns:minmax(280px,27fr) minmax(240px,21fr) minmax(0,52fr);
+  grid-template-rows:minmax(0,1fr) auto;
+  gap:8px!important;padding:10px!important;min-height:0;
+}
+#gantryWorkspace #gantryWorkArea{display:contents!important}
+#gantryWorkspace #gantryWorkArea #g3dStage{grid-column:1;grid-row:1;min-width:0;min-height:0!important}
+#gantryWorkspace #gantryViewControls{
+  grid-column:1;grid-row:2;gap:4px!important;align-content:start;
+}
+#gantryViewControls .btn{font-size:11px;padding:3px 5px!important}
+#gantryViewControls .hint{font-size:10px}
+#gantryWorkspace #gantryRemote{
+  grid-column:1;grid-row:1;align-self:end;justify-self:end;z-index:4;
+  width:148px!important;margin:10px;
+  overflow:visible!important;gap:0!important;
+}
+#gantryRemote>div:first-child{display:none}
+#gantryWorkspace #gantryRemote #mando{width:100%;max-width:100%;max-height:none;filter:drop-shadow(0 3px 6px #0009)}
+#gantryWorkspace #g3dHud{right:8px!important;top:104px!important;font-size:10px!important;max-width:55%}
+#gantryWorkspace #collisionFeedback{font-size:9px!important}
+#gantryWorkspace #roomPerformance{max-width:calc(100% - 125px)!important;font-size:10px!important}
+#gantryWorkspace #gantryLive{
+  grid-column:3;grid-row:1/3;display:flex;height:auto!important;
+  min-height:0;overflow:auto;container-type:inline-size;
+}
+#gantryLive .gantry-live-head,#gantryLive .bone-signal-controls,#gantryLive .bone-acq-controls{
+  grid-column:auto;grid-row:auto;
+}
+#gantryLive .gantry-live-head{align-items:center}
+#gantryLive .live-controls{margin-left:0}
+#gantryLive .live-status{flex:1 1 340px;font-size:clamp(12px,1cqi,15px);line-height:1.5}
+#gantryLive .gantry-live-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:minmax(480px,1fr);min-height:480px;flex:1;
+}
+#gantryLive .gantry-live-grid>.live-card{grid-column:auto;grid-row:auto}
+#gantryLive .live-card>canvas{width:100%;height:100%;object-fit:contain;min-height:0}
+#gantryLive .live-info{overflow:visible}
+#gantryLive.bone-whole-body .gantry-live-grid{grid-template-rows:minmax(440px,1fr);min-height:500px}
+#gantryLive.bone-whole-body .bone-acq-card{grid-template-rows:auto minmax(260px,1fr) 5px auto}
+#gantryLive.final-preview .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(300px,1fr)}
+/* Fit the count inspector under narrow images instead of consuming their width. */
+@container (max-width:1500px){
+  #gantryLive:not(.final-preview) .bone-acq-card .pixel-inspector{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(180px,1fr) auto}
+  #gantryLive:not(.final-preview) .bone-acq-card .pixel-panel{border-left:0;border-top:1px solid #30444f}
+}
+/* Use spare console space for readable controls and detector statistics. */
+#gantryLive .gantry-live-head{font-size:clamp(13px,1.05cqi,16px);gap:8px 12px;padding:8px 10px}
+#gantryLive .live-controls{font-size:clamp(12px,1cqi,15px);gap:8px 6px}
+#gantryLive .bone-signal-controls,#gantryLive .bone-acq-controls{
+  font-size:clamp(12px,1cqi,15px);line-height:1.5;gap:8px 12px;padding:8px 10px;
+}
+#gantryLive select{font-size:clamp(13px,1.05cqi,16px);height:auto;min-height:32px;max-width:100%}
+#gantryLive .console-menu{font-size:clamp(13px,1.05cqi,16px);max-width:100%}
+#gantryLive .live-study{max-width:260px}
+#gantryLive .live-collimator{width:150px;max-width:150px}
+#gantryLive .live-window-width{width:76px;max-width:76px}
+#gantryLive .live-energy{height:auto}
+#gantryLive .live-energy output{font-size:inherit;width:auto;min-width:62px}
+#gantryLive #boneSignalStatus,#gantryLive #boneAcqCacheStatus{font-size:inherit}
+#gantryLive .bone-signal-controls>span[style*="font-size:9px"]{font-size:12px!important}
+#gantryLive.bone-acquisition .live-card,#gantryWorkspace #gantryLive.final-preview .live-card{
+  grid-template-rows:auto minmax(200px,1fr) auto;
+}
+#gantryLive.bone-acquisition .bone-acq-card{grid-template-rows:auto minmax(260px,1fr) 5px auto}
+#gantryLive.bone-acquisition:not(.final-preview) .live-card:not(.bone-acq-card){
+  grid-template-rows:auto auto minmax(200px,1fr);
+}
+#gantryLive.bone-acquisition:not(.final-preview) .live-card:not(.bone-acq-card)>.live-info{grid-row:2}
+#gantryLive.bone-acquisition:not(.final-preview) .live-card:not(.bone-acq-card)>.pixel-inspector,
+#gantryLive.bone-acquisition:not(.final-preview) .live-card:not(.bone-acq-card)>canvas{grid-row:3}
+#gantryLive .bone-card-title{font-size:clamp(13px,1.05cqi,16px);line-height:1.5;padding:6px 8px;white-space:normal}
+#gantryLive.bone-acquisition .live-info,#gantryWorkspace #gantryLive.final-preview .live-info{
+  font-size:clamp(12px,1.05cqi,16px);line-height:1.65;padding:10px;
+  min-height:100px;overflow:visible;overflow-wrap:anywhere;
+}
+#gantryLive .live-info b{font-size:inherit}
+#gantryLive .pixel-panel{font-size:12px;line-height:1.55;padding:8px;max-height:350px}
+#gantryLive .pixel-panel strong{font-size:13px}
+#gantryLive .pixel-panel td{font-size:12px;height:30px}
+#gantryLive .pixel-hint,#gantryLive .pixel-note{font-size:12px}
+#gantryLive .pixel-inspector{grid-template-columns:minmax(0,1fr) 190px}
+@container (max-width:1500px){
+  #gantryLive:not(.final-preview) .bone-acq-card .pixel-inspector{grid-template-columns:minmax(0,1fr)}
+}
+/* The live canvases have their own window, independent of acquisition scrolling. */
+#gantryWorkspace #gantryLiveMonitors{
+  grid-column:2;grid-row:1/3;display:flex;flex-direction:column;
+  min-width:0;min-height:0;overflow:hidden;background:#16232d;border:1px solid #344958;
+}
+#gantryLiveMonitors .live-monitor-title{
+  display:flex;align-items:center;gap:9px;flex:none;margin:0;padding:10px;
+  color:#cce9f1;border-bottom:1px solid #344958;font:700 13px/1.4 var(--mono);
+}
+#gantryLiveMonitors .live-monitor-grid{
+  display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr));
+  gap:8px;padding:8px;flex:1;min-height:0;
+}
+#gantryLiveMonitors .live-card{
+  display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;
+  min-height:0;overflow:hidden;
+}
+#gantryLiveMonitors .bone-card-title{
+  display:block;margin:0;padding:7px 8px;color:#82e3c7;font:700 13px/1.35 var(--mono);
+}
+#gantryLiveMonitors .live-info{
+  display:block;min-height:0;max-height:100px;overflow:auto;padding:7px 8px;
+  border-left:0;border-top:1px solid #273745;font:12px/1.4 var(--mono);overflow-wrap:anywhere;
+}
+#gantryLiveMonitors .live-info b{font-size:inherit}
+#gantryLiveMonitors canvas{width:100%;height:100%;max-height:100%;object-fit:contain;min-height:0}
+#gantryLiveMonitors .pixel-inspector{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto}
+#gantryLiveMonitors .pixel-picture{height:100%}
+#gantryLiveMonitors .pixel-panel{border-left:0;border-top:1px solid #30444f;max-height:110px}
+#gantryWorkspace:not(:has(#gantryLive.final-preview)) #gantryLiveMonitors .pixel-inspector{display:block}
+#gantryWorkspace:not(:has(#gantryLive.final-preview)) #gantryLiveMonitors :is(.pixel-panel,.pixel-region){display:none}
+#gantryWorkspace:has(#gantryLive.recenter-active) #gantryLiveMonitors canvas{cursor:crosshair}
+#gantryWorkspace #gantryLive.final-preview .gantry-live-grid{display:none}
+@media(max-width:1100px){
+  #gantryWorkspace{grid-template-columns:minmax(280px,1fr) minmax(240px,1fr);grid-template-rows:440px auto minmax(740px,auto);overflow:auto}
+  #gantryWorkspace #gantryLive{grid-column:1/3;grid-row:3;min-height:740px;overflow:visible}
+  #gantryWorkspace #gantryRemote{width:148px!important}
+  #gantryWorkspace #gantryRemote #mando{max-height:none}
+  #gantryLive .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(400px,1fr)}
+  #gantryLive.bone-whole-body .gantry-live-grid{grid-template-rows:minmax(500px,1fr)}
+}
+@media(max-width:700px){
+  #gantryWorkspace{grid-template-columns:minmax(0,1fr);grid-template-rows:440px auto 850px minmax(740px,auto)}
+  #gantryWorkspace #gantryLiveMonitors{grid-column:1;grid-row:3}
+  #gantryWorkspace #gantryLive{grid-column:1;grid-row:4}
+}

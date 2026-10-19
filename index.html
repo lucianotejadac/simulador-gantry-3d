@@ -536,7 +536,7 @@
 /* STARTUP_LOADING_CSS_END */
 </style>
 <!-- WORKSPACE_LAYOUT_BEGIN -->
-<link rel="stylesheet" href="assets/runtime/gantry-workspace.e2c270a482d8d1e2.css">
+<link rel="stylesheet" href="assets/runtime/gantry-workspace.df39333f33223891.css">
 <!-- WORKSPACE_LAYOUT_END -->
 <!-- FAST_LOAD_BEGIN -->
 <link rel="preload" href="assets/runtime/console-menus.e023e68602435270.js" as="script">
@@ -805,7 +805,19 @@
           <div id="g3dMsg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
                color:#9fb4cc;font:12px/1.6 var(--mono);text-align:center;padding:24px;background:#0b0f14">Cargando motor 3D…</div>
         </div>
-        <section class="gantry-live" id="gantryLive" aria-label="Imagen en vivo de los detectores">
+        <section id="gantryLiveMonitors" aria-label="Pantallas de los detectores">
+<header class="live-monitor-title"><span class="live-dot" aria-hidden="true"></span><span id="liveDisplayMode">IMAGEN EN VIVO</span></header>
+<div class="live-monitor-grid"><div class="live-card">
+              <h3 class="bone-card-title">EN VIVO · DETECTOR 1</h3>
+              <canvas id="liveD1" width="256" height="256" aria-label="Proyeccion en vivo del detector 1"></canvas>
+              <div class="live-info" id="liveInfoD1"><b>DETECTOR 1</b>Esperando atlas...</div>
+            </div><div class="live-card">
+              <h3 class="bone-card-title">EN VIVO · DETECTOR 2</h3>
+              <canvas id="liveD2" width="256" height="256" aria-label="Proyeccion en vivo del detector 2"></canvas>
+              <div class="live-info" id="liveInfoD2"><b>DETECTOR 2</b>Esperando atlas...</div>
+            </div></div>
+</section>
+<section class="gantry-live" id="gantryLive" aria-label="Controles y adquisiciones">
 <section id="examSafetyBanner" hidden role="alert" style="padding:10px;background:#641f28;color:#fff;border:2px solid #ff6f7d;font:12px sans-serif">
       <strong id="examSafetyMessage"></strong>
       <p id="examSafetyHint">Libera el contacto y reinicia para comenzar un nuevo examen. Las adquisiciones anteriores guardadas se conservan.</p>
@@ -813,7 +825,7 @@
     </section>
           <div class="gantry-live-head">
             <span class="live-dot" aria-hidden="true"></span>
-            <span><span id="liveDisplayMode">IMAGEN EN VIVO</span> &middot; <span id="liveStudyTracer">99mTc-PERTECNETATO &middot; 10 MIN</span></span>
+            <span><span>CONTROLES Y ADQUISICIÓN</span> &middot; <span id="liveStudyTracer">99mTc-PERTECNETATO &middot; 10 MIN</span></span>
             <div class="live-controls" aria-label="Ajustes de adquisicion en vivo">
               <span class="control-label">ESTUDIO</span>
               <select class="live-study" id="liveStudy" aria-label="Estudio mostrado en vivo">
@@ -957,16 +969,6 @@
           </div>
           <!-- BONE_ACQ_UI_END -->
           <div class="gantry-live-grid">
-            <div class="live-card">
-              <h3 class="bone-card-title">EN VIVO · DETECTOR 1</h3>
-              <canvas id="liveD1" width="256" height="256" aria-label="Proyeccion en vivo del detector 1"></canvas>
-              <div class="live-info" id="liveInfoD1"><b>DETECTOR 1</b>Esperando atlas...</div>
-            </div>
-            <div class="live-card">
-              <h3 class="bone-card-title">EN VIVO · DETECTOR 2</h3>
-              <canvas id="liveD2" width="256" height="256" aria-label="Proyeccion en vivo del detector 2"></canvas>
-              <div class="live-info" id="liveInfoD2"><b>DETECTOR 2</b>Esperando atlas...</div>
-            </div>
             <div class="live-card bone-acq-card">
               <h3 class="bone-card-title" id="boneAcqTitle1">ADQUISICIÓN · DETECTOR 1</h3>
               <canvas id="boneAcqD1" width="256" height="256" aria-label="Adquisición detector 1"></canvas>

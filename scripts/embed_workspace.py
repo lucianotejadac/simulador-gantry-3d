@@ -6,6 +6,20 @@ from externalize_assets import asset
 ROOT = Path(__file__).resolve().parents[1]
 page = ROOT / 'index.html'
 html = page.read_text(encoding='utf-8')
+# Keep the existing canvas IDs and elements: only their layout parent changes.
+if 'id="gantryLiveMonitors"' not in html:
+    cards=[]
+    for n in (1,2):
+        pattern=rf'<div class="live-card">\s*<h3 class="bone-card-title">[^<]*</h3>\s*<canvas id="liveD{n}"[^>]*></canvas>\s*<div class="live-info" id="liveInfoD{n}">.*?</div>\s*</div>'
+        match=re.search(pattern,html,re.S)
+        assert match, f'Live detector {n} card missing'
+        cards.append(match.group())
+        html=html[:match.start()]+html[match.end():]
+    html=html.replace('<span id="liveDisplayMode">IMAGEN EN VIVO</span>','<span>CONTROLES Y ADQUISICIÓN</span>',1)
+    monitors='<section id="gantryLiveMonitors" aria-label="Pantallas de los detectores">\n<header class="live-monitor-title"><span class="live-dot" aria-hidden="true"></span><span id="liveDisplayMode">IMAGEN EN VIVO</span></header>\n<div class="live-monitor-grid">'+''.join(cards)+'</div>\n</section>\n'
+    html=html.replace('<section class="gantry-live" id="gantryLive"',monitors+'<section class="gantry-live" id="gantryLive"',1)
+html=html.replace('id="gantryLive" aria-label="Imagen en vivo de los detectores"','id="gantryLive" aria-label="Controles y adquisiciones"',1)
+html=re.sub(r'(<div class="gantry-live-grid">)\s+(<div class="live-card bone-acq-card">)',r'\1\n            \2',html)
 url = asset((ROOT / 'scripts/gantry_workspace.css').read_bytes(), 'gantry-workspace', 'css')
 block = '<!-- WORKSPACE_LAYOUT_BEGIN -->\n<link rel="stylesheet" href="' + url + '">\n<!-- WORKSPACE_LAYOUT_END -->'
 if '<!-- WORKSPACE_LAYOUT_BEGIN -->' in html:
