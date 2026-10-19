@@ -2,6 +2,7 @@
 (function(){
   'use strict';
   function eligibility(G,physical,declared){
+    if(G?.setup&&G.setup!=='normal')return {ok:false,reason:'Para el barrido usa la camilla del equipo: selecciona la posición 1 o 6.'};
     if(!physical||physical.headFirst!==false)return {ok:false,reason:'Coloca al paciente con los pies hacia adentro (Cambiar posición de paciente).'};
     if(declared?.headFirst!==false)return {ok:false,reason:'En Adquisición, declara Pies adentro / Cabeza afuera.'};
     if(!Number.isFinite(G?.tableZ))return {ok:false,reason:'Posición de camilla no disponible.'};

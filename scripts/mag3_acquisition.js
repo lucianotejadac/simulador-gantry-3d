@@ -135,7 +135,7 @@
     if(window.GANTRY_EXAM?.blocked||examRevision!==window.GANTRY_EXAM?.revision)return;
     if(session&&!session.finished){window.GANTRY_LIVE.setStudy('mag3');refresh();return;}
     ensurePanel();panel.shadowRoot.innerHTML=html;
-    const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
+    const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>g.empty?Infinity:Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
     const n=window.GANTRY_LIVE.settings.matrix,geometry=detector===1?g1:g2;
     session={detector,n,geometry,cache:{},time:0,lastClock:performance.now(),speed:1,paused:false,finished:false,
       administeredActivity:window.GANTRY_ACTIVITY?.metadata('mag3')||null,activityFactor:window.GANTRY_ACTIVITY?.factor('mag3')??1,

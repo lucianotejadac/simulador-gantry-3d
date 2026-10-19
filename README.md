@@ -766,20 +766,39 @@ Pruebas: `node tests/test_exam_safety.cjs`, colisiones, adquisición estática y
 
 ### Posiciones automáticas de detectores
 
-El menú bajo la vista 3D ofrece diez configuraciones genéricas: AP/PA, PA/AP,
-laterales en ambos sentidos, carga/descarga, estacionamiento CT y aperturas
-anteriores/posteriores de 90° y 76°. Son equivalentes docentes definidos por sus
-ángulos, no una reproducción de programas de posicionamiento de un fabricante.
-CT solo estaciona los cabezales; no realiza adquisición CT. La postura del
-paciente y la camilla no cambian con estos presets.
+El menú sigue el orden de la referencia, de izquierda a derecha y de arriba abajo:
+1. Detectores paralelos laterales.
+2. D1 hacia exterior y D2 hacia isocentro; paciente de pie frente a D1.
+3. D2 hacia exterior y D1 hacia isocentro; paciente de pie frente a D2.
+4. Ambos detectores hacia abajo, consecutivos sobre el eje longitudinal; se
+   oculta la camilla del equipo y se coloca al paciente en una camilla externa.
+5. Paciente centrado en el isocentro CT (60 cm detrás del plano SPECT) y
+   detectores retirados fuera de su campo; no se generan imágenes CT.
+6. Detectores paralelos superior/inferior.
+7. 90° anterior.
+8. 90° posterior.
+9. 76° anterior.
+10. 76° posterior.
+
+Son configuraciones docentes del equipo genérico, no programas certificados de
+un fabricante. `gantry_setups.js` comparte las coordenadas entre la escena,
+las colisiones y el encuadre de las proyecciones. De pie se usa el detector
+exterior y se considera el interior bloqueado por el otro cabezal; en camilla
+externa cada detector ve un tramo longitudinal distinto; en CT ambos campos
+SPECT quedan vacíos. Esta selección geométrica no calcula dispersión o
+penetración a través de las carcasas.
 
 El movimiento retira los detectores, gira y ajusta su distancia con protección
 barrida contra paciente, camilla y el otro cabezal. El menú «Detener movimiento»,
 Escape o una orden manual interrumpen la maniobra. No se puede iniciar una nueva
 adquisición mientras se posicionan ni cambiar de preset durante una adquisición.
 Las proyecciones y la geometría guardada usan el ángulo real de cada detector.
-El barrido corporal recupera automáticamente la separación de 180° antes de
-acumular cuentas o mover la camilla.
+Para cambios de montaje el paciente se retira temporalmente del campo y se
+recoloca tras comprobar espacio libre; no se anima su traslado atravesando
+los detectores. Cancelar durante esa fase restaura la configuración previa.
+Al volver a posiciones normales se recuperan los ajustes originales de la
+camilla y brazos. El barrido corporal requiere la camilla del equipo (posición
+1 o 6) y recupera automáticamente la separación de 180° antes de adquirir.
 
 Motor: `scripts/gantry_positions.js`; empaquetar con
 `python scripts/embed_gantry_positions.py`. Pruebas:
