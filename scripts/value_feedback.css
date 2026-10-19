@@ -1,14 +1,15 @@
-/* A small arrow repeatedly travels in the direction of the settled change. */
+/* A prominent arrow repeatedly travels in the direction of the settled change. */
 .value-change-flash {
   --value-flash-color: #ffe36e;
   position:relative;
   display:inline-block;
+  line-height:1;
   border-radius:0;
   z-index:1;
 }
 .value-change-increase::after,.value-change-decrease::after {
   content:"";
-  position:absolute;left:50%;margin-left:-.3em;width:.6em;height:.65em;
+  position:absolute;left:50%;margin-left:-.625em;width:1.25em;height:1.05em;
   background:var(--value-flash-color);pointer-events:none;
   animation:gantry-value-arrow 2500ms ease-out both,gantry-value-travel 625ms ease-out infinite;
   animation-delay:inherit;
@@ -22,7 +23,8 @@
   clip-path:polygon(35% 0,65% 0,65% 50%,100% 50%,50% 100%,0 50%,35% 50%);
 }
 /* Leave room for the tip in the small count-per-pixel cells. */
-.pixel-panel td { height:28px;overflow:visible; }
+#gantryLive .pixel-panel td { height:46px;overflow:visible; }
+#gantryWorkspace #gantryLive .live-info,#gantryLive .pixel-total { line-height:2.4; }
 .value-change-pending {
   color: #16232e;
   animation: gantry-value-pending 1000ms ease-in-out infinite;
