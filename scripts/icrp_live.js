@@ -53,28 +53,6 @@
     return result;
   }
   const uncollimatedSources=new WeakMap();
-  // Three running-sum box passes approximate a Gaussian at O(pixels), independent
-  // of kernel width. Only used on native high matrices; variance follows sigma².
-  function fastBlur(input,w,h,sx,sy){
-    function radii(s){const ideal=Math.sqrt(4*s*s+1),lo=Math.floor(ideal)|1,lower=lo>ideal?lo-2:lo,upper=lower+2;
-      const count=Math.max(0,Math.min(3,Math.round((12*s*s-3*lower*lower-12*lower-9)/(-4*lower-4))));
-      return Array.from({length:3},(_,i)=>Math.max(0,((i<count?lower:upper)-1)/2));}
-    function pass(a,r,vertical){
-      if(!r)return a;
-      const b=new Float32Array(a.length),length=vertical?h:w,lines=vertical?w:h,step=vertical?w:1,divisor=2*r+1;
-      for(let line=0;line<lines;line++){
-        const start=vertical?line:line*w;let sum=0;
-        for(let j=0;j<=Math.min(r,length-1);j++)sum+=a[start+j*step];
-        for(let j=0;j<length;j++){
-          b[start+j*step]=Math.max(0,sum/divisor);
-          if(j-r>=0)sum-=a[start+(j-r)*step];
-          if(j+r+1<length)sum+=a[start+(j+r+1)*step];
-        }
-      }return b;
-    }
-    const rx=radii(sx),ry=radii(sy);let result=input;
-    for(let k=0;k<3;k++){result=pass(result,rx[k],false);result=pass(result,ry[k],true);}return result;
-  }
   function uncollimatedField(pose,pair,crop,w,h,flipX,flipY,metrics){
     // Educational planar fluence, not a reconstructed anatomical image.
     // Integrate the entire attenuated atlas, including sources outside the crop.
@@ -179,7 +157,9 @@
     const physical=Number.isFinite(metrics.psfSigmaMm)&&window.GANTRY_CAMERA?
       window.GANTRY_CAMERA.sampling(pose,crop,w,h,metrics):null;
     const sx=physical?physical.sigmaX:sigma,sy=physical?physical.sigmaY:sigma;
-    const filter=pose.nativeSampling&&w>256&&Math.min(sx,sy)>=2?fastBlur:blur;
+    // Use the same Gaussian at every matrix. Integer box widths changed both
+    // kernel shape and physical FWHM when crossing the native 256/512 boundary.
+    const filter=blur;
     const sharp=filter(values,w,h,sx,sy);
     const halo=metrics.haloAlpha>0?filter(values,w,h,sx+(physical?physical.haloX:metrics.haloBlur),sy+(physical?physical.haloY:metrics.haloBlur)):null;
     const cdf=new Float64Array(values.length);let sum=0;

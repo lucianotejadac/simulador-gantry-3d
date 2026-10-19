@@ -16,6 +16,20 @@ const {fixture,project}=require('./bone_performance_fixture.cjs');
   let moment=0;for(let y=0;y<n;y++)for(let x=0;x<n;x++)moment+=f.values[y*n+x]*((x+.5-n/2)*side/n)**2;
   const measured=Math.sqrt(moment/f.sum)*C.FWHM_SIGMA;
   assert(Math.abs(measured/Math.hypot(7.5,C.FWHM_SIGMA)-1)<.09,'native PSF variance');
+  if(n>=512){
+   // A Gaussian source convolved with the nominal Gaussian has an analytic
+   // half-height width. The old box approximation passed the loose variance
+   // check but produced a wider, non-Gaussian peak at high matrices.
+   const profile=new Float64Array(n);
+   for(let y=0;y<n;y++)for(let x=0;x<n;x++)profile[x]+=f.values[y*n+x];
+   const peak=Math.max(...profile),half=peak/2;let left=profile.indexOf(peak),right=left;
+   while(left>0&&profile[left]>=half)left--;
+   while(right<n-1&&profile[right]>=half)right++;
+   const l=left+(half-profile[left])/(profile[left+1]-profile[left]);
+   const r=right-1+(profile[right-1]-half)/(profile[right-1]-profile[right]);
+   const width=(r-l)*side/n,analytic=Math.hypot(7.5,C.FWHM_SIGMA);
+   assert(Math.abs(width/analytic-1)<.04,'native high-matrix peak must retain Gaussian shape');
+  }
  }
  // Isolate direct high-matrix sampling from enlargement of the same 256 source.
  const bp=loaded[0],crop={x:60,y:200,w:186,h:186},metrics={...C.response(2,'LEHR'),contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
