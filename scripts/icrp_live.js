@@ -121,7 +121,9 @@
     return {values,cdf,sum,window:base.window*area*norm};
   }
   function field(pose,pair,crop,w,h,flipX,flipY,metrics,sigma){
-    if(pose.nativeSampling&&w<256&&256%w===0){
+    // 64 bins the detector response instead of skipping source samples, including
+    // older non-native atlases. This preserves total counts in the new matrix.
+    if((pose.nativeSampling||w===64)&&w<256&&256%w===0){
       const ratio=256/w,bh=h*ratio,base=field(pose,pair,crop,256,bh,flipX,flipY,metrics,sigma*ratio);
       const values=new Float32Array(w*h),cdf=new Float64Array(w*h);let sum=0;
       for(let y=0;y<bh;y++)for(let x=0;x<256;x++)values[Math.floor(y/ratio)*w+Math.floor(x/ratio)]+=base.values[y*256+x];

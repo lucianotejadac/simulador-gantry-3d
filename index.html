@@ -540,7 +540,7 @@
 <!-- WORKSPACE_LAYOUT_END -->
 <!-- FAST_LOAD_BEGIN -->
 <link rel="preload" href="assets/runtime/camera-response.6725edf4ddbe9366.js" as="script">
-<link rel="preload" href="assets/runtime/console-menus.8eba554d6a579db0.js" as="script">
+<link rel="preload" href="assets/runtime/console-menus.4abd4d93cc4efbb8.js" as="script">
 <link rel="preload" href="assets/runtime/exam-safety.00f904169c348088.js" as="script">
 <link rel="preload" href="assets/runtime/final-preview.8fb1f7f0798517fe.js" as="script">
 <link rel="preload" href="assets/runtime/gantry-positions.b1ea2d559482b07d.js" as="script">
@@ -548,7 +548,7 @@
 <link rel="preload" href="assets/runtime/mdp-engine.5d4fd959f1057483.js" as="script">
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.78e83e536f629fd4.js" as="script">
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
-<link rel="preload" href="assets/runtime/pixel-grid.5deb9cb3b664c472.js" as="script">
+<link rel="preload" href="assets/runtime/pixel-grid.d84a41a18b7dcfad.js" as="script">
 <link rel="preload" href="assets/runtime/study-activity.ca085acb56fae58a.js" as="script">
 <link rel="preload" href="assets/runtime/symbia-room.40a36f2a15b3e0bc.bin" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/three-bundle.9848023754a347b2.js" as="script">
@@ -871,10 +871,10 @@
               <button class="live-setting" id="liveRecenter" type="button" aria-pressed="false" title="Activa y haz clic en el punto de la imagen que quieres llevar al centro. En MAG3 afecta las cuentas siguientes.">Recentrar</button>
               <button class="live-setting" id="liveResetCenter" type="button" title="Restablecer el centro de ambos detectores">Centro original</button>
               <span class="control-label">MATRIZ</span>
+              <button class="live-setting" id="liveMatrix64" type="button" aria-pressed="false">64</button>
               <button class="live-setting" id="liveMatrix128" type="button" aria-pressed="false">128</button>
               <button class="live-setting active" id="liveMatrix256" type="button" aria-pressed="true">256</button>
               <button class="live-setting" id="liveMatrix512" type="button" aria-pressed="false">512×512</button>
-              <button class="live-setting" id="liveMatrix1024" type="button" aria-pressed="false">1024×1024</button>
               <span id="matrixQualityHint" role="status" style="flex-basis:100%;font-size:12px;color:#b9d6e4"></span>
             </div>
             <button id="injectMAG3" class="live-setting" type="button" disabled>inyectar MAG3</button><span id="mag3Status" role="status"></span>
@@ -1465,7 +1465,7 @@ window.GANTRY_LIVE_ATLAS_OSEO_UP="assets/runtime/image.3861454422d07e6c.png";
 <!-- MIBI_KINETICS_END -->
 <!-- PIXEL_GRID_BEGIN -->
 <link rel="stylesheet" href="assets/runtime/pixel-grid.32ff43dc68d1438d.css">
-<script src="assets/runtime/pixel-grid.5deb9cb3b664c472.js"></script>
+<script src="assets/runtime/pixel-grid.d84a41a18b7dcfad.js"></script>
 <!-- PIXEL_GRID_END -->
 <!-- FINAL_PREVIEW_BEGIN -->
 <script src="assets/runtime/final-preview.8fb1f7f0798517fe.js"></script>
@@ -1599,7 +1599,9 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     return {values,cdf,sum,window:base.window*area*norm};
   }
   function field(pose,pair,crop,w,h,flipX,flipY,metrics,sigma){
-    if(pose.nativeSampling&&w<256&&256%w===0){
+    // 64 bins the detector response instead of skipping source samples, including
+    // older non-native atlases. This preserves total counts in the new matrix.
+    if((pose.nativeSampling||w===64)&&w<256&&256%w===0){
       const ratio=256/w,bh=h*ratio,base=field(pose,pair,crop,256,bh,flipX,flipY,metrics,sigma*ratio);
       const values=new Float32Array(w*h),cdf=new Float64Array(w*h);let sum=0;
       for(let y=0;y<bh;y++)for(let x=0;x<256;x++)values[Math.floor(y/ratio)*w+Math.floor(x/ratio)]+=base.values[y*256+x];
@@ -1750,7 +1752,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
     resetCenter:document.getElementById('liveResetCenter'),
     matrix128:document.getElementById('liveMatrix128'),
     matrix256:document.getElementById('liveMatrix256'),
-    matrix512:document.getElementById('liveMatrix512'),matrix1024:document.getElementById('liveMatrix1024')
+    matrix512:document.getElementById('liveMatrix512'),matrix64:document.getElementById('liveMatrix64')
   };
   // IMAGE_FRAMING_BEGIN
   const imageCenters={1:{x:0,y:0},2:{x:0,y:0}};
@@ -2451,7 +2453,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       [controls.recenter,recenterEnabled],
       [controls.matrix128,acquisition.matrix===128],
       [controls.matrix256,acquisition.matrix===256],
-      [controls.matrix512,acquisition.matrix===512],[controls.matrix1024,acquisition.matrix===1024]
+      [controls.matrix512,acquisition.matrix===512],[controls.matrix64,acquisition.matrix===64]
     ];
     states.forEach(([button,active])=>{
       if(!button) return;
@@ -2463,7 +2465,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   function setMatrix(matrix){
     if(acquisition.study!=='mag3' && window.GANTRY_BONE_ACQ?.active)return;
     const previous=acquisition.matrix;
-    acquisition.matrix=[128,256,512,1024].includes(matrix)?matrix:256;
+    acquisition.matrix=[64,128,256,512].includes(matrix)?matrix:256;
     window.GANTRY_BONE_ACQ?.matrixChanged(previous,acquisition.matrix);
     window.GANTRY_FINAL_PREVIEW?.matrixChanged(previous,acquisition.matrix);
     syncControls();
@@ -2540,7 +2542,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   controls.resetCenter.addEventListener('click',resetImageCenter);
   targets.forEach(target=>target.canvas.addEventListener('click',event=>recenterFromCanvas(target.n,event)));
   if(controls.matrix128) controls.matrix128.addEventListener('click',()=>setMatrix(128));
-  for(const n of [256,512,1024])if(controls['matrix'+n])controls['matrix'+n].addEventListener('click',()=>setMatrix(n));
+  for(const n of [64,256,512])if(controls['matrix'+n])controls['matrix'+n].addEventListener('click',()=>setMatrix(n));
   syncControls();
   if(studyTracer) studyTracer.textContent=activeStudy().tracer;
 
@@ -3982,7 +3984,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   class Scan {
     constructor(n,velocity,pose,startZ=200,random=Math.random){
-      if(![128,256,512,1024].includes(n)||!Number.isFinite(velocity)||velocity<.1||velocity>60)throw Error('Introduce una velocidad entre 0,1 y 60 cm/min.');
+      if(![64,128,256,512].includes(n)||!Number.isFinite(velocity)||velocity<.1||velocity>60)throw Error('Introduce una velocidad entre 0,1 y 60 cm/min.');
       if(!Number.isFinite(startZ)||startZ<=16)throw Error('No queda recorrido hacia los pies desde esta posición.');
       Object.assign(this,geometry(pose,n));
       this.n=n;this.kind='whole';this.mode='scan';this.velocity=velocity;this.startZ=startZ;this.endZ=16;
@@ -4149,7 +4151,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   function validate(record){
     if(!record||record.version!==1||typeof record.id!=='string'||!Number.isFinite(record.createdAt)||
-      ![128,256,512,1024].includes(record.n)||!['counts','time','scan'].includes(record.mode)||!Number.isFinite(record.target)||(record.mode==='scan'?record.target<=0:record.target<1)||
+      ![64,128,256,512,1024].includes(record.n)||!['counts','time','scan'].includes(record.mode)||!Number.isFinite(record.target)||(record.mode==='scan'?record.target<=0:record.target<1)||
       !Array.isArray(record.names)||record.names.length!==2||record.names.some(n=>typeof n!=='string'||!n.trim()||n.length>80)||
       !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
     const height=record.height??record.n,kind=record.kind??'static';
@@ -4235,7 +4237,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   class Acquisition {
     constructor(n,mode,target,random=Math.random,height=n){
-      if(![128,256,512,1024].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?160000000:57600)||!Number.isInteger(target))throw Error('Objetivo no válido');
+      if(![64,128,256,512].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?160000000:57600)||!Number.isInteger(target))throw Error('Objetivo no válido');
       if(!Number.isInteger(height)||height<n||height>n*6)throw Error('Altura de matriz no válida');
       this.n=n;this.height=height;this.kind=height===n?'static':'whole';this.mode=mode;this.target=target;this.random=random;this.finished=false;
       this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*height),total:0,elapsed:0,done:false}));
@@ -4474,7 +4476,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     el('boneAcqSave').disabled=!store||!session||busy||saving||!!archive||loadingSaved;
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
-    for(const n of [128,256,512,1024])if(el('liveMatrix'+n))el('liveMatrix'+n).disabled=active&&running;
+    for(const n of [64,128,256,512])if(el('liveMatrix'+n))el('liveMatrix'+n).disabled=active&&running;
     planningInfo();
     window.GANTRY_EXAM?.refresh();
     if(!session&&!archive){
@@ -4916,7 +4918,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 <!-- PROCESSING_ENGINE_END -->
 <!-- CONSOLE_MENUS_BEGIN -->
 <link rel="stylesheet" data-console-menus href="assets/runtime/console-menus.c37f7a3a5078c291.css">
-<script src="assets/runtime/console-menus.8eba554d6a579db0.js"></script>
+<script src="assets/runtime/console-menus.4abd4d93cc4efbb8.js"></script>
 <!-- CONSOLE_MENUS_END -->
 <!-- GANTRY_POSITIONS_BEGIN -->
 <script src="assets/runtime/gantry-positions.b1ea2d559482b07d.js"></script>

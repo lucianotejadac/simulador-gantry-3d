@@ -29,7 +29,7 @@
   }
   class Acquisition {
     constructor(n,mode,target,random=Math.random,height=n){
-      if(![128,256,512,1024].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?160000000:57600)||!Number.isInteger(target))throw Error('Objetivo no válido');
+      if(![64,128,256,512].includes(n)||!['counts','time'].includes(mode)||!Number.isFinite(target)||target<1||target>(mode==='counts'?160000000:57600)||!Number.isInteger(target))throw Error('Objetivo no válido');
       if(!Number.isInteger(height)||height<n||height>n*6)throw Error('Altura de matriz no válida');
       this.n=n;this.height=height;this.kind=height===n?'static':'whole';this.mode=mode;this.target=target;this.random=random;this.finished=false;
       this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*height),total:0,elapsed:0,done:false}));
@@ -268,7 +268,7 @@
     el('boneAcqSave').disabled=!store||!session||busy||saving||!!archive||loadingSaved;
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
-    for(const n of [128,256,512,1024])if(el('liveMatrix'+n))el('liveMatrix'+n).disabled=active&&running;
+    for(const n of [64,128,256,512])if(el('liveMatrix'+n))el('liveMatrix'+n).disabled=active&&running;
     planningInfo();
     window.GANTRY_EXAM?.refresh();
     if(!session&&!archive){

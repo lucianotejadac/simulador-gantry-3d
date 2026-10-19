@@ -3,8 +3,9 @@
   'use strict';
   const views=new WeakMap(),fmt=v=>v.toLocaleString('es-CL',{maximumFractionDigits:2});
   function compare(counts,w,h,u=.5,v=.5){
-    if(![128,256,512,1024].includes(w)||counts.length!==w*h||h<4)throw Error('Matriz incompatible');
-    const scale=w/128,cols=Math.floor(w/scale),rows=Math.floor(h/scale);
+    // Legacy 1024 acquisitions remain readable; new acquisitions start at 64.
+    if(![64,128,256,512,1024].includes(w)||counts.length!==w*h||h<4)throw Error('Matriz incompatible');
+    const base=Math.min(128,w),scale=w/base,cols=Math.floor(w/scale),rows=Math.floor(h/scale);
     const x=Math.max(0,Math.min(cols-2,Math.floor(u*cols)-1));
     const y=Math.max(0,Math.min(rows-2,Math.floor(v*rows)-1));
     const coarse=new Float64Array(4),fine=new Float64Array(16);
@@ -20,7 +21,7 @@
       for(let j=0;j<2;j++)for(let i=0;i<2;i++)coarse[j*2+i]=counts[(y+j)*w+x+i];
       for(let j=0;j<4;j++)for(let i=0;i<4;i++)fine[j*4+i]=coarse[Math.floor(j/2)*2+Math.floor(i/2)]/4;
     }
-    return {coarse,fine,total:coarse.reduce((a,b)=>a+b,0),x:x*scale,y:y*scale,size:2*scale,w,h};
+    return {coarse,fine,total:coarse.reduce((a,b)=>a+b,0),x:x*scale,y:y*scale,size:2*scale,w,h,base,fineMatrix:base*2};
   }
   function peak(counts,w,h){let at=0;for(let i=1;i<counts.length;i++)if(counts[i]>counts[at])at=i;return [(at%w+.5)/w,(Math.floor(at/w)+.5)/h];}
   function mount(canvas){
@@ -70,14 +71,14 @@
     const p=compare(counts,w,h,...(view.point||[.5,.5]));view.patch=p;
     view.aside.querySelector('.pixel-empty').hidden=true;view.aside.querySelector('.pixel-data').hidden=false;
     view.marker.hidden=false;
-    view.tables[0].caption.textContent='128 · '+(w===128?'original':'suma '+scaleLabel(w/128));
-    view.tables[1].caption.textContent='256 · '+(w===256?'original':w>256?'suma '+scaleLabel(w/256):'ilustrativo');
+    view.tables[0].caption.textContent=p.base+' · '+(w===p.base?'original':'suma '+scaleLabel(w/p.base));
+    view.tables[1].caption.textContent=p.fineMatrix+' · '+(w===p.fineMatrix?'original':w>p.fineMatrix?'suma '+scaleLabel(w/p.fineMatrix):'ilustrativo');
     [p.coarse,p.fine].forEach((values,k)=>{
       const max=Math.max(1,...values);
       values.forEach((value,i)=>{const cell=view.cells[k][i];cell.textContent=fmt(value);cell.title=value+' cuentas';cell.style.backgroundColor='rgba(45,179,139,'+(.07+.55*value/max)+')';});
     });
-    view.aside.querySelector('.pixel-total').textContent='Zona: '+fmt(p.total)+' cuentas\nMedia 128: '+fmt(p.total/4)+' c/píxel\nMedia 256: '+fmt(p.total/16)+' c/píxel'+(w>256?'\nMedia '+w+': '+fmt(p.total/(p.size*p.size))+' c/píxel':'');
-    view.aside.querySelector('.pixel-note').textContent=w>256?'Matriz original '+w+'×'+h+'. Las celdas de 128 y 256 suman cuentas reales de la misma zona; no se añade detalle.':w===256?'Cada celda de 128 suma cuatro píxeles de la imagen en 256.':'256 reparte cada cuenta en cuatro partes iguales: ilustración, no una nueva adquisición ni detalle recuperado.';
+    view.aside.querySelector('.pixel-total').textContent='Zona: '+fmt(p.total)+' cuentas\nMedia '+p.base+': '+fmt(p.total/4)+' c/píxel\nMedia '+p.fineMatrix+': '+fmt(p.total/16)+' c/píxel'+(w>256?'\nMedia '+w+': '+fmt(p.total/(p.size*p.size))+' c/píxel':'');
+    view.aside.querySelector('.pixel-note').textContent=w>256?'Matriz original '+w+'×'+h+'. Las celdas de 128 y 256 suman cuentas reales de la misma zona; no se añade detalle.':w===256?'Cada celda de 128 suma cuatro píxeles de la imagen en 256.':p.fineMatrix+' reparte cada cuenta en cuatro partes iguales: ilustración, no una nueva adquisición ni detalle recuperado.';
     position(view);
   }
   function render(canvas,counts,w,h=w){

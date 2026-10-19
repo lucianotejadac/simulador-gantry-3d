@@ -15,7 +15,7 @@ function record(n=128,height=n,peak=50){
 }
 (async()=>{
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'gantry-processing-')),checks=[];
- for(const recordData of [record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000)]){
+ for(const recordData of [record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000)]){
   const before=recordData.heads.map(h=>h.counts.slice()),files=await api.files(recordData,await api.uid('study'));
   const repeat=await api.files(recordData,await api.uid('study'));assert.equal(repeat[0].uid,files[0].uid);
   files.forEach((file,j)=>{
