@@ -1,0 +1,125 @@
+{
+  "status": "equipment parameters recovered; not independently calibrated",
+  "activeReferenceChanged": false,
+  "parameters": {
+    "collimatorThickness": {
+      "tag": "0055,107E",
+      "values": [
+        25.600000381469727,
+        25.600000381469727
+      ]
+    },
+    "collimatorAngularResolution": {
+      "tag": "0055,107F",
+      "values": [
+        0.04951455816626549,
+        0.04951455816626549
+      ]
+    },
+    "holeLength": {
+      "tag": "0061,1055",
+      "values": [
+        24.049999237060547,
+        24.049999237060547
+      ]
+    },
+    "entryHoleDiameter": {
+      "tag": "0061,1056",
+      "values": [
+        1.2790000438690186,
+        1.2790000438690186
+      ]
+    },
+    "exitHoleDiameter": {
+      "tag": "0061,1057",
+      "values": [
+        1.2790000438690186,
+        1.2790000438690186
+      ]
+    },
+    "frontPadding": {
+      "tag": "0061,1058",
+      "values": [
+        1.5,
+        1.5
+      ]
+    },
+    "backSpacing": {
+      "tag": "0061,1059",
+      "values": [
+        4.599999904632568,
+        4.599999904632568
+      ]
+    },
+    "crystalDepthOfInteraction": {
+      "tag": "0061,105E",
+      "values": [
+        3.069999933242798,
+        3.069999933242798
+      ]
+    },
+    "crystalIntrinsicResolution": {
+      "tag": "0061,105F",
+      "values": [
+        3.799999952316284,
+        3.799999952316284
+      ]
+    }
+  },
+  "energyWindows": [
+    {
+      "name": "99m Technetium",
+      "lowerKeV": 128.85250854492,
+      "upperKeV": 149.74749755859,
+      "widthKeV": 20.89498901367
+    },
+    {
+      "name": "Lower Scatter",
+      "lowerKeV": 107.95750427246,
+      "upperKeV": 128.85250854492,
+      "widthKeV": 20.89500427246
+    }
+  ],
+  "scatter": {
+    "nominalHalfWidthRule": 0.49999963486989996,
+    "meaning": "model coefficient from equal window widths, not patient-derived calibration",
+    "siemensAppliedWeightConfirmed": false,
+    "siemensProjectionFilterConfirmed": false,
+    "missingReconstructionTags": [
+      "0061,1031",
+      "0061,1032",
+      "0061,1033",
+      "0061,1034"
+    ]
+  },
+  "responseModel": {
+    "oldIntrinsicFWHMmm": 3.5,
+    "exportedIntrinsicResolution": [
+      3.799999952316284,
+      3.799999952316284
+    ],
+    "oldFWHMat100mm": 6,
+    "pending": "Verify manufacturer units and FWHM/sigma and distance-reference conventions before converting angular response to Gaussian operator; no measured point-source response available."
+  },
+  "sources": [
+    "https://academy.siemens-healthineers.com/_/en-us/whats-new-in-spectsyngo-va20-reconstruction-configuration/",
+    "https://cdn0.scrvt.com/39b415fb07de4d9656c7b516d8e2d907/1800000003652335/2621fd9aefb6/dcs_syngo_mi_apps_vb20-03652335_1800000003652335.pdf"
+  ],
+  "simulatorUse": {
+    "model": "siemens-nominal-v1",
+    "independentlyCalibrated": false,
+    "reference": "https://ascend-imaging.com/wp-content/uploads/2022/10/SYMBIA-E-and-S.pdf",
+    "referencePages": [
+      7,
+      8,
+      9
+    ],
+    "intrinsicConvention": "3.8 mm interpreted as nominal FWHM, consistent with 3/8 inch detector CFOV specification",
+    "lehrSystemFwhmAt100mm": 7.5,
+    "distanceConvention": "Use detector-surface gap as source distance proxy; no per-voxel source depth is available in these projected atlases. Nominal width is a surface-source lower-bound approximation.",
+    "angularParameterUsedAsSigma": false,
+    "holeDiameterConvention": "Recovered 1.279 vs nominal 1.11 mm across hexagonal flats; convention not independently verified. Not used to set Gaussian sigma.",
+    "sensitivity": "Existing educational count-rate model retained; recovered fields contain no measured absolute sensitivity.",
+    "fieldOfView": "Retains simulator virtual 560 mm field; does not reproduce the manufacturer rectangular 533 x 387 mm UFOV."
+  }
+}

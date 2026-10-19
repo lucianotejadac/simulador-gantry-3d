@@ -2,12 +2,13 @@
 const fs=require('node:fs'),vm=require('node:vm');
 const assetFetch=require('./asset_fetch.cjs');
 const html=fs.readFileSync('index.html','utf8');
-async function fixture(sources={}){
+async function fixture(sources={},physical=true){
   const window={GANTRY_MDP_DATA:JSON.parse(html.match(/window.GANTRY_MDP_DATA=(.*?);<\/script>/)[1]),
     GANTRY_ICRP_DATA:JSON.parse(html.match(/window.GANTRY_ICRP_DATA=(.*?);\r?\n/)[1])};
   const ctx=vm.createContext({window,document:{getElementById:()=>null},Math,
     Float32Array,Float64Array,Uint8Array,Uint16Array,Uint32Array,Blob,Response,DecompressionStream,fetch:assetFetch});
-  for(const name of ['icrp_live','mdp'])vm.runInContext(sources[name]||fs.readFileSync('scripts/'+name+'.js','utf8'),ctx);
+  window.GANTRY_CAMERA_DATA=JSON.parse(fs.readFileSync('assets/physics/siemens-recovered-equipment.json','utf8'));
+  for(const name of [...(physical?['camera_response']:[]),'icrp_live','mdp'])vm.runInContext(sources[name]||fs.readFileSync('scripts/'+name+'.js','utf8'),ctx);
   const constants=['COUNT_REFERENCE','DIST_REFERENCE_CM','COUNT_DECAY','BLUR_AT_CONTACT','BLUR_PER_CM'].map(name=>html.match(new RegExp('const '+name+' = .*?;'))[0]).join('\n');
   const studies=html.slice(html.indexOf('  const studies={'),html.indexOf('  let ready = false;'));
   const electronics=html.slice(html.indexOf('  const collimatorProfiles='),html.indexOf('  function segmentAt('));

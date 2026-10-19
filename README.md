@@ -842,3 +842,47 @@ uno por uno.
 
 Referencia docente: [IAEA, Nuclear Medicine Resources Manual](https://www-pub.iaea.org/MTCD/Publications/PDF/Pub1198_web.pdf),
 sección 5.1.3 (matriz, densidad de cuentas y duración).
+
+
+### Respuesta física a partir de parámetros Siemens recuperados
+
+`assets/physics/siemens-recovered-equipment.json` conserva sólo parámetros del
+instrumento que ya se habían extraído en Reconstruccion-SPECT, sin imágenes ni
+identificadores del paciente. El modelo `siemens-nominal-v1` usa resolución
+intrínseca nominal de 3,8 mm FWHM y longitud LEHR de 24,05 mm; separaciones frontal,
+posterior y profundidad de interacción forman un desplazamiento geométrico
+nominal. Se ancla la respuesta combinada LEHR a 7,5 mm FWHM a 100 mm, según la
+[ficha del fabricante Symbia E/S, páginas 7–9](https://ascend-imaging.com/wp-content/uploads/2022/10/SYMBIA-E-and-S.pdf).
+No se convierte el parámetro angular privado directamente en sigma. El diámetro
+recuperado de 1,279 mm y el nominal de 1,11 mm entre caras del hexágono tienen
+convenciones distintas que no se han verificado; no determinan la gaussiana.
+
+Para LEHR, G100 = sqrt(7,5² − 3,8²), L = 24,05 mm y
+P = 1,5 + 4,6 + 3,07 mm. G(z) = G100 (L+P+z)/(L+P+100),
+y FWHM(z) = sqrt(3,8² + G(z)²). La conversión a sigma usa
+FWHM / (2 sqrt(2 ln 2)); después se divide por el tamaño físico de píxel del
+recorte actual. De este modo el zoom, las matrices 128–1024 y el formato de
+cuerpo entero comparten una respuesta en milímetros. Se mantienen el ruido de
+conteo y las metas de densidad por píxel. Reducir una imagen grande para mostrarla
+usa interpolación de visualización; las cuentas originales siguen intactas.
+
+ME/MELP y HE usan geometría nominal de la tabla del fabricante (40,64 y 59,7 mm,
+respectivamente), con resolución geométrica de referencia de 10,8 y 13,2 mm a
+100 mm. No se presentan como calibraciones recuperadas de esos colimadores.
+El ensanchamiento fuera de ventana y por penetración septal conserva el modelo
+docente previo. Tampoco se deduce sensibilidad absoluta de los parámetros privados.
+
+Limitaciones: la distancia a piel se usa como aproximación a distancia de la
+fuente, sin profundidad por vóxel. Por ello la FWHM nominal corresponde a una
+fuente superficial y puede subestimar el desenfoque de órganos profundos.
+Los atlas tienen su propio muestreo/desenfoque y no se reconstruye detalle ausente.
+Se mantiene el campo virtual de 560 mm del simulador, no el UFOV rectangular de
+533 × 387 mm del equipo. No equivale a una PSF medida, una cámara calibrada ni a
+reconstrucción Siemens. Metadatos de adquisición conservan la versión del modelo,
+el tamaño de píxel y la FWHM nominal; imágenes guardadas anteriormente no cambian.
+
+Construcción: `python scripts/embed_camera_response.py` y luego
+`python scripts/optimize_loading.py`. Prueba:
+`node tests/test_camera_response.cjs` (fuente puntual, matriz, zoom, distancia,
+colimador y conservación de tasa). La regresión de rendimiento histórica sigue
+comprobando el operador gaussiano con sus parámetros antiguos por separado.

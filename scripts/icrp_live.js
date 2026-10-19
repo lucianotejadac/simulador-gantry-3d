@@ -20,8 +20,8 @@
     return pending[name];
   }
 
-  function blur(input,w,h,sigma){
-    if(sigma<.15)return input;
+  function blur(input,w,h,sigma,sigmaY=sigma){
+    if(sigma<.15&&sigmaY<.15)return input;
     const radius=Math.ceil(3*sigma),weights=[];
     for(let k=-radius;k<=radius;k++)weights.push(Math.exp(-k*k/(2*sigma*sigma)));
     const norm=weights.reduce((a,b)=>a+b,0);weights.forEach((v,i)=>weights[i]=v/norm);
@@ -37,12 +37,15 @@
     }
     // Traverse each source row contiguously. Float64 accumulation retains the
     // original tap order/precision, with one Float32 rounding at the end.
+    const radiusY=Math.ceil(3*sigmaY),weightsY=[];
+    for(let k=-radiusY;k<=radiusY;k++)weightsY.push(Math.exp(-k*k/(2*Math.max(1e-12,sigmaY*sigmaY))));
+    const normY=weightsY.reduce((a,b)=>a+b,0);weightsY.forEach((v,i)=>weightsY[i]=v/normY);
     const row=new Float64Array(w);
     for(let y=0;y<h;y++){
       row.fill(0);
-      const first=Math.max(-radius,-y),last=Math.min(radius,h-1-y);
+      const first=Math.max(-radiusY,-y),last=Math.min(radiusY,h-1-y);
       for(let k=first;k<=last;k++){
-        const offset=(y+k)*w,weight=weights[k+radius];
+        const offset=(y+k)*w,weight=weightsY[k+radiusY];
         for(let x=0;x<w;x++)row[x]+=temp[offset+x]*weight;
       }
       result.set(row,y*w);
@@ -139,8 +142,11 @@
       const py=crop.y+((flipY?h-1-y:y)+.5)/h*crop.h-.5;
       values[y*w+x]=(pair.mix===0?sample(a,px,py):sample(a,px,py)*(1-pair.mix)+sample(b,px,py)*pair.mix)*factor;
     }
-    const sharp=blur(values,w,h,sigma);
-    const halo=metrics.haloAlpha>0?blur(values,w,h,sigma+metrics.haloBlur):null;
+    const physical=Number.isFinite(metrics.psfSigmaMm)&&window.GANTRY_CAMERA?
+      window.GANTRY_CAMERA.sampling(pose,crop,w,h,metrics):null;
+    const sx=physical?physical.sigmaX:sigma,sy=physical?physical.sigmaY:sigma;
+    const sharp=blur(values,w,h,sx,sy);
+    const halo=metrics.haloAlpha>0?blur(values,w,h,sx+(physical?physical.haloX:metrics.haloBlur),sy+(physical?physical.haloY:metrics.haloBlur)):null;
     const cdf=new Float64Array(values.length);let sum=0;
     for(let i=0;i<sharp.length;i++){
       sharp[i]=(sharp[i]*metrics.contrast+(halo?halo[i]*metrics.haloAlpha:0))*metrics.countFactor;

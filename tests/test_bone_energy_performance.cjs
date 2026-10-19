@@ -12,7 +12,8 @@ function blur(source){
     const input=Float32Array.from({length:w*h},(_,i)=>Math.sin(i*.723)**2*13);
     assert.deepEqual(currentBlur(input,w,h,sigma),previousBlur(input,w,h,sigma),'Gaussian pixels and zero padding unchanged');
   }
-  const before=await fixture(sources),after=await fixture();
+  // Isolate the historical pixel-space optimization; physical response is tested separately.
+  const before=await fixture(sources,false),after=await fixture({},false);
   let cases=0;
   for(const energy of [80,120,140,200,450])for(const width of [10,15,20,25])for(const col of ['LEHR','MELP','HE']){
     const options={n:32,energy,width,col,angle:cases%2?180:33.5,move:cases%3};

@@ -108,7 +108,7 @@
       const mean=(result.total/result.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
       const caption='Total: '+result.total.toLocaleString('es-CL')+' cuentas simuladas · '+clock(result.elapsed)+(result.mode==='counts'?' estimados':'')+
         '\nMedia: '+mean+' cuentas/píxel · matriz '+n+'×'+n+' completa'+
-        (meta?' · a piel '+meta.effectiveDistance.toFixed(1)+' cm':'')+(!result.reached?' · objetivo no alcanzable dentro del modelo':'');
+        (meta?' · a piel '+meta.effectiveDistance.toFixed(1)+' cm':'')+(meta?.pixelMm?'\nPíxel: '+meta.pixelMm.toFixed(2)+' mm · FWHM nominal: '+meta.systemFwhmMm.toFixed(1)+' mm':'')+(!result.reached?' · objetivo no alcanzable dentro del modelo':'');
       return {buffer,caption,counts:result.counts,n};
     });
   }
@@ -120,7 +120,7 @@
       if(!frame){target.info.textContent=el('finalPreviewStatus').textContent;return;}
       const previous=painted.get(canvas);
       if(previous?.frame!==frame||previous.width!==canvas.width||previous.height!==canvas.height){
-        const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
+        const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=frame.n>canvas.width;ctx.imageSmoothingQuality='high';
         // Fully opaque buffers replace both detectors in one synchronous turn.
         // Never blank the visible canvas while a replacement is pending.
         ctx.drawImage(frame.buffer,0,0,canvas.width,canvas.height);
