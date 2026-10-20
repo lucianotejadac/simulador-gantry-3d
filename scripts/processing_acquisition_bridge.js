@@ -8,8 +8,8 @@
     const post=(data,transfer=[])=>frame.contentWindow.postMessage({...data,version:1},location.origin,transfer);
     const otherBusy=()=>engine().active||window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
     function positionState(){
-      return {options:Array.from(el('gantryPositionMenu')?.options||[],o=>({value:o.value,label:o.textContent})),
-        value:el('gantryPositionMenu')?.value||'',status:el('gantryPositionStatus')?.textContent||'',
+      const declared=window.GANTRY_ACQUISITION||{};
+      return {decubitus:declared.decubitus==='prone'?'prone':'supine',entry:declared.headFirst?'headIn':'headOut',
         locked:!!preparing||!!otherBusy()||!!window.GANTRY_EXAM?.blocked};
     }
     function defaults(kind){
@@ -56,11 +56,13 @@
           post({type:'GANTRY_ACQUIRE_CONFIG',request:d.request,config:defaults(d.kind)});
         }else if(d.type==='GANTRY_ACQUIRE_POSITION'){
           const p=positionState();
-          if(p.locked)throw Error('Finaliza la adquisición o reinicia el examen antes de cambiar la posición.');
-          if(!d.position||!p.options.some(o=>o.value===d.position)||!window.GANTRY_AUTO)throw Error('Posición no válida.');
-          el('gantryPositionMenu').value=d.position;
-          const accepted=window.GANTRY_AUTO.start(d.position);
-          if(!accepted&&!['stop','resume'].includes(d.position))throw Error(el('gantryPositionStatus').textContent||'No se pudo iniciar el movimiento.');
+          if(p.locked)throw Error('Finaliza la adquisición o reinicia el examen antes de cambiar la posición declarada.');
+          const choices={decubitus:{supine:'acqSupine',prone:'acqProne'},entry:{headIn:'acqHeadIn',headOut:'acqHeadOut'}};
+          const id=Object.hasOwn(choices,d.field)&&Object.hasOwn(choices[d.field],d.value)?choices[d.field][d.value]:null;
+          if(!id)throw Error('Posición declarada no válida.');
+          const control=el(id);
+          if(!control||control.disabled)throw Error('Posición declarada no disponible.');
+          control.click();
           post({type:'GANTRY_ACQUIRE_POSITION',request:d.request,position:positionState()});
         }else if(d.type==='GANTRY_ACQUIRE_START'){
           const id=await start(d.config,d.instant===true);

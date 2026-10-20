@@ -30,18 +30,26 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  await send({type:'GANTRY_ACQUIRE_START',config:{...base,matrix:1024}});assert.equal(calls.length,0);assert.match(messages.at(-1).error,/Matriz/);
  w.GANTRY_EXAM.blocked=true;await send({type:'GANTRY_ACQUIRE_START',config:base});assert.equal(calls.length,0);assert.match(messages.at(-1).error,/colisión/);w.GANTRY_EXAM.blocked=false;
  await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'whole'});assert.equal(messages.at(-1).config.kind,'whole');assert.equal(messages.at(-1).config.activityMci,20);
- nodes.get('gantryPositionMenu').options=[{value:'ap',textContent:'Paralelos superior / inferior'}];
- const positions=[];w.GANTRY_AUTO={start:p=>{positions.push(p);return true;}};
- await send({type:'GANTRY_ACQUIRE_POSITION',position:'ap'});
- assert.deepEqual(positions,['ap']);assert.equal(nodes.get('gantryPositionMenu').value,'ap');
+ const positions=[];w.GANTRY_ACQUISITION={decubitus:'supine',headFirst:false};
+ w.GANTRY_AUTO={start:()=>{throw Error('Declared position must not move detectors');}};
+ for(const [id,key,v] of [['acqSupine','decubitus','supine'],['acqProne','decubitus','prone'],['acqHeadIn','headFirst',true],['acqHeadOut','headFirst',false]]){
+  document.getElementById(id).click=()=>{positions.push(id);w.GANTRY_ACQUISITION[key]=v;};
+ }
+ const geometry=JSON.stringify(w.GANTRY.G);
+ await send({type:'GANTRY_ACQUIRE_POSITION',field:'decubitus',value:'prone'});
+ assert.equal(messages.at(-1).position.decubitus,'prone');
+ await send({type:'GANTRY_ACQUIRE_POSITION',field:'entry',value:'headIn'});
+ assert.equal(messages.at(-1).position.entry,'headIn');
+ assert.deepEqual(positions,['acqProne','acqHeadIn']);
+ assert.equal(JSON.stringify(w.GANTRY.G),geometry);
  assert.equal(messages.at(-1).type,'GANTRY_ACQUIRE_POSITION');
- await send({type:'GANTRY_ACQUIRE_POSITION',position:'invalid'});
- assert.deepEqual(positions,['ap']);assert.match(messages.at(-1).error,/Posición/);
+ await send({type:'GANTRY_ACQUIRE_POSITION',field:'entry',value:'invalid'});
+ assert.deepEqual(positions,['acqProne','acqHeadIn']);assert.match(messages.at(-1).error,/declarada/);
  await send({type:'GANTRY_ACQUIRE_START',config:base});assert.equal(messages.at(-1).type,'GANTRY_ACQUIRE_STARTED');
  assert.equal(live.settings.matrix,128);assert.equal(live.settings.zoom,1.5);assert.equal(live.settings.collimator,'MELP');assert.equal(live.settings.energyCenter,145);assert.equal(live.settings.windowWidth,15);
  assert.equal(nodes.get('mdpActivity').value,'15');assert.equal(nodes.get('mdpUnit').value,'mCi');assert.equal(nodes.get('mdpMinutes').value,'125');assert.equal(calls.at(-1).target,5);assert.deepEqual(calls.at(-1).names,['Anterior','Posterior']);
  const count=calls.length;await send({type:'GANTRY_ACQUIRE_START',config:base});assert.equal(calls.length,count);assert.match(messages.at(-1).error,/activa/);
- await send({type:'GANTRY_ACQUIRE_POSITION',position:'ap'});assert.deepEqual(positions,['ap']);assert.match(messages.at(-1).error,/Finaliza/);
+ await send({type:'GANTRY_ACQUIRE_POSITION',field:'decubitus',value:'supine'});assert.deepEqual(positions,['acqProne','acqHeadIn']);assert.match(messages.at(-1).error,/Finaliza/);
  await send({type:'GANTRY_ACQUIRE_ACTION',id:'other',action:'stop'});assert.equal(calls.length,count);
  for(const action of ['pause','fast','instant','stop','save']){await send({type:'GANTRY_ACQUIRE_ACTION',id:'exam1',action});assert.equal(calls.at(-1),action);}
  w.GANTRY_PROCESSING.active=false;const prior=messages.length;await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'static'});assert.equal(messages.length,prior);
