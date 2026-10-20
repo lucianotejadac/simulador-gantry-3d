@@ -382,11 +382,14 @@
     acquisitionView();
     if(session.mode==='scan'){
       clearScanDebt();
-      busy=true;note='Cuerpo entero';paint(true);
+      busy=true;note='Calculando cuerpo entero…';paint(true);
+      recordProcessingGeometry();
       try{
-        while(!window.GANTRY_EXAM?.blocked&&!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+        await new Promise(resolve=>setTimeout(resolve,0));
+        await whole.instant(session,rate);
+        note='';
       }catch(error){paused=true;note=error.message;}
-      finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
+      finally{busy=false;clock=performance.now();window.GANTRY.render();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
       return;
     }
     advance();const snapshot=acquisitionFields(),currentRate=rate;if(!snapshot){paint(true);return;}

@@ -18,6 +18,10 @@ function environment(whole=false){
  vm.runInContext(fs.readFileSync('scripts/bone_whole_body.js','utf8'),context);
  const {Scan}=window.GANTRY_BONE_WHOLE;
  window.GANTRY_BONE_WHOLE={position:()=>({ok:G.tableZ>16,reason:'Centra en cráneo'}),create:velocity=>new Scan(128,velocity,{width:256,height:640,headRow:27,footRow:614},G.tableZ),advance(scan,rate,dt){if(Math.abs(G.tableZ-scan.tableZ)>.001)throw Error('Posición modificada');scan.step([1,2].map(()=>({values:wholeValues})),rate,dt);G.tableZ=scan.tableZ;window.GANTRY_BONE_ACQ.advance();}};
+ window.GANTRY_BONE_WHOLE.instant=async(scan,rate)=>{
+  if(Math.abs(G.tableZ-scan.tableZ)>.001)throw Error('Posición modificada');
+  scan.step([1,2].map(()=>({values:wholeValues})),rate,Infinity);G.tableZ=scan.tableZ;
+ };
  vm.runInContext(storeSource,context);
  const storage=window.GANTRY_BONE_STORAGE;
  storage.createStore=()=>memoryStore;

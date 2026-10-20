@@ -4039,7 +4039,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       this.fromRow=pose.headRow+(200-startZ)/184*(pose.footRow-pose.headRow);this.toRow=pose.footRow;
       this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*this.height),total:0,elapsed:0,done:false}));
     }
-    get tableZ(){return this.finished?this.endZ:this.startZ-(this.startZ-this.endZ)*this.travel/this.target;}
+    get tableZ(){return this.travel>=this.target?this.endZ:this.startZ-(this.startZ-this.endZ)*this.travel/this.target;}
     get row(){return this.fromRow+(this.toRow-this.fromRow)*this.travel/this.target;}
     step(fields,rate,seconds){
       if(this.finished||!(seconds>0))return;
@@ -4147,8 +4147,108 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     guard({...G,tableZ:nextZ});
     scan.step(fields().fields,rate,dt);G.tableZ=scan.tableZ;if(render)window.GANTRY.render();
   }
-  function fields(){
-    const live=window.GANTRY_LIVE,G=window.GANTRY.G,settings=live.settings;
+  // Sum expected exposure, then sample once: sums of independent Poisson
+  // acquisitions are Poisson too. Work scales with spatial quadrature, not
+  // thousands of real-time movement/painting ticks.
+  async function instant(scan,rate){
+    const G=window.GANTRY.G,mdp=window.GANTRY_MDP;
+    if(scan.finished)return;
+    if(signature()!==scan.geometrySignature||Math.abs(G.tableZ-scan.tableZ)>.001)throw Error('Cambió la posición o la configuración. Finaliza el barrido antes de reposicionar.');
+    const originalSignature=signature(),originalZ=G.tableZ;
+    const check=()=>{
+      if(window.GANTRY_EXAM?.blocked||scan.cancelled)throw Error('Adquisición cancelada.');
+      if(signature()!==originalSignature||G.tableZ!==originalZ)throw Error('Cambió la configuración durante el cálculo.');
+    };
+    const guard=(from,to,swept=false)=>{
+      const collision=window.GANTRY3D?.collision,core=window.GANTRY_COLLISION_CORE;
+      // There is no physical transit in an instant acquisition. The table
+      // envelope is checked separately at 1 cm with 1 cm radial clearance.
+      // Validate its virtual placements directly instead of replaying the
+      // manual control's millimetre-by-millimetre animation collision sweep.
+      // Angular alignment still uses the full swept collision check.
+      const result=!swept&&collision?.evaluate&&core?.worsens?
+        {blocked:core.worsens(collision.evaluate(to),collision.evaluate(from),false,false)}:
+        collision?.guard(from,to);
+      if(result?.blocked)throw Error('Barrido detenido: riesgo de contacto en D'+result.blocked.detector+' · '+result.blocked.hit.region+'. Retira el detector antes de continuar.');
+    };
+    let virtual={...G};
+    if(Math.abs(virtual.rot-scan.targetRot)>.001||Math.abs((virtual.detectorSeparation??180)-180)>.001){
+      const retracted={...virtual,...scan.rotationClearance};
+      guard(virtual,retracted);virtual=retracted;
+      const start={...virtual},steps=Math.max(1,Math.ceil(Math.max(Math.abs(start.rot-scan.targetRot),Math.abs((start.detectorSeparation??180)-180))));
+      for(let i=1;i<=steps;i++){
+        const next={...virtual,rot:start.rot+(scan.targetRot-start.rot)*i/steps,detectorSeparation:(start.detectorSeparation??180)+(180-(start.detectorSeparation??180))*i/steps};
+        guard(virtual,next,true);virtual=next;
+      }
+    }
+    const startSeconds=mdp?.seconds||0;
+    const duration=Math.min((scan.target-scan.travel)*60/scan.velocity,mdp?.remaining??Infinity);
+    const expected=scan.heads.map(h=>new Float64Array(h.counts.length));
+    const projectionCaches=[new Map(),new Map()];
+    let elapsed=0,lastYield=performance.now();
+    while(elapsed<duration-1e-9){
+      check();
+      const t=startSeconds+elapsed;
+      // At most 5 cm per spatial segment; resolve early uptake and the void
+      // discontinuity separately. Exposure at both detector edges is exact.
+      let dt=Math.min(duration-elapsed,300/scan.velocity,t<60?2:t<300?10:30);
+      if(t<7200&&t+dt>7200)dt=7200-t;
+      const travel=scan.travel+elapsed*scan.velocity/60;
+      const nextTravel=Math.min(scan.target,travel+dt*scan.velocity/60);
+      const nextZ=nextTravel>=scan.target?scan.endZ:scan.startZ-(scan.startZ-scan.endZ)*nextTravel/scan.target;
+      const targets=safeTargets(virtual,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+      const positioned={...virtual,...targets};
+      guard(virtual,positioned);
+      const end={...positioned,tableZ:nextZ};
+      // Collision checks retain centimetre spatial checks even when rendering
+      // and count sampling no longer follow the movement clock.
+      const steps=Math.max(1,Math.ceil(Math.abs(nextZ-virtual.tableZ)));
+      let previous=positioned;
+      for(let i=1;i<=steps;i++){
+        const next={...end,tableZ:virtual.tableZ+(nextZ-virtual.tableZ)*i/steps};
+        guard(previous,next);previous=next;
+      }
+      const sample=fields({...positioned,tableZ:(virtual.tableZ+nextZ)/2},t+dt/2,projectionCaches).fields;
+      const from=scan.fromRow+(scan.toRow-scan.fromRow)*travel/scan.target;
+      const to=scan.fromRow+(scan.toRow-scan.fromRow)*nextTravel/scan.target;
+      for(let y=0;y<scan.height;y++){
+        const row=scan.crop.y+(y+.5)*scan.crop.h/scan.height;
+        const weight=exposure(row,from,to,560/3/2,dt)*(mdp?.rate??rate)/2000000;
+        if(!weight)continue;
+        for(let x=0;x<scan.n;x++){
+          if(Math.abs((x+.5)/scan.n-.5)*scan.crop.w>560/3/2)continue;
+          const i=y*scan.n+x;
+          expected[0][i]+=sample[0].values[i]*weight;
+          expected[1][i]+=sample[1].values[i]*weight;
+        }
+      }
+      virtual=end;elapsed+=dt;
+      if(performance.now()-lastYield>24){await new Promise(resolve=>setTimeout(resolve,0));lastYield=performance.now();}
+    }
+    check();
+    const increments=expected.map(values=>{
+      const counts=new Uint32Array(values.length);let total=0;
+      for(let i=0;i<values.length;i++){counts[i]=window.GANTRY_BONE_CORE.poisson(values[i],scan.random);total+=counts[i];}
+      return {counts,total};
+    });
+    // Commit together; cancelled or unsafe calculations leave the exam intact.
+    scan.heads.forEach((h,j)=>{
+      for(let i=0;i<h.counts.length;i++)h.counts[i]+=increments[j].counts[i];
+      h.total+=increments[j].total;h.elapsed+=elapsed;
+    });
+    scan.travel=Math.min(scan.target,scan.travel+elapsed*scan.velocity/60);
+    const complete=scan.target-scan.travel<1e-8;
+    if(complete)scan.travel=scan.target;
+    scan.finished=complete||!!mdp&&duration>=mdp.remaining;
+    scan.mdpLimit=!!mdp&&!complete&&duration>=mdp.remaining;
+    scan.heads.forEach(h=>h.done=complete);
+    scan.phase=scan.finished?'complete':'scanning';
+    Object.assign(G,virtual);
+    scan.geometrySignature=signature();
+    if(mdp){mdp.advance(elapsed,false);scan.mdpEnd=mdp.metadata();}
+  }
+  function fields(G=window.GANTRY.G,seconds=window.GANTRY_MDP?.seconds,projectionCaches=null){
+    const live=window.GANTRY_LIVE,settings=live.settings;
     const pose=window.GANTRY_MDP?.geometry(G.arms==='up'?'up':'down')||window.GANTRY_ICRP?.poses[G.arms==='up'?'up':'down'];
     if(!pose)throw Error('Preparando el fantoma óseo');
     const size=geometry(pose,settings.matrix);
@@ -4165,13 +4265,18 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     });
     const flipX=physicalProne!==(settings.decubitus==='prone');
     const mdp=window.GANTRY_MDP;
-    const nextKey=JSON.stringify([G.arms,size,pairs,metrics,flipX,mdp?.seconds,mdp?.metadata().voidAt120]);
+    const nextKey=JSON.stringify([G.arms,size,pairs,metrics,flipX,seconds,mdp?.metadata().voidAt120]);
     if(nextKey!==key){
       cached={...size,fields:pairs.map((pair,i)=>{
         const signature=JSON.stringify([G.arms,size,pair,metrics[i],flipX]);
         if(mdp){
-          const cache=detectorFields[i]?.mdpCache||{};
-          detectorFields[i]={key:signature,mdpCache:cache,field:mdp.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240,G.arms==='up'?'up':'down',cache)};
+          let cache=projectionCaches?.[i].get(signature)||(!projectionCaches&&detectorFields[i]?.mdpCache)||{};
+          if(projectionCaches&&!projectionCaches[i].has(signature)){
+            projectionCaches[i].set(signature,cache);
+            // The scan owns this bounded response cache; discard it afterward.
+            if(projectionCaches[i].size>8)projectionCaches[i].delete(projectionCaches[i].keys().next().value);
+          }
+          detectorFields[i]={key:signature,mdpCache:cache,field:mdp.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240,G.arms==='up'?'up':'down',cache,seconds)};
         }else if(detectorFields[i]?.key!==signature)detectorFields[i]={key:signature,
           field:window.GANTRY_ICRP.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240)};
         return detectorFields[i].field;
@@ -4180,7 +4285,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     }
     return cached;
   }
-  window.GANTRY_BONE_WHOLE={eligibility,geometry,position,fields,Scan,exposure,approach,safeTargets,rotationTargets,create,advance};
+  window.GANTRY_BONE_WHOLE={eligibility,geometry,position,fields,Scan,exposure,approach,safeTargets,rotationTargets,create,advance,instant};
 })();
 
 /* Local, origin-scoped snapshots. Counts and catalogue commit atomically. */
@@ -4637,11 +4742,14 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     acquisitionView();
     if(session.mode==='scan'){
       clearScanDebt();
-      busy=true;note='Cuerpo entero';paint(true);
+      busy=true;note='Calculando cuerpo entero…';paint(true);
+      recordProcessingGeometry();
       try{
-        while(!window.GANTRY_EXAM?.blocked&&!session.finished){advanceScan(1);paint();await new Promise(resolve=>setTimeout(resolve,0));}
+        await new Promise(resolve=>setTimeout(resolve,0));
+        await whole.instant(session,rate);
+        note='';
       }catch(error){paused=true;note=error.message;}
-      finally{busy=false;clock=performance.now();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
+      finally{busy=false;clock=performance.now();window.GANTRY.render();window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);}
       return;
     }
     advance();const snapshot=acquisitionFields(),currentRate=rate;if(!snapshot){paint(true);return;}
