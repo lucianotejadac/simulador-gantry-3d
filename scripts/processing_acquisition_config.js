@@ -15,8 +15,14 @@
     choice('collimator',['LEHR','MELP','HE','NONE'],'Colimador');
     number('energyCenter',80,450,'Centro de energía',true);choice('windowWidth',[10,15,20,25],'Ancho de ventana');
     number('activityMci',.1,2000/37,'Actividad (mCi)');number('minutes',0,179.99,'Tiempo inyección–examen (min)');
-    choice('mode',['counts','time'],'Condición de paro');
-    number('target',1,c.mode==='time'?57600:160000000,'Objetivo',true);
+    if(c.kind==='whole'){
+      // Compatibility defaults for the static controls; the scan engine stops
+      // at the end of the table travel, never on a static count/time target.
+      c.mode='counts';c.target=400000;
+    }else{
+      choice('mode',['counts','time'],'Condición de paro');
+      number('target',1,c.mode==='time'?57600:160000000,'Objetivo',true);
+    }
     number('velocity',.1,60,'Velocidad de camilla');
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());

@@ -13,6 +13,11 @@ const validate=w.GANTRY_PROCESSING_CONFIG.validate;
 assert.equal(validate(base).target,5);
 for(const [key,v] of [['matrix',1024],['matrix',32],['zoom',0],['windowWidth',1],['energyCenter',NaN],['activityMci',0],['minutes',180],['velocity',61],['target',5.5],['names',['','D2']],['kind','dynamic']])assert.throws(()=>validate({...base,[key]:v}),key);
 assert.equal(validate({...base,kind:'whole',velocity:.1}).velocity,.1);
+const whole=validate({...base,kind:'whole',mode:undefined,target:NaN});
+assert.equal(whole.kind,'whole');
+assert.equal(whole.velocity,12);
+assert.equal(whole.mode,'counts');
+assert.equal(whole.target,400000,'Whole body ignores stale hidden static targets');
 vm.runInContext(fs.readFileSync('scripts/processing_acquisition_bridge.js','utf8'),c);w.GANTRY_PROCESSING_ACQUISITION.attach(frame);
 const send=async data=>listeners.message({origin:'http://local',source:frame.contentWindow,data:{version:1,request:1,...data}});
 (async()=>{

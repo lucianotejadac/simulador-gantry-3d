@@ -37,6 +37,12 @@
     const button=e.target.closest('button[data-acquire]');
     if(button&&!button.disabled)performAction(button.dataset.acquire==='prepare'?$('consoleKind').value:button.dataset.acquire);
   });
+  $('consoleKind').addEventListener('change',()=>{
+    const kind=$('consoleKind').value;
+    if(draft&&!draft.id&&!waiting){
+      render({...read(false),kind});
+    }else performAction(kind);
+  });
   const send=data=>parent.postMessage({...data,version:1},location.origin);
   function request(type,extra={}){const id=++serial;waiting=id;send({type,request:id,...extra});return id;}
   function setMenu(){
@@ -136,12 +142,12 @@
       input('windowWidth','Ancho de ventana (%)',config.windowWidth,[10,15,20,25])]);
     section('camera','Calibraciones',[field('Corrección de uniformidad','Sin mapa de corrección')]);
     section('camera','Orientación',[field('Posición del cuerpo','Posición actual del gantry'),field('Configuración basada','Geometría actual del simulador')]);
-    help('camera',config.kind==='whole'?'La matriz fija las columnas; las filas dependen del recorrido. El barrido comienza donde está la camilla y posiciona los detectores automáticamente.':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
+    help('camera',config.kind==='whole'?'La matriz de cuerpo entero tiene cuatro veces más filas que columnas. El barrido comienza donde está la camilla y posiciona los detectores automáticamente.':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
     section('series','Radiofármaco',[field('Isótopo','99mTc'),field('Fármaco','MDP'),
       input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,2000/37)),
       input('minutes','Inyección–examen (min)',config.minutes,null,range(0,179.99))]);
     help('series','El reloj del MDP avanza durante la adquisición hasta el límite de 180 minutos.');
-    section('stop','Condiciones de paro',config.kind==='whole'?[
+    section('stop',config.kind==='whole'?'Barrido de cuerpo entero':'Condiciones de paro',config.kind==='whole'?[
       input('velocity','Velocidad (cm/min)',config.velocity,null,range(.1,60)),field('Contornos automáticos','Activados'),field('Fin del barrido','Final del recorrido hacia los pies')]:[
       input('mode','Terminar por',config.mode,[['counts','Cuentas totales por detector'],['time','Tiempo por detector']]),
       input('target',config.mode==='time'?'Tiempo programado (s)':'Cuentas objetivo',config.target,null,range(1,config.mode==='time'?57600:160000000,'1')),
@@ -154,11 +160,13 @@
       const label=timed?'Tiempo programado (s)':'Cuentas objetivo';target.setAttribute('aria-label',label);target.parentElement.querySelector('label').textContent=label;
     };
     section('summary','Nueva adquisición',[field('Tipo',config.kind==='whole'?'Cuerpo entero':'Estática'),field('Origen','Gantry · fantoma ICRP 145')]);
-    help('summary','Fija los parámetros en «Parámetros de cámara», la actividad en «Información de serie» y el objetivo en «Condiciones de paro». Luego elige Iniciar adquisición en el menú Adquirir.');
+    help('summary',config.kind==='whole'?
+      'Fija los parámetros de cámara, la actividad y la velocidad de la camilla. El barrido termina al final del recorrido hacia los pies; no utiliza un límite de cuentas ni un tiempo programado.':
+      'Fija los parámetros en «Parámetros de cámara», la actividad en «Información de serie» y el objetivo en «Condiciones de paro». Luego elige Iniciar adquisición en el menú Adquirir.');
     for(let i=0;i<2;i++){
       const panel=document.createElement('div');panel.className='draft-image';
       const title=document.createElement('div');title.className='image-head';title.textContent='Detector '+(i+1);
-      const scan=document.createElement('div');scan.className='scan';const canvas=document.createElement('canvas');canvas.id='gantryDraftImage'+i;canvas.width=128;canvas.height=config.kind==='whole'?320:128;scan.append(canvas);
+      const scan=document.createElement('div');scan.className='scan';const canvas=document.createElement('canvas');canvas.id='gantryDraftImage'+i;canvas.width=128;canvas.height=config.kind==='whole'?512:128;scan.append(canvas);
       const stats=document.createElement('div');stats.id='gantryDraftStats'+i;stats.className='draft-counts';stats.textContent='Pendiente de iniciar';
       const progress=document.createElement('progress');progress.id='gantryDraftProgress'+i;progress.className='draft-progress';progress.max=1;progress.value=0;
       panel.append(title,scan,progress,stats);$('images').append(panel);
@@ -172,11 +180,11 @@
     for(const node of inputs.values())node.addEventListener('input',updateSummary);
     updateSummary();
   }
-  function read(){
+  function read(validate=true){
     const c={...draft.config};
-    for(const [key,node] of inputs){if(!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=key==='collimator'||key==='mode'?node.value:Number(node.value);}
+    for(const [key,node] of inputs){if(validate&&!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=key==='collimator'||key==='mode'?node.value:Number(node.value);}
     c.names=[inputs.get('name1').value,inputs.get('name2').value];
-    return window.GANTRY_PROCESSING_CONFIG.validate(c);
+    return validate?window.GANTRY_PROCESSING_CONFIG.validate(c):c;
   }
   function performAction(action){
     if(waiting)return;
