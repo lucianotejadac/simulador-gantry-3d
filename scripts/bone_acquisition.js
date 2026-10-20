@@ -269,6 +269,7 @@
     el('boneAcqSave').textContent=saving?'Guardando…':'Guardar adquisición';
     el('boneAcqSaved').disabled=busy||loadingSaved;
     for(const n of [64,128,256,512])if(el('liveMatrix'+n))el('liveMatrix'+n).disabled=active&&running;
+    for(const n of [64,512])if(el('liveMatrix'+n))el('liveMatrix'+n).hidden=study==='bone'&&wantWhole;
     planningInfo();
     window.GANTRY_EXAM?.refresh();
     if(!session&&!archive){
@@ -437,7 +438,12 @@
   let instantOnStart=false;
   function setup(instantMode=false){if(window.GANTRY_EXAM?.blocked)return;instantOnStart=instantMode;updateGoal();el('boneAcqBegin').textContent=instantMode?'Adquirir instantáneamente':'Comenzar';el('boneAcqSetup').hidden=false;planningInfo();(kind()==='whole'?el('boneAcqVelocity'):el('boneAcqTarget')).focus();}
   el('boneAcqStart').onclick=()=>setup(false);
-  el('boneAcqType').onchange=()=>{el('boneAcqSetupError').textContent='';paint(true);};
+  el('boneAcqType').onchange=()=>{
+    el('boneAcqSetupError').textContent='';
+    const live=window.GANTRY_LIVE,n=live.settings.matrix;
+    if(kind()==='whole'&&![128,256].includes(n))live.setMatrix(n<128?128:256);
+    paint(true);
+  };
   el('boneAcqCancel').onclick=()=>{el('boneAcqSetup').hidden=true;};
   el('boneAcqSetup').onsubmit=async event=>{event.preventDefault();if(start()&&instantOnStart){instantOnStart=false;await instant();}};
   el('boneAcqCriterion').onchange=()=>{

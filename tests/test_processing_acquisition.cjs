@@ -11,7 +11,11 @@ const c=vm.createContext({window:w,document,location:{origin:'http://local'},set
 vm.runInContext(fs.readFileSync('scripts/processing_acquisition_config.js','utf8'),c);
 const validate=w.GANTRY_PROCESSING_CONFIG.validate;
 assert.equal(validate(base).target,5);
-for(const [key,v] of [['matrix',1024],['matrix',512],['matrix',64],['matrix',32],['zoom',0],['windowWidth',1],['energyCenter',NaN],['activityMci',0],['minutes',180],['velocity',61],['target',5.5],['names',['','D2']],['kind','dynamic']])assert.throws(()=>validate({...base,[key]:v}),key);
+for(const matrix of [64,512]){
+ assert.equal(validate({...base,matrix}).matrix,matrix);
+ assert.throws(()=>validate({...base,kind:'whole',matrix}),/Matriz/);
+}
+for(const [key,v] of [['matrix',1024],['matrix',32],['zoom',0],['windowWidth',1],['energyCenter',NaN],['activityMci',0],['minutes',180],['velocity',61],['target',5.5],['names',['','D2']],['kind','dynamic']])assert.throws(()=>validate({...base,[key]:v}),key);
 assert.equal(validate({...base,kind:'whole',velocity:.1}).velocity,.1);
 const whole=validate({...base,kind:'whole',mode:undefined,target:NaN});
 assert.equal(whole.kind,'whole');

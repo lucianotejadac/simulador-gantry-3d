@@ -9,7 +9,7 @@
     const otherBusy=()=>engine().active||window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
     function defaults(kind){
       const s=live().settings,mdp=window.GANTRY_MDP.metadata();
-      return {kind,matrix:s.matrix,zoom:s.zoom,collimator:s.collimator,energyCenter:140,windowWidth:20,
+      return {kind,matrix:kind==='whole'?Math.max(128,Math.min(256,s.matrix)):s.matrix,zoom:s.zoom,collimator:s.collimator,energyCenter:140,windowWidth:20,
         activityMci:mdp.activityMBq/37,minutes:Math.min(179.99,mdp.seconds/60),mode:'counts',target:400000,
         velocity:10,names:['Detector 1','Detector 2'],
         geometry:el('g3dHud').textContent.trim(),...(s.study==='bone'?{energyCenter:s.energyCenter,windowWidth:s.windowWidth}:{})};

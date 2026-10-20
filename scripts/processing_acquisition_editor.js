@@ -135,6 +135,7 @@
   function section(host,title,rows){const box=document.createElement('fieldset');box.className='group';const legend=document.createElement('legend');legend.textContent=title;const fields=document.createElement('div');fields.className='fields';fields.append(...rows);box.append(legend,fields);$(host).append(box);}
   function help(host,text){const p=document.createElement('p');p.className='draft-help';p.textContent=text;$(host).append(p);}
   function render(config,resume=false){
+    if(!resume&&config.kind==='whole'&&![128,256].includes(config.matrix))config={...config,matrix:config.matrix<128?128:256};
     finish();stopDynamic();closeFlexible();saveMode();
     for(const id of panes){retained.set(id,Array.from($(id).childNodes));$(id).replaceChildren();}
     draft={config,id:resume?lastId:null};document.body.classList.add('gantry-acquisition-draft');
@@ -143,7 +144,7 @@
     $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie',config.kind==='whole'?'Nueva · cuerpo entero':'Nueva · estática'));
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
-      input('matrix','Tamaño de matriz',config.matrix,[128,256].map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
+      input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
       input('zoom','Zoom',config.zoom,[[1,'1×'],[1.5,'1,5×'],[1.75,'1,75×'],[2,'2×']]),
       field('Programación de cámara','Óseo · MDP'),field('Detectores','1 y 2'),
       input('collimator','Colimador',config.collimator,[['LEHR','LEHR'],['MELP','MELP'],['HE','HE'],['NONE','Sin colimador']]),
