@@ -27,6 +27,7 @@
   function check(file){
     if(!(file.bytes instanceof ArrayBuffer)||file.bytes.byteLength>32*1024*1024)throw Error('Tamaño de imagen no válido.');
     const ds=dicomParser.parseDicom(new Uint8Array(file.bytes)),r=ds.uint16('x00280010'),c=ds.uint16('x00280011'),bits=ds.uint16('x00280100'),pixel=ds.elements.x7fe00010;
+    if(ds.string('x00110010')!=='GANTRY_SIMULATION')throw Error('Sólo se admiten adquisiciones de este simulador.');
     if(!pixel||![16,32].includes(bits)||r!==file.rows||c!==file.cols||r*c>1024*1024*6||pixel.length!==r*c*bits/8||ds.string('x00080018')!==file.uid)throw Error('Matriz o identificador no válido.');
     const view=new DataView(ds.byteArray.buffer,ds.byteArray.byteOffset+pixel.dataOffset,pixel.length);
     let total=0;for(let i=0;i<r*c;i++)total+=bits===16?view.getUint16(i*2,true):view.getUint32(i*4,true);

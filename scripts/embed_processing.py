@@ -15,7 +15,45 @@ if not upstream.exists():
     shutil.copyfile(SOURCE / 'demo/index.html', upstream)
     shutil.copyfile(SOURCE / 'LICENSE', DEST / 'LICENSE')
 s = upstream.read_text(encoding='utf-8')
-s = s.replace('tutorialToggle(true);\n</script>', 'tutorialToggle(false);\n</script>')
+# The integrated edition receives images only from the simulator bridge.
+# Keep the pinned upstream untouched; omit its external case/tutorial bundle.
+demo_start = s.index('const demoCase={')
+demo_end = s.index('</script>', demo_start)
+s = s[:demo_start] + "status('Usa Adquirir para crear imágenes desde el simulador.');\n" + s[demo_end:]
+for id in ['open-demo', 'open', 'open-folder']:
+    s = re.sub(r'<button\b[^>]*\bid="' + id + r'"[^>]*>.*?</button>', '', s)
+for id in ['file', 'folder']:
+    s = re.sub(r'<input\b[^>]*\bid="' + id + r'"[^>]*>', '', s)
+s = re.sub(r"^\$\('open'\)\.onclick=.*?;\n", '', s, flags=re.M)
+s = re.sub(r"^\$\('open-folder'\)\.onclick=.*?;\n", '', s, flags=re.M)
+# Remove folder/multi-file imports and replace the drop handler with a no-op
+# that prevents the browser from navigating away to a dropped external file.
+start = s.index('async function loadFolder(files){')
+end = s.index("document.querySelectorAll('.tabs [role=tab]')", start)
+s = s[:start] + "document.addEventListener('dragover',e=>e.preventDefault());\ndocument.addEventListener('drop',e=>{e.preventDefault();status('Adquiere las imágenes desde el simulador mediante el menú Adquirir.');});\n" + s[end:]
+s = s.replace('<button class="primary" id="open-project">Abrir proyecto</button>', '')
+s = s.replace('<input id="project-file" type="file" accept=".dicomproject,application/json" hidden>', '')
+s = re.sub(r"\$\('save-project'\)\.onclick=saveProject;\$\('open-project'\).*?;\n",
+           "$('save-project').onclick=saveProject;\n", s)
+for old, new in {
+    'Visualizador DICOM': 'Procesamiento óseo',
+    'Medicina nuclear · Versión demo con tutorial de uso': 'Adquisiciones del simulador gantry',
+    'Archivo DICOM · Solo lectura': 'Adquisiciones del simulador',
+    'aria-label="Datos DICOM"': 'aria-label="Datos de adquisición"',
+    'id="modality">DICOM</span>': 'id="modality">SIMULADO</span>',
+    'Abre un archivo DICOM o arrástralo aquí. También admite archivos sin extensión.': 'Usa Adquirir para crear imágenes desde el simulador.',
+    'Lectura local: los archivos permanecen en este navegador. Sin conexión ni instalación.': 'Procesamiento local de adquisiciones del simulador gantry.',
+    'Sin archivo': 'Sin adquisición',
+    'Abre un DICOM para cargarlo en su tipo de adquisición.': 'Usa Adquirir para crear una imagen desde el gantry.',
+    'Carga un DICOM<br>para visualizar la imagen': 'Inicia una adquisición<br>desde el simulador',
+    'Carga archivos DICOM para componer una página. Puedes seleccionar varios archivos a la vez.': 'Adquiere imágenes desde el simulador para componer una página.',
+    'No hay imágenes disponibles. Carga primero uno o varios archivos con «Abrir DICOM…».': 'No hay imágenes disponibles. Inicia una adquisición desde el menú Adquirir.',
+    'Explorar etiquetas DICOM': 'Detalles técnicos de la adquisición',
+    ":'DICOM';": ":'SIMULADO';",
+}.items():
+    s = s.replace(old, new)
+s = re.sub(r"status\('Abre un archivo DICOM de '.*?\);",
+           "status('Selecciona Adquirir para iniciar una adquisición del simulador.');", s)
 s = s.replace('if(window.showSaveFilePicker){', 'if(window.showSaveFilePicker&&window.top===window){')
 s = re.sub(r"status\('Versión demo\..*?;", "status('Usa Adquirir para configurar una nueva adquisición en los campos de este visor.');", s)
 s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>\n<script>\n' +

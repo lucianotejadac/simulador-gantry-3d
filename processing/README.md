@@ -9,7 +9,13 @@ copian los casos DICOM públicos ni los tutoriales de estudiantes.
 `python scripts/embed_processing.py` genera `processing/index.html` a partir
 del original y del receptor `scripts/processing_receiver.js`. Se desactiva el
 inicio automático del tutorial y se oculta la carga del caso demo externo.
-El tutorial general y la apertura manual de archivos siguen disponibles.
+La edición integrada admite exclusivamente adquisiciones del simulador.
+No ofrece abrir DICOM, carpetas, proyectos externos, arrastrar archivos ni
+cargar el caso demo. El tutorial de archivos externos se sustituye por ayuda
+del flujo de adquisición. El formato DICOM sigue usándose internamente para
+transferir las cuentas sin pérdidas, pero no es una vía de carga manual.
+El receptor comprueba además el creador `GANTRY_SIMULATION`; el cargador
+integrado exige un conjunto de datos ya validado del simulador.
 El visor principal del otro repositorio permanece intacto.
 
 La pestaña carga el iframe solamente al abrirse. El controlador acepta
@@ -31,7 +37,7 @@ zoom, colimador y ventana energética; **Información de serie** configura activ
 MDP en mCi y tiempo inyección–examen; **Condiciones de paro** configura cuentas o
 segundos por detector, nombres de imágenes o velocidad de camilla para el barrido.
 Los campos editables corresponden exclusivamente a la nueva adquisición; los
-archivos adquiridos o abiertos mantienen sus datos de solo lectura.
+registros adquiridos mantienen sus datos de solo lectura.
 
 Iniciar, pausar, avance rápido, adquisición instantánea y finalizar usan el motor
 existente del gantry con su geometría y protecciones. Los parámetros se aplican al
@@ -56,6 +62,8 @@ Cada par nuevo recibe una página con ambos detectores, editable con ventana,
 nivel, inversión, zoom, posición y texto. Guardar proyecto incluye los archivos
 DICOM y la composición en `.dicomproject`; Exportar PNG guarda la página visible.
 La caché de adquisiciones no guarda automáticamente la composición del visor.
+Guardar proyecto se mantiene como exportación de respaldo; su apertura sólo
+está disponible en el visor independiente, no en esta edición integrada.
 
 ## Datos y límites
 

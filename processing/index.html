@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Visualizador DICOM · Demo · Medicina nuclear</title>
+<title>Procesamiento óseo · Demo · Medicina nuclear</title>
 <style>
 :root{color-scheme:light;--face:#c0c0c0;--light:#fff;--shadow:#808080;--dark:#404040;--navy:#000080}*{box-sizing:border-box}body{margin:0;padding:7px;background:#008080;color:#000;font:13px Arial,'MS Sans Serif',sans-serif}button,input,select{font:inherit;color:inherit}button,select{cursor:pointer}button{background:var(--face);border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:inset -1px -1px #808080,inset 1px 1px #dfdfdf;border-radius:0;padding:5px 12px;min-height:27px}button:active:not(:disabled){border-color:#404040 #fff #fff #404040;box-shadow:inset 1px 1px #808080}button:focus-visible,select:focus-visible{outline:1px dotted #000;outline-offset:-5px}button:disabled{color:#808080;text-shadow:1px 1px white;cursor:default}input,select{border:2px solid;border-color:#808080 #fff #fff #808080;border-radius:0;background:#ffffe7;box-shadow:inset 1px 1px #404040;min-width:0}input:focus-visible{outline:1px dotted #000;outline-offset:-4px}header{background:#000080;color:white;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:3px 5px;border:3px solid;border-color:#fff #404040 #000080 #fff;min-height:30px}.brand{display:flex;align-items:center;gap:6px}.symbol{font-size:19px;line-height:20px;color:#fff}h1{font-size:14px;margin:0;font-weight:bold}.brand p{display:none}.primary{padding:2px 12px;font-size:12px;color:#000;min-height:23px}main{background:var(--face);border:3px solid;border-color:#fff #404040 #404040 #fff;border-top:0;padding:0 6px 5px;margin:0;max-width:none}.application-bar{display:flex;align-items:center;gap:0;height:30px;border-bottom:1px solid #808080;box-shadow:0 1px white;margin:0 -3px 7px}.application-bar span{padding:5px 12px;border-right:1px solid #808080;box-shadow:1px 0 white}.application-bar .active{color:#000080;font-weight:bold}.application-bar .mode{margin-left:auto;border:0;box-shadow:none;color:#444;font-size:11px}.layout{display:grid;grid-template-columns:minmax(450px,1fr) minmax(440px,1fr);gap:7px;align-items:stretch}.card{min-width:0;background:var(--face);border-radius:0}.layout>.card:first-child{border:2px solid;border-color:#fff #808080 #808080 #fff}.patient{height:153px;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:12px 23px 18px 45px}.field{display:grid;grid-template-columns:165px minmax(0,1fr);align-items:center;gap:8px;min-width:0}.field label{font-size:13px;text-align:right}.field input{width:100%;min-width:0;height:26px;padding:3px 6px;text-overflow:ellipsis}.field input::placeholder{color:#777}.field input.missing{background:#e3e3d5}.tabs{display:flex;align-items:end;padding:0 4px;overflow-x:auto;min-height:28px;border-bottom:1px solid #fff}.tabs button{white-space:nowrap;font-size:12px;padding:4px 7px;min-height:26px;border-bottom:0;box-shadow:inset -1px 0 #808080;flex:1}.tabs button[aria-selected=true]{color:#000080;position:relative;min-height:29px;background:#c0c0c0;box-shadow:inset 1px 1px #dfdfdf;font-weight:normal}.pane{padding:13px 12px;min-height:535px}.pane[hidden]{display:none}.group{margin:0 0 15px;padding:15px 13px 17px;border:2px groove #eee;min-width:0}.group legend{padding:0 5px;font-size:13px;color:#333}.fields{display:grid;gap:9px}.hint{font-size:11px;line-height:1.5;color:#444;margin:10px 3px 0}.viewer{padding:0 9px;border-left:2px groove #eee}.viewer-head{display:flex;justify-content:space-between;align-items:center;min-height:30px;padding:4px 0}.viewer-head h2{font-size:14px;font-weight:normal;margin:0}.badge{font-size:11px;color:#444}.images{display:grid;grid-template-columns:1fr 1fr;gap:25px;padding:0 0 5px}.image-head{display:flex;flex-direction:column;gap:4px;margin-bottom:6px;font-size:13px}.image-head select{width:100%;height:25px;padding:1px 4px;box-shadow:none}.scan{height:clamp(440px,64vh,690px);width:72%;min-width:145px;margin:0 auto;background:#000;border:1px solid #808080;display:flex;align-items:center;justify-content:center;overflow:hidden}.scan canvas{max-width:100%;max-height:100%;object-fit:contain}.empty{font-size:12px;color:#949494;line-height:1.8;text-align:center;padding:10px}.caption{font-size:12px;min-height:23px;padding:5px 0 2px;text-align:center}.stats{font-size:12px}.stat{display:grid;grid-template-columns:80px minmax(0,1fr);align-items:center;gap:4px;margin-top:4px}.stat label{text-align:right}.stat output{border:1px solid;border-color:#808080 #fff #fff #808080;min-height:22px;padding:3px 4px;background:#c7c7c7;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:2px groove #eee;padding:11px 0 6px;font-size:12px}.toolbar label{display:flex;align-items:center;gap:5px}.toolbar input[type=range]{appearance:none;width:83px;height:4px;min-height:0;background:#808080;box-shadow:none;border:1px solid;border-color:#404040 #fff #fff #404040}.toolbar input[type=range]::-webkit-slider-thumb{appearance:none;width:10px;height:20px;border:2px solid;border-color:#fff #404040 #404040 #fff;background:#c0c0c0;border-radius:0}.toolbar input[type=range]::-moz-range-thumb{width:8px;height:18px;border:2px outset white;background:#c0c0c0;border-radius:0}.toolbar input[type=checkbox]{accent-color:#808080;box-shadow:none}.toolbar button{font-size:12px;margin-left:auto}.toolbar output{min-width:20px}#image-error{font-size:12px;color:#800000;line-height:1.5;padding:3px 0}#image-error:empty{display:none}.summary-head{display:grid;grid-template-columns:173px 1fr;background:#c0c0c0;margin-bottom:5px}.summary-head span{border:2px solid;border-color:#fff #808080 #808080 #fff;padding:3px 5px;font-size:12px}#summary{margin:6px;padding:5px 7px;border:2px solid;border-color:#808080 #fff #fff #808080;min-height:515px}#summary .group{border:0;margin:0;padding:0}#summary .group legend{display:none}#summary .fields{gap:1px}#summary .field{gap:8px;grid-template-columns:165px minmax(0,1fr)}#summary .field label{text-align:left;font-size:12px}#summary .field input{height:22px;border:0;box-shadow:none;background:transparent;padding:2px 1px;font-size:12px}.metadata{margin-top:9px;border:2px groove #eee}details>summary{cursor:pointer;padding:6px 9px;font-size:12px}.meta-content{padding:5px 10px 10px}#search{width:100%;height:27px;background:white;padding:3px 6px;margin-bottom:7px}.table-wrap{max-height:350px;overflow:auto;border:2px solid;border-color:#808080 #fff #fff #808080;background:white}table{width:100%;table-layout:fixed;min-width:720px;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:5px 7px;vertical-align:top;overflow-wrap:anywhere}td{border-bottom:1px solid #ddd}th{position:sticky;top:0;background:#c0c0c0;border:2px outset #ddd;font-weight:normal}th:first-child{width:30%}th:nth-child(2){width:27%}th:nth-child(3){width:7%}td:first-child{font-family:Consolas,monospace}.notice{display:flex;gap:7px;align-items:center;min-height:25px;margin-top:7px;border:2px solid;border-color:#808080 #fff #fff #808080;padding:3px 7px;font-size:12px}.notice.error{color:#800000}.dot{width:7px;height:7px;background:#808080}.notice.ok .dot{background:#008000}.notice.error .dot{background:#800000}footer{display:flex;justify-content:space-between;gap:12px;color:#444;font-size:10px;line-height:1.4;padding:6px 2px 0}footer a{color:#000080}body.drag main{outline:3px dashed #000080;outline-offset:-5px}@media(min-width:1500px){body{padding:15px 30px}.layout{grid-template-columns:1fr 1fr}.patient{padding-left:85px}.scan{width:65%}.images{gap:45px}.pane{min-height:565px}}@media(max-width:1000px){body{padding:3px}.layout{grid-template-columns:minmax(0,1fr)}.patient{height:135px;padding-left:15px}.pane{min-height:400px}.viewer{border:2px groove #eee;padding:5px 10px}.scan{height:520px;width:60%}.images{gap:25px}#summary{min-height:0}}@media(max-width:540px){h1{font-size:12px}.primary{font-size:11px;padding:2px 6px}.application-bar span{font-size:11px;padding:5px 7px}.application-bar .mode{display:none}.patient{padding:10px;height:130px}.field{grid-template-columns:120px minmax(0,1fr);gap:5px}.field label{font-size:12px}.field input{font-size:12px}.group{padding:12px 8px;margin-bottom:12px}.tabs button{flex:none}.pane{padding:10px 5px}.scan{height:375px;min-width:0;width:90%}.images{gap:12px}.stat{grid-template-columns:58px minmax(0,1fr);font-size:10px}.stat output{font-size:10px}.caption{font-size:11px}.summary-head{grid-template-columns:143px 1fr}#summary .field{grid-template-columns:135px minmax(0,1fr)}.toolbar{gap:12px 8px}.toolbar button{margin-left:0}footer{display:block}footer span{display:block;margin-bottom:5px}}
 .workspace{display:grid;grid-template-columns:155px minmax(0,1fr);gap:8px}.acquisition-tabs{display:flex;flex-direction:column;gap:6px;background:#a9a9a9;border:2px solid;border-color:#808080 #fff #fff #808080;padding:5px;min-width:0}.sidebar-heading{padding:6px 3px;color:#333;font-weight:bold}.acquisition-tabs button{text-align:center;min-height:113px;line-height:1.5;padding:8px 5px}.acquisition-tabs button[aria-selected=true]{background:#d8d8d8;color:#000080;border-color:#404040 #fff #fff #404040;box-shadow:inset 1px 1px #808080}.mode-symbol{display:block;font:30px Georgia,serif;color:#000080;line-height:1.2;margin-bottom:6px}.acquisition-tabs small{display:block;font-size:10px;color:#444;margin-top:5px;overflow-wrap:anywhere}.acquisition-tabs p{font-size:11px;line-height:1.5;color:#333;margin:10px 3px}.mode-heading{font-size:12px;color:#000080;font-weight:bold;border:2px groove #eee;padding:5px 8px;margin-bottom:6px}.layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}#acquisition-panel{min-width:0}.patient{padding-left:12px;padding-right:12px}.images{gap:14px}.static-mode .scan{width:100%;min-width:0;height:auto;aspect-ratio:1}.static-mode .scan canvas{width:100%;height:100%;object-fit:contain}.static-overview{padding:26px 12px 10px;max-width:470px;margin-top:20px}.static-overview[hidden]{display:none}.static-overview .group{border:0}.static-overview .fields{gap:5px}.static-overview .field{grid-template-columns:150px minmax(0,1fr)}.static-overview .field input{background:transparent;box-shadow:none;border:0}.static-mode .viewer{display:flex;flex-direction:column}.static-mode .toolbar{margin-top:auto}.static-mode .pane{min-height:490px}.detector-tabs{display:flex;gap:2px;border-bottom:1px solid white}.detector-tabs button{border-bottom:0;padding:4px 12px}.detector-tabs button[aria-selected=true]{color:navy;background:#d4d4d4}.stop-options{display:grid;gap:6px;padding:4px 15px 14px}.stop-options label{display:flex;align-items:center;gap:7px}.stop-options input{margin:0;box-shadow:none;accent-color:#000080}.stop-options input:disabled{opacity:1}#detector-conditions{padding:10px 6px 0;border:2px groove #eee;margin-bottom:12px}#detector-conditions .group{border:0;margin-bottom:5px;padding:5px}.static-table-wrap{overflow:auto;border:2px inset white}.static-table{min-width:440px;table-layout:auto}.static-table th{width:auto}.static-table tbody tr:first-child{background:navy;color:#fff}.static-table td:first-child{font-family:inherit}.static-table td{font-size:11px}.static-table th{font-size:11px}.static-mode #stop>.group{margin-bottom:10px}@media(max-width:1120px){.layout{grid-template-columns:minmax(0,1fr)}.static-mode .scan{max-height:none}.static-overview{padding-top:12px;margin-top:10px}.viewer{border:2px groove #eee}}@media(max-width:650px){.workspace{grid-template-columns:96px minmax(0,1fr);gap:4px}.acquisition-tabs{padding:3px}.acquisition-tabs button{font-size:11px;min-height:108px;padding:6px 2px}.acquisition-tabs p{font-size:10px}.sidebar-heading{font-size:11px}.mode-symbol{font-size:24px}.patient{padding:8px 4px}.field,#summary .field{grid-template-columns:94px minmax(0,1fr);gap:4px}.field label{font-size:11px}.group{padding:10px 5px}.group legend{font-size:12px}.images{gap:6px}.viewer{padding:4px}.viewer-head{flex-wrap:wrap;gap:5px}.viewer-head h2{font-size:12px}.stat{grid-template-columns:minmax(0,1fr)}.stat label{text-align:left}.static-overview{padding:10px 0 0}.static-overview .field{grid-template-columns:94px minmax(0,1fr)}.static-overview .field input{font-size:11px}.summary-head{grid-template-columns:98px 1fr}.static-mode .empty{font-size:10px;padding:5px}.scan{height:340px}.mode-heading{font-size:11px}.detector-tabs button{font-size:11px;padding:4px 8px}#detector-conditions{padding:8px 2px}.toolbar{gap:12px}.caption{overflow-wrap:anywhere}}
@@ -178,22 +178,22 @@ body.tutorial-open>main{grid-column:1;grid-row:3;min-width:0}
 .tutorial-questions{background:#fff7d6;border:2px groove #fff;padding:6px 8px;margin:8px 0}.tutorial-questions h3{margin:0 0 4px;font-size:12px}.tutorial-questions ol{margin:0;padding-left:18px}.tutorial-questions li{margin-bottom:5px}.tutorial-questions details{margin:2px 0 0;font-size:11px}.tutorial-questions summary{cursor:pointer;color:navy}
 </style></head>
 <body>
-<header><div class="brand"><div class="symbol">◈</div><div><h1>Visualizador DICOM</h1><p>Medicina nuclear · Versión demo con tutorial de uso</p></div></div><div class="dicom-open-actions"><button class="primary" id="open-demo">Cargar caso demo</button><button class="primary" id="open">Abrir DICOM…</button><button class="primary" id="open-folder">Abrir carpeta…</button></div><input id="file" type="file" hidden><input id="folder" type="file" webkitdirectory multiple hidden></header>
+<header><div class="brand"><div class="symbol">◈</div><div><h1>Procesamiento óseo</h1><p>Adquisiciones del simulador gantry</p></div></div><div class="dicom-open-actions"></div></header>
 <main>
-<div class="application-bar"><span class="active">Adquisición</span><span>Visualización / Análisis</span><span class="mode">Archivo DICOM · Solo lectura</span></div>
+<div class="application-bar"><span class="active">Adquisición</span><span>Visualización / Análisis</span><span class="mode">Adquisiciones del simulador</span></div>
 
-<div class="workspace"><nav class="acquisition-tabs" role="tablist" aria-label="Tipo de adquisición" aria-orientation="vertical"><div class="sidebar-heading">Adquisición</div><button id="mode-whole" role="tab" aria-selected="true" aria-controls="acquisition-panel"><span class="mode-symbol" aria-hidden="true">▥</span>Adquisición cuerpo entero<small id="file-whole">Sin archivo</small></button><button id="mode-static" role="tab" aria-selected="false" aria-controls="acquisition-panel"><span class="mode-symbol" aria-hidden="true">▣</span>Adquisición estática<small id="file-static">Sin archivo</small></button><button id="mode-dynamic" role="tab" aria-selected="false" aria-controls="acquisition-panel"><span class="mode-symbol" aria-hidden="true">▶</span>Adquisición dinámica<small id="file-dynamic">Sin archivo</small></button><p>Abre un DICOM para cargarlo en su tipo de adquisición.</p></nav><div id="acquisition-panel" role="tabpanel" aria-labelledby="mode-whole">
+<div class="workspace"><nav class="acquisition-tabs" role="tablist" aria-label="Tipo de adquisición" aria-orientation="vertical"><div class="sidebar-heading">Adquisición</div><button id="mode-whole" role="tab" aria-selected="true" aria-controls="acquisition-panel"><span class="mode-symbol" aria-hidden="true">▥</span>Adquisición cuerpo entero<small id="file-whole">Sin adquisición</small></button><button id="mode-static" role="tab" aria-selected="false" aria-controls="acquisition-panel"><span class="mode-symbol" aria-hidden="true">▣</span>Adquisición estática<small id="file-static">Sin adquisición</small></button><button id="mode-dynamic" role="tab" aria-selected="false" aria-controls="acquisition-panel"><span class="mode-symbol" aria-hidden="true">▶</span>Adquisición dinámica<small id="file-dynamic">Sin adquisición</small></button><p>Usa Adquirir para crear una imagen desde el gantry.</p></nav><div id="acquisition-panel" role="tabpanel" aria-labelledby="mode-whole">
 <div id="mode-heading" class="mode-heading">Adquisición cuerpo entero</div><div class="layout">
 <section class="card"><div class="patient" id="patient"></div>
-<nav class="tabs" role="tablist" aria-label="Datos DICOM"><button role="tab" id="tab-summary" aria-controls="summary" aria-selected="true">Resumen</button><button role="tab" id="tab-series" aria-controls="series" aria-selected="false">Información de serie</button><button role="tab" id="tab-camera" aria-controls="camera" aria-selected="false">Parámetros de cámara</button><button role="tab" id="tab-stop" aria-controls="stop" aria-selected="false">Condiciones de paro</button></nav>
+<nav class="tabs" role="tablist" aria-label="Datos de adquisición"><button role="tab" id="tab-summary" aria-controls="summary" aria-selected="true">Resumen</button><button role="tab" id="tab-series" aria-controls="series" aria-selected="false">Información de serie</button><button role="tab" id="tab-camera" aria-controls="camera" aria-selected="false">Parámetros de cámara</button><button role="tab" id="tab-stop" aria-controls="stop" aria-selected="false">Condiciones de paro</button></nav>
 <div id="summary" class="pane" role="tabpanel" aria-labelledby="tab-summary"></div><div id="series" class="pane" role="tabpanel" aria-labelledby="tab-series" hidden></div><div id="camera" class="pane" role="tabpanel" aria-labelledby="tab-camera" hidden></div><div id="stop" class="pane" role="tabpanel" aria-labelledby="tab-stop" hidden></div>
 </section>
-<section class="card viewer"><div class="viewer-head"><h2>Visualización de adquisición</h2><span class="badge" id="modality">DICOM</span></div><div class="images" id="images"></div><div id="image-error" role="status"></div>
+<section class="card viewer"><div class="viewer-head"><h2>Visualización de adquisición</h2><span class="badge" id="modality">SIMULADO</span></div><div class="images" id="images"></div><div id="image-error" role="status"></div>
 <div class="toolbar"><label>Ventana <input id="window" type="range" min="1" max="1000" value="236" disabled><output id="window-value">—</output></label><label>Nivel <input id="level" type="range" min="0" max="1000" value="118" disabled><output id="level-value">—</output></label><label><input id="invert" type="checkbox" disabled> Invertir</label><button id="reset" disabled>Restablecer</button></div></section>
 </div>
-<details class="card metadata"><summary>Explorar etiquetas DICOM <span id="tag-count"></span></summary><div class="meta-content"><input id="search" aria-label="Buscar etiquetas" placeholder="Buscar por etiqueta, nombre o valor…"><div class="table-wrap"><table><thead><tr><th>Etiqueta / ruta</th><th>Nombre</th><th>VR</th><th>Valor</th></tr></thead><tbody id="tags"></tbody></table></div></div></details>
-<div class="notice" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="status-text">Abre un archivo DICOM o arrástralo aquí. También admite archivos sin extensión.</span></div>
-<footer><span>Lectura local: los archivos permanecen en este navegador. Sin conexión ni instalación.<br>«Sin dato» indica un campo ausente o vacío. Pasa el cursor sobre una casilla para ver su origen.</span><span>Vista de referencia; no validado para diagnóstico.<br><a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.4.9.html" target="_blank" rel="noreferrer">Estándar DICOM NM</a></span></footer>
+<details class="card metadata"><summary>Detalles técnicos de la adquisición <span id="tag-count"></span></summary><div class="meta-content"><input id="search" aria-label="Buscar etiquetas" placeholder="Buscar por etiqueta, nombre o valor…"><div class="table-wrap"><table><thead><tr><th>Etiqueta / ruta</th><th>Nombre</th><th>VR</th><th>Valor</th></tr></thead><tbody id="tags"></tbody></table></div></div></details>
+<div class="notice" id="status" role="status" aria-live="polite"><span class="dot"></span><span id="status-text">Usa Adquirir para crear imágenes desde el simulador.</span></div>
+<footer><span>Procesamiento local de adquisiciones del simulador gantry.<br>«Sin dato» indica un campo ausente o vacío. Pasa el cursor sobre una casilla para ver su origen.</span><span>Vista de referencia; no validado para diagnóstico.<br><a href="https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.4.9.html" target="_blank" rel="noreferrer">Estándar DICOM NM</a></span></footer>
 </div></div></main><!-- dicom-parser 1.8.21
 The MIT License (MIT)
 
@@ -333,7 +333,7 @@ function populate(){
   group($('stop'),'Condiciones de paro',stop);group($('stop'),'Nombres de imágenes',[['Imagen 1',view(0),'(0054,0022)[1] → (0054,0220) → (0008,0104)'],['Imagen 2',view(1),'(0054,0022)[2] → (0054,0220) → (0008,0104)']]);group($('stop'),'Parámetros de exploración',scan);
   group($('summary'),'Identificación',[['Identificación',v('00100020'),'(0010,0020) Patient ID'],['Fecha del estudio',v('00080020').replace(/^(\d{4})(\d{2})(\d{2})$/,'$3/$2/$1'),'(0008,0020)'],['Modalidad',mod,'(0008,0060)'],...series.slice(4),...radiopharm,...camera.slice(0,2),...camera.slice(3),...stop,...scan]);
   const hint=document.createElement('p');hint.className='hint';hint.textContent='Los datos se leen del archivo cargado. Los tiempos restantes y los controles de adquisición en vivo no se reconstruyen a partir de una imagen guardada.';$('stop').append(hint);
-  $('modality').textContent=mod?mod+' · '+(v('00280008')||'1')+' imágenes':'DICOM';
+  $('modality').textContent=mod?mod+' · '+(v('00280008')||'1')+' imágenes':'SIMULADO';
   const head=document.createElement('div');head.className='summary-head';head.innerHTML='<span>Nombre</span><span>Descripción</span>';$('summary').prepend(head);
   if(currentMode==='static'||currentMode==='dynamic')populateStatic({camera,orientations,view,detectors,preset,matrix,zoom});
   if(currentMode==='dynamic')populateDynamic();
@@ -399,7 +399,7 @@ function updateModeUI(){
   const s=modeStates[key],active=key===currentAcquisition;
   $('mode-'+key).setAttribute('aria-selected',String(active&&!document.body.classList.contains('flex-mode')));
   const ds=active?dataset:s?.dataset;
-  $('file-'+key).textContent=ds?[(value(ds,'0008103e')||'Serie sin nombre'),active?currentFilename:s?.filename].filter(Boolean).join(' · '):'Sin archivo';
+  $('file-'+key).textContent=ds?[(value(ds,'0008103e')||'Serie sin nombre'),active?currentFilename:s?.filename].filter(Boolean).join(' · '):'Sin adquisición';
   $('mode-'+key).title=$('file-'+key).textContent;
  }
  $('acquisition-panel').setAttribute('aria-labelledby','mode-'+currentAcquisition);
@@ -426,7 +426,7 @@ function selectMode(key,instance=null){
  const s=modeStates[key];dataset=s?.dataset||null;rows=s?.rows||[];pixels=s?.pixels||null;frameCount=s?.frameCount||0;frameSize=s?.frameSize||0;defaults=s?.defaults||{};currentFilename=s?.filename||'';selectedDetector=s?.selectedDetector||0;
  $('search').value='';populate();buildPanels();controls(!!pixels);showTags();
  if(s){for(const [id,values]of [['window',s.w],['level',s.l]]){$(id).min=values[1];$(id).max=values[2];$(id).value=values[0];} $('invert').checked=s.invert;s.frames.forEach((f,i)=>{$('frame-'+i).value=f;if($('acq-zoom-'+i))$('acq-zoom-'+i).value=s.zooms?.[i]||100;if($('canvas-'+i)){$('canvas-'+i).dataset.panX=s.pans?.[i]?.[0]||0;$('canvas-'+i).dataset.panY=s.pans?.[i]?.[1]||0;}});$('status-text').textContent=s.status;$('status').className=s.statusClass;$('image-error').textContent=s.imageError;$(s.panel).click();}
- else{$('image-error').textContent='';status('Abre un archivo DICOM de '+({static:'adquisición estática',dynamic:'adquisición dinámica',whole:'cuerpo entero'}[mode])+'.');$(mode!=='whole'?'tab-camera':'tab-summary').click();}
+ else{$('image-error').textContent='';status('Selecciona Adquirir para iniciar una adquisición del simulador.');$(mode!=='whole'?'tab-camera':'tab-summary').click();}
  if(mode==='dynamic')syncDynamic();
  renderAll();updateModeUI();
 }
@@ -434,7 +434,7 @@ function buildPanels(){
  $('images').replaceChildren();
  for(let i=0;i<2;i++){
   const panel=document.createElement('div');
-  panel.innerHTML='<div class="image-head"><span id="detector-'+i+'">Vista '+(i+1)+'</span><select id="frame-'+i+'" aria-label="Imagen de la vista '+(i+1)+'"></select></div><div class="scan"><canvas id="canvas-'+i+'" hidden></canvas><div class="empty" id="empty-'+i+'">'+(dataset?'Sin imagen disponible':'Carga un DICOM<br>para visualizar la imagen')+'</div></div><div class="caption" id="caption-'+i+'"></div><div class="stats" id="stats-'+i+'"></div>';
+  panel.innerHTML='<div class="image-head"><span id="detector-'+i+'">Vista '+(i+1)+'</span><select id="frame-'+i+'" aria-label="Imagen de la vista '+(i+1)+'"></select></div><div class="scan"><canvas id="canvas-'+i+'" hidden></canvas><div class="empty" id="empty-'+i+'">'+(dataset?'Sin imagen disponible':'Inicia una adquisición<br>desde el simulador')+'</div></div><div class="caption" id="caption-'+i+'"></div><div class="stats" id="stats-'+i+'"></div>';
   $('images').append(panel);
   const zoomLabel=document.createElement('label');zoomLabel.className='acq-zoom-label';zoomLabel.innerHTML='Zoom % <input id="acq-zoom-'+i+'" type="number" min="25" max="800" step="10" value="100" aria-label="Zoom detector '+(i+1)+'"><button type="button">100 %</button>';panel.querySelector('.image-head').append(zoomLabel);
   const zoomInput=$('acq-zoom-'+i);zoomInput.oninput=()=>{zoomInput.value=Math.min(800,Math.max(25,Number(zoomInput.value)||100));render(i);};zoomLabel.querySelector('button').onclick=()=>{zoomInput.value=100;$('canvas-'+i).dataset.panX=0;$('canvas-'+i).dataset.panY=0;render(i);};
@@ -528,32 +528,8 @@ async function loadFile(file,prepared=null){
  }catch(e){if(token!==loadId)return;dataset=null;pixels=null;frameCount=0;rows=[];currentFilename='';$('image-error').textContent='';populate();buildPanels();showTags();renderAll();controls(false);status('No se pudo abrir el archivo. '+(e.message||'Comprueba que sea un DICOM válido con cabecera Part 10.'),'error');saveMode();}
 }
 function controls(enabled){for(const id of ['window','level','invert','reset'])$(id).disabled=!enabled;}
-$('open').onclick=()=>$('file').click();$('file').multiple=true;$('file').onchange=e=>{loadFiles([...e.target.files]);e.target.value='';};
-$('open-folder').onclick=()=>$('folder').click();$('folder').onchange=e=>{loadFolder([...e.target.files]);e.target.value='';};
-async function loadFolder(files){
- if(!files.length)return;let loaded=0,duplicates=0,skipped=0,metadata=0;
- const button=$('open-folder');button.disabled=true;$('open').disabled=true;
- try{
-  files.sort((a,b)=>(a.webkitRelativePath||a.name).localeCompare(b.webkitRelativePath||b.name,undefined,{numeric:true}));
-  for(let n=0;n<files.length;n++){
-   const file=files[n];button.textContent='Leyendo '+(n+1)+' / '+files.length;
-   let parsed;
-   try{
-    if(file.size>300*1024*1024||file.size<8)throw Error('Tamaño no compatible');
-    parsed=dicomParser.parseDicom(new Uint8Array(await file.arrayBuffer()),{vrCallback:t=>DICT[t]?.[0]});
-    if(!parsed.elements.x00280010||!parsed.elements.x00280011)throw Error('No es un DICOM de imagen');
-   }catch(error){skipped++;continue;}
-   const uid=parsed.string('x00080018');
-   if(uid&&Object.values(acquisitionInstances).some(g=>g[uid])){duplicates++;continue;}
-   await loadFile(file,parsed);if(dataset===parsed){loaded++;if(!pixels)metadata++;}else skipped++;
-  }
-  const message='Carpeta: '+loaded+' DICOM cargados'+(metadata?' ('+metadata+' solo metadatos)':'')+' · '+duplicates+' duplicados omitidos · '+skipped+' archivos no compatibles omitidos.';
-  status(message,loaded||duplicates?'ok':'');
-  if(typeof flex!=='undefined'&&flex.visible){openFlexible();$('flex-message').textContent=message;}
- }finally{button.disabled=false;button.textContent='Abrir carpeta…';$('open').disabled=false;}
-}
-async function loadFiles(files){for(const file of files)await loadFile(file);if(typeof flex!=='undefined'&&flex.visible)openFlexible();}
-document.addEventListener('dragover',e=>{e.preventDefault();document.body.classList.add('drag');});document.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('drag');});document.addEventListener('drop',e=>{e.preventDefault();document.body.classList.remove('drag');loadFiles([...e.dataTransfer.files]);});
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{e.preventDefault();status('Adquiere las imágenes desde el simulador mediante el menú Adquirir.');});
 document.querySelectorAll('.tabs [role=tab]').forEach(b=>{b.onclick=()=>{document.querySelectorAll('.tabs [role=tab]').forEach(t=>t.setAttribute('aria-selected',String(t===b)));document.querySelectorAll('.pane').forEach(p=>p.hidden=p.id!==b.getAttribute('aria-controls'));};b.onkeydown=e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();const tabs=[...document.querySelectorAll('.tabs [role=tab]')],next=tabs[(tabs.indexOf(b)+(e.key==='ArrowRight'?1:3))%4];next.click();next.focus();}};});
 for(const mode of ['whole','static','dynamic'])$('mode-'+mode).onclick=()=>selectMode(mode);
 for(const id of ['window','level','invert'])$(id).oninput=renderAll;$('reset').onclick=resetWindow;$('search').oninput=showTags;
@@ -692,7 +668,7 @@ function openFlexPicker(preselect=null){
  $('flex-context').hidden=true;const list=$('flex-picker-list');list.replaceChildren();
  for(const a of flex.assets){const label=document.createElement('label');label.className='flex-pick-row';const check=document.createElement('input');check.type='checkbox';check.value=a.id;check.checked=a.id===preselect;check.onchange=updateFlexPicker;
  const text=document.createElement('span');text.textContent=a.seriesName+' · '+a.projection;const small=document.createElement('small');small.textContent=a.meta.patient+' · '+a.meta.exam+' · '+a.filename+' / imagen '+(a.frame+1);text.append(small);label.append(check,text);list.append(label);}
- if(!flex.assets.length){const p=document.createElement('p');p.textContent='No hay imágenes disponibles. Carga primero uno o varios archivos con «Abrir DICOM…».';list.append(p);}
+ if(!flex.assets.length){const p=document.createElement('p');p.textContent='No hay imágenes disponibles. Inicia una adquisición desde el menú Adquirir.';list.append(p);}
  updateFlexPicker();$('flex-picker').showModal();
 }
 function updateFlexPicker(){const all=[...$('flex-picker-list').querySelectorAll('input')],n=all.filter(c=>c.checked).length;$('flex-pick-count').textContent=n+' de '+all.length+' seleccionadas';$('flex-pick-submit').disabled=!n;$('flex-pick-all').checked=!!all.length&&n===all.length;$('flex-pick-all').indeterminate=n>0&&n<all.length;$('flex-pick-all').disabled=!all.length;}
@@ -716,7 +692,7 @@ function initFlexible(){
  <div class="flex-tools"><strong id="flex-selection">Selecciona una imagen</strong><label>Zoom % <input type="number" id="flex-zoom" min="10" max="1000" step="10"></label><label>Ventana <input type="number" id="flex-window" min="1" step="1"></label><label>Nivel <input type="number" id="flex-level" step="1"></label><label><input type="checkbox" id="flex-invert"> Invertir LUT</label><button id="flex-reset">Restablecer imagen</button><button id="flex-front">Traer al frente</button><button id="flex-delete">Eliminar imagen</button></div>
  <div class="flex-tools flex-geometry"><label>X <input id="flex-x" type="number"></label><label>Y <input id="flex-y" type="number"></label><label>Ancho <input id="flex-w" type="number"></label><label>Alto <input id="flex-h" type="number"></label></div>
  <p class="flex-help">Clic derecho en el lienzo → Agregar imagen(es). Marca una, varias o todas. Arrastra la barra violeta para mover el cuadro y la esquina roja para cambiar su tamaño; también puedes editar Ancho y Alto. Rueda: zoom. Arrastra el interior: desplazar la imagen.</p>
- <div class="flex-paper"><div id="flex-empty">Carga archivos DICOM para componer una página. Puedes seleccionar varios archivos a la vez.</div><canvas id="flex-canvas" width="1200" height="900" tabindex="0" aria-label="Página de composición. Selecciona una imagen; usa las flechas para mover su cuadro."></canvas></div>
+ <div class="flex-paper"><div id="flex-empty">Adquiere imágenes desde el simulador para componer una página.</div><canvas id="flex-canvas" width="1200" height="900" tabindex="0" aria-label="Página de composición. Selecciona una imagen; usa las flechas para mover su cuadro."></canvas></div>
  <div class="notice" id="flex-message" role="status">Las páginas se conservan durante esta sesión. Exporta el PNG antes de cerrar o recargar.</div>
  <details open class="flex-library-panel"><summary>Todas las imágenes cargadas · Selecciona una para ir a su página</summary><div id="flex-library"></div></details>`;
  document.querySelector('.workspace').append(panel);
@@ -933,9 +909,9 @@ async function openProject(file){
  }catch(error){alert('No se pudo abrir el proyecto: '+error.message);}
 }
 const projectActions=document.createElement('div');projectActions.style.cssText='display:flex;gap:5px;align-items:center';
-projectActions.innerHTML='<button class="primary" id="save-project">Guardar proyecto</button><button class="primary" id="open-project">Abrir proyecto</button><input id="project-file" type="file" accept=".dicomproject,application/json" hidden><span id="project-message" role="status" style="position:absolute;width:1px;height:1px;overflow:hidden"></span>';
+projectActions.innerHTML='<button class="primary" id="save-project">Guardar proyecto</button><span id="project-message" role="status" style="position:absolute;width:1px;height:1px;overflow:hidden"></span>';
 document.querySelector('header').append(projectActions);
-$('save-project').onclick=saveProject;$('open-project').onclick=()=>$('project-file').click();$('project-file').onchange=e=>{openProject(e.target.files[0]);e.target.value='';};
+$('save-project').onclick=saveProject;
 
 const saveAdvice=document.createElement('div');saveAdvice.id='save-advice';saveAdvice.textContent='Antes de recargar o cerrar, se recomienda Guardar proyecto. Si aparece el aviso del navegador, cancela para volver y guardar.';document.querySelector('header').after(saveAdvice);
 
@@ -983,327 +959,31 @@ function refreshAcquisitionThumbnails(states){
 // Case-specific presentation routes. Only file references and acquisition labels;
 // no patient identifiers, reports, findings or DICOM pixels are bundled here.
 // ===== Versión demo: tutorial de uso, sin casos de la actividad =====
-const demoCase={
- collection:'CMB-PCA',patient:'MSB-02472',
- files:['01-cuerpo-entero.dcm','02-estatica-1.dcm','03-estatica-2.dcm','04-estatica-3.dcm','05-estatica-4.dcm','06-estatica-5.dcm','07-flujo-pelvis-simulado.dcm'],
- dynamicFile:'07-flujo-pelvis-simulado.dcm',dynamicPages:2,
- whole:[{label:'Anterior · 01, imagen 1'},{label:'Posterior · 01, imagen 2'}],
- staticPages:[
-  {title:'Tórax en oblicuas',slots:[{label:'LAO · 02, imagen 1'},{label:'RPO · 02, imagen 2'},{label:'RAO · 03, imagen 1'},{label:'LPO · 03, imagen 2'}],
-   note:'Cada archivo trae las dos cabezas del equipo: una oblicua anterior y su opuesta posterior. Agrúpalas en pares para compararlas.'},
-  {title:'Cráneo lateral y vista de pie',slots:[{label:'Cráneo lat. der. · 04, imagen 1'},{label:'Cráneo lat. izq. · 05, imagen 1'},{label:'De pie · 06, imagen 2'}],
-   note:'Los archivos 04 y 05 traen una segunda imagen sin rótulo de proyección, tomada por la cabeza opuesta. El archivo 06 trae una imagen 1 que es solo ruido. Decide si cada una aporta algo antes de colocarla, y justifica lo que dejes fuera.'}
- ]
-};
-// Preguntas guía: cada una se ancla a un archivo, una imagen, una etiqueta o un valor que el visor muestra.
-const demoQuestions={
- goal:[['Una cintigrafía ósea trifásica tiene fase de flujo, de pool sanguíneo y tardía. ¿Cuál de las tres guardan las colecciones públicas como CMB-PCA y por qué la fase de flujo del demo tuvo que simularse?','Guardan las imágenes tardías (cuerpo entero y estáticas), que son las que se informan. La fase de flujo de este paciente no fue publicada; el archivo 07 se construyó a partir de sus propias imágenes tardías y lo declara en ImageType (DERIVED), ConversionType (SYN) e ImageComments.']],
- load:[['El mensaje de estado indica cuántos DICOM se cargaron. ¿Cuántos archivos lista esta guía y cuántos cargó el visor?','Siete archivos: 01 a 07. El estado debe decir «7 DICOM cargados».'],
-  ['¿Qué archivo pesa más (4 MB frente a 1 MB o 270 KB) y a qué se debe?','07-flujo-pelvis-simulado.dcm: trae 128 fotogramas de 128 × 128 (64 por detector). El cuerpo entero trae 2 imágenes de 1024 × 256 y cada estática 2 de 256 × 256.']],
- inventory:[['En «Parámetros de cámara» de 01-cuerpo-entero.dcm: ¿qué matriz y qué velocidad de exploración registra el archivo? ¿Cuánto duró la adquisición (ver «Condiciones de paro»)?','Matriz 1024 × 256, velocidad 12 cm/min (0018,1300 = 2 mm/s) y unos 1210 s, es decir, unos 20 minutos.'],
-  ['En 07-flujo-pelvis-simulado.dcm, «Condiciones de paro» muestra la Fase 1. ¿Cuántas tomas por detector (0054,0033) y qué duración por toma (0018,1242)? ¿Cuánto dura la secuencia completa?','64 tomas de 2 s por detector: 128 s por detector. El total de fotogramas (0028,0008) es 128 porque suma los dos detectores.'],
-  ['Nombra dos etiquetas DICOM de 07 que indican que la serie es simulada y no una adquisición real.','ImageType = DERIVED\\SECONDARY\\DYNAMIC\\EMISSION, ConversionType = SYN, SeriesDescription «Flujo pelvis SIMULADO» e ImageComments. Se consultan en «Explorar etiquetas DICOM».']],
- header:[['¿Qué campos quedaron marcados en tu encabezado y cuáles desmarcaste? ¿Por qué el nombre del paciente aparece como MSB-02472?','Es el código anonimizado de la colección: nombre e ID son el mismo código. Los campos vacíos se desmarcan; no se inventan.'],
-  ['La edad registrada es 000Y. ¿La mostrarías en el encabezado? Fundamenta con el concepto de anonimización.','No. Es un valor sustituido por la colección para proteger la identidad; mostrarlo induciría a error. Un campo con dato modificado no es un dato disponible.']],
- whole:[['01-cuerpo-entero.dcm trae dos imágenes. ¿Qué etiqueta define la proyección de cada una y qué dice para la imagen 1 y la 2?','La View Code Sequence (0054,0220) dentro de la Detector Information Sequence: imagen 1 «RT Anterior LT», imagen 2 «LT Posterior RT».'],
-  ['Anota la posición X e Y del cuadro de la vista anterior y del de la posterior en tu página 1. ¿Qué signo anatómico te permite distinguirlas aunque se perdiera el rótulo?','Con las medidas sugeridas: anterior X 16, posterior X 604, ambas Y 110. En la posterior la columna y el sacro se ven con más detalle y los riñones son más evidentes; en la anterior, el esternón y la vejiga.']],
- display:[['Anota los valores de Ventana y Nivel que elegiste para la vista anterior y para la posterior. ¿Por qué no tienen que ser iguales?','Las dos vistas tienen cuentas totales distintas y estructuras distintas en primer plano; la ventana es presentación, no medida. Igual brillo no significa igual captación.'],
-  ['Lleva la ventana de la vista posterior a su valor mínimo. ¿Qué dos regiones alcanzan primero el negro?','La vejiga, en el centro de la pelvis, y los focos de la columna lumbar. Son los píxeles de más cuentas; con ventana mínima todo lo que supere el nivel se satura.']],
- dynamic:[['La Fase 1 tiene 64 tomas de 2 s por detector. Si pides 32 imágenes, ¿cuántas tomas se suman en cada una y cuántos segundos abarca cada imagen?','2 tomas por imagen; cada imagen abarca 4 s. La imagen n cubre desde (n − 1) × 4 s hasta n × 4 s.'],
-  ['En el mosaico del Detector 1, ¿en qué número de imagen (1 a 32) aparece por primera vez actividad en la aorta, y en cuál en las arterias femorales? ¿A qué segundos corresponde el inicio de cada una?','Aorta en la imagen 4 (desde 12 s); femorales en la imagen 5 (desde 16 s). En la simulación el bolo llega a la aorta en la toma 7 y a las femorales en la toma 9.'],
-  ['Un compañero sumó las tomas de 4 en 4 y obtuvo 16 imágenes. Explica qué gana y qué pierde frente a 32, usando los conceptos de resolución temporal y estadística de cuentas.','Gana cuentas por imagen (menos ruido) y pierde resolución temporal: cada imagen abarca 8 s y la llegada del bolo a la aorta y a las femorales puede caer en la misma imagen.'],
-  ['¿Por qué «Detector 1» no equivale automáticamente a «anterior»? ¿Qué etiqueta lo confirma en 07?','El número de detector es una posición en el equipo; la proyección la define la View Code Sequence de cada detector. En 07, el detector 1 es anterior y el 2 posterior porque así lo declara esa secuencia.']],
- static:[['Los archivos 02 y 03 traen dos imágenes cada uno. Indica, para cada imagen (archivo y número), la proyección según su rótulo.','02 imagen 1 LAO CHEST, 02 imagen 2 RPO CHEST; 03 imagen 1 RAO CHEST, 03 imagen 2 LPO CHEST. Cada archivo es una adquisición con las dos cabezas opuestas.'],
-  ['En «Condiciones de paro» de 06-estatica-5.dcm, compara las cuentas de la imagen 1 y la imagen 2 para los mismos 61 s. ¿Qué pasó y qué decisión tomas?','Imagen 1: unas 1100 cuentas, solo ruido; imagen 2: unas 732 000. Una cabeza no registró la proyección útil. La imagen 1 se omite y se justifica; no se rotula ni se duplica.'],
-  ['Las imágenes 2 de 04 y 05 no tienen rótulo de proyección. ¿Qué puedes afirmar de ellas y qué no?','Puedes afirmar que las tomó la cabeza opuesta, al mismo tiempo que la lateral de cráneo rotulada. No puedes afirmar su proyección sin otra fuente; si las usas, rotúlalas como «sin proyección registrada».']],
- layout:[['¿Cuántas páginas tiene tu composición y qué contiene cada una? Compara con la propuesta de cinco páginas y justifica cada diferencia.','La propuesta: 1 cuerpo entero, 2 y 3 dinámica por detector, 4 tórax en oblicuas, 5 cráneo y vista de pie. Otra distribución es válida si conserva cobertura, orientación y legibilidad.']],
- review:[['La revisión indica cuántos elementos quedaron sin colocar. Nómbralos (archivo e imagen) y di, para cada uno, si fue una decisión o un olvido.','Razonable dejar fuera 06 imagen 1 (ruido) y, si no aportan, las imágenes 2 de 04 y 05. Todo lo demás debería estar colocado, incluidas las dos secuencias dinámicas.']],
- save:[['Abre uno de los PNG exportados: ¿se leen el encabezado y los rótulos de proyección? ¿Qué nombre le diste al archivo y por qué conviene incluir el número de página?','Por ejemplo demo-pagina-01.png. El número de página permite reconstruir el orden; el PNG no guarda la composición editable, por eso también se guarda el .dicomproject.']]
-};
-function tutorialQuestions(host,key){
- const items=demoQuestions[key];if(!items||!items.length)return;
- const box=tutorialNode('section',undefined,'tutorial-questions');box.append(tutorialNode('h3','Preguntas guía'));
- const list=tutorialNode('ol');
- for(const [question,answer] of items){const li=tutorialNode('li',question);if(answer){const d=tutorialNode('details');d.append(tutorialNode('summary','Comprobar'));tutorialParagraph(d,answer);li.append(d);}list.append(li);}
- box.append(list);host.append(box);
-}
-async function loadDemoCase(){
- const button=$('open-demo'),label=button.textContent;button.disabled=true;
- try{
-  const files=[];
-  for(let i=0;i<demoCase.files.length;i++){
-   const name=demoCase.files[i];button.textContent='Descargando '+(i+1)+' / '+demoCase.files.length;status('Descargando el caso demo · '+name+'…');
-   const response=await fetch('caso/'+name);if(!response.ok)throw Error(name+' respondió '+response.status+'.');
-   files.push(new File([await response.blob()],name,{type:'application/dicom'}));
-  }
-  button.textContent=label;button.disabled=false;
-  await loadFolder(files);
-  document.dispatchEvent(new Event('dicom-workspace-change'));
- }catch(e){status('No se pudo descargar el caso demo. '+(e.message||'Revisa la conexión y vuelve a intentarlo.'),'error');}
- finally{button.textContent=label;button.disabled=false;}
-}
-const tutorial={open:false,step:0,study:null,studentId:'demo',caseId:'demo',view:'guide',steps:new Map(),checks:new Map(),frame:null,highlight:null};
-const tutorialSteps=[
- ['goal','Qué vas a aprender'],['load','1. Cargar imágenes'],
- ['inventory','2. Reconocer las series'],['header','3. Revisar el encabezado'],
- ['whole','4. Componer el cuerpo entero'],['display','5. Ajustar cada imagen'],
- ['dynamic','6. Preparar dinámicas'],['static','7. Comparar las estáticas'],
- ['layout','8. Afinar cuadros y rótulos'],['review','9. Revisar el conjunto'],
- ['save','10. Exportar y guardar']
-];
-const tutorialFAQs=[
- ['¿Necesito instalar algo?','No. El visor funciona en el navegador. Los archivos que abras desde tu equipo se leen ahí mismo y no se envían a ningún servidor.'],
- ['¿De dónde viene el caso demo?','El cuerpo entero y las cinco estáticas son la cintigrafía ósea del paciente MSB-02472 de la colección pública CMB-PCA (Cancer Moonshot Biobank, cáncer de próstata), publicada por The Cancer Imaging Archive con licencia CC BY 4.0. Los datos vienen anonimizados por la colección. No se publica un informe ni antecedentes clínicos. La fase de flujo (archivo 07) es simulada.'],
- ['¿Puedo usar mis propios DICOM?','Sí. Usa «Abrir carpeta…» o «Abrir DICOM…». El visor admite cuerpo entero, estáticas y dinámicas; omite los archivos tomográficos. Si cargas otro estudio después del demo, guarda primero tu proyecto y abre el visor en una pestaña nueva.'],
- ['¿Por qué Página flexible está vacía?','Es un lienzo para componer. Primero establece el encabezado; después usa «Agregar imagen(es)…» o clic derecho en el lienzo → «Agregar imagen(es)», marca las vistas necesarias y pulsa «Agregar seleccionadas». La carga de DICOM no coloca las imágenes automáticamente.'],
- ['¿Qué hago si faltan datos en el encabezado?','No los inventes. Desmarca los campos que no constan y utiliza los datos disponibles. El editor exige al menos un campo seleccionado y completo. En el demo, el nombre del paciente es su código anonimizado.'],
- ['¿La dinámica del demo es real?','No. La colección pública no incluye la fase de flujo de este paciente. El archivo 07 es una secuencia simulada, construida a partir de sus propias imágenes tardías, para practicar las herramientas de dinámica del visor. Lo declara en ImageType, ConversionType e ImageComments. No sirve para interpretar el flujo real de este paciente.'],
- ['Una imagen se ve vacía o solo con ruido','Pasa en estudios reales: una cabeza del equipo puede no haber registrado una proyección útil. En el demo ocurre con la imagen 1 del archivo 06. No la dupliques ni la rotules como otra vista; decide si la omites y justifícalo.'],
- ['¿Cómo guardo mi trabajo?','«Exportar PNG» descarga la página seleccionada. «Guardar proyecto» descarga un .dicomproject con las imágenes y la composición editable. Para continuar otro día, usa «Abrir proyecto». Recargar o cerrar el visor no conserva el trabajo por sí solo.']
-];
-function tutorialInventory(assets=flex.assets,study=tutorial.study){
- const studies=[...new Set(assets.map(a=>a.study))];
- if(!studies.includes(study))study=studies[0]||null;
- const selected=assets.filter(a=>a.study===study),whole=selected.filter(a=>a.kind==='whole'),dynamic=selected.filter(a=>a.dynamicFrames),statics=selected.filter(a=>a.kind==='static'&&!a.dynamicFrames);
- const series=[...new Set(selected.map(a=>a.series))],pool=statics.filter(a=>/\bPOOL\b/i.test(a.seriesName)),other=statics.filter(a=>!pool.includes(a));
- return {studies,study,assets:selected,whole,dynamic,statics,series,pool,other};
-}
-function tutorialCoverage(inv,pages=flex.pages){
- const wanted=new Set(inv.assets.map(a=>a.id)),counts=new Map();let incomplete=0,overlaps=0;
- const used=pages.filter(p=>p.items.some(i=>wanted.has(i.asset)));
- for(const page of used){
-  const items=page.items.filter(i=>wanted.has(i.asset));
-  for(const item of items){counts.set(item.asset,(counts.get(item.asset)||0)+1);const a=inv.assets.find(a=>a.id===item.asset);
-   if(a?.dynamicFrames){const included=new Set((item.dynamic?.tiles||[]).flatMap(t=>t.sourceFrames));if(a.dynamicFrames.some(f=>!included.has(f.frame)))incomplete++;}
-  }
-  for(let a=0;a<items.length;a++)for(let b=a+1;b<items.length;b++){
-   const i=items[a],j=items[b];if(Math.min(i.x+i.w,j.x+j.w)-Math.max(i.x,j.x)>1&&Math.min(i.y+i.h,j.y+j.h)-Math.max(i.y,j.y)>1)overlaps++;
-  }
- }
- return {used,placed:counts.size,missing:inv.assets.filter(a=>!counts.has(a.id)),duplicates:[...counts.values()].reduce((n,c)=>n+Math.max(0,c-1),0),incomplete,overlaps};
-}
-function tutorialPagePlan(inv){
- const plan=[];
- for(let i=0;i<inv.whole.length;i+=2)plan.push('Cuerpo entero · '+Math.min(2,inv.whole.length-i)+' vista(s)');
- for(const a of inv.dynamic)plan.push('Dinámica · Detector '+a.detector+' · '+a.dynamicFrames.length+' fotogramas');
- for(let i=0;i<inv.statics.length;i+=4)plan.push('Estáticas relacionadas · hasta '+Math.min(4,inv.statics.length-i)+' vistas');
- return plan.map((label,i)=>'Página '+(i+1)+': '+label);
-}
-function tutorialSumDescription(asset,target=32){
- const groups=new Map();for(const f of asset.dynamicFrames||[]){const key=f.detector+':'+f.phase;groups.set(key,(groups.get(key)||0)+1);}
- const sizes=[...groups.values()],total=sizes.reduce((a,b)=>a+b,0);if(!total)return 'Sin fotogramas disponibles.';
- const counts=sizes.map(()=>1),limit=Math.min(total,Math.max(target,sizes.length));
- while(counts.reduce((a,b)=>a+b,0)<limit){let best=-1;for(let j=0;j<sizes.length;j++)if(counts[j]<sizes[j]&&(best<0||sizes[j]/counts[j]>sizes[best]/counts[best]))best=j;counts[best]++;}
- const sums=new Set();sizes.forEach((n,j)=>{for(let k=0;k<counts[j];k++)sums.add(Math.floor((k+1)*n/counts[j])-Math.floor(k*n/counts[j]));});
- return total+' fotogramas → '+limit+' imágenes; '+(sums.size===1?'grupos de ':'grupos de tamaños ')+[...sums].sort((a,b)=>a-b).join(' y ')+'.'+(sizes.length>1?' Se respetan los límites de fase.':'');
-}
-function tutorialNode(tag,text,className){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;return node;}
-function tutorialParagraph(host,text,className){host.append(tutorialNode('p',text,className));}
-function tutorialList(host,items,ordered=false){const list=tutorialNode(ordered?'ol':'ul');items.forEach(text=>list.append(tutorialNode('li',text)));host.append(list);}
-function tutorialNote(host,title,text){const box=tutorialNode('div',undefined,'tutorial-note');box.append(tutorialNode('strong',title));tutorialParagraph(box,text);host.append(box);}
-function tutorialFold(host,title){const details=tutorialNode('details');details.append(tutorialNode('summary',title));host.append(details);return details;}
-function tutorialWalkthrough(host,steps,expected,help){
- const box=tutorialNode('section',undefined,'tutorial-walkthrough');box.append(tutorialNode('h3','Haz esto, en este orden'));tutorialList(box,steps,true);host.append(box);
- const result=tutorialNode('div',undefined,'tutorial-result');result.append(tutorialNode('strong','Qué debería aparecer'));tutorialParagraph(result,expected);host.append(result);
- if(help)tutorialParagraph(tutorialFold(host,'Si no ocurre · ayuda para este paso'),help);
-}
-function tutorialAction(host,label,id){const button=tutorialNode('button',label,'tutorial-locate');button.type='button';button.onclick=()=>tutorialLocate(id);host.append(button);}
-function tutorialLocate(id){
- const target=$(id),message=$('tutorial-action-message');
- if(!target||target.getClientRects().length===0){message.textContent='Primero abre la pestaña o selecciona la imagen indicada en este paso.';return;}
- document.querySelectorAll('.tutorial-highlight').forEach(n=>n.classList.remove('tutorial-highlight'));
- target.scrollIntoView({block:'nearest',inline:'nearest'});target.classList.add('tutorial-highlight');
- clearTimeout(tutorial.highlight);tutorial.highlight=setTimeout(()=>target.classList.remove('tutorial-highlight'),3500);
- message.textContent=target.disabled?'Control señalado. Selecciona primero una imagen para habilitarlo.':'Control señalado con un borde azul.';
-}
-function tutorialDiagram(host,kind,slots=null){
- const figure=tutorialNode('figure',undefined,'tutorial-example'),paper=tutorialNode('div',undefined,'tutorial-paper');
- paper.append(tutorialNode('div','ENCABEZADO COMÚN','tutorial-paper-heading'));
- const grid=tutorialNode('div',undefined,'tutorial-scheme '+kind);
- const cells=slots?slots.map(s=>s.label):kind==='whole'?['Anterior','Posterior']:kind==='dynamic'?Array.from({length:32},(_,i)=>String(i+1)):['Ósea · derecha','Ósea · izquierda','Pool · derecha','Pool · izquierda'];
- cells.forEach(label=>grid.append(tutorialNode('span',label)));paper.append(grid);figure.append(paper);
- figure.append(tutorialNode('figcaption',kind==='whole'?'Dos cuadros verticales, alineados.':kind==='dynamic'?'Un mosaico por secuencia de detector.':slots?'Orden propuesto: de izquierda a derecha y de arriba abajo.':'Ejemplo 2 × 2: compara fase y proyección.'));
- host.append(figure);
-}
-function tutorialAssets(host,assets){
- if(!assets.length){tutorialParagraph(host,'No se han cargado imágenes de este tipo.');return;}
- const list=tutorialNode('ul',undefined,'tutorial-assets');
- assets.forEach(a=>list.append(tutorialNode('li',a.seriesName+' · '+a.projection+' · '+a.filename)));host.append(list);
-}
-function tutorialCheck(host,key,text){
- const scope=(tutorial.studentId||'none')+':'+(tutorial.caseId||'none')+':'+(tutorial.study||'empty');if(!tutorial.checks.has(scope))tutorial.checks.set(scope,new Set());
- const checks=tutorial.checks.get(scope),label=tutorialNode('label',undefined,'tutorial-check'),input=document.createElement('input');input.type='checkbox';input.checked=checks.has(key);
- input.onchange=()=>{if(input.checked)checks.add(key);else checks.delete(key);};label.append(input,tutorialNode('span',text));host.append(label);
-}
-function tutorialFrequentQuestions(host){
- const wrap=tutorialNode('details');wrap.className='tutorial-faq';wrap.append(tutorialNode('summary','Dudas frecuentes · acceso, entrega y presentación'));
- for(const [question,answer] of tutorialFAQs){const detail=tutorialNode('details');detail.append(tutorialNode('summary',question));tutorialParagraph(detail,answer);wrap.append(detail);}host.append(wrap);
-}
-function tutorialLiveData(host,inv){
- const assets=[...new Map(inv.assets.map(a=>[a.uid,a])).values()];
- if(!assets.length){tutorialParagraph(host,'Carga un estudio para consultar aquí los parámetros de sus archivos.');return;}
- const states=Object.values(acquisitionInstances).flatMap(g=>Object.values(g));
- const box=tutorialNode('details');box.className='tutorial-data';box.append(tutorialNode('summary','Consultar parámetros DICOM de '+assets.length+' archivo(s)'));
- tutorialParagraph(box,'Valores leídos del estudio seleccionado. La guía no reemplaza datos vacíos.');
- for(const a of assets){
-  const state=states.find(s=>instanceIdentity(s.dataset)===a.uid);if(!state?.dataset)continue;const ds=state.dataset,r=first(ds,'00540016'),dets=ds.elements.x00540022?.items||[];
-  const card=tutorialNode('details');card.append(tutorialNode('summary',a.filename+' · '+value(ds,'0008103e')));
-  const lines=['Tipo: '+(value(ds,'00080008')||'Sin dato'),'Matriz: '+a.cols+' × '+a.rows,
-   'Zoom de adquisición: '+(dets.map((d,i)=>'D'+(i+1)+': '+(formatZoom(value(d.dataSet,'00280031'))||'Sin dato')).join(' / ')||formatZoom(value(ds,'00280031'))||'Sin dato')];
-  const actual=num(ds,'00181242'),speed=num(ds,'00181300');
-  if(a.dynamicFrames){const sequences=inv.dynamic.filter(s=>s.uid===a.uid);lines.push(...sequences.map(s=>'Detector '+s.detector+': '+s.dynamicFrames.length+' fotogramas; duración por toma disponible: '+[...new Set(s.dynamicFrames.map(f=>f.duration))].map(d=>d>0?pretty(d/1000)+' s':'Sin dato').join(' / ')));}
-  else lines.push('Duración real por imagen: '+(actual===null?'Sin dato':pretty(actual/1000)+' s'));
-  if(a.kind==='whole')lines.push('Velocidad de exploración: '+(speed===null?'Sin dato':pretty(speed*6)+' cm/min'));
-  lines.push('Fármaco registrado: '+(value(r,'00180031')||'Sin dato'),'Actividad original (0018,1074): '+(value(r,'00181074')||'Sin dato'),'Vía registrada: '+(value(r,'00181070')||'Sin dato'));
-  tutorialList(card,lines);box.append(card);
- }host.append(box);
-}
-function tutorialDemoLoaded(inv){return inv.assets.some(a=>demoCase.files.includes(tutorialFilename(a.filename)));}
-function tutorialFilename(name){return String(name||'').split(/[\\/]/).pop();}
-function tutorialRender(){
- if(!tutorial.open)return;
- $('tutorial-navigation').hidden=false;$('tutorial-footer').hidden=false;$('tutorial-title-text').textContent='Tutorial de uso';
- const inv=tutorialInventory();tutorial.study=inv.study;const demo=tutorialDemoLoaded(inv);
- const select=$('tutorial-study'),previous=select.value;select.replaceChildren();
- inv.studies.forEach((id,index)=>{const option=tutorialNode('option','Estudio '+(index+1));option.value=id;select.append(option);});select.value=inv.study||previous;
- $('tutorial-study-wrap').hidden=inv.studies.length<2;
- $('tutorial-inventory').textContent=inv.assets.length?'Cargados: '+inv.whole.length+' cuerpo entero · '+inv.dynamic.length+' dinámica(s) · '+inv.statics.length+' estática(s).':'Aún no hay imágenes. Pulsa «Cargar caso demo» o abre tus propios DICOM.';
- const [key,title]=tutorialSteps[tutorial.step],body=$('tutorial-body');body.replaceChildren();body.append(tutorialNode('h2',title));
- $('tutorial-step').value=String(tutorial.step);$('tutorial-progress').value=tutorial.step+1;
- $('tutorial-position').textContent=(tutorial.step+1)+' / '+tutorialSteps.length;$('tutorial-previous').disabled=tutorial.step===0;
- $('tutorial-next').textContent=tutorial.step===tutorialSteps.length-1?'Cerrar guía':'Siguiente →';$('tutorial-action-message').textContent='';
- if(inv.studies.length>1)tutorialNote(body,'Hay varios estudios cargados','Esta guía cuenta solo el estudio seleccionado. El encabezado del visor es común: trabaja un estudio por proyecto.');
- if(key==='goal'){
-  tutorialParagraph(body,'Este visor sirve para revisar estudios planares de medicina nuclear y componer páginas de imágenes listas para exportar. La guía te acompaña paso a paso; tú haces las acciones en el visor.');
-  tutorialWalkthrough(body,['Pulsa «Siguiente →» al terminar de leer cada paso.','Si la guía tapa un control, pulsa «Minimizar». Para retomarla, pulsa «Tutorial de uso» arriba.','Usa los botones «Señalar…» para encontrar el control del que habla cada paso.'], 'Avanzarás por diez pasos: cargar, revisar, componer, ajustar, revisar y guardar.', '«Anterior» vuelve al paso previo. El menú «Paso» permite saltar a uno concreto. Leer o avanzar por la guía no crea páginas ni cambia tus imágenes.');
-  tutorialNote(body,'El caso demo','Para practicar puedes usar una cintigrafía ósea pública con MDP: un cuerpo entero anterior y posterior y cinco archivos de estáticas de la colección CMB-PCA de The Cancer Imaging Archive. La fase de flujo (archivo 07) es simulada a partir de las imágenes tardías del mismo paciente, porque la colección no la incluye. No hay informe clínico. Esta guía enseña a usar el visor, no a interpretar el estudio.');
-  tutorialNote(body,'Preguntas guía','Cada paso termina con preguntas ancladas a un archivo, una imagen, una etiqueta o un valor que el visor muestra. Respóndelas antes de desplegar «Comprobar». Valoran el manejo de conceptos, el lenguaje técnico y la lógica con que fundamentas tus decisiones.');
-  tutorialParagraph(tutorialFold(body,'Cita y licencia de los datos del caso demo'),'Cancer Moonshot Biobank. (2022). Cancer Moonshot Biobank – Prostate Cancer Collection (CMB-PCA) (Version 12) [dataset]. The Cancer Imaging Archive. https://doi.org/10.7937/25t7-6y12. Licencia CC BY 4.0. Data used in this publication were generated by the National Cancer Institute’s Cancer Moonshot Biobank. Cambios: los archivos 01 a 06 solo se renombraron; el archivo 07 es una serie simulada derivada de ellos, no forma parte de la colección.');
-  tutorialParagraph(body,'Con el caso demo, una composición posible tiene cinco páginas:');
-  tutorialList(body,['Página 1: cuerpo entero, anterior y posterior.','Página 2: flujo simulado, detector 1 (anterior), 64 tomas → 32 imágenes.','Página 3: flujo simulado, detector 2 (posterior), 64 tomas → 32 imágenes.','Página 4: '+demoCase.staticPages[0].title.toLowerCase()+'.','Página 5: '+demoCase.staticPages[1].title.toLowerCase()+'.']);
-  const examples=tutorialFold(body,'Ver esquemas de cómo pueden quedar las páginas');tutorialDiagram(examples,'whole',demoCase.whole);tutorialDiagram(examples,'dynamic');demoCase.staticPages.forEach(p=>tutorialDiagram(examples,'static',p.slots));
-  tutorialFrequentQuestions(body);tutorialAction(body,'Señalar «Cargar caso demo»','open-demo');
- }else if(key==='load'){
-  tutorialWalkthrough(body,['Pulsa «Cargar caso demo», en la barra superior.','Espera a que termine la descarga de los siete archivos. El botón muestra el avance.','Revisa el mensaje de estado de la parte inferior del visor: debe indicar 7 DICOM cargados.'], 'Aparecen las pestañas de adquisición a la izquierda y las miniaturas del estudio.', 'Si la descarga falla, revisa la conexión y pulsa de nuevo. Si prefieres trabajar con tus propios archivos, usa «Abrir carpeta…» y elige la carpeta que contiene los DICOM. Los nombres pueden no tener extensión: es normal y no debes cambiarlos.');
-  tutorialNote(body,'Si ya habías trabajado','Usa «Abrir proyecto» y selecciona tu archivo .dicomproject. Así recuperas imágenes, páginas y ajustes. Volver a cargar los DICOM no recupera la composición anterior.');
-  tutorialParagraph(body,inv.assets.length?'En este estudio hay '+inv.assets.length+' elementos disponibles de '+inv.series.length+' series. Una secuencia dinámica cuenta como un elemento por detector.':'Todavía no hay imágenes cargadas.','tutorial-status');
-  if(flex.issues.length)tutorialNote(body,'Revisa la carga',flex.issues.length+' archivo(s) no tienen píxeles disponibles. Consulta su mensaje antes de dar el estudio por completo.');
-  tutorialAction(body,'Señalar «Cargar caso demo»','open-demo');tutorialAction(body,'Señalar «Abrir carpeta»','open-folder');
- }else if(key==='inventory'){
-  tutorialWalkthrough(body,['Pulsa una pestaña de adquisición en la columna izquierda.','Pulsa una miniatura en «Imágenes de la serie» para ver esa imagen o secuencia.','Abre «Parámetros de cámara» y revisa matriz y zoom de adquisición.','Abre «Condiciones de paro» y revisa los tiempos disponibles.','Repite con las demás pestañas. En una dinámica, cada miniatura representa una secuencia de detector.'], 'Podrás distinguir las vistas de cuerpo entero, las estáticas y, si las hay, las secuencias dinámicas.', '«Sin dato» significa que el archivo no lo registra; no lo rellenes con un valor de otro estudio. La fase no se deduce solo por la matriz.');
-  tutorialParagraph(body,'Cargados: '+inv.whole.length+' vistas de cuerpo entero, '+inv.dynamic.length+' secuencias dinámicas y '+inv.statics.length+' estáticas.');
-  if(demo)tutorialNote(body,'En el caso demo','El archivo 01 trae anterior y posterior. Cada archivo de estáticas trae dos imágenes, una por cabeza del equipo. Algunas no tienen rótulo de proyección y una es solo ruido: revísalas todas antes de componer. El archivo 07 es la dinámica: dos secuencias de 64 tomas, una por detector, y es simulada.');
-  tutorialLiveData(body,inv);
-  tutorialNote(body,'Detector no equivale a orientación','Si una imagen dice «orientación no registrada», conserva «Detector 1» o «Detector 2». No asignes anterior o posterior solo por el número.');
-  tutorialAction(body,'Señalar las miniaturas de adquisición','acquisition-thumbnails');
- }else if(key==='header'){
-  tutorialWalkthrough(body,['Pulsa «Página flexible», en la columna izquierda.','En el editor que se abre, revisa los datos del estudio. Marca solo los campos que mostrarás.','Si un campo está vacío y no conoces el dato, desmarca su casilla. Debe quedar al menos un campo marcado y completo.','Pulsa «Aplicar encabezado».'], 'Verás una página blanca con el encabezado arriba. Todavía no habrá imágenes: las agregarás en el siguiente paso. Las páginas nuevas heredarán este mismo encabezado.', 'Si no se abre el editor, puede existir un encabezado previo: pulsa «Agregar encabezado…» para revisarlo. Si no te deja aplicar, comprueba las casillas y los campos vacíos.');
-  tutorialParagraph(body,flex.header?'El proyecto ya tiene un encabezado. Verifica su contenido.':'El encabezado aún no está establecido.','tutorial-status');
-  if(demo)tutorialNote(body,'Datos del caso demo','El nombre y el ID del paciente son el código anonimizado MSB-02472. La edad, el sexo y las fechas fueron modificados por la colección para proteger la identidad. No inventes los datos que faltan.');
-  const button=tutorialNode('button','Ir a Página flexible');button.onclick=()=>{openFlexible();tutorialSchedule();};body.append(button);
-  tutorialAction(body,'Señalar el editor de encabezado','flex-add-header');
- }else if(key==='whole'){
-  tutorialDiagram(body,'whole',demo?demoCase.whole:null);
-  tutorialWalkthrough(body,['Quédate en la primera página blanca. Pulsa «Agregar imagen(es)…», en los controles junto al lienzo.','Marca únicamente las dos vistas de cuerpo entero. Comprueba el nombre del archivo y el número de imagen; no uses «Seleccionar todas».','Pulsa «Agregar seleccionadas».','Lee los rótulos: anterior debe quedar a la izquierda y posterior a la derecha. Si hace falta, arrastra la barra violeta superior de cada cuadro para intercambiarlos.'], 'Dos imágenes de cuerpo entero en la misma página, con el encabezado visible y ambas vistas identificadas.', 'También puedes abrir «Agregar imagen(es)» haciendo clic derecho sobre el lienzo blanco. Si añadiste una imagen equivocada, haz clic derecho sobre su cuadro → «Eliminar imagen»; seguirá disponible para agregarla después.');
-  tutorialParagraph(tutorialFold(body,'Medidas opcionales para dos cuadros iguales'),'Selecciona el cuadro izquierdo: Ancho 580, Alto 762, X 16, Y 110. En el derecho usa Ancho 580, Alto 762, X 604, Y 110. Pulsa Tab después de escribir cada valor. Son medidas del lienzo, no del paciente. «Ordenar página» redistribuye todos los cuadros; úsalo antes de afinar la posición.');
-  tutorialAssets(tutorialFold(body,'Ver las vistas de cuerpo entero cargadas'),inv.whole);
-  tutorialAction(body,'Señalar «Agregar imagen(es)»','flex-add-images');tutorialAction(body,'Señalar «Ordenar página»','flex-arrange');
- }else if(key==='display'){
-  tutorialWalkthrough(body,['Haz clic dentro de una imagen. Su borde se pondrá rojo.','Revisa «Invertir LUT». Actívalo o desactívalo para obtener fondo blanco.','En «Zoom %», escribe 100 y pulsa Tab. Ajusta después solo si lo necesitas.','Arrastra el interior para centrar la imagen. Comprueba que no cortaste cabeza, pies ni la región que debes mostrar.','Cambia «Ventana» poco a poco y pulsa Tab para aplicar cada valor. Observa el resultado antes de volver a cambiarlo.','Ajusta «Nivel» de la misma forma si hace falta.','Haz clic en la otra imagen y repite. Cada cuadro conserva sus propios ajustes.'], 'Las imágenes se leen con claridad, conservan la anatomía y tienen una presentación comparable. No necesitan tener los mismos valores de ventana y nivel.', 'Si los controles están deshabilitados, selecciona un cuadro hasta ver el borde rojo. Si el resultado se pierde o queda saturado, pulsa «Restablecer imagen» y comienza de nuevo. Escribir un número no basta: pulsa Tab o sal del campo para aplicarlo.');
-  tutorialNote(body,'Tres movimientos distintos','Barra violeta: mueve el cuadro. Interior de la imagen: desplaza el contenido. Rueda: cambia el zoom dentro del cuadro. La esquina roja cambia el tamaño del cuadro.');
-  tutorialNote(body,'Prueba equivocarte','Lleva la ventana al mínimo y observa qué se satura. Luego pulsa «Restablecer imagen». Ver el error a propósito ayuda a reconocerlo cuando aparece sin querer.');
-  tutorialParagraph(tutorialFold(body,'Qué cambian ventana, nivel y LUT'),'Ventana define el intervalo de valores mostrado y Nivel desplaza su centro. Una ventana menor aumenta el contraste y puede saturar zonas. Invertir LUT intercambia claros y oscuros. Estos controles cambian la presentación; no modifican la adquisición original ni permiten comparar captación solo por brillo.');
-  tutorialAction(body,'Señalar «Ventana»','flex-window');tutorialAction(body,'Señalar «Zoom %»','flex-zoom');
- }else if(key==='dynamic'){
-  if(!inv.dynamic.length)tutorialNote(body,inv.assets.length?'Este estudio no trae dinámica':'Sin dinámica cargada','Lee este paso para saber cómo se trabaja cuando cargues un estudio que sí la tenga. No fabriques una secuencia a partir de estáticas.');
-  if(demo&&inv.dynamic.length)tutorialNote(body,'Dinámica del caso demo · simulada','07-flujo-pelvis-simulado.dcm trae 64 tomas de 2 s por detector sobre la pelvis: detector 1 anterior y detector 2 posterior. Se construyó a partir de las imágenes tardías del mismo paciente para practicar la herramienta; no es una adquisición real. Propuesta: una página por detector, cada una con un mosaico de 32 imágenes.');
-  tutorialDiagram(body,'dynamic');
-  tutorialWalkthrough(body,['Pulsa «Nueva página».','Pulsa «Agregar imagen(es)…».','Marca solo la secuencia de un detector y pulsa «Agregar seleccionadas».','Haz clic en el mosaico para seleccionarlo. Un mosaico es un cuadro con muchas imágenes pequeñas.','Busca «Secuencia dinámica». En «Modo», selecciona «Sumar para obtener X imágenes».','En «Imágenes a mostrar», escribe 32. Pulsa «Aplicar».','Revisa de nuevo ventana, nivel y zoom del mosaico; «Aplicar» reinicia esos ajustes.','Si hay otro detector, repite los pasos en una página nueva.'], 'Un mosaico de 32 imágenes por cada secuencia de detector disponible. Debajo de los controles debe indicarse que se incluyen todos los fotogramas.', 'Al agregar una dinámica puede aparecer ya resumida en 32: es el ajuste inicial. Si no ves «Secuencia dinámica», selecciona el mosaico, no una estática. «Detector 1/2» no confirma anterior o posterior; conserva el rótulo disponible.');
-  inv.dynamic.forEach(a=>tutorialNote(body,'Detector '+a.detector+' · '+a.dynamicFrames.length+' fotogramas',tutorialSumDescription(a)));
-  tutorialNote(body,'32 se calcula por secuencia','64 fotogramas de un detector → 32 imágenes con sumas de 2. Si hay 64 en total repartidos 32 + 32 entre dos detectores, cada secuencia ya tiene 32: no corresponde sumar de 2. En 120 → 32 hay grupos de 3 y 4; revisa los rangos de cada rótulo.');
-  tutorialParagraph(body,'En los rótulos del mosaico, D es detector, F es fase y Σ indica cuántos fotogramas se sumaron. El rango 1–3 corresponde a posiciones de la secuencia; no lo interpretes como segundos sin revisar la duración de las tomas.');
-  tutorialList(tutorialFold(body,'Opcional · otros modos de mostrar la dinámica'),['«Sumar cada N fotogramas · conservar cuadro»: incluye toda la secuencia. Con 120 y N = 4 obtienes 30 imágenes.','«Desplegar X originales · adaptar cuadro»: muestra un tramo sin sumar, desde la posición elegida. Si X no cubre todo, quedan fotogramas fuera de esa vista.','Las sumas mantienen separados detectores y fases.']);
-  tutorialAction(body,'Señalar «Nueva página»','flex-add');
- }else if(key==='static'){
-  tutorialWalkthrough(body,['Decide qué imágenes vas a comparar en una misma página.','Pulsa «Nueva página».','Pulsa «Agregar imagen(es)…» y marca solo las imágenes de ese grupo. Usa el archivo y «imagen 1/2» para distinguir nombres repetidos.','Pulsa «Agregar seleccionadas».','Compara los rótulos con tu esquema. Arrastra las barras violetas si debes cambiar el orden.','Selecciona cada cuadro y ajusta su presentación como en el paso 5.','Repite desde «Nueva página» con el siguiente grupo.'], 'Una página por grupo, con las vistas en un orden que se lea de izquierda a derecha y de arriba abajo.', 'No hace falta que todas las páginas tengan cuatro cuadros. Dos nombres iguales no garantizan que sean la misma imagen; comprueba archivo, número, rótulo y región anatómica.');
-  if(demo)demoCase.staticPages.forEach((page,index)=>{body.append(tutorialNode('h3','Propuesta · página '+(index+2+demoCase.dynamicPages)+' · '+page.title));tutorialDiagram(body,'static',page.slots);tutorialParagraph(body,page.note);});
-  else tutorialDiagram(body,'static');
-  const details=document.createElement('details');details.append(tutorialNode('summary','Ver las estáticas disponibles'));tutorialAssets(details,inv.statics);body.append(details);
-  tutorialNote(body,'No dependas del orden de carga','«Ordenar página» sigue el orden de las imágenes cargadas; no identifica la anatomía ni empareja proyecciones. Revisa cada imagen y conserva sus rótulos.');
-  tutorialAction(body,'Señalar «Nueva página»','flex-add');
- }else if(key==='layout'){
-  tutorialWalkthrough(body,['Elige una página en el selector «Página».','Selecciona un cuadro. En «Tamaño fijo», elige un formato si necesitas igualarlo con otro. También puedes arrastrar su esquina roja.','Arrastra la barra violeta para colocarlo debajo del encabezado, sin tapar otro cuadro.','Revisa los rótulos de serie y proyección: deben quedar completos y legibles.','Si necesitas un rótulo adicional, haz clic derecho en el lienzo → «Agregar texto». Colócalo en un espacio libre.','Repite la revisión en las demás páginas.'], 'Páginas ordenadas, sin cuadros superpuestos ni anatomía tapada por texto. El encabezado y los rótulos permanecen legibles.', 'Arrastrar el interior mueve la imagen dentro de su cuadro; para mover el cuadro, arrastra la barra violeta. «Ordenar página» reorganiza todos los cuadros: úsalo antes de afinar a mano.');
-  tutorialParagraph(tutorialFold(body,'Opcional · medidas para una cuadrícula de cuatro cuadros'),'En cada cuadro: Ancho 580, Alto 377. Columna izquierda X 16; derecha X 604. Fila superior Y 110; inferior Y 495. Pulsa Tab después de escribir cada valor. X e Y indican la posición en el lienzo; no son medidas físicas del paciente.');
-  tutorialParagraph(tutorialFold(body,'Cómo quitar una imagen o ponerla en otra página'),'Haz clic derecho sobre el cuadro → «Eliminar imagen». Se quita de esa página, pero sigue disponible en «Agregar imagen(es)». Para ponerla en otra página, agrégala allí y quita la copia anterior. La nueva copia necesita sus propios ajustes de presentación.');
-  tutorialAction(body,'Señalar «Tamaño fijo»','flex-size');tutorialAction(body,'Señalar «Agregar texto»','flex-add-text');
- }else if(key==='review'){
-  tutorialWalkthrough(body,['Selecciona una página y revisa encabezado, imágenes y rótulos.','Repite con cada página del selector «Página».','Lee las comprobaciones y los avisos que aparecen debajo.','Corrige lo pendiente y marca cada casilla solo después de comprobarla.'], 'Todas las páginas están listas para exportar. Los avisos de imágenes pendientes, copias y superposiciones están revisados.', 'Un aviso no decide por ti. Comprueba si se trata de un descuido o de una elección justificada.');
-  const coverage=tutorialCoverage(inv);
-  tutorialParagraph(body,inv.assets.length?coverage.placed+' de '+inv.assets.length+' elementos del estudio colocados en '+coverage.used.length+' página(s). Cada secuencia dinámica cuenta como un elemento.':'Carga un estudio para comprobar la cobertura.','tutorial-status');
-  if(coverage.missing.length){const details=document.createElement('details');details.open=true;details.append(tutorialNode('summary',coverage.missing.length+' elemento(s) sin colocar'));tutorialAssets(details,coverage.missing);body.append(details);}
-  if(demo&&coverage.missing.length)tutorialParagraph(body,'En el caso demo es razonable dejar fuera la imagen de ruido y, si no aportan, las proyecciones sin rótulo. Las dos secuencias dinámicas deberían estar colocadas. Lo importante es que sea una decisión, no un olvido.');
-  if(coverage.incomplete)tutorialNote(body,'Dinámicas parciales',coverage.incomplete+' cuadro(s) dinámico(s) no incluyen todos sus fotogramas. Revisa «Modo», la cantidad y «Desde».');
-  if(coverage.duplicates)tutorialNote(body,'Copias en la composición',coverage.duplicates+' copia(s) adicional(es). Confirma que son intencionales y aportan una vista útil.');
-  if(coverage.overlaps)tutorialNote(body,'Cuadros superpuestos',coverage.overlaps+' pareja(s) de cuadros se cruzan. Revísalas para evitar ocultar información.');
-  tutorialParagraph(body,'La guía comprueba presencia y distribución. La legibilidad y la identificación correcta requieren tu revisión. Marca cada punto después de comprobarlo:');
-  for(const [id,text] of [
-   ['identity','Encabezado correcto en todas las páginas; ningún dato inventado.'],
-   ['views','Revisé todas las series y proyecciones; puedo justificar cualquier omisión.'],
-   ['sequence','Si hay dinámicas, incluí cada secuencia sin confundir detector con orientación.'],
-   ['quality','Revisé recortes, zoom, contraste y LUT; la anatomía de interés y los rótulos son legibles.'],
-   ['layout','No hay texto ni cuadros que oculten información relevante.']])tutorialCheck(body,id,text);
-  tutorialAction(body,'Señalar el selector de página','flex-page');
- }else if(key==='save'){
-  tutorialWalkthrough(body,['Selecciona la primera página y pulsa «Exportar PNG».','Busca la descarga y renómbrala, por ejemplo demo-pagina-01.png. Conserva la extensión .png.','Selecciona la siguiente página, expórtala y repite hasta la última.','Abre los PNG descargados y comprueba que son legibles.','Pulsa «Guardar proyecto», en la barra superior. Espera a que se descargue el archivo.','Renombra el proyecto, por ejemplo demo.dicomproject. Conserva la extensión .dicomproject.'], 'Tendrás un PNG por página y un archivo .dicomproject para retomar la composición.', '«Exportar PNG» solo exporta la página seleccionada. Busca los archivos en Descargas o en la carpeta que elegiste en el navegador. El PNG no permite recuperar la composición editable.');
-  tutorialNote(body,'Antes de recargar o salir','Guarda el proyecto. Exportar PNG no guarda una composición editable. Para continuar otro día, usa «Abrir proyecto».');
-  tutorialCheck(body,'png','Abrí y revisé los PNG de todas las páginas.');
-  tutorialCheck(body,'project','Guardé el proyecto y comprobé que el archivo descargado está disponible.');
-  tutorialAction(body,'Señalar «Exportar PNG»','flex-export');tutorialAction(body,'Señalar «Guardar proyecto»','save-project');
- }
- if(demo||key==='goal')tutorialQuestions(body,key);
-}
-function tutorialRefresh(){
- const body=$('tutorial-body'),scroll=body.scrollTop,expanded=new Map([...body.querySelectorAll('details')].map(d=>[d.querySelector('summary')?.textContent,d.open]));
- tutorialRender();
- for(const d of body.querySelectorAll('details')){const key=d.querySelector('summary')?.textContent;if(expanded.has(key))d.open=expanded.get(key);}
- body.scrollTop=scroll;
-}
-function tutorialSchedule(){if(!tutorial.open||tutorial.frame!==null)return;tutorial.frame=requestAnimationFrame(()=>{tutorial.frame=null;tutorialRefresh();});}
-function tutorialNavigate(step){tutorial.view='guide';tutorial.step=clamp(step,0,tutorialSteps.length-1);tutorial.steps.set(tutorial.caseId,tutorial.step);tutorialRender();$('tutorial-body').scrollTop=0;}
-function tutorialToggle(open=!tutorial.open){
- tutorial.open=open;document.body.classList.toggle('tutorial-open',open);$('tutorial-panel').hidden=!open;$('open-tutorial').setAttribute('aria-expanded',String(open));
- if(open)tutorialRefresh();else{document.querySelectorAll('.tutorial-highlight').forEach(n=>n.classList.remove('tutorial-highlight'));$('open-tutorial').focus();}
-}
-function initTutorial(){
- const toggle=tutorialNode('button','Tutorial de uso','primary');toggle.id='open-tutorial';toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls','tutorial-panel');toggle.onclick=()=>tutorialToggle();document.querySelector('.dicom-open-actions').append(toggle);
- const panel=tutorialNode('aside');panel.id='tutorial-panel';panel.hidden=true;panel.setAttribute('aria-label','Tutorial de uso del visor');
- panel.innerHTML='<div class="tutorial-title"><strong id="tutorial-title-text">Tutorial de uso</strong><button id="tutorial-minimize" type="button" aria-label="Minimizar tutorial">Minimizar</button></div><div class="tutorial-navigation" id="tutorial-navigation"><label for="tutorial-step">Paso</label><select id="tutorial-step"></select><label id="tutorial-study-wrap" hidden>Adaptar al <select id="tutorial-study" aria-label="Estudio de la guía"></select></label><p id="tutorial-inventory"></p><div class="tutorial-progress-row"><progress id="tutorial-progress" max="11" value="1" aria-label="Posición en el tutorial"></progress><span id="tutorial-position"></span></div></div><div id="tutorial-body" tabindex="0"></div><p id="tutorial-action-message" role="status"></p><div class="tutorial-footer" id="tutorial-footer"><button id="tutorial-previous">← Anterior</button><button id="tutorial-next">Siguiente →</button></div>';
- document.body.append(panel);tutorialSteps.forEach(([,title],index)=>{const option=tutorialNode('option',title);option.value=index;$('tutorial-step').append(option);});
- $('tutorial-minimize').onclick=()=>tutorialToggle(false);$('tutorial-step').onchange=e=>tutorialNavigate(Number(e.target.value));
- $('tutorial-study').onchange=e=>{tutorial.study=e.target.value;tutorialRender();};
- $('tutorial-previous').onclick=()=>tutorialNavigate(tutorial.step-1);$('tutorial-next').onclick=()=>tutorial.step===tutorialSteps.length-1?tutorialToggle(false):tutorialNavigate(tutorial.step+1);
- document.addEventListener('dicom-workspace-change',tutorialSchedule);
- for(const event of ['change','pointerup'])document.addEventListener(event,e=>{if(!panel.contains(e.target)&&e.target!==toggle)tutorialSchedule();});
- panel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();tutorialToggle(false);}});
- $('open-demo').onclick=loadDemoCase;
-}
-initTutorial();
-status('Usa Adquirir para configurar una nueva adquisición en los campos de este visor.');
-tutorialToggle(false);
+status('Usa Adquirir para crear imágenes desde el simulador.');
 </script>
 <style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>
 <script>
-// Keep file/project actions available without the embedded viewer title bar.
+// Integrated simulator edition: export tools, no external image import.
 (()=>{
+  const receiveFile=loadFile;
+  loadFile=async function(file,parsed){
+    if(parsed?.string('x00110010')!=='GANTRY_SIMULATION')throw Error('Sólo se admiten adquisiciones recibidas desde este simulador.');
+    return receiveFile(file,parsed);
+  };
   const bar=document.querySelector('.application-bar');
   const menu=document.createElement('select');
-  menu.id='processingFileMenu';menu.setAttribute('aria-label','Archivo y herramientas');
-  menu.innerHTML='<option value="" disabled selected>Archivo y herramientas…</option>';
-  for(const id of ['open','open-folder','save-project','open-project','open-tutorial']){
+  menu.id='processingFileMenu';menu.setAttribute('aria-label','Herramientas de procesamiento');
+  menu.innerHTML='<option value="" disabled selected>Herramientas…</option>';
+  for(const id of ['save-project']){
     const button=document.getElementById(id);
     if(button){const option=document.createElement('option');option.value=id;option.textContent=button.textContent;menu.append(option);}
   }
-  menu.onchange=()=>{const id=menu.value;menu.value='';document.getElementById(id)?.click();};
+  const help=document.createElement('option');help.value='help';help.textContent='Cómo adquirir y procesar';menu.append(help);
+  menu.onchange=()=>{
+    const id=menu.value;menu.value='';
+    if(id==='help')status('En Adquirir, elige estática o cuerpo entero, configura los campos e inicia. Las adquisiciones del gantry aparecen automáticamente en el menú izquierdo. Puedes procesarlas y exportar la página como PNG o guardar una copia del proyecto.');
+    else document.getElementById(id)?.click();
+  };
   bar.append(menu);
 })();
 
@@ -1540,6 +1220,7 @@ tutorialToggle(false);
   function check(file){
     if(!(file.bytes instanceof ArrayBuffer)||file.bytes.byteLength>32*1024*1024)throw Error('Tamaño de imagen no válido.');
     const ds=dicomParser.parseDicom(new Uint8Array(file.bytes)),r=ds.uint16('x00280010'),c=ds.uint16('x00280011'),bits=ds.uint16('x00280100'),pixel=ds.elements.x7fe00010;
+    if(ds.string('x00110010')!=='GANTRY_SIMULATION')throw Error('Sólo se admiten adquisiciones de este simulador.');
     if(!pixel||![16,32].includes(bits)||r!==file.rows||c!==file.cols||r*c>1024*1024*6||pixel.length!==r*c*bits/8||ds.string('x00080018')!==file.uid)throw Error('Matriz o identificador no válido.');
     const view=new DataView(ds.byteArray.buffer,ds.byteArray.byteOffset+pixel.dataOffset,pixel.length);
     let total=0;for(let i=0;i<r*c;i++)total+=bits===16?view.getUint16(i*2,true):view.getUint32(i*4,true);

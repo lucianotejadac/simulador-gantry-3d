@@ -86,6 +86,12 @@ print('pydicom: pixel totals, dimensions, duration and dose verified')`],{input:
  assert.equal(globals.flex.pages.length,1);
  const bad=structuredClone(event.data);bad.files[0].total++;
  await listeners.message({...event,data:bad});assert.match(replies.at(-1).error,/cuentas/);
+ const external=structuredClone(event.data),bytes=new Uint8Array(external.files[0].bytes);
+ const creator=Buffer.from(bytes).indexOf(Buffer.from('GANTRY_SIMULATION'));assert(creator>=0);
+ bytes[creator]=88;
+ const previousImports=imports.length;
+ await listeners.message({...event,data:external});
+ assert.match(replies.at(-1).error,/simulador/);assert.equal(imports.length,previousImports);
  const html=fs.readFileSync('index.html','utf8');assert.match(html,/<iframe id="boneProcessingFrame"[^>]*data-src=/);
  assert(!/<iframe id="boneProcessingFrame"[^>]*\ssrc=/.test(html),'Viewer must not load at startup');
  console.log('OK: lossless 128/256 and rectangular images, 32-bit overflow, orientation, immutable originals, project bytes, receiver source/origin checks, totals, deduplication, lazy loading.');
