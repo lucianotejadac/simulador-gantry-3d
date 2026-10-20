@@ -60,6 +60,7 @@ s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important
               (ROOT / 'scripts/processing_console.css').read_text(encoding='utf-8') + '</style>\n<script>\n' +
               (ROOT / 'scripts/processing_compact.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_acquisition_config.js').read_text(encoding='utf-8') + '\n' +
+              (ROOT / 'scripts/processing_acquisition_actions.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_acquisition_editor.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_detector_pair.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_session_list.js').read_text(encoding='utf-8') + '\n' +

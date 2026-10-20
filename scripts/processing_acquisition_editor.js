@@ -1,13 +1,13 @@
 /* Acquisition drafts use the viewer's existing patient/camera/stop panes. */
 (function(){
   'use strict';
-  let draft=null,serial=0,waiting=null,lastConfig=null,lastId=null,lastState=null,previousBadge='';
+  let draft=null,serial=0,waiting=null,lastConfig=null,lastId=null,lastState=null,previousBadge='',actionModel=null;
   const retained=new Map(),inputs=new Map();
   const panes=['patient','summary','series','camera','stop','images'];
   const menu=document.createElement('select');menu.id='processingAcquireMenu';menu.setAttribute('aria-label','Adquirir');
   document.querySelector('.application-bar').prepend(menu);
   const style=document.createElement('style');style.textContent=`
-    #processingAcquireMenu{max-width:235px;height:27px;font-size:12px;margin-right:6px}
+    #processingAcquireMenu{max-width:290px;height:30px;font-size:12px;margin-right:6px}
     body.gantry-acquisition-draft .field :is(input:not([readonly]),select){background:#ffffe1;color:#000;width:100%;min-width:0;border:2px inset #eee;padding:3px;font:inherit;box-sizing:border-box}
     body.gantry-acquisition-draft :is(#static-overview,#acquisition-instance-wrap,.metadata,.viewer>.toolbar){display:none!important}
     body.gantry-acquisition-draft #acquisition-thumbnails{display:none}
@@ -19,9 +19,11 @@
   consoleBar.setAttribute('aria-label','Control de adquisición');
   consoleBar.innerHTML=`
     <div class="console-summary" id="consoleSummary">Prepara una adquisición para configurar la cámara y las condiciones de paro.</div>
-    <div class="console-prepare"><label for="consoleKind">Adquisición</label>
+    <div class="console-state" id="consoleState" role="status"></div>
+    <div class="console-prepare"><label for="consoleKind">Tipo de adquisición</label>
       <select id="consoleKind"><option value="static">Estática</option><option value="whole">Cuerpo entero</option></select>
-      <button type="button" data-acquire="prepare">Preparar adquisición</button></div>
+      <button type="button" data-acquire="prepare">Nueva adquisición</button>
+      <button type="button" data-acquire="cancel" hidden>Cancelar configuración</button></div>
     <div class="console-transport">
       <button type="button" data-acquire="start" title="Iniciar adquisición"><b aria-hidden="true">▶</b> Iniciar</button>
       <button type="button" data-acquire="pause"><b aria-hidden="true">Ⅱ</b> <span>Pausar</span></button>
@@ -39,37 +41,44 @@
   });
   $('consoleKind').addEventListener('change',()=>{
     const kind=$('consoleKind').value;
-    if(draft&&!draft.id&&!waiting){
-      render({...read(false),kind});
-    }else performAction(kind);
+    performAction(kind);
   });
   const send=data=>parent.postMessage({...data,version:1},location.origin);
   function request(type,extra={}){const id=++serial;waiting=id;send({type,request:id,...extra});return id;}
   function setMenu(){
-    const running=!!lastId&&lastState?.finished!==true;
-    const items=[['','Adquirir…'],['static','Nueva adquisición estática'],['whole','Nueva adquisición cuerpo entero']];
-    if(draft&&!draft.id)items.push(['start','Iniciar adquisición'],['instant','Adquisición instantánea'],['cancel','Cancelar configuración']);
-    if(lastId){
-      if(!draft)items.push(['current','Ver adquisición actual']);
-      if(running)items.push(['pause',lastState?.paused?'Reanudar':'Pausar'],['fast','Avance rápido · '+(lastState?.speed||1)+'×'],['instant','Adquisición instantánea'],['stop','Finalizar adquisición']);
-      else if(!lastState?.cancelled)items.push(['save','Guardar adquisición en caché']);
-    }
-    const signature=JSON.stringify([items,running]);
+    const kind=draft?.config.kind||lastConfig?.kind||$('consoleKind').value;
+    actionModel=window.GANTRY_ACQUISITION_ACTIONS.model({draftId:draft?.id,hasDraft:!!draft,lastId,state:lastState,waiting:!!waiting,kind});
+    const {running,ready,type,phase,actions}=actionModel;
+    const caption=(draft||lastId?type+' · ':'')+phase+'…';
+    const signature=JSON.stringify([caption,actions]);
     if(menu.dataset.signature!==signature){
-      menu.replaceChildren(...items.map(([value,text])=>{const o=document.createElement('option');o.value=value;o.textContent=text;o.disabled=!value||(running&&['static','whole'].includes(value));return o;}));menu.value='';menu.dataset.signature=signature;
+      const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=caption;placeholder.disabled=true;
+      menu.replaceChildren(placeholder);
+      for(const name of ['Configuración','Adquisición','Resultados']){
+        const group=document.createElement('optgroup');group.label=name;
+        for(const a of actions.filter(a=>a.group===name)){
+          const o=document.createElement('option');o.value=a.id;o.textContent=a.label;o.disabled=!a.enabled;group.append(o);
+        }
+        menu.append(group);
+      }
+      menu.value='';menu.dataset.signature=signature;
     }
     menu.disabled=!!waiting;
-    const ready=!!draft&&!draft.id;
+    $('consoleState').textContent=(draft||lastId?type+' · ':'')+phase;
     for(const button of consoleBar.querySelectorAll('button[data-acquire]')){
-      const action=button.dataset.acquire;
-      const allowed=action==='prepare'?!running:action==='start'?ready:
-        action==='instant'?(ready||running):action==='save'?(!!lastId&&!running&&!lastState?.cancelled):running;
-      button.disabled=!!waiting||!allowed;
+      const id=button.dataset.acquire,a=actions.find(a=>a.id===id);
+      button.disabled=id==='prepare'?!!waiting||running||ready:!a?.enabled;
+      if(a){
+        button.title=a.label;button.setAttribute('aria-label',a.label);
+        if(button.querySelector('b')){
+          const icon=button.querySelector('b');button.replaceChildren(icon,document.createTextNode(' '+a.label));
+        }else button.textContent=a.label;
+      }
+      if(id==='prepare')button.hidden=ready;
+      if(id==='cancel')button.hidden=!ready;
     }
     $('consoleKind').disabled=!!waiting||running;
-    consoleBar.querySelector('[data-acquire="pause"] span').textContent=lastState?.paused?'Reanudar':'Pausar';
-    consoleBar.querySelector('[data-acquire="fast"]').textContent='▶▶ Avance rápido · '+(lastState?.speed||1)+'×';
-    if(draft)$('consoleKind').value=draft.config.kind;
+    if(draft||lastId)$('consoleKind').value=kind;
   }
   function finish(){
     if(!draft)return;
@@ -188,8 +197,12 @@
   }
   function performAction(action){
     if(waiting)return;
+    if(!actionModel?.actions.find(a=>a.id===action)?.enabled)return;
     try{
-      if(action==='static'||action==='whole'){request('GANTRY_ACQUIRE_CONFIG',{kind:action});}
+      if(action==='static'||action==='whole'){
+        if(draft&&!draft.id)render({...read(false),kind:action});
+        else request('GANTRY_ACQUIRE_CONFIG',{kind:action});
+      }
       else if(action==='cancel')finish();
       else if(action==='current')render(lastConfig,true);
       else if((action==='start'||action==='instant')&&draft&&!draft.id){

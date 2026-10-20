@@ -1,0 +1,26 @@
+/* One action model for the acquisition menu and its transport controls. */
+(function(){
+  'use strict';
+  function model({draftId,hasDraft,lastId,state,waiting,kind}){
+    const running=!!lastId&&state?.finished!==true;
+    const ready=hasDraft&&!draftId;
+    const completed=!!lastId&&!running;
+    const type=kind==='whole'?'Cuerpo entero':'Estática';
+    const phase=waiting?'Preparando':ready?'Configuración':running?(state?.paused?'En pausa':'Adquiriendo'):
+      completed?(state?.cancelled?'Cancelada':'Finalizada'):'Sin adquisición';
+    const action=(id,label,enabled,group)=>({id,label,enabled:!waiting&&enabled,group});
+    return {running,ready,type,phase,actions:[
+      action('static','Nueva adquisición estática',!running,'Configuración'),
+      action('whole','Nueva adquisición cuerpo entero',!running,'Configuración'),
+      action('cancel','Cancelar configuración',ready,'Configuración'),
+      action('start','Iniciar adquisición',ready,'Adquisición'),
+      action('instant','Adquisición instantánea',ready||running,'Adquisición'),
+      action('pause',state?.paused?'Reanudar adquisición':'Pausar adquisición',running,'Adquisición'),
+      action('fast','Avance rápido · '+(state?.speed||1)+'×',running,'Adquisición'),
+      action('stop','Finalizar adquisición',running,'Adquisición'),
+      action('current','Ver adquisición actual',!!lastId&&!hasDraft,'Resultados'),
+      action('save','Guardar adquisición',completed&&!ready&&!state?.cancelled,'Resultados')
+    ]};
+  }
+  window.GANTRY_ACQUISITION_ACTIONS={model};
+})();

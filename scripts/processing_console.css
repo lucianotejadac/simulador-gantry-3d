@@ -27,6 +27,8 @@ body.gantry-acquisition-draft .draft-image .scan{min-height:80px;flex:1}
 .draft-progress{height:6px;accent-color:#000080}
 #acquisitionConsole{flex:none;border-top:2px groove #eee;padding-top:6px}
 #acquisitionConsole .console-summary{font-size:12px;line-height:1.5;padding:4px 0 8px;color:#333}
+.console-state{font-size:12px;font-weight:bold;color:#000080;padding:3px 0 6px}
+.console-prepare [hidden]{display:none!important}
 .console-prepare{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
 .console-prepare label{font-size:12px}
 .console-prepare select{flex:1;min-width:95px;height:28px}
