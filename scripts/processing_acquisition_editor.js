@@ -102,13 +102,13 @@
   }
   function stopMetadata(){
     if(draft)return;const info=recorded(),a=info?.acquisition;if(!a)return;
-    for(const n of $('stop').querySelectorAll('input[data-label]')){
-      const v=n.dataset.label==='Tiempo programado'&&a.mode==='time'?a.target+' s':
-        n.dataset.label==='Conteos de paro (Kcts)'&&a.mode==='counts'?(a.target/1000).toLocaleString('es-CL'):
-        n.dataset.label==='Contornos automáticos'&&info.scan?(info.scan.contours==='fixed'?'Desactivados · distancia fija':'Activados'):
-        n.dataset.label==='Condición registrada'?(a.mode==='counts'?'Cuentas':a.mode==='time'?'Tiempo':'Barrido'):null;
-      if(v!==null){n.value=v;n.classList.remove('missing');n.title='Parámetro registrado por el simulador al adquirir.';}
+    const fields=window.GANTRY_RECORDED_METADATA.fields(info,currentMode==='whole'?info.detector:selectedDetector+1);
+    for(const id of ['camera','summary','series','stop','static-overview'])for(const n of $(id)?.querySelectorAll('input[data-label]')||[]){
+      const v=fields[n.dataset.label];
+      if(v!==undefined){n.value=v;n.classList.remove('missing');n.title='Información del registro de esta adquisición simulada; no usa los ajustes actuales del gantry.';}
     }
+    for(const radio of $('stop').querySelectorAll('input[name="termination-mode"]'))radio.checked=radio.value===(a.mode==='time'?'TIME':a.mode==='counts'?'CNTS':'');
+    for(const hint of $('stop').querySelectorAll('.hint'))hint.textContent='Parámetros y tiempos registrados al adquirir. Los tiempos corresponden al examen simulado, incluso si se utilizó avance rápido o adquisición instantánea.';
   }
   const originalConditions=renderDetectorConditions;
   renderDetectorConditions=function(){originalConditions();stopMetadata();};

@@ -820,7 +820,7 @@
         <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
       </details>
       <div id="boneProcessingStatus" role="status"></div>
-      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=d67c61226d6a8b02"></iframe>
+      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=11748eb99cb0ad23"></iframe>
     </section>
     <!-- PROCESSING_UI_END -->
 <section class="gantry-live" id="gantryLive" aria-label="Controles y adquisiciones">
@@ -4482,7 +4482,8 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   function recordProcessingGeometry(){
     if(!session||session.finished)return;
     const live=window.GANTRY_LIVE,meta=live?.state;
-    const sample={settings:JSON.parse(JSON.stringify(live?.settings||{})),geometry:{...(meta?.state||window.GANTRY.G)},
+    const sample={settings:JSON.parse(JSON.stringify(live?.settings||{})),geometry:{...(meta?.state||window.GANTRY.G),
+      detectorSeparation:window.GANTRY.G.detectorSeparation??180},
       detectors:[meta?.d1,meta?.d2].map(d=>d?{view:d.view,angle:d.angle,rawAngle:d.rawAngle,crop:d.crop,
         distance:d.effectiveDistance,segment:d.segment,orientationMatched:d.orientationMatched,
         responseModel:d.responseModel||null,systemFwhmMm:d.systemFwhmMm||null,
@@ -4490,7 +4491,8 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
         pixelMm:session.kind==='whole'?session.pixelMm:(d.pixelMm||null),
         responseDistanceConvention:d.responseDistanceConvention||null}:null)};
     const signature=JSON.stringify([sample.settings,sample.geometry]);
-    if(!session.processing||session.heads.every(h=>h.total===0))session.processing={acquisitionId:session.id,startedAt:session.createdAt,first:sample,last:sample,varied:false};
+    if(!session.processing||session.heads.every(h=>h.total===0))session.processing={acquisitionId:session.id,startedAt:session.createdAt,first:sample,last:sample,varied:false,
+      uniformityApplied:false,stopRule:session.mode==='scan'?'scan':'independent'};
     else {
       if(session.mode!=='scan'&&signature!==session.processingSignature)session.processing.varied=true;
       session.processing.last=sample;
@@ -4931,7 +4933,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 </script>
 <!-- BONE_ACQ_ENGINE_END -->
 <!-- PROCESSING_ENGINE_BEGIN -->
-<script src="assets/runtime/processing-controller.16b5e7218fa01d95.js"></script>
+<script src="assets/runtime/processing-controller.eec83b4904d87966.js"></script>
 <!-- PROCESSING_ENGINE_END -->
 <!-- CONSOLE_MENUS_BEGIN -->
 <link rel="stylesheet" data-console-menus href="assets/runtime/console-menus.c37f7a3a5078c291.css">

@@ -1113,6 +1113,62 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   window.GANTRY_ACQUISITION_ACTIONS={model};
 })();
 
+/* Read acquisition snapshots only; never use the current gantry for saved images. */
+(function(){
+  'use strict';
+  const finite=v=>typeof v==='number'&&Number.isFinite(v);
+  const number=v=>v.toLocaleString('es-CL',{maximumFractionDigits:3});
+  function fields(info,detector=info?.detector||1){
+    if(!info?.simulation)return {};
+    const a=info.acquisition||{},p=info.processing||{},first=p.first||{},s=first.settings||info.settings||{};
+    const g=first.geometry||{},d=first.detectors?.[detector-1],scan=info.scan;
+    const angles=first.detectors?.map(d=>d?.rawAngle??d?.angle)||[];
+    const difference=angles.length===2&&angles.every(finite)?((angles[1]-angles[0])%360+360)%360:null;
+    const separation=finite(g.detectorSeparation)?g.detectorSeparation:difference===null?null:Math.min(difference,360-difference);
+    const h=info.heads?.find(h=>h.detector===detector)||(info.detector===detector?info:null);
+    const varied=p.varied?' · al inicio':'';
+    const out={
+      'Programación de cámara':'Óseo · MDP',
+      'Órgano':'Sistema óseo',
+      'Detectores':'1 y 2 · imagen del detector '+(info.detector||detector),
+      'Configuración basada':'Geometría registrada del simulador'+varied,
+      'Configuración basada en estudio':'Óseo · MDP',
+      'Corrección de uniformidad':p.uniformityApplied===false?'No aplicada · sin mapa de corrección':p.uniformityApplied===true?'Aplicada':'No registrada',
+      'Orientación':typeof s.headFirst==='boolean'?(s.headFirst?'Cabeza dentro · pies fuera':'Cabeza fuera · pies dentro')+varied:'No registrada',
+      'Posición del cuerpo':['supine','prone'].includes(s.decubitus)?(s.decubitus==='supine'?'Supino':'Prono')+varied:'No registrada',
+      'Imagen 1':a.names?.[0], 'Imagen 2':a.names?.[1],
+      'Condición registrada':a.mode==='counts'?'Cuentas':a.mode==='time'?'Tiempo':a.mode==='scan'?'Final del recorrido hacia los pies':undefined,
+      'Tiempo programado':a.mode==='time'&&finite(a.target)?number(a.target)+' s':'No aplica',
+      'Conteos de paro (Kcts)':a.mode==='counts'&&finite(a.target)?number(a.target/1000):'No aplica',
+      'Ángulo inicial':finite(d?.rawAngle)?number(d.rawAngle)+'°':finite(d?.angle)?number(d.angle)+'°':undefined,
+      'Duración real':finite(h?.elapsed)?number(h.elapsed)+' s':undefined,
+      'Configuración de detector':finite(separation)?number(separation)+'°'+varied:undefined
+    };
+    if(p.stopRule==='independent'){
+      out['Paro entre detectores']='Cada detector al alcanzar su objetivo';
+      out['Mismos parámetros para detector 2']='Sí';
+      out['Primera imagen por conteos']='No aplica · una imagen por detector';
+      out['Grupo de ventanas de paro']='Ventana energética configurada';
+    }
+    if(scan){
+      out['Contornos automáticos']=scan.contours==='fixed'?'Desactivados · distancia fija':'Activados';
+      out['Pasos']='Uno · barrido continuo';
+    }
+    return out;
+  }
+  function timing(info){
+    if(!info?.simulation||!finite(info.elapsed))return null;
+    const out={elapsed:number(info.elapsed)+' s'};
+    if(info.stoppedEarly===false)out.remaining='0 s · finalizada';
+    else if(info.stoppedEarly===true){
+      const a=info.acquisition||{};
+      out.remaining=a.mode==='time'&&finite(a.target)?number(Math.max(0,a.target-info.elapsed))+' s · interrumpida':'Interrumpida';
+    }
+    return out;
+  }
+  window.GANTRY_RECORDED_METADATA={fields,timing};
+})();
+
 /* Acquisition drafts use the viewer's existing patient/camera/stop panes. */
 (function(){
   'use strict';
@@ -1217,13 +1273,13 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   }
   function stopMetadata(){
     if(draft)return;const info=recorded(),a=info?.acquisition;if(!a)return;
-    for(const n of $('stop').querySelectorAll('input[data-label]')){
-      const v=n.dataset.label==='Tiempo programado'&&a.mode==='time'?a.target+' s':
-        n.dataset.label==='Conteos de paro (Kcts)'&&a.mode==='counts'?(a.target/1000).toLocaleString('es-CL'):
-        n.dataset.label==='Contornos automáticos'&&info.scan?(info.scan.contours==='fixed'?'Desactivados · distancia fija':'Activados'):
-        n.dataset.label==='Condición registrada'?(a.mode==='counts'?'Cuentas':a.mode==='time'?'Tiempo':'Barrido'):null;
-      if(v!==null){n.value=v;n.classList.remove('missing');n.title='Parámetro registrado por el simulador al adquirir.';}
+    const fields=window.GANTRY_RECORDED_METADATA.fields(info,currentMode==='whole'?info.detector:selectedDetector+1);
+    for(const id of ['camera','summary','series','stop','static-overview'])for(const n of $(id)?.querySelectorAll('input[data-label]')||[]){
+      const v=fields[n.dataset.label];
+      if(v!==undefined){n.value=v;n.classList.remove('missing');n.title='Información del registro de esta adquisición simulada; no usa los ajustes actuales del gantry.';}
     }
+    for(const radio of $('stop').querySelectorAll('input[name="termination-mode"]'))radio.checked=radio.value===(a.mode==='time'?'TIME':a.mode==='counts'?'CNTS':'');
+    for(const hint of $('stop').querySelectorAll('.hint'))hint.textContent='Parámetros y tiempos registrados al adquirir. Los tiempos corresponden al examen simulado, incluso si se utilizó avance rápido o adquisición instantánea.';
   }
   const originalConditions=renderDetectorConditions;
   renderDetectorConditions=function(){originalConditions();stopMetadata();};
@@ -1404,6 +1460,16 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   'use strict';
   let pair=[],series='';
   const simulated=ds=>ds?.string('x00110010')==='GANTRY_SIMULATION';
+  function renderRecordedTimes(i){
+    if(!simulated(dataset))return;
+    let info;try{info=JSON.parse(value(dataset,'00111010'));}catch(_){return;}
+    const times=window.GANTRY_RECORDED_METADATA.timing(info);
+    if(times)for(const row of $('stats-'+i)?.querySelectorAll('.stat')||[]){
+      const label=row.querySelector('label')?.textContent,out=row.querySelector('output');
+      const text=label==='T. transcurrido'?times.elapsed:label==='T. restante'?times.remaining:undefined;
+      if(out&&text!==undefined){out.textContent=text;out.title='Tiempo registrado del detector de esta imagen. Segundos simulados.';}
+    }
+  }
   const originalBuild=buildPanels,originalRender=render;
   buildPanels=function(){
     pair=[];series='';
@@ -1430,13 +1496,16 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   };
   render=function(i){
     const select=$('frame-'+i),index=select?.value;
-    if(!pair.length||dataset?.string('x0020000e')!==series||index===''||!pair[Number(index)])return originalRender(i);
+    if(!pair.length||dataset?.string('x0020000e')!==series||index===''||!pair[Number(index)]){
+      const result=originalRender(i);renderRecordedTimes(i);return result;
+    }
     const state=pair[Number(index)],before={dataset,pixels,frameCount,frameSize};
     // The existing renderer expects a frame index within one instance.
     // Each detector instance contains exactly one frame, numbered zero.
     try{
       dataset=state.dataset;pixels=state.pixels;frameCount=state.frameCount;frameSize=state.frameSize;
       select.value='0';const result=originalRender(i);
+      renderRecordedTimes(i);
       $('detector-'+i).textContent='Detector '+state.dataset.string('x00200013');
       return result;
     }finally{

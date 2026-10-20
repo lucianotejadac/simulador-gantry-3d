@@ -97,7 +97,8 @@
   function recordProcessingGeometry(){
     if(!session||session.finished)return;
     const live=window.GANTRY_LIVE,meta=live?.state;
-    const sample={settings:JSON.parse(JSON.stringify(live?.settings||{})),geometry:{...(meta?.state||window.GANTRY.G)},
+    const sample={settings:JSON.parse(JSON.stringify(live?.settings||{})),geometry:{...(meta?.state||window.GANTRY.G),
+      detectorSeparation:window.GANTRY.G.detectorSeparation??180},
       detectors:[meta?.d1,meta?.d2].map(d=>d?{view:d.view,angle:d.angle,rawAngle:d.rawAngle,crop:d.crop,
         distance:d.effectiveDistance,segment:d.segment,orientationMatched:d.orientationMatched,
         responseModel:d.responseModel||null,systemFwhmMm:d.systemFwhmMm||null,
@@ -105,7 +106,8 @@
         pixelMm:session.kind==='whole'?session.pixelMm:(d.pixelMm||null),
         responseDistanceConvention:d.responseDistanceConvention||null}:null)};
     const signature=JSON.stringify([sample.settings,sample.geometry]);
-    if(!session.processing||session.heads.every(h=>h.total===0))session.processing={acquisitionId:session.id,startedAt:session.createdAt,first:sample,last:sample,varied:false};
+    if(!session.processing||session.heads.every(h=>h.total===0))session.processing={acquisitionId:session.id,startedAt:session.createdAt,first:sample,last:sample,varied:false,
+      uniformityApplied:false,stopRule:session.mode==='scan'?'scan':'independent'};
     else {
       if(session.mode!=='scan'&&signature!==session.processingSignature)session.processing.varied=true;
       session.processing.last=sample;

@@ -49,6 +49,7 @@
       const data=new Uint8Array(head.counts.length*bits/8),view=new DataView(data.buffer);
       head.counts.forEach((n,i)=>bits===16?view.setUint16(i*2,n,true):view.setUint32(i*4,n,true));
       const info={simulation:true,recordId:record.id,detector:j+1,total:head.total,elapsed:head.elapsed,
+        heads:record.heads.map(h=>({detector:h.detector,elapsed:h.elapsed,total:h.total,done:h.done})),
         acquisition:{kind:record.kind||'static',mode:record.mode,target:record.target,names:record.names},
         mdp:record.mdp||null,settings,processing:record.processing||null,scan:record.scan||null,sampling:record.sampling||null,
         stoppedEarly:!head.done,encoding:bits===16?'NM16':'PRIVATE_GANTRY_COUNTS32'};
