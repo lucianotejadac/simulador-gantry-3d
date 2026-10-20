@@ -1,6 +1,11 @@
-/* Whole-body projection adapter: linear ICRP activity, native aspect ratio. */
+/* Whole-body projection adapter: linear ICRP activity, square physical pixels. */
 (function(){
   'use strict';
+  // WB_scanspeed.dcm: Siemens NM Encore2, 256 columns × 1024 rows,
+  // PixelSpacing 2.3975999355316 mm. Other matrices are proportional
+  // teaching layouts, not additional verified scanner acquisition formats.
+  const REFERENCE_PIXEL_MM=2.3975999355316;
+  const FIELD_WIDTH_MM=256*REFERENCE_PIXEL_MM;
   function eligibility(G,physical,declared){
     if(G?.setup&&G.setup!=='normal')return {ok:false,reason:'Para el barrido usa la camilla del equipo: selecciona la posición 1 o 6.'};
     if(!physical||physical.headFirst!==false)return {ok:false,reason:'Coloca al paciente con los pies hacia adentro (Cambiar posición de paciente).'};
@@ -10,10 +15,13 @@
     return {ok:true,reason:'Inicio en posición actual · detectores automáticos · pies hacia adentro'};
   }
   function geometry(pose,n){
-    // 56 cm transverse coverage at the same physical pixel size in both axes.
-    // Include the entire source volume, including raised hands and soles.
-    const width=Math.max(560/3,pose.width),height=pose.height;
-    return {width:n,height:Math.ceil(height/width*n),crop:{x:(pose.width-width)/2,y:0,w:width,h:height}};
+    const sourcePixelMm=pose.pixelMm||3;
+    const width=FIELD_WIDTH_MM/sourcePixelMm,height=4*width;
+    return {width:n,height:4*n,pixelMm:FIELD_WIDTH_MM/n,sourcePixelMm,
+      sampling:{pixelMm:FIELD_WIDTH_MM/n,widthMm:FIELD_WIDTH_MM,heightMm:4*FIELD_WIDTH_MM,
+        reference:'WB_scanspeed.dcm · SIEMENS NM Encore2 · 256×1024',
+        proportional:n!==256},
+      crop:{x:(pose.width-width)/2,y:(pose.height-height)/2,w:width,h:height}};
   }
   // Exact exposure of a source row while a finite detector window translates.
   function exposure(row,from,to,half,seconds){
@@ -37,7 +45,7 @@
       const dt=Math.min(seconds,(this.target-this.travel)*60/this.velocity),from=this.row;
       const travel=Math.min(this.target,this.travel+dt*this.velocity/60);
       const to=this.fromRow+(this.toRow-this.fromRow)*travel/this.target;
-      const half=560/3/2,poisson=window.GANTRY_BONE_CORE.poisson;
+      const half=280/this.sourcePixelMm,poisson=window.GANTRY_BONE_CORE.poisson;
       fields.forEach((f,j)=>{
         const h=this.heads[j];if(f.values.length!==h.counts.length)throw Error('Campo incompatible con el barrido');
         for(let y=0;y<this.height;y++){
@@ -204,10 +212,10 @@
       const to=scan.fromRow+(scan.toRow-scan.fromRow)*nextTravel/scan.target;
       for(let y=0;y<scan.height;y++){
         const row=scan.crop.y+(y+.5)*scan.crop.h/scan.height;
-        const weight=exposure(row,from,to,560/3/2,dt)*(mdp?.rate??rate)/2000000;
+        const weight=exposure(row,from,to,280/scan.sourcePixelMm,dt)*(mdp?.rate??rate)/2000000;
         if(!weight)continue;
         for(let x=0;x<scan.n;x++){
-          if(Math.abs((x+.5)/scan.n-.5)*scan.crop.w>560/3/2)continue;
+          if(Math.abs((x+.5)/scan.n-.5)*scan.crop.w>280/scan.sourcePixelMm)continue;
           const i=y*scan.n+x;
           expected[0][i]+=sample[0].values[i]*weight;
           expected[1][i]+=sample[1].values[i]*weight;

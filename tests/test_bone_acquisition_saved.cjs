@@ -12,8 +12,8 @@ function environment(whole=false){
  const values=new Float32Array(128*128);values[5]=2000000;const cdf=new Float64Array(values.length);cdf.fill(2000000,5);
  const field={values,cdf,sum:2000000};
  const G={rot:0,tableZ:184};
- const wholeValues=new Float32Array(128*320),wholeCdf=new Float64Array(wholeValues.length);wholeValues[5]=2000000;wholeCdf.fill(2000000,5);
- const window={GANTRY:{G,render(){}},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync(window.GANTRY_LIVE.settings.study||'bone',[field,field],1000);}},GANTRY_BONE_WHOLE:{position:()=>({ok:G.tableZ>16,reason:'Centra en cráneo'}),fields:()=>({height:320,fields:[1,2].map(()=>({values:wholeValues,cdf:wholeCdf,sum:2000000}))})}};
+ const wholeValues=new Float32Array(128*512),wholeCdf=new Float64Array(wholeValues.length);wholeValues[128*80+64]=2000000;wholeCdf.fill(2000000,128*80+64);
+ const window={GANTRY:{G,render(){}},GANTRY_LIVE:{settings:{matrix:128},update(){window.GANTRY_BONE_ACQ.sync(window.GANTRY_LIVE.settings.study||'bone',[field,field],1000);}},GANTRY_BONE_WHOLE:{position:()=>({ok:G.tableZ>16,reason:'Centra en cráneo'}),fields:()=>({height:512,fields:[1,2].map(()=>({values:wholeValues,cdf:wholeCdf,sum:2000000}))})}};
  const context=vm.createContext({window,document,performance:{now:()=>now},crypto:webcrypto,structuredClone,Uint32Array,setInterval(){},setTimeout,clearTimeout});
  vm.runInContext(fs.readFileSync('scripts/bone_whole_body.js','utf8'),context);
  const {Scan}=window.GANTRY_BONE_WHOLE;
@@ -85,10 +85,12 @@ function environment(whole=false){
  const broken=structuredClone(first);broken.heads[0].counts[5]=999;assert.throws(()=>b.storage.validate(broken));
  assert.throws(()=>b.storage.validate({...first,version:2}));
  const c=environment(true);assert(!c.el('boneAcqStart').disabled);
+ c.window.GANTRY_BONE_ACQ.matrixChanged(256,512);
+ assert.equal(c.el('boneAcqVelocity').value,'10','Changing matrix must not silently change scan speed');
  c.window.GANTRY.G.tableZ=16;c.tick(.11);c.window.GANTRY_LIVE.update();assert(c.el('boneAcqStart').disabled);
  c.submit(30,'Cuerpo anterior','Cuerpo posterior');assert.equal(c.window.GANTRY_BONE_ACQ.state,null);
  c.window.GANTRY.G.tableZ=184;c.tick(.11);c.window.GANTRY_LIVE.update();assert(!c.el('boneAcqStart').disabled);
- c.submit(30,'Cuerpo anterior','Cuerpo posterior');assert.equal(c.window.GANTRY_BONE_ACQ.state.height,320);
+ c.submit(30,'Cuerpo anterior','Cuerpo posterior');assert.equal(c.window.GANTRY_BONE_ACQ.state.height,512);
  c.window.GANTRY.G.tableZ=180;c.tick(1);assert(c.window.GANTRY_BONE_ACQ.state.paused);assert.equal(c.window.GANTRY_BONE_ACQ.state.heads[0].total,0);
  await c.el('boneAcqInstant').onclick();assert(!c.window.GANTRY_BONE_ACQ.state.finished);
  c.window.GANTRY.G.tableZ=184;
@@ -97,11 +99,13 @@ function environment(whole=false){
  c.el('boneAcqFast').onclick();c.tick(.1);assert.equal(c.window.GANTRY_BONE_ACQ.state.speed,10);assert(Math.abs(c.window.GANTRY_BONE_ACQ.state.heads[0].elapsed-beforeFast-1)<1e-8);
  assert(!c.el('boneAcqInstant').hidden);assert(!c.el('boneAcqSpeedWrap').hidden);
  await c.el('boneAcqInstant').onclick();assert(c.window.GANTRY_BONE_ACQ.state.finished);assert.equal(c.window.GANTRY.G.tableZ,16);await c.el('boneAcqSave').onclick();
- const wholeRecord=[...database.values()].at(-1);assert.equal(wholeRecord.height,320);assert.equal(wholeRecord.kind,'whole');c.storage.validate(wholeRecord);
+ const wholeRecord=[...database.values()].at(-1);assert.equal(wholeRecord.height,512);assert.equal(wholeRecord.kind,'whole');c.storage.validate(wholeRecord);
+ assert(Math.abs(wholeRecord.sampling.pixelMm-4.7951998710632)<1e-10);
+ const badGeometry=structuredClone(wholeRecord);badGeometry.sampling.heightMm*=2;assert.throws(()=>c.storage.validate(badGeometry));
  assert.equal(wholeRecord.mode,'scan');assert.equal(wholeRecord.scan.velocity,10);assert.equal(wholeRecord.scan.travel,(184-16)*175/184);
  c.el('boneAcqType').value='static';c.submit(5,'Estática anterior','Estática posterior');await c.el('boneAcqInstant').onclick();
  assert.equal(c.el('boneAcqD1').height,128);
- c.el('boneAcqSaved').value=wholeRecord.id;await c.el('boneAcqSaved').onchange();assert.equal(c.el('boneAcqD1').height,320);
+ c.el('boneAcqSaved').value=wholeRecord.id;await c.el('boneAcqSaved').onchange();assert.equal(c.el('boneAcqD1').height,512);
  c.el('boneAcqSaved').value='current';await c.el('boneAcqSaved').onchange();assert.equal(c.el('boneAcqD1').height,128);
  const d=environment();
  for(const study of ['mibi','thyroid','exploration','parathyroid','dmsa','maa']){

@@ -820,7 +820,7 @@
         <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
       </details>
       <div id="boneProcessingStatus" role="status"></div>
-      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=a250998fca7ae018"></iframe>
+      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=a8587008abe34b4b"></iframe>
     </section>
     <!-- PROCESSING_UI_END -->
 <section class="gantry-live" id="gantryLive" aria-label="Controles y adquisiciones">
@@ -4007,9 +4007,14 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 <!-- MAG3_END -->
 <!-- BONE_ACQ_ENGINE_BEGIN -->
 <script>
-/* Whole-body projection adapter: linear ICRP activity, native aspect ratio. */
+/* Whole-body projection adapter: linear ICRP activity, square physical pixels. */
 (function(){
   'use strict';
+  // WB_scanspeed.dcm: Siemens NM Encore2, 256 columns × 1024 rows,
+  // PixelSpacing 2.3975999355316 mm. Other matrices are proportional
+  // teaching layouts, not additional verified scanner acquisition formats.
+  const REFERENCE_PIXEL_MM=2.3975999355316;
+  const FIELD_WIDTH_MM=256*REFERENCE_PIXEL_MM;
   function eligibility(G,physical,declared){
     if(G?.setup&&G.setup!=='normal')return {ok:false,reason:'Para el barrido usa la camilla del equipo: selecciona la posición 1 o 6.'};
     if(!physical||physical.headFirst!==false)return {ok:false,reason:'Coloca al paciente con los pies hacia adentro (Cambiar posición de paciente).'};
@@ -4019,10 +4024,13 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     return {ok:true,reason:'Inicio en posición actual · detectores automáticos · pies hacia adentro'};
   }
   function geometry(pose,n){
-    // 56 cm transverse coverage at the same physical pixel size in both axes.
-    // Include the entire source volume, including raised hands and soles.
-    const width=Math.max(560/3,pose.width),height=pose.height;
-    return {width:n,height:Math.ceil(height/width*n),crop:{x:(pose.width-width)/2,y:0,w:width,h:height}};
+    const sourcePixelMm=pose.pixelMm||3;
+    const width=FIELD_WIDTH_MM/sourcePixelMm,height=4*width;
+    return {width:n,height:4*n,pixelMm:FIELD_WIDTH_MM/n,sourcePixelMm,
+      sampling:{pixelMm:FIELD_WIDTH_MM/n,widthMm:FIELD_WIDTH_MM,heightMm:4*FIELD_WIDTH_MM,
+        reference:'WB_scanspeed.dcm · SIEMENS NM Encore2 · 256×1024',
+        proportional:n!==256},
+      crop:{x:(pose.width-width)/2,y:(pose.height-height)/2,w:width,h:height}};
   }
   // Exact exposure of a source row while a finite detector window translates.
   function exposure(row,from,to,half,seconds){
@@ -4046,7 +4054,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       const dt=Math.min(seconds,(this.target-this.travel)*60/this.velocity),from=this.row;
       const travel=Math.min(this.target,this.travel+dt*this.velocity/60);
       const to=this.fromRow+(this.toRow-this.fromRow)*travel/this.target;
-      const half=560/3/2,poisson=window.GANTRY_BONE_CORE.poisson;
+      const half=280/this.sourcePixelMm,poisson=window.GANTRY_BONE_CORE.poisson;
       fields.forEach((f,j)=>{
         const h=this.heads[j];if(f.values.length!==h.counts.length)throw Error('Campo incompatible con el barrido');
         for(let y=0;y<this.height;y++){
@@ -4213,10 +4221,10 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       const to=scan.fromRow+(scan.toRow-scan.fromRow)*nextTravel/scan.target;
       for(let y=0;y<scan.height;y++){
         const row=scan.crop.y+(y+.5)*scan.crop.h/scan.height;
-        const weight=exposure(row,from,to,560/3/2,dt)*(mdp?.rate??rate)/2000000;
+        const weight=exposure(row,from,to,280/scan.sourcePixelMm,dt)*(mdp?.rate??rate)/2000000;
         if(!weight)continue;
         for(let x=0;x<scan.n;x++){
-          if(Math.abs((x+.5)/scan.n-.5)*scan.crop.w>560/3/2)continue;
+          if(Math.abs((x+.5)/scan.n-.5)*scan.crop.w>280/scan.sourcePixelMm)continue;
           const i=y*scan.n+x;
           expected[0][i]+=sample[0].values[i]*weight;
           expected[1][i]+=sample[1].values[i]*weight;
@@ -4296,6 +4304,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       study:session.study||settings.study||'bone',finished:session.finished,names:names.slice(),settings:structuredClone({...settings,...(session.administeredActivity?{administeredActivity:session.administeredActivity}:{})}),
       ...(session.administeredActivity?{administeredActivity:structuredClone(session.administeredActivity)}:{}),
       ...(session.processing?{processing:structuredClone(session.processing)}:{}),
+      ...(session.sampling?{sampling:structuredClone(session.sampling)}:{}),
       ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mibiStart?{mibi:{start:structuredClone(session.mibiStart),end:structuredClone(session.mibiEnd||session.mibiStart),limit:!!session.mibiLimit}}:{}),
       ...(session.mode==='scan'?{scan:{velocity:session.velocity,travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
@@ -4310,6 +4319,12 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(record.mode==='scan'&&(kind!=='whole'||!record.scan||!Number.isFinite(record.scan.velocity)||record.scan.velocity<.1||record.scan.velocity>60||!Number.isFinite(record.scan.travel)||record.scan.travel<0||record.scan.travel>record.target))throw Error('Datos de barrido no válidos');
     if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
       (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
+    if(record.sampling){
+      const s=record.sampling;
+      if(![s.pixelMm,s.widthMm,s.heightMm].every(v=>Number.isFinite(v)&&v>0)||
+        Math.abs(s.widthMm/record.n-s.pixelMm)>1e-6||Math.abs(s.heightMm/height-s.pixelMm)>1e-6)
+        throw Error('Geometría física de imagen no válida');
+    }
     record.heads.forEach((h,i)=>{
       if(h.detector!==i+1||!(h.counts instanceof Uint32Array)||h.counts.length!==record.n*height||
         !Number.isFinite(h.elapsed)||h.elapsed<0||!Number.isSafeInteger(h.total)||h.total<0||h.counts.reduce((a,b)=>a+b,0)!==h.total)
@@ -4462,7 +4477,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
         distance:d.effectiveDistance,segment:d.segment,orientationMatched:d.orientationMatched,
         responseModel:d.responseModel||null,systemFwhmMm:d.systemFwhmMm||null,
         intrinsicFwhmMm:d.intrinsicFwhmMm||null,
-        pixelMm:session.kind==='whole'?session.crop.w*3/session.n:(d.pixelMm||null),
+        pixelMm:session.kind==='whole'?session.pixelMm:(d.pixelMm||null),
         responseDistanceConvention:d.responseDistanceConvention||null}:null)};
     const signature=JSON.stringify([sample.settings,sample.geometry]);
     if(!session.processing||session.heads.every(h=>h.total===0))session.processing={acquisitionId:session.id,startedAt:session.createdAt,first:sample,last:sample,varied:false};
@@ -4490,7 +4505,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     el('boneAcqSuggested').textContent='Usar sugerido: '+(el('boneAcqCriterion').value==='counts'?format(goal.counts)+' cuentas':time(goal.time));
     hint.hidden=false;
     if(el('boneAcqSetup').hidden)return;
-    if(wholeBody){hint.textContent='Matriz '+window.GANTRY_LIVE.settings.matrix+' · velocidad '+el('boneAcqVelocity').value+' cm/min. La velocidad se reduce al aumentar matriz para conservar cuentas/píxel; puedes modificarla.';return;}
+    if(wholeBody){const n=window.GANTRY_LIVE.settings.matrix;hint.textContent='Matriz '+n+'×'+(4*n)+' · velocidad '+el('boneAcqVelocity').value+' cm/min. La duración depende del recorrido y de la velocidad, no del número de píxeles.';return;}
     const {mode,target}=settings();
     if(!Number.isInteger(target)||target<1||target>(mode==='counts'?160000000:57600)){hint.textContent='Introduce un objetivo válido.';return;}
     if(!fields){hint.textContent='Preparando estimación…';return;}
@@ -4634,7 +4649,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(!session&&!archive){
       el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones…';
       if(force)canvases.forEach((canvas,j)=>{
-        canvas.width=window.GANTRY_LIVE.settings.matrix;canvas.height=wantWhole?Math.round(canvas.width*2.5):canvas.width;
+        canvas.width=window.GANTRY_LIVE.settings.matrix;canvas.height=wantWhole?canvas.width*4:canvas.width;
         canvas.style&&(canvas.style.aspectRatio=canvas.width+' / '+canvas.height);
         canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
         window.GANTRY_PIXEL_GRID?.clear(canvas);
@@ -4663,7 +4678,8 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
       el('boneAcqInfo'+(j+1)).title='Media = total dividido por todos los píxeles de esta adquisición, incluidos fondo y ceros. Se usa la matriz guardada, no la matriz seleccionada para la próxima adquisición.';
       el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':shown.cancelled?'Cancelada':h.done?'Meta alcanzada':shown.finished?'Meta no alcanzada':paused?'Pausada':'Adquiriendo')+
-        '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa';
+        '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa'+
+        (shown.sampling?'\nPíxel cuadrado: '+shown.sampling.pixelMm.toLocaleString('es-CL',{maximumFractionDigits:3})+' mm':'');
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
     });
@@ -4868,7 +4884,6 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     get readyForProcessing(){return !!fields&&!busy&&!saving&&!loadingSaved&&fields.every(f=>f.values.length===window.GANTRY_LIVE.settings.matrix**2);},
     matrixChanged(previous,next){
       manualGoal=false;updateGoal();
-      if(el('boneAcqVelocity')&&previous&&next)el('boneAcqVelocity').value=String(Math.max(.1,Math.min(60,Number(el('boneAcqVelocity').value)*matrixFactor(previous)/matrixFactor(next))));
     },suggestedGoal:()=>suggestion(),
     cancelExam(){
       clearScanDebt();
@@ -4897,7 +4912,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 </script>
 <!-- BONE_ACQ_ENGINE_END -->
 <!-- PROCESSING_ENGINE_BEGIN -->
-<script src="assets/runtime/processing-controller.1e57bedbfd68339c.js"></script>
+<script src="assets/runtime/processing-controller.876b2613c25bc091.js"></script>
 <!-- PROCESSING_ENGINE_END -->
 <!-- CONSOLE_MENUS_BEGIN -->
 <link rel="stylesheet" data-console-menus href="assets/runtime/console-menus.c37f7a3a5078c291.css">

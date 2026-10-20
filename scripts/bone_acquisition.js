@@ -102,7 +102,7 @@
         distance:d.effectiveDistance,segment:d.segment,orientationMatched:d.orientationMatched,
         responseModel:d.responseModel||null,systemFwhmMm:d.systemFwhmMm||null,
         intrinsicFwhmMm:d.intrinsicFwhmMm||null,
-        pixelMm:session.kind==='whole'?session.crop.w*3/session.n:(d.pixelMm||null),
+        pixelMm:session.kind==='whole'?session.pixelMm:(d.pixelMm||null),
         responseDistanceConvention:d.responseDistanceConvention||null}:null)};
     const signature=JSON.stringify([sample.settings,sample.geometry]);
     if(!session.processing||session.heads.every(h=>h.total===0))session.processing={acquisitionId:session.id,startedAt:session.createdAt,first:sample,last:sample,varied:false};
@@ -130,7 +130,7 @@
     el('boneAcqSuggested').textContent='Usar sugerido: '+(el('boneAcqCriterion').value==='counts'?format(goal.counts)+' cuentas':time(goal.time));
     hint.hidden=false;
     if(el('boneAcqSetup').hidden)return;
-    if(wholeBody){hint.textContent='Matriz '+window.GANTRY_LIVE.settings.matrix+' · velocidad '+el('boneAcqVelocity').value+' cm/min. La velocidad se reduce al aumentar matriz para conservar cuentas/píxel; puedes modificarla.';return;}
+    if(wholeBody){const n=window.GANTRY_LIVE.settings.matrix;hint.textContent='Matriz '+n+'×'+(4*n)+' · velocidad '+el('boneAcqVelocity').value+' cm/min. La duración depende del recorrido y de la velocidad, no del número de píxeles.';return;}
     const {mode,target}=settings();
     if(!Number.isInteger(target)||target<1||target>(mode==='counts'?160000000:57600)){hint.textContent='Introduce un objetivo válido.';return;}
     if(!fields){hint.textContent='Preparando estimación…';return;}
@@ -274,7 +274,7 @@
     if(!session&&!archive){
       el('boneAcqStatus').textContent=fields?'Listo para adquirir ambos detectores':'Preparando proyecciones…';
       if(force)canvases.forEach((canvas,j)=>{
-        canvas.width=window.GANTRY_LIVE.settings.matrix;canvas.height=wantWhole?Math.round(canvas.width*2.5):canvas.width;
+        canvas.width=window.GANTRY_LIVE.settings.matrix;canvas.height=wantWhole?canvas.width*4:canvas.width;
         canvas.style&&(canvas.style.aspectRatio=canvas.width+' / '+canvas.height);
         canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
         window.GANTRY_PIXEL_GRID?.clear(canvas);
@@ -303,7 +303,8 @@
       const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
       el('boneAcqInfo'+(j+1)).title='Media = total dividido por todos los píxeles de esta adquisición, incluidos fondo y ceros. Se usa la matriz guardada, no la matriz seleccionada para la próxima adquisición.';
       el('boneAcqInfo'+(j+1)).textContent='Total: '+format(h.total)+' cuentas · '+time(h.elapsed)+' · '+(archive?'Guardada':shown.cancelled?'Cancelada':h.done?'Meta alcanzada':shown.finished?'Meta no alcanzada':paused?'Pausada':'Adquiriendo')+
-        '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa';
+        '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa'+
+        (shown.sampling?'\nPíxel cuadrado: '+shown.sampling.pixelMm.toLocaleString('es-CL',{maximumFractionDigits:3})+' mm':'');
       el('boneAcqProgress'+(j+1)).max=shown.target;
       el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
     });
@@ -508,7 +509,6 @@
     get readyForProcessing(){return !!fields&&!busy&&!saving&&!loadingSaved&&fields.every(f=>f.values.length===window.GANTRY_LIVE.settings.matrix**2);},
     matrixChanged(previous,next){
       manualGoal=false;updateGoal();
-      if(el('boneAcqVelocity')&&previous&&next)el('boneAcqVelocity').value=String(Math.max(.1,Math.min(60,Number(el('boneAcqVelocity').value)*matrixFactor(previous)/matrixFactor(next))));
     },suggestedGoal:()=>suggestion(),
     cancelExam(){
       clearScanDebt();

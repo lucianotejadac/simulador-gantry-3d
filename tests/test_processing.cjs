@@ -15,13 +15,16 @@ function record(n=128,height=n,peak=50){
 }
 (async()=>{
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'gantry-processing-')),checks=[];
- for(const recordData of [record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000)]){
+ const wholeBody=[64,128,256,512].map(n=>({...record(n,4*n),sampling:{
+   pixelMm:2.3975999355316*256/n,widthMm:2.3975999355316*256,heightMm:2.3975999355316*1024}}));
+ for(const recordData of [record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000),...wholeBody]){
   const before=recordData.heads.map(h=>h.counts.slice()),files=await api.files(recordData,await api.uid('study'));
   const repeat=await api.files(recordData,await api.uid('study'));assert.equal(repeat[0].uid,files[0].uid);
   files.forEach((file,j)=>{
    assert.deepEqual(recordData.heads[j].counts,before[j]);
    const ds=parser.parseDicom(new Uint8Array(file.bytes)),bits=ds.uint16('x00280100'),pixel=ds.elements.x7fe00010;
    assert.equal(ds.uint16('x00280010'),recordData.height);assert.equal(ds.uint16('x00280011'),recordData.n);
+   if(recordData.sampling)for(const p of ds.string('x00280030').split('\\'))assert(Math.abs(Number(p)-recordData.sampling.pixelMm)<1e-8);
    assert.equal(Number(ds.string('x00181242')),Math.round(recordData.heads[j].elapsed*1000));
    assert.equal(ds.string('x00080018'),file.uid);
    const metadata=JSON.parse(ds.string('x00111010'));
@@ -31,7 +34,7 @@ function record(n=128,height=n,peak=50){
    assert.equal(bits,recordData.id.endsWith('100000')?32:16);
    if(bits===32)assert.equal(ds.string('x00080016'),api.PRIVATE32);
    const filename=path.join(tmp,recordData.id+'-'+j+'.dcm');fs.writeFileSync(filename,new Uint8Array(file.bytes));
-   checks.push({filename,total:file.total,rows:file.rows,cols:file.cols,bits,elapsed:recordData.heads[j].elapsed});
+   checks.push({filename,total:file.total,rows:file.rows,cols:file.cols,bits,elapsed:recordData.heads[j].elapsed,pixelMm:recordData.sampling?.pixelMm});
   });
  }
  const legacy=record();delete legacy.processing;assert.match(api.label(legacy,0),/no registrada/);
@@ -62,6 +65,8 @@ for item in json.loads(sys.stdin.read()):
  assert int(d.pixel_array.sum())==item['total']
  assert d.pixel_array.shape==(item['rows'],item['cols'])
  assert d.BitsAllocated==item['bits']
+ if item.get('pixelMm'):
+  assert all(abs(float(p)-item['pixelMm'])<1e-8 for p in d.PixelSpacing)
  assert int(d.ActualFrameDuration)==round(item['elapsed']*1000)
  assert float(d.RadiopharmaceuticalInformationSequence[0].RadionuclideTotalDose)==740
  assert 'SIMULADO' in str(d.PatientName)

@@ -128,7 +128,7 @@
     $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie',config.kind==='whole'?'Nueva · cuerpo entero':'Nueva · estática'));
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
-      input('matrix','Tamaño de matriz',config.matrix,[64,128,256,512].map(n=>[n,config.kind==='whole'?n+' columnas · cuerpo entero':n+' × '+n])),
+      input('matrix','Tamaño de matriz',config.matrix,[64,128,256,512].map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
       input('zoom','Zoom',config.zoom,[[1,'1×'],[1.5,'1,5×'],[1.75,'1,75×'],[2,'2×']]),
       field('Programación de cámara','Óseo · MDP'),field('Detectores','1 y 2'),
       input('collimator','Colimador',config.collimator,[['LEHR','LEHR'],['MELP','MELP'],['HE','HE'],['NONE','Sin colimador']]),

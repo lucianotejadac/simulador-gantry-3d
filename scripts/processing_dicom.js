@@ -40,6 +40,8 @@
     const output=[];
     for(let j=0;j<2;j++){
       const head=record.heads[j],orientation=label(record,j),sopUID=await uid(identity+':'+j);
+      const pixelMm=record.sampling?.pixelMm||record.processing?.first?.detectors?.[j]?.pixelMm;
+      const spacing=Number.isFinite(pixelMm)&&pixelMm>0?String(Number(pixelMm.toPrecision(10))):'';
       let max=0;for(const n of head.counts)max=Math.max(max,n);
       // Standard NM allows 8/16-bit pixels. Preserve rare overflow images with
       // an explicitly private teaching SOP class, never clamp or quantize counts.
@@ -48,7 +50,7 @@
       head.counts.forEach((n,i)=>bits===16?view.setUint16(i*2,n,true):view.setUint32(i*4,n,true));
       const info={simulation:true,recordId:record.id,detector:j+1,total:head.total,elapsed:head.elapsed,
         acquisition:{kind:record.kind||'static',mode:record.mode,target:record.target,names:record.names},
-        mdp:record.mdp||null,settings,processing:record.processing||null,scan:record.scan||null,
+        mdp:record.mdp||null,settings,processing:record.processing||null,scan:record.scan||null,sampling:record.sampling||null,
         stoppedEarly:!head.done,encoding:bits===16?'NM16':'PRIVATE_GANTRY_COUNTS32'};
       const description=(record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names[j]+' · SIMULADO';
       const tags=[['00080005','CS','ISO_IR 192'],['00080008','CS','DERIVED\\SECONDARY\\'+(record.kind==='whole'?'WHOLE BODY':'STATIC')+'\\SIMULATED'],
@@ -61,7 +63,7 @@
         ['0020000d','UI',studyUID],['0020000e','UI',seriesUID],['00200010','SH','SIMULATED'],['00200011','IS','1'],['00200013','IS',j+1],
         ['00204000','LT','SIMULADO; '+orientation+'; '+head.total+' cuentas; '+(mdp?(mdp.activityMBq/37).toFixed(2)+' mCi; inyección-examen '+(mdp.seconds/60).toFixed(2)+' min; ':'')+(record.processing?.varied?'Parámetros variables durante la adquisición. ':'')+(!head.done?'Adquisición detenida antes de la meta. ':'')+(bits===32?'SOP privado docente de 32 bits; no es NM estándar.':'')],
         ['00280002','US',1],['00280004','CS','MONOCHROME2'],['00280008','IS',1],['00280009','AT',0x00540020],
-        ['00280010','US',record.height||record.n],['00280011','US',record.n],['00280030','DS',''],
+        ['00280010','US',record.height||record.n],['00280011','US',record.n],['00280030','DS',spacing?spacing+'\\'+spacing:''],
         ['00280100','US',bits],['00280101','US',bits],['00280102','US',bits-1],['00280103','US',0],
         ['00281050','DS',max/2],['00281051','DS',Math.max(1,max)],['00281052','DS','0'],['00281053','DS','1'],
         ['00540020','US',1],['00540021','US',1],

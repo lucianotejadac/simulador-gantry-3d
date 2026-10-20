@@ -6,6 +6,7 @@
       study:session.study||settings.study||'bone',finished:session.finished,names:names.slice(),settings:structuredClone({...settings,...(session.administeredActivity?{administeredActivity:session.administeredActivity}:{})}),
       ...(session.administeredActivity?{administeredActivity:structuredClone(session.administeredActivity)}:{}),
       ...(session.processing?{processing:structuredClone(session.processing)}:{}),
+      ...(session.sampling?{sampling:structuredClone(session.sampling)}:{}),
       ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mibiStart?{mibi:{start:structuredClone(session.mibiStart),end:structuredClone(session.mibiEnd||session.mibiStart),limit:!!session.mibiLimit}}:{}),
       ...(session.mode==='scan'?{scan:{velocity:session.velocity,travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
@@ -20,6 +21,12 @@
     if(record.mode==='scan'&&(kind!=='whole'||!record.scan||!Number.isFinite(record.scan.velocity)||record.scan.velocity<.1||record.scan.velocity>60||!Number.isFinite(record.scan.travel)||record.scan.travel<0||record.scan.travel>record.target))throw Error('Datos de barrido no válidos');
     if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
       (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
+    if(record.sampling){
+      const s=record.sampling;
+      if(![s.pixelMm,s.widthMm,s.heightMm].every(v=>Number.isFinite(v)&&v>0)||
+        Math.abs(s.widthMm/record.n-s.pixelMm)>1e-6||Math.abs(s.heightMm/height-s.pixelMm)>1e-6)
+        throw Error('Geometría física de imagen no válida');
+    }
     record.heads.forEach((h,i)=>{
       if(h.detector!==i+1||!(h.counts instanceof Uint32Array)||h.counts.length!==record.n*height||
         !Number.isFinite(h.elapsed)||h.elapsed<0||!Number.isSafeInteger(h.total)||h.total<0||h.counts.reduce((a,b)=>a+b,0)!==h.total)

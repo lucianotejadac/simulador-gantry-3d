@@ -35,9 +35,9 @@ function near(a,b){assert(Math.abs(a-b)<1e-6*Math.max(1,Math.abs(b)),`${a} != ${
     assert(f.stats.guards>180,'Still checks swept collision path');
     assert.equal(f.sampled.length,2*n*s.height,'Exactly one Poisson draw per output pixel');
     for(let j=0;j<2;j++)for(let y=0;y<s.height;y++){
-      const row=(y+.5)*s.crop.h/s.height;
+      const row=s.crop.y+(y+.5)*s.crop.h/s.height;
       const expected=f.api.exposure(row,s.fromRow,s.toRow,560/3/2,1050)*(j?0.5:1);
-      near(f.sampled[j*n*s.height+y*n],expected);
+      near(f.sampled[j*n*s.height+y*n+n/2],expected);
     }
     for(const h of s.heads)assert.equal(h.total,h.counts.reduce((a,b)=>a+b,0));
     console.log(`Instant ${n}: ${(performance.now()-before).toFixed(0)} ms; ${f.stats.fields} fields, simulated ${s.heads[0].elapsed}s`);

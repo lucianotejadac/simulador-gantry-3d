@@ -37,8 +37,9 @@ function rng(){let seed=123;return ()=>((seed=(Math.imul(seed,1664525)+101390422
  await linear.window.GANTRY_ICRP.ready;
  for(const pose of Object.values(linear.window.GANTRY_ICRP.poses)){
   const size=geometry(pose,128),{width,height,crop}=size;
-  assert(height>width);assert(crop.y<=0);assert(crop.h>=pose.height);
-  assert(crop.x<=0);assert(crop.x+crop.w>=pose.width);
+  assert.equal(height,width*4);assert(crop.y<=0);assert(crop.h>=pose.height);
+  assert.equal(crop.x+crop.w/2,pose.width/2);
+  assert(Math.abs(crop.w/width-crop.h/height)<1e-12,'square physical pixels, not a stretched atlas');
   const fields=[0,pose.angles.indexOf(180)].map(i=>linear.window.GANTRY_ICRP.field(pose,{lo:i,hi:i,mix:0},crop,width,height,false,false,{contrast:1,countFactor:1,haloAlpha:0},.5));
   const a=new Acquisition(128,'time',20,rng(),height);a.step(fields,4000,5);
   assert(!a.finished);a.step(fields,4000,20);assert(a.finished);
@@ -65,7 +66,7 @@ function rng(){let seed=123;return ()=>((seed=(Math.imul(seed,1664525)+101390422
   partial.step(fields,4000,10000);
   assert(partial.finished);assert.equal(partial.tableZ,16);
   assert(Math.abs(partial.heads[0].elapsed-(120-16)*175/184*3)<1e-8);
-  const pastRows=Math.floor((partial.fromRow-560/3/2)/pose.height*height);
+  const pastRows=Math.max(0,Math.floor((partial.fromRow-560/3/2-crop.y)/crop.h*height));
   assert(partial.heads.every(h=>h.counts.slice(0,pastRows*width).every(v=>v===0)));
   assert(partial.heads.every(h=>h.total>0));
   const short=new Scan(128,20,pose,16.5,rng());short.step(fields,4000,100);
