@@ -10,11 +10,33 @@
     #processingAcquireMenu{max-width:235px;height:27px;font-size:12px;margin-right:6px}
     body.gantry-acquisition-draft .field :is(input:not([readonly]),select){background:#ffffe1;color:#000;width:100%;min-width:0;border:2px inset #eee;padding:3px;font:inherit;box-sizing:border-box}
     body.gantry-acquisition-draft :is(#static-overview,#acquisition-instance-wrap,.metadata,.viewer>.toolbar){display:none!important}
-    body.gantry-acquisition-draft #acquisition-thumbnails{visibility:hidden}
+    body.gantry-acquisition-draft #acquisition-thumbnails{display:none}
     .draft-image{display:flex;flex-direction:column;min-height:0}.draft-image .scan{background:#000;min-height:120px}
     .draft-image canvas{width:100%;height:100%;object-fit:contain}.draft-counts{font-size:12px;padding:6px;background:#eee}
     .draft-progress{width:100%;height:8px}.draft-help{font-size:12px;line-height:1.4;margin:8px 0}
   `;document.head.append(style);
+  const consoleBar=document.createElement('section');consoleBar.id='acquisitionConsole';
+  consoleBar.setAttribute('aria-label','Control de adquisición');
+  consoleBar.innerHTML=`
+    <div class="console-summary" id="consoleSummary">Prepara una adquisición para configurar la cámara y las condiciones de paro.</div>
+    <div class="console-prepare"><label for="consoleKind">Adquisición</label>
+      <select id="consoleKind"><option value="static">Estática</option><option value="whole">Cuerpo entero</option></select>
+      <button type="button" data-acquire="prepare">Preparar adquisición</button></div>
+    <div class="console-transport">
+      <button type="button" data-acquire="start" title="Iniciar adquisición"><b aria-hidden="true">▶</b> Iniciar</button>
+      <button type="button" data-acquire="pause"><b aria-hidden="true">Ⅱ</b> <span>Pausar</span></button>
+      <button type="button" data-acquire="stop"><b aria-hidden="true">■</b> Finalizar</button>
+    </div>
+    <div class="console-secondary">
+      <button type="button" data-acquire="fast">▶▶ Avance rápido · 1×</button>
+      <button type="button" data-acquire="instant">Adquisición instantánea</button>
+      <button type="button" data-acquire="save">Guardar adquisición</button>
+    </div>`;
+  document.querySelector('#acquisition-panel .viewer').append(consoleBar);
+  consoleBar.addEventListener('click',e=>{
+    const button=e.target.closest('button[data-acquire]');
+    if(button&&!button.disabled)performAction(button.dataset.acquire==='prepare'?$('consoleKind').value:button.dataset.acquire);
+  });
   const send=data=>parent.postMessage({...data,version:1},location.origin);
   function request(type,extra={}){const id=++serial;waiting=id;send({type,request:id,...extra});return id;}
   function setMenu(){
@@ -31,6 +53,17 @@
       menu.replaceChildren(...items.map(([value,text])=>{const o=document.createElement('option');o.value=value;o.textContent=text;o.disabled=!value||(running&&['static','whole'].includes(value));return o;}));menu.value='';menu.dataset.signature=signature;
     }
     menu.disabled=!!waiting;
+    const ready=!!draft&&!draft.id;
+    for(const button of consoleBar.querySelectorAll('button[data-acquire]')){
+      const action=button.dataset.acquire;
+      const allowed=action==='prepare'?!running:action==='start'?ready:
+        action==='instant'?(ready||running):action==='save'?(!!lastId&&!running&&!lastState?.cancelled):running;
+      button.disabled=!!waiting||!allowed;
+    }
+    $('consoleKind').disabled=!!waiting||running;
+    consoleBar.querySelector('[data-acquire="pause"] span').textContent=lastState?.paused?'Reanudar':'Pausar';
+    consoleBar.querySelector('[data-acquire="fast"]').textContent='▶▶ Avance rápido · '+(lastState?.speed||1)+'×';
+    if(draft)$('consoleKind').value=draft.config.kind;
   }
   function finish(){
     if(!draft)return;
@@ -132,6 +165,12 @@
     }
     if(resume)for(const node of inputs.values())node.disabled=true;
     $('tab-camera').click();status(resume?'Adquisición en curso.':'Nueva adquisición: configura estas casillas y selecciona Iniciar adquisición.');setMenu();
+    const updateSummary=()=>{
+      const get=key=>inputs.get(key)?.value;
+      $('consoleSummary').textContent=`Parámetros de cámara · ${get('matrix')} · Zoom ${get('zoom')}× · ${get('collimator')} · ${get('energyCenter')} keV / ${get('windowWidth')}% · Ambos detectores`;
+    };
+    for(const node of inputs.values())node.addEventListener('input',updateSummary);
+    updateSummary();
   }
   function read(){
     const c={...draft.config};
@@ -139,8 +178,8 @@
     c.names=[inputs.get('name1').value,inputs.get('name2').value];
     return window.GANTRY_PROCESSING_CONFIG.validate(c);
   }
-  menu.onchange=()=>{
-    const action=menu.value;menu.value='';
+  function performAction(action){
+    if(waiting)return;
     try{
       if(action==='static'||action==='whole'){request('GANTRY_ACQUIRE_CONFIG',{kind:action});}
       else if(action==='cancel')finish();
@@ -151,7 +190,8 @@
       }else request('GANTRY_ACQUIRE_ACTION',{action,id:lastId});
     }catch(error){status(error.message,'error');}
     setMenu();
-  };
+  }
+  menu.onchange=()=>{const action=menu.value;menu.value='';performAction(action);};
   window.addEventListener('message',event=>{
     if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;
     const d=event.data;
@@ -166,7 +206,14 @@
       d.state.heads.forEach((h,i)=>{
         const image=d.images[i],canvas=$('gantryDraftImage'+i);canvas.width=image.width;canvas.height=image.height;
         canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(image.rgba),image.width,image.height),0,0);
-        $('gantryDraftStats'+i).textContent=h.total.toLocaleString('es-CL')+' cuentas · '+h.elapsed.toFixed(1)+' s'+(h.done?' · Meta alcanzada':'');
+        const stats=$('gantryDraftStats'+i);stats.replaceChildren();
+        const clock=seconds=>{const s=Math.max(0,Math.ceil(seconds));return Math.floor(s/3600).toString().padStart(2,'0')+':'+Math.floor(s/60%60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0');};
+        const remaining=d.state.mode==='time'?Math.max(0,d.state.target-h.elapsed):
+          d.state.mode==='counts'&&h.total>0&&h.elapsed>0?Math.max(0,d.state.target-h.total)/(h.total/h.elapsed):null;
+        const rows=[['Conteos',h.total.toLocaleString('es-CL')],['T. transcurrido',clock(Math.floor(h.elapsed))],
+          ['T. restante'+(d.state.mode==='counts'?' estimado':''),h.done?'00:00:00':remaining===null?'—':clock(remaining)],
+          ['Estado',h.done?'Meta alcanzada':d.state.paused?'En pausa':'Adquiriendo']];
+        for(const [label,text] of rows){const row=document.createElement('div');row.className='stat';const caption=document.createElement('span');caption.textContent=label;const output=document.createElement('output');output.textContent=text;row.append(caption,output);stats.append(row);}
         const p=$('gantryDraftProgress'+i);p.max=d.state.target;p.value=d.state.mode==='scan'?d.state.travel:d.state.mode==='counts'?h.total:h.elapsed;
       });
       status(d.message+' · '+d.state.speed+'×'+(d.state.finished&&!d.state.heads.every(h=>h.total>0)?' · Sin señal en uno de los detectores; no se importa al procesador.':''));

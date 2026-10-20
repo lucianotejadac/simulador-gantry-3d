@@ -56,7 +56,8 @@ s = re.sub(r"status\('Abre un archivo DICOM de '.*?\);",
            "status('Selecciona Adquirir para iniciar una adquisición del simulador.');", s)
 s = s.replace('if(window.showSaveFilePicker){', 'if(window.showSaveFilePicker&&window.top===window){')
 s = re.sub(r"status\('Versión demo\..*?;", "status('Usa Adquirir para configurar una nueva adquisición en los campos de este visor.');", s)
-s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>\n<script>\n' +
+s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>\n<style>' +
+              (ROOT / 'scripts/processing_console.css').read_text(encoding='utf-8') + '</style>\n<script>\n' +
               (ROOT / 'scripts/processing_compact.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_acquisition_config.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_acquisition_editor.js').read_text(encoding='utf-8') + '\n' +

@@ -67,6 +67,15 @@ está disponible en el visor independiente, no en esta edición integrada.
 
 ## Datos y límites
 
+La consola de adquisición dispone la ficha y las pestañas de configuración a
+la izquierda, con los detectores 1 y 2 en paralelo a la derecha. Debajo están
+Preparar, Iniciar, Pausar/Reanudar, Finalizar, avance rápido, adquisición
+instantánea y guardado en caché. Estos controles utilizan el mismo puente y
+motor que el menú Adquirir. Las matrices disponibles son 64, 128, 256 y 512.
+El tiempo restante por cuentas se estima con la tasa media observada; por
+tiempo se calcula directamente desde el objetivo. Los tiempos mostrados son
+de adquisición simulada, independientemente del avance rápido.
+
 Las adquisiciones nuevas guardan configuración y orientación al inicio y al
 final. Las estáticas que cambiaron geometría se rotulan «geometría variable»;
 las adquisiciones antiguas sin este registro dicen «orientación no registrada».
