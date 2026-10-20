@@ -1,7 +1,7 @@
 /* Acquisition drafts use the viewer's existing patient/camera/stop panes. */
 (function(){
   'use strict';
-  let draft=null,serial=0,waiting=null,lastConfig=null,lastId=null,lastState=null,previousBadge='',actionModel=null;
+  let draft=null,serial=0,waiting=null,lastConfig=null,lastId=null,lastState=null,previousBadge='',actionModel=null,positionState=null;
   const retained=new Map(),inputs=new Map();
   const panes=['patient','summary','series','camera','stop','images'];
   const menu=document.createElement('select');menu.id='processingAcquireMenu';menu.setAttribute('aria-label','Adquirir');
@@ -11,6 +11,7 @@
     body.gantry-acquisition-draft .field :is(input:not([readonly]),select){background:#ffffe1;color:#000;width:100%;min-width:0;border:2px inset #eee;padding:3px;font:inherit;box-sizing:border-box}
     body.gantry-acquisition-draft :is(#static-overview,#acquisition-instance-wrap,.metadata,.viewer>.toolbar){display:none!important}
     body.gantry-acquisition-draft #acquisition-thumbnails{display:none}
+    body.gantry-whole-draft #consoleSummary{display:none}
     .draft-image{display:flex;flex-direction:column;min-height:0}.draft-image .scan{background:#000;min-height:120px}
     .draft-image canvas{width:100%;height:100%;object-fit:contain}.draft-counts{font-size:12px;padding:6px;background:#eee}
     .draft-progress{width:100%;height:8px}.draft-help{font-size:12px;line-height:1.4;margin:8px 0}
@@ -83,7 +84,7 @@
   function finish(){
     if(!draft)return;
     for(const [id,nodes] of retained)$(id).replaceChildren(...nodes);
-    retained.clear();inputs.clear();draft=null;document.body.classList.remove('gantry-acquisition-draft');
+    retained.clear();inputs.clear();draft=null;document.body.classList.remove('gantry-acquisition-draft','gantry-whole-draft');
     $('modality').textContent=previousBadge;
     updateModeUI();setMenu();
   }
@@ -134,11 +135,39 @@
   }
   function section(host,title,rows){const box=document.createElement('fieldset');box.className='group';const legend=document.createElement('legend');legend.textContent=title;const fields=document.createElement('div');fields.className='fields';fields.append(...rows);box.append(legend,fields);$(host).append(box);}
   function help(host,text){const p=document.createElement('p');p.className='draft-help';p.textContent=text;$(host).append(p);}
+  function syncPosition(p){
+    if(p)positionState=p;
+    const select=$('gantryDraft-position'),caption=$('gantryDraft-position-status');
+    if(!select||!positionState)return;
+    const signature=JSON.stringify(positionState.options);
+    if(select.dataset.options!==signature){
+      select.replaceChildren(...positionState.options.map(o=>{const option=document.createElement('option');option.value=o.value;option.textContent=o.label;return option;}));
+      select.dataset.options=signature;
+    }
+    select.value=positionState.value;select.disabled=!!waiting||positionState.locked;
+    caption.textContent=positionState.status;
+  }
+  function positionControl(config){
+    const p=positionState||config.position||{options:[],value:'',locked:true};
+    const row=field('Posición del equipo','');
+    const select=document.createElement('select');select.id='gantryDraft-position';select.setAttribute('aria-label','Posición del equipo');
+    row.querySelector('label').htmlFor=select.id;
+    for(const o of p.options){const option=document.createElement('option');option.value=o.value;option.textContent=o.label;select.append(option);}
+    row.querySelector('input').replaceWith(select);
+    section('camera','Posición del equipo',[row]);
+    const caption=document.createElement('p');caption.id='gantryDraft-position-status';caption.className='draft-help';caption.setAttribute('role','status');$('camera').append(caption);
+    select.onchange=()=>{
+      if(!select.value)return;
+      request('GANTRY_ACQUIRE_POSITION',{position:select.value});setMenu();syncPosition();
+    };
+    syncPosition(p);
+  }
   function render(config,resume=false){
     if(!resume&&config.kind==='whole'&&![128,256].includes(config.matrix))config={...config,matrix:config.matrix<128?128:256};
     finish();stopDynamic();closeFlexible();saveMode();
     for(const id of panes){retained.set(id,Array.from($(id).childNodes));$(id).replaceChildren();}
     draft={config,id:resume?lastId:null};document.body.classList.add('gantry-acquisition-draft');
+    document.body.classList.toggle('gantry-whole-draft',config.kind==='whole');
     previousBadge=$('modality').textContent;$('modality').textContent='SIMULADO';
     $('mode-heading').textContent='Nueva adquisición '+(config.kind==='whole'?'cuerpo entero':'estática')+' · SIMULADA';
     $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie',config.kind==='whole'?'Nueva · cuerpo entero':'Nueva · estática'));
@@ -150,8 +179,11 @@
       input('collimator','Colimador',config.collimator,[['LEHR','LEHR'],['MELP','MELP'],['HE','HE'],['NONE','Sin colimador']]),
       input('energyCenter','Centro de energía (keV)',config.energyCenter,null,range(80,450,'1')),
       input('windowWidth','Ancho de ventana (%)',config.windowWidth,[10,15,20,25])]);
-    section('camera','Calibraciones',[field('Corrección de uniformidad','Sin mapa de corrección')]);
-    section('camera','Orientación',[field('Posición del cuerpo','Posición actual del gantry'),field('Configuración basada','Geometría actual del simulador')]);
+    if(config.kind==='whole')positionControl(config);
+    else{
+      section('camera','Calibraciones',[field('Corrección de uniformidad','Sin mapa de corrección')]);
+      section('camera','Orientación',[field('Posición del cuerpo','Posición actual del gantry'),field('Configuración basada','Geometría actual del simulador')]);
+    }
     help('camera',config.kind==='whole'?'La matriz de cuerpo entero tiene cuatro veces más filas que columnas. El barrido comienza donde está la camilla y posiciona los detectores automáticamente.':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
     section('series','Radiofármaco',[field('Isótopo','99mTc'),field('Fármaco','MDP'),
       input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,2000/37)),
@@ -217,10 +249,12 @@
   window.addEventListener('message',event=>{
     if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;
     const d=event.data;
+    if(d.type==='GANTRY_POSITION_STATE')syncPosition(d.position);
+    if(d.type==='GANTRY_ACQUIRE_POSITION'&&d.request===waiting){waiting=null;setMenu();syncPosition(d.position);}
     if(d.type==='GANTRY_ACQUIRE_CONFIG'&&d.request===waiting){waiting=null;render(d.config);}
     if(d.type==='GANTRY_ACQUIRE_STARTED'&&d.request===waiting){waiting=null;lastId=d.id;lastState=null;if(draft)draft.id=d.id;status('Adquiriendo desde el gantry…');setMenu();}
     if(d.type==='GANTRY_ACQUIRE_ERROR'&&(!d.request||d.request===waiting)){
-      waiting=null;if(draft&&!draft.id)for(const node of inputs.values())node.disabled=false;status(d.error,'error');setMenu();
+      waiting=null;if(draft&&!draft.id)for(const node of inputs.values())node.disabled=false;status(d.error,'error');setMenu();syncPosition();
     }
     if(d.type==='GANTRY_ACQUIRE_ACTION_DONE'&&d.request===waiting){waiting=null;if(d.action==='save')status('Adquisición guardada en la caché de este navegador.');setMenu();}
     if(d.type==='GANTRY_ACQUIRE_PROGRESS'&&d.state?.id===lastId){

@@ -3,16 +3,21 @@
   'use strict';
   const el=id=>document.getElementById(id);
   function attach(frame){
-    let preparing=false,owned=null,sending=false,finalSent=null;
+    let preparing=false,owned=null,sending=false,finalSent=null,lastPosition='';
     const live=()=>window.GANTRY_LIVE,engine=()=>window.GANTRY_BONE_ACQ;
     const post=(data,transfer=[])=>frame.contentWindow.postMessage({...data,version:1},location.origin,transfer);
     const otherBusy=()=>engine().active||window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
+    function positionState(){
+      return {options:Array.from(el('gantryPositionMenu')?.options||[],o=>({value:o.value,label:o.textContent})),
+        value:el('gantryPositionMenu')?.value||'',status:el('gantryPositionStatus')?.textContent||'',
+        locked:!!preparing||!!otherBusy()||!!window.GANTRY_EXAM?.blocked};
+    }
     function defaults(kind){
       const s=live().settings,mdp=window.GANTRY_MDP.metadata();
       return {kind,matrix:kind==='whole'?Math.max(128,Math.min(256,s.matrix)):s.matrix,zoom:s.zoom,collimator:s.collimator,energyCenter:140,windowWidth:20,
         activityMci:mdp.activityMBq/37,minutes:Math.min(179.99,mdp.seconds/60),mode:'counts',target:400000,
         velocity:10,names:['Detector 1','Detector 2'],
-        geometry:el('g3dHud').textContent.trim(),...(s.study==='bone'?{energyCenter:s.energyCenter,windowWidth:s.windowWidth}:{})};
+        position:positionState(),geometry:el('g3dHud').textContent.trim(),...(s.study==='bone'?{energyCenter:s.energyCenter,windowWidth:s.windowWidth}:{})};
     }
     const change=(id,value)=>{const node=el(id);node.value=String(value);node.dispatchEvent(new Event('change',{bubbles:true}));};
     async function start(raw,instant){
@@ -43,12 +48,20 @@
     window.addEventListener('message',async event=>{
       if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.version!==1||!window.GANTRY_PROCESSING.active)return;
       const d=event.data;
-      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION'].includes(d.type))return;
+      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION'].includes(d.type))return;
       try{
         if(d.type==='GANTRY_ACQUIRE_CONFIG'){
           if(!['static','whole'].includes(d.kind))throw Error('Tipo de adquisición no válido.');
           if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de preparar otra.');
           post({type:'GANTRY_ACQUIRE_CONFIG',request:d.request,config:defaults(d.kind)});
+        }else if(d.type==='GANTRY_ACQUIRE_POSITION'){
+          const p=positionState();
+          if(p.locked)throw Error('Finaliza la adquisición o reinicia el examen antes de cambiar la posición.');
+          if(!d.position||!p.options.some(o=>o.value===d.position)||!window.GANTRY_AUTO)throw Error('Posición no válida.');
+          el('gantryPositionMenu').value=d.position;
+          const accepted=window.GANTRY_AUTO.start(d.position);
+          if(!accepted&&!['stop','resume'].includes(d.position))throw Error(el('gantryPositionStatus').textContent||'No se pudo iniciar el movimiento.');
+          post({type:'GANTRY_ACQUIRE_POSITION',request:d.request,position:positionState()});
         }else if(d.type==='GANTRY_ACQUIRE_START'){
           const id=await start(d.config,d.instant===true);
           post({type:'GANTRY_ACQUIRE_STARTED',request:d.request,id});
@@ -63,7 +76,10 @@
     // Thumbnails are only for progress display. Final DICOM keeps original counts.
     const previews=[document.createElement('canvas'),document.createElement('canvas')];
     setInterval(()=>{
-      if(!owned||!window.GANTRY_PROCESSING.active||sending)return;
+      if(!window.GANTRY_PROCESSING.active||sending)return;
+      const position=positionState(),signature=JSON.stringify(position);
+      if(signature!==lastPosition){lastPosition=signature;post({type:'GANTRY_POSITION_STATE',position});}
+      if(!owned)return;
       const state=engine().state;if(!state||state.id!==owned||state.finished&&finalSent===owned)return;
       sending=true;
       try{
