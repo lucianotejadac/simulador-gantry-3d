@@ -41,4 +41,14 @@
       ({dataset,pixels,frameCount,frameSize}=before);select.value=index;
     }
   };
+  const originalSelect=selectMode;
+  selectMode=function(...args){
+    const result=originalSelect(...args);
+    // A saved single-instance view predates reception of its companion and
+    // restores an empty second viewport after buildPanels has paired them.
+    if(pair.length===2&&dataset?.string('x0020000e')===series&&$('frame-1')?.value===''){
+      $('frame-1').value='1';render(1);
+    }
+    return result;
+  };
 })();

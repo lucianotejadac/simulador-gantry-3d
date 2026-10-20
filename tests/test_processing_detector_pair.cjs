@@ -10,6 +10,7 @@ const seen=[];
 const ctx=vm.createContext({dataset:one.dataset,pixels:one.pixels,frameCount:1,frameSize:1,currentMode:'whole',
   acquisitionInstances:{whole:{one,two,other}},$:id=>nodes[id],document:{createElement:()=>({})},
   buildPanels(){nodes['frame-0'].value='0';nodes['frame-1'].value='';},
+  selectMode(){ctx.buildPanels();nodes['frame-1'].value='';},
   render(i){seen.push({i,uid:ctx.dataset.string('x00080018'),total:ctx.pixels[Number(nodes['frame-'+i].value)],frame:nodes['frame-'+i].value});}});
 vm.runInContext(fs.readFileSync('scripts/processing_detector_pair.js','utf8'),ctx);
 ctx.buildPanels();ctx.render(0);ctx.render(1);
@@ -23,4 +24,7 @@ ctx.dataset=two.dataset;ctx.pixels=two.pixels;ctx.buildPanels();ctx.render(0);ct
 assert.deepEqual(seen.slice(-2).map(x=>x.total),[5892,4830]);
 assert.equal(ctx.dataset,two.dataset);assert.equal(ctx.pixels,two.pixels);
 assert.equal(one.pixels[0],5892);assert.equal(two.pixels[0],4830);
+ctx.selectMode();
+assert.equal(nodes['frame-1'].value,'1','Restored single-instance view must reveal its newly received companion');
+assert.equal(seen.at(-1).total,4830);
 console.log('OK: paired detector instances render their own original counts, remain isolated across series, and restore viewer context.');
