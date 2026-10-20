@@ -4,6 +4,8 @@
   const data=window.GANTRY_MDP_DATA,poses={},pending={},nativeChunks=new Map(),nativePending=new Map();
   const wrap=a=>(a%360+360)%360;
   const scatterAppearance=Object.freeze({model:'mdp-diffuse-v2-background',oddsMultiplier:6,sigmaMm:30,maxFraction:.55});
+  const backgroundAppearance=Object.freeze({model:'mdp-tissue-balance-v1',boneRedistributionFraction:0.2640939054649198,transitionMinutes:Object.freeze([5,30])});
+  const backgroundEligible=new WeakSet(),backgroundBones=new WeakMap();
   function neededChunks(name,angles){
     const d=data.poses[name].nativeBone;if(!d)return [];
     return [...new Set(angles.flatMap(a=>[Math.floor(wrap(a)),(Math.floor(wrap(a))+1)%360]).map(a=>Math.floor(a/d.chunkSize)))];
@@ -150,6 +152,7 @@
         return value;
       }});});
       cache.key=key;cache.bases=bases;
+      if(!metrics.uncollimated&&Number.isFinite(metrics.psfSigmaMm))backgroundEligible.add(bases);
       cache.result=null;
     }
     if(!cache.result||cache.seconds!==seconds||cache.voidAt120!==state.voidAt120){
@@ -161,9 +164,30 @@
   function mix(bases,seconds=state.seconds){
     const weights=fractions(seconds,state.voidAt120).weights;
     const values=new Float32Array(bases[0].length),cdf=new Float64Array(values.length);
+    // Visual tissue balance fitted at 120 min, not a change to organ activity.
+    // Keep the first pass unchanged; introduce the late appearance smoothly.
+    const [start,end]=backgroundAppearance.transitionMinutes;
+    const u=Math.max(0,Math.min(1,(seconds/60-start)/(end-start)));
+    const blend=backgroundEligible.has(bases)?u*u*(3-2*u):0;
+    let adjustedBone=null;
+    if(blend>0&&weights[0]>0){
+      if(!backgroundBones.has(bases)){
+        const bone=bases[0],soft=bases[2];let boneSum=0,softSum=0;
+        for(let i=0;i<bone.length;i++){boneSum+=bone[i];softSum+=soft[i];}
+        if(softSum>0&&boneSum>0){
+          const alpha=backgroundAppearance.boneRedistributionFraction;
+          const adjusted=new Float32Array(bone.length),scale=alpha*boneSum/softSum;
+          for(let i=0;i<bone.length;i++)adjusted[i]=bone[i]*(1-alpha)+soft[i]*scale;
+          backgroundBones.set(bases,adjusted);
+        }else backgroundBones.set(bases,bone);
+      }
+      adjustedBone=backgroundBones.get(bases);
+    }
     for(let c=0;c<8;c++)if(weights[c]>0){
-      const base=bases[c];
-      for(let i=0;i<values.length;i++)values[i]+=base[i]*weights[c]*2000000;
+      const base=c===0&&adjustedBone&&blend===1?adjustedBone:bases[c];
+      if(c===0&&adjustedBone&&blend<1){
+        for(let i=0;i<values.length;i++)values[i]+=(base[i]*(1-blend)+adjustedBone[i]*blend)*weights[c]*2000000;
+      }else for(let i=0;i<values.length;i++)values[i]+=base[i]*weights[c]*2000000;
     }
     let sum=0,peak=0;for(let i=0;i<values.length;i++){cdf[i]=sum+=values[i];peak=Math.max(peak,values[i]);}
     return {values,cdf,sum,window:Math.max(1,peak*.8),mdpBases:bases};
@@ -182,7 +206,7 @@
     if(state.seconds>=LIMIT&&!session.finished){session.finished=true;session.mdpLimit=true;}
   }
   const el=id=>document.getElementById(id);
-  function metadata(){return {...state,scatterAppearance:{...scatterAppearance},model:'mdp-v2',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
+  function metadata(){return {...state,scatterAppearance:{...scatterAppearance},backgroundAppearance:{...backgroundAppearance,transitionMinutes:[...backgroundAppearance.transitionMinutes]},model:'mdp-v2',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
   function render(){
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;

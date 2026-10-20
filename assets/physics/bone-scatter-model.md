@@ -1,5 +1,37 @@
 # Dispersión espacial del MDP
 
+## Balance visual de tejidos blandos
+
+`mdp-tissue-balance-v1` integra la candidata revisada en la comparación local.
+Redistribuye el 26,4093905% de la contribución ósea detectada sobre la base de
+tejidos blandos del fantoma, normalizada a la misma suma. Conserva las cuentas
+aceptadas en cada campo; no cambia las fracciones biológicas, actividad,
+decaimiento, PSF ni sensibilidad. Si no hay señal de tejidos blandos, mantiene
+la base original. Se omite sin colimador.
+
+El ajuste se obtuvo a 120 min con cuatro razones hueso/tejido en regiones
+femorales de una adquisición Intevo 16. El error logarítmico RMS pasó de 0,626
+a 0,043. En una segunda adquisición Intevo Excel, reservada para comprobación,
+pasó de 1,234 a 0,615. Es una mejora parcial de apariencia, no calibración
+clínica ni validación de toda la anatomía. Al desplazar las regiones, el
+percentil 5–95 del factor fue 23,2–30,2%.
+
+La primera pasada hasta 5 min conserva el aspecto previo. Entre 5 y 30 min
+se introduce suavemente el balance tardío; después se mantiene. Esta
+extensión temporal y a otros campos, ángulos y posturas es una decisión de
+simulación, no un resultado medido en los dos estudios. La redistribución
+se calcula dentro del campo; no transporta eventos desde fuera de él.
+
+La base ajustada se reutiliza por geometría y se libera con su caché, evitando
+recalcularla en cada paso temporal. Imagen en vivo, estática, cuerpo entero
+y vista final utilizan el mismo mezclador. Las adquisiciones guardadas
+conservan sus píxeles; las nuevas incluyen el perfil en sus metadatos.
+
+`node tests/test_bone_background.cjs` verifica la equivalencia con la candidata,
+la conservación de cuentas, fase inicial, mezcla temporal, ambas posturas,
+AP/PA, matrices 64–512 y metadatos. Los archivos clínicos permanecen fuera
+del repositorio.
+
 `mdp-diffuse-v2-background` añade una componente difusa a las proyecciones
 óseas en vivo, estáticas, de cuerpo entero y de imagen final. Se aplica antes
 del muestreo estadístico y se conserva la suma de cada base cinética. No añade
