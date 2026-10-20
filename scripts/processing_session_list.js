@@ -8,7 +8,7 @@
   empty.textContent='Sin adquisiciones. Usa Adquirir para comenzar.';
   nav.append(empty);
   const style=document.createElement('style');
-  style.textContent='.acquisition-tabs [hidden]{display:none!important}#processingEmptyAcquisitions{padding:10px 6px;font-size:13px;line-height:1.4}#processingEmptyAcquisitions:not([hidden]){display:block!important}';
+  style.textContent='.acquisition-tabs [hidden]{display:none!important}#processingEmptyAcquisitions{padding:10px 6px;font-size:13px;line-height:1.4;color:#fff;opacity:1}#processingEmptyAcquisitions:not([hidden]){display:block!important}';
   document.head.append(style);
   const order=new Map(),original=updateModeUI;
   updateModeUI=function(){
