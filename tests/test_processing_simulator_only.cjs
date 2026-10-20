@@ -16,7 +16,7 @@ const env={document:{querySelector:()=>bar,createElement:node,getElementById:id=
 vm.runInNewContext(fs.readFileSync('scripts/processing_compact.js','utf8'),env);
 (async()=>{
  const menu=nodes.get('processingFileMenu');
- assert.deepEqual(menu.children.map(o=>o.value),['save-project','help']);
+ assert.deepEqual(menu.children.map(o=>o.value),['save-project','help','flex']);
  await assert.rejects(()=>env.loadFile({name:'external.dcm'}),/simulador/);
  await assert.rejects(()=>env.loadFile({}, {string:()=> 'EXTERNAL'}),/simulador/);
  assert.equal(calls.length,0);

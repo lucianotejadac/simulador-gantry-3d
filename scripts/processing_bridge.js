@@ -1,8 +1,8 @@
 /* Parent controller: lazy iframe, local snapshots, explicit append and ACK. */
 (function(){
   'use strict';
-  const el=id=>document.getElementById(id),store=window.GANTRY_BONE_STORAGE.createStore(window.indexedDB);
-  let active=false,ready=false,pending=null,loaded=false,catalog=new Map(),current=null,request=0,loadTimer,refreshing=false;
+  const el=id=>document.getElementById(id);
+  let active=false,ready=false,pending=null,loaded=false,catalog=new Map(),request=0,loadTimer,refreshing=false;
   const completed=new Map(),imported=new Set();
   const identity=r=>(r.processing?.acquisitionId||r.id)+':'+(r.totals||r.heads.map(h=>h.total)).join(':');
   function remember(record){
@@ -28,29 +28,23 @@
     refreshing=true;
     try{
     const selected=new Set([...el('boneProcessingList').querySelectorAll('input:checked')].map(n=>n.value));
-    catalog=new Map();current=window.GANTRY_BONE_ACQ.processingCurrent();
-    if(current?.study==='bone'&&current.finished&&current.heads.every(h=>h.total>0))catalog.set('current',current);
-    const seen=new Set([...catalog.values()].map(identity));
-    for(const record of completed.values())if(!seen.has(identity(record))){catalog.set(record.id,record);seen.add(identity(record));}
-    const saved=await store.list();
-    for(const record of saved){
-      const same=record.id===current?.id||(record.processing?.acquisitionId&&record.processing.acquisitionId===current?.processing?.acquisitionId&&record.totals?.every((n,i)=>n===current.heads[i].total));
-      if(record.study==='bone'&&record.finished&&record.totals?.every(n=>n>0)&&!same&&!seen.has(identity(record))){catalog.set(record.id,record);seen.add(identity(record));}
-    }
+    // Only acquisitions completed in this simulator session. Browsing cached
+    // images in Gantry must not repopulate a new processing workspace.
+    catalog=new Map(completed);
     el('boneProcessingList').replaceChildren();
     for(const [key,record] of catalog){
       const row=document.createElement('label'),check=document.createElement('input'),text=document.createElement('span');
-      check.type='checkbox';check.value=key;check.checked=selected.has(key)||(!selected.size&&key==='current');
-      text.textContent=(key==='current'?'Actual / seleccionada':record.heads?'De esta sesión':'Guardada')+' · '+(record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names.join(' / ')+' · '+new Date(record.createdAt).toLocaleString('es-CL');
+      check.type='checkbox';check.value=key;check.checked=selected.has(key);
+      text.textContent='De esta sesión · '+(record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names.join(' / ')+' · '+new Date(record.createdAt).toLocaleString('es-CL');
       row.append(check,text);el('boneProcessingList').append(row);
     }
-    if(!catalog.size)el('boneProcessingList').textContent='Finaliza una adquisición ósea con cuentas en ambos detectores. También aparecerán aquí las adquisiciones guardadas.';
+    if(!catalog.size)el('boneProcessingList').textContent='Sin adquisiciones en esta sesión. Usa Adquirir para iniciar la primera.';
     el('boneProcessingSend').disabled=!ready||!catalog.size||!!pending;
     }finally{refreshing=false;}
   }
   function sync(){
     if(!active||!ready||pending||refreshing)return;
-    const keys=[...catalog].filter(([,r])=>!imported.has(identity(r))).map(([key])=>key).slice(0,50);
+    const keys=[...catalog].filter(([,r])=>!imported.has(identity(r))).map(([key])=>key).slice(0,1);
     if(keys.length)return send(keys,true);
   }
   async function open(){
@@ -81,7 +75,7 @@
       status.textContent='Preparando cuentas originales y metadatos…';
       const files=[];
       for(const key of keys){
-        const entry=catalog.get(key),record=entry.heads?entry:await store.get(key);
+        const record=catalog.get(key);
         const studyUID=await window.GANTRY_PROCESSING_DICOM.uid('gantry-bone-phantom:'+new Date(record.processing?.startedAt||record.createdAt).toISOString().slice(0,10));
         files.push(...await window.GANTRY_PROCESSING_DICOM.files(record,studyUID));
       }

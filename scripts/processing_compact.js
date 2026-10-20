@@ -14,9 +14,11 @@
     if(button){const option=document.createElement('option');option.value=id;option.textContent=button.textContent;menu.append(option);}
   }
   const help=document.createElement('option');help.value='help';help.textContent='Cómo adquirir y procesar';menu.append(help);
+  const page=document.createElement('option');page.value='flex';page.textContent='Página flexible';menu.append(page);
   menu.onchange=()=>{
     const id=menu.value;menu.value='';
     if(id==='help')status('En Adquirir, elige estática o cuerpo entero, configura los campos e inicia. Las adquisiciones del gantry aparecen automáticamente en el menú izquierdo. Puedes procesarlas y exportar la página como PNG o guardar una copia del proyecto.');
+    else if(id==='flex')openFlexible();
     else document.getElementById(id)?.click();
   };
   bar.append(menu);

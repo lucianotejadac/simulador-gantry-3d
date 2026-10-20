@@ -1039,9 +1039,11 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     if(button){const option=document.createElement('option');option.value=id;option.textContent=button.textContent;menu.append(option);}
   }
   const help=document.createElement('option');help.value='help';help.textContent='Cómo adquirir y procesar';menu.append(help);
+  const page=document.createElement('option');page.value='flex';page.textContent='Página flexible';menu.append(page);
   menu.onchange=()=>{
     const id=menu.value;menu.value='';
     if(id==='help')status('En Adquirir, elige estática o cuerpo entero, configura los campos e inicia. Las adquisiciones del gantry aparecen automáticamente en el menú izquierdo. Puedes procesarlas y exportar la página como PNG o guardar una copia del proyecto.');
+    else if(id==='flex')openFlexible();
     else document.getElementById(id)?.click();
   };
   bar.append(menu);
@@ -1353,6 +1355,37 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     }
     return result;
   };
+})();
+
+/* Session acquisitions only: no empty type slots or tool tiles in the list.
+   Keep the underlying slots for the viewer's series/pair bookkeeping. */
+(function(){
+  'use strict';
+  const nav=document.querySelector('.acquisition-tabs');
+  const empty=nav.querySelector('p')||document.createElement('p');
+  empty.id='processingEmptyAcquisitions';
+  empty.textContent='Sin adquisiciones. Usa Adquirir para comenzar.';
+  nav.append(empty);
+  const style=document.createElement('style');
+  style.textContent='.acquisition-tabs [hidden]{display:none!important}#processingEmptyAcquisitions{padding:10px 6px;font-size:13px;line-height:1.4}#processingEmptyAcquisitions:not([hidden]){display:block!important}';
+  document.head.append(style);
+  const order=new Map(),original=updateModeUI;
+  updateModeUI=function(){
+    const result=original();
+    for(const key of Object.keys(acquisitionKinds)){
+      const populated=!!modeStates[key]?.dataset||(key===currentAcquisition&&!!dataset)||Object.values(acquisitionInstances[key]||{}).some(s=>s.dataset);
+      const button=$('mode-'+key);
+      button.hidden=!populated;
+      if(populated&&!order.has(key))order.set(key,button);
+    }
+    // One slot contains the two detector instances of a single series.
+    // Append acquisitions in arrival order, even when the study type changes.
+    for(const button of order.values())nav.insertBefore(button,empty);
+    empty.hidden=order.size>0;
+    if($('mode-flex'))$('mode-flex').hidden=true;
+    return result;
+  };
+  updateModeUI();
 })();
 
 /* Appended to the vendored viewer; all viewer APIs remain local to this frame. */
