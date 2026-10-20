@@ -1064,7 +1064,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       c[key]=n;
     };
     choice('kind',['static','whole'],'Tipo de adquisición');
-    choice('matrix',[64,128,256,512],'Matriz');choice('zoom',[1,1.5,1.75,2],'Zoom');
+    choice('matrix',[128,256],'Matriz');choice('zoom',[1,1.5,1.75,2],'Zoom');
     choice('collimator',['LEHR','MELP','HE','NONE'],'Colimador');
     number('energyCenter',80,450,'Centro de energía',true);choice('windowWidth',[10,15,20,25],'Ancho de ventana');
     number('activityMci',.1,2000/37,'Actividad (mCi)');number('minutes',0,179.99,'Tiempo inyección–examen (min)');
@@ -1256,7 +1256,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie',config.kind==='whole'?'Nueva · cuerpo entero':'Nueva · estática'));
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
-      input('matrix','Tamaño de matriz',config.matrix,[64,128,256,512].map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
+      input('matrix','Tamaño de matriz',config.matrix,[128,256].map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
       input('zoom','Zoom',config.zoom,[[1,'1×'],[1.5,'1,5×'],[1.75,'1,75×'],[2,'2×']]),
       field('Programación de cámara','Óseo · MDP'),field('Detectores','1 y 2'),
       input('collimator','Colimador',config.collimator,[['LEHR','LEHR'],['MELP','MELP'],['HE','HE'],['NONE','Sin colimador']]),

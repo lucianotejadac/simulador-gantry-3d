@@ -11,7 +11,7 @@
       c[key]=n;
     };
     choice('kind',['static','whole'],'Tipo de adquisición');
-    choice('matrix',[64,128,256,512],'Matriz');choice('zoom',[1,1.5,1.75,2],'Zoom');
+    choice('matrix',[128,256],'Matriz');choice('zoom',[1,1.5,1.75,2],'Zoom');
     choice('collimator',['LEHR','MELP','HE','NONE'],'Colimador');
     number('energyCenter',80,450,'Centro de energía',true);choice('windowWidth',[10,15,20,25],'Ancho de ventana');
     number('activityMci',.1,2000/37,'Actividad (mCi)');number('minutes',0,179.99,'Tiempo inyección–examen (min)');
