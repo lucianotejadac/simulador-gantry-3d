@@ -23,7 +23,7 @@
       const empty=document.createElement('option');empty.value='';empty.textContent='Sin imagen';select.append(empty);
       pair.forEach((state,j)=>{
         const option=document.createElement('option');option.value=String(j);
-        option.textContent=state.dataset.string('x0008103e')||'Detector '+(j+1);select.append(option);
+        option.textContent=value(state.dataset,'0008103e')||'Detector '+(j+1);select.append(option);
       });
       select.value=String(i);
     }
@@ -36,7 +36,9 @@
     // Each detector instance contains exactly one frame, numbered zero.
     try{
       dataset=state.dataset;pixels=state.pixels;frameCount=state.frameCount;frameSize=state.frameSize;
-      select.value='0';return originalRender(i);
+      select.value='0';const result=originalRender(i);
+      $('detector-'+i).textContent='Detector '+state.dataset.string('x00200013');
+      return result;
     }finally{
       ({dataset,pixels,frameCount,frameSize}=before);select.value=index;
     }

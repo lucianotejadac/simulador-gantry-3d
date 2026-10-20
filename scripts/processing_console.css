@@ -37,6 +37,11 @@ body.gantry-acquisition-draft .draft-image .scan{min-height:80px;flex:1}
 .console-transport button:disabled b{color:#888}
 .console-secondary{display:flex;gap:4px;flex-wrap:wrap}
 .console-secondary button{flex:1}
+/* Once received, give the images priority over inactive acquisition transport. */
+body:not(.gantry-acquisition-draft) #acquisitionConsole :is(.console-summary,.console-transport){display:none}
+body:not(.gantry-acquisition-draft) #acquisitionConsole .console-secondary button:disabled{display:none}
+body:not(.gantry-acquisition-draft):not(.flex-mode) .viewer{overflow:auto}
+body:not(.gantry-acquisition-draft):not(.flex-mode) .images{min-height:360px}
 body:not(.flex-mode) .application-bar{min-height:30px;height:auto;flex-wrap:wrap}
 body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
 @media(max-width:760px){
