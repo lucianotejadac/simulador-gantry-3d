@@ -1,14 +1,14 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('scripts/bone_whole_body.js','utf8');
-function fixture(n=64,startZ=200,velocity=10){
+function fixture(n=64,startZ=200,velocity=10,contours='auto'){
   const pose={width:560/3,height:500,headRow:20,footRow:480};
   const G={tableZ:startZ,tableH:88,detDist1:50,detDist2:50,arms:'down',rot:0,detectorSeparation:180};
   const settings={matrix:n,zoom:1,headFirst:false,decubitus:'supine',collimator:'LEHR',energyCenter:140,windowWidth:20};
-  const sampled=[],times=[],stats={fields:0,guards:0,renders:0,yields:0};
+  const sampled=[],times=[],distances=[],stats={fields:0,guards:0,renders:0,yields:0};
   const W={
     GANTRY:{G,LIM:{detDist1:[12,50],detDist2:[12,50]},render(){stats.renders++;}},
     GANTRY_PATIENT3D:{headFirst:false},
-    GANTRY_LIVE:{settings,setZoom(){},resetImageCenter(){},framePair:a=>({lo:a,hi:a,mix:0}),distanceMetrics:()=>({blur:1})},
+    GANTRY_LIVE:{settings,setZoom(){},resetImageCenter(){},framePair:a=>({lo:a,hi:a,mix:0}),distanceMetrics:cm=>{distances.push(cm);return {blur:cm/20};}},
     GANTRY3D:{limits:g=>({d1:g.tableZ<100?30:20,d2:25}),surfaceGaps:()=>null,collision:{guard(){stats.guards++;}}},
     GANTRY_MDP:{seconds:7200,rate:100,get remaining(){return 10800-this.seconds;},geometry:()=>pose,
       metadata(){return {seconds:this.seconds,voidAt120:true};},advance(t){this.seconds+=t;},
@@ -17,11 +17,11 @@ function fixture(n=64,startZ=200,velocity=10){
       }},
     GANTRY_BONE_CORE:{poisson:mu=>{sampled.push(mu);return Math.round(mu);}}
   };
-  const ctx=vm.createContext({window:W,document:{getElementById:()=>null},performance,
+  const ctx=vm.createContext({window:W,document:{getElementById:()=>null},performance,structuredClone,
     setTimeout(fn){stats.yields++;return setTimeout(fn,0);}});
   vm.runInContext(source,ctx);
-  const api=W.GANTRY_BONE_WHOLE,scan=api.create(velocity);
-  return {W,G,api,scan,sampled,times,stats,pose};
+  const api=W.GANTRY_BONE_WHOLE,scan=api.create(velocity,contours);
+  return {W,G,api,scan,sampled,times,stats,pose,distances,ctx};
 }
 function near(a,b){assert(Math.abs(a-b)<1e-6*Math.max(1,Math.abs(b)),`${a} != ${b}`);}
 (async()=>{
@@ -84,5 +84,35 @@ function near(a,b){assert(Math.abs(a-b)<1e-6*Math.max(1,Math.abs(b)),`${a} != ${
   const aligned=fixture();aligned.G.rot=60;aligned.G.detectorSeparation=90;
   aligned.scan=aligned.api.create(10);await aligned.api.instant(aligned.scan,100);
   assert.equal(aligned.G.rot,0);assert.equal(aligned.G.detectorSeparation,180);
+  // Fixed contour mode keeps the chosen radii, including in the instant path,
+  // while automatic mode changes them along the same anatomy.
+  const fixed=fixture(64,200,10,'fixed'),automatic=fixture();
+  await fixed.api.instant(fixed.scan,100);await automatic.api.instant(automatic.scan,100);
+  assert.equal(fixed.G.detDist1,50);assert.equal(fixed.G.detDist2,50);
+  assert(fixed.distances.every(cm=>cm===50),'Distance-dependent imaging receives fixed radii');
+  assert(automatic.distances.some(cm=>cm<50),'Automatic imaging uses closer detector distances');
+  near(fixed.scan.heads[0].elapsed,automatic.scan.heads[0].elapsed);
+  const realFixed=fixture(64,101,60,'fixed'),realAuto=fixture(64,101,60);
+  for(const f of [realFixed,realAuto]){
+    for(let i=0;i<100&&f.G.tableZ>95;i++)f.api.advance(f.scan,100,.5,false);
+    assert(f.G.tableZ<95);
+  }
+  assert.equal(realFixed.G.detDist1,50);assert.equal(realFixed.G.detDist2,50);
+  assert(realAuto.G.detDist1<50);
+  const tooClose=fixture();tooClose.G.detDist1=20;
+  assert.throws(()=>tooClose.api.create(10,'fixed'),/Distancia fija insuficiente/);
+  const blockedFixed=fixture(64,200,10,'fixed');
+  blockedFixed.W.GANTRY3D.collision.guard=()=>({blocked:{detector:1,hit:{region:'paciente'}}});
+  assert.throws(()=>blockedFixed.api.advance(blockedFixed.scan,100,.5),/contacto/);
+  await assert.rejects(blockedFixed.api.instant(blockedFixed.scan,100),/contacto/);
+  assert.equal(blockedFixed.scan.travel,0);
+  // Mode and initial fixed radii survive saving and reject malformed metadata.
+  vm.runInContext(fs.readFileSync('scripts/bone_acquisition_store.js','utf8'),fixed.ctx);
+  const saved=fixed.W.GANTRY_BONE_STORAGE.snapshot(fixed.scan,['D1','D2'],{},1,'fixed-test');
+  assert.equal(saved.scan.contours,'fixed');assert.equal(saved.scan.fixedDistances.detDist1,50);
+  fixed.W.GANTRY_BONE_STORAGE.validate(saved);
+  saved.scan.fixedDistances.detDist1=NaN;
+  assert.throws(()=>fixed.W.GANTRY_BONE_STORAGE.validate(saved),/Distancias/);
+  console.log('OK: automatic/fixed contours in timed and instant scans, actual imaging distances, unchanged scan duration, clearance/contacts and saved metadata.');
   console.log('OK: analytical exposure, one Poisson sample, partial scan, kinetic limit, void boundary, zero signal, guarded alignment and atomic rejection.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

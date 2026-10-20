@@ -24,6 +24,8 @@
       number('target',1,c.mode==='time'?57600:160000000,'Objetivo',true);
     }
     number('velocity',.1,60,'Velocidad de camilla');
+    c.contours=value.contours??'auto';
+    if(!['auto','fixed'].includes(c.contours))throw Error('Modo de contornos no válido.');
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());
     return c;

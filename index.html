@@ -820,7 +820,7 @@
         <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
       </details>
       <div id="boneProcessingStatus" role="status"></div>
-      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=72c947559d583b32"></iframe>
+      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=d67c61226d6a8b02"></iframe>
     </section>
     <!-- PROCESSING_UI_END -->
 <section class="gantry-live" id="gantryLive" aria-label="Controles y adquisiciones">
@@ -967,6 +967,7 @@
               <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
               <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label id="boneAcqVelocityWrap" hidden>Velocidad de camilla <input id="boneAcqVelocity" type="number" min="0.1" max="60" step="0.025" value="10" required disabled> cm/min</label>
+              <label id="boneAcqContoursWrap" hidden>Contornos automáticos <select id="boneAcqContours" class="live-study"><option value="auto">Activados</option><option value="fixed">Desactivados · distancia fija</option></select></label>
               <label id="boneAcqCriterionWrap">Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas totales objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label id="boneAcqTargetWrap">Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
               <span id="boneAcqUnits">cuentas totales por detector</span>
@@ -4108,17 +4109,22 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const G=window.GANTRY.G,s=window.GANTRY_LIVE.settings;
     return JSON.stringify([G.arms,G.rot,G.detectorSeparation??180,G.tableH,window.GANTRY_PATIENT3D?.headFirst,s.headFirst,s.decubitus,document.getElementById('pos')?.value,s.matrix,s.zoom,s.centers,s.collimator,s.energyCenter,s.windowWidth,window.GANTRY3D?.equipment?.enabled]);
   }
-  function create(velocity){
+  function create(velocity,contours='auto'){
+    if(!['auto','fixed'].includes(contours))throw Error('Modo de contornos no válido.');
     const status=position();if(!status.ok)throw Error(status.reason);
     const G=window.GANTRY.G;
     window.GANTRY_LIVE.setZoom(1);window.GANTRY_LIVE.resetImageCenter();
     const pose=window.GANTRY_MDP?.geometry(G.arms==='up'?'up':'down')||window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'];
     const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ);
+    scan.contours=contours;
+    if(contours==='fixed')scan.fixedDistances={detDist1:G.detDist1,detDist2:G.detDist2};
     // Both 0/360 and 180 put the detector faces parallel to the patient.
     scan.targetRot=Math.round(G.rot/180)*180;
     if(Math.abs((G.detectorSeparation??180)-180)>.001)scan.rotationClearance={detDist1:window.GANTRY.LIM.detDist1[1],detDist2:window.GANTRY.LIM.detDist2[1]};
     else if(Math.abs(G.rot-scan.targetRot)>.001)scan.rotationClearance=rotationTargets(G,scan.targetRot,window.GANTRY3D.limits,window.GANTRY.LIM);
-    safeTargets({...G,rot:scan.targetRot,detectorSeparation:180},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    const required=safeTargets({...G,rot:scan.targetRot,detectorSeparation:180},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    if(contours==='fixed'&&['detDist1','detDist2'].some(k=>G[k]<required[k]-.001))
+      throw Error('Distancia fija insuficiente para todo el recorrido. Aleja los detectores: D1 al menos '+required.detDist1.toFixed(1)+' cm y D2 '+required.detDist2.toFixed(1)+' cm del isocentro, o activa los contornos automáticos.');
     scan.geometrySignature=signature();scan.initialGeometry={...G};
     return scan;
   }
@@ -4146,7 +4152,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       if(render)window.GANTRY.render();return;
     }
     const nextZ=Math.max(scan.endZ,G.tableZ-dt*scan.velocity/60*184/175);
-    const targets=safeTargets(G,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    const targets=scan.contours==='fixed'?scan.fixedDistances:safeTargets(G,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     if(['detDist1','detDist2'].some(k=>Math.abs(G[k]-targets[k])>.001)){
       const next={...G};for(const k of ['detDist1','detDist2'])next[k]=approach(next[k],targets[k],dt);
       guard(next);Object.assign(G,next);
@@ -4204,7 +4210,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       const travel=scan.travel+elapsed*scan.velocity/60;
       const nextTravel=Math.min(scan.target,travel+dt*scan.velocity/60);
       const nextZ=nextTravel>=scan.target?scan.endZ:scan.startZ-(scan.startZ-scan.endZ)*nextTravel/scan.target;
-      const targets=safeTargets(virtual,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+      const targets=scan.contours==='fixed'?scan.fixedDistances:safeTargets(virtual,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
       const positioned={...virtual,...targets};
       guard(virtual,positioned);
       const end={...positioned,tableZ:nextZ};
@@ -4307,7 +4313,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       ...(session.sampling?{sampling:structuredClone(session.sampling)}:{}),
       ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mibiStart?{mibi:{start:structuredClone(session.mibiStart),end:structuredClone(session.mibiEnd||session.mibiStart),limit:!!session.mibiLimit}}:{}),
-      ...(session.mode==='scan'?{scan:{velocity:session.velocity,travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
+      ...(session.mode==='scan'?{scan:{velocity:session.velocity,contours:session.contours||'auto',
+        ...(session.fixedDistances?{fixedDistances:structuredClone(session.fixedDistances)}:{}),
+        travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
       heads:session.heads.map(h=>({detector:h.detector,total:h.total,elapsed:h.elapsed,done:h.done,counts:h.counts.slice()}))};
   }
   function validate(record){
@@ -4317,6 +4325,8 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
     const height=record.height??record.n,kind=record.kind??'static';
     if(record.mode==='scan'&&(kind!=='whole'||!record.scan||!Number.isFinite(record.scan.velocity)||record.scan.velocity<.1||record.scan.velocity>60||!Number.isFinite(record.scan.travel)||record.scan.travel<0||record.scan.travel>record.target))throw Error('Datos de barrido no válidos');
+    if(record.scan?.contours!==undefined&&!['auto','fixed'].includes(record.scan.contours))throw Error('Contornos guardados no válidos');
+    if(record.scan?.contours==='fixed'&&(!record.scan.fixedDistances||!['detDist1','detDist2'].every(k=>Number.isFinite(record.scan.fixedDistances[k])&&record.scan.fixedDistances[k]>0)))throw Error('Distancias fijas no válidas');
     if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
       (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
     if(record.sampling){
@@ -4623,10 +4633,11 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     el('boneAcqTypeWrap').hidden=study!=='bone';
     const scanning=running&&session.mode==='scan';
     lockScan(scanning);
-    el('boneAcqPosition').textContent=scanning?'Barrido desde posición inicial → pies · detectores automáticos':wantWhole?check.reason:'';
+    el('boneAcqPosition').textContent=scanning?'Barrido desde posición inicial → pies · '+(session.contours==='fixed'?'distancias fijas':'contornos automáticos'):wantWhole?check.reason:'';
     for(const id of ['boneAcqCriterionWrap','boneAcqTargetWrap','boneAcqUnits'])el(id).hidden=wantWhole;
     el('boneAcqCriterion').disabled=el('boneAcqTarget').disabled=wantWhole;
     el('boneAcqVelocityWrap').hidden=!wantWhole;el('boneAcqVelocity').disabled=!wantWhole;
+    el('boneAcqContoursWrap').hidden=!wantWhole;el('boneAcqContours').disabled=!wantWhole||running||busy;
     el('boneAcqSpeedWrap').hidden=false;
     el('boneAcqFast').textContent='⏩ Avance rápido · '+speed+'×';
     el('boneAcqType').disabled=running||busy||saving||loadingSaved;
@@ -4665,6 +4676,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const positioning={retracting:'Separando detectores para girar',aligning:'Alineando detectores con el paciente',positioning:'Acercando detectores'};
     const state=session.cancelled?'Cancelada por evento centinela':busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&positioning[session.phase]?positioning[session.phase]:'Adquiriendo';
     el('boneAcqStatus').textContent=state+' · '+(session.mode==='scan'?session.velocity+' cm/min · '+session.travel.toFixed(1)+' / '+session.target.toFixed(1)+' cm':session.mode==='counts'?format(session.target)+' cuentas por detector':time(session.target)+' por detector')+(note?' · '+note:'');
+    if(session.mode==='scan')el('boneAcqStatus').textContent+=' · Contornos '+(session.contours==='fixed'?'desactivados':'activados');
     }
     if(archive)el('boneAcqStatus').textContent='Viendo guardada · '+new Date(archive.createdAt).toLocaleString('es-CL')+(running?' · actual en pausa':'');
     const mdpInfo=archive?archive.mdp:(session?.mdpStart?{start:session.mdpStart,end:session.mdpEnd||session.mdpStart,limit:session.mdpLimit}:null);
@@ -4735,7 +4747,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(kind()==='whole'&&!position().ok){el('boneAcqSetupError').textContent=position().reason;paint();return;}
     acquisitionView();
     if(kind()==='whole'){
-      try{session=whole.create(Number(el('boneAcqVelocity').value));session.countRate=rate;}
+      try{session=whole.create(Number(el('boneAcqVelocity').value),el('boneAcqContours').value||'auto');session.countRate=rate;}
       catch(error){el('boneAcqSetupError').textContent=error.message;return;}
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 160.000.000 cuentas enteras.':'Introduce entre 1 y 57.600 segundos enteros.';return;}
@@ -4876,6 +4888,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       el('boneAcqCriterion').value=config.mode;
       el('boneAcqTarget').value=String(config.target);manualGoal=true;
       el('boneAcqVelocity').value=String(config.velocity);
+      el('boneAcqContours').value=config.contours||'auto';
       el('boneAcqName1').value=config.names[0];el('boneAcqName2').value=config.names[1];
       el('boneAcqSetupError').textContent='';instantOnStart=false;
       if(!start())throw Error(el('boneAcqSetupError').textContent||(window.GANTRY_EXAM?.blocked?'Examen cancelado por colisión. Reinicia el examen desde el gantry.':'Las proyecciones no están listas para adquirir.'));
@@ -4918,7 +4931,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 </script>
 <!-- BONE_ACQ_ENGINE_END -->
 <!-- PROCESSING_ENGINE_BEGIN -->
-<script src="assets/runtime/processing-controller.4a6b385e55a46c5e.js"></script>
+<script src="assets/runtime/processing-controller.16b5e7218fa01d95.js"></script>
 <!-- PROCESSING_ENGINE_END -->
 <!-- CONSOLE_MENUS_BEGIN -->
 <link rel="stylesheet" data-console-menus href="assets/runtime/console-menus.c37f7a3a5078c291.css">

@@ -99,17 +99,22 @@
     const G=window.GANTRY.G,s=window.GANTRY_LIVE.settings;
     return JSON.stringify([G.arms,G.rot,G.detectorSeparation??180,G.tableH,window.GANTRY_PATIENT3D?.headFirst,s.headFirst,s.decubitus,document.getElementById('pos')?.value,s.matrix,s.zoom,s.centers,s.collimator,s.energyCenter,s.windowWidth,window.GANTRY3D?.equipment?.enabled]);
   }
-  function create(velocity){
+  function create(velocity,contours='auto'){
+    if(!['auto','fixed'].includes(contours))throw Error('Modo de contornos no válido.');
     const status=position();if(!status.ok)throw Error(status.reason);
     const G=window.GANTRY.G;
     window.GANTRY_LIVE.setZoom(1);window.GANTRY_LIVE.resetImageCenter();
     const pose=window.GANTRY_MDP?.geometry(G.arms==='up'?'up':'down')||window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'];
     const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ);
+    scan.contours=contours;
+    if(contours==='fixed')scan.fixedDistances={detDist1:G.detDist1,detDist2:G.detDist2};
     // Both 0/360 and 180 put the detector faces parallel to the patient.
     scan.targetRot=Math.round(G.rot/180)*180;
     if(Math.abs((G.detectorSeparation??180)-180)>.001)scan.rotationClearance={detDist1:window.GANTRY.LIM.detDist1[1],detDist2:window.GANTRY.LIM.detDist2[1]};
     else if(Math.abs(G.rot-scan.targetRot)>.001)scan.rotationClearance=rotationTargets(G,scan.targetRot,window.GANTRY3D.limits,window.GANTRY.LIM);
-    safeTargets({...G,rot:scan.targetRot,detectorSeparation:180},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    const required=safeTargets({...G,rot:scan.targetRot,detectorSeparation:180},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    if(contours==='fixed'&&['detDist1','detDist2'].some(k=>G[k]<required[k]-.001))
+      throw Error('Distancia fija insuficiente para todo el recorrido. Aleja los detectores: D1 al menos '+required.detDist1.toFixed(1)+' cm y D2 '+required.detDist2.toFixed(1)+' cm del isocentro, o activa los contornos automáticos.');
     scan.geometrySignature=signature();scan.initialGeometry={...G};
     return scan;
   }
@@ -137,7 +142,7 @@
       if(render)window.GANTRY.render();return;
     }
     const nextZ=Math.max(scan.endZ,G.tableZ-dt*scan.velocity/60*184/175);
-    const targets=safeTargets(G,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+    const targets=scan.contours==='fixed'?scan.fixedDistances:safeTargets(G,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     if(['detDist1','detDist2'].some(k=>Math.abs(G[k]-targets[k])>.001)){
       const next={...G};for(const k of ['detDist1','detDist2'])next[k]=approach(next[k],targets[k],dt);
       guard(next);Object.assign(G,next);
@@ -195,7 +200,7 @@
       const travel=scan.travel+elapsed*scan.velocity/60;
       const nextTravel=Math.min(scan.target,travel+dt*scan.velocity/60);
       const nextZ=nextTravel>=scan.target?scan.endZ:scan.startZ-(scan.startZ-scan.endZ)*nextTravel/scan.target;
-      const targets=safeTargets(virtual,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
+      const targets=scan.contours==='fixed'?scan.fixedDistances:safeTargets(virtual,nextZ,window.GANTRY3D.limits,window.GANTRY.LIM);
       const positioned={...virtual,...targets};
       guard(virtual,positioned);
       const end={...positioned,tableZ:nextZ};

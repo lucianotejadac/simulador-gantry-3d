@@ -16,7 +16,7 @@
       const s=live().settings,mdp=window.GANTRY_MDP.metadata();
       return {kind,matrix:kind==='whole'?Math.max(128,Math.min(256,s.matrix)):s.matrix,zoom:s.zoom,collimator:s.collimator,energyCenter:140,windowWidth:20,
         activityMci:mdp.activityMBq/37,minutes:Math.min(179.99,mdp.seconds/60),mode:'counts',target:400000,
-        velocity:10,names:['Detector 1','Detector 2'],
+        velocity:10,contours:el('boneAcqContours')?.value||'auto',names:['Detector 1','Detector 2'],
         position:positionState(),geometry:el('g3dHud').textContent.trim(),...(s.study==='bone'?{energyCenter:s.energyCenter,windowWidth:s.windowWidth}:{})};
     }
     const change=(id,value)=>{const node=el(id);node.value=String(value);node.dispatchEvent(new Event('change',{bubbles:true}));};

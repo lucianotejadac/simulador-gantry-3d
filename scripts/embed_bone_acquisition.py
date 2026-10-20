@@ -89,6 +89,7 @@ toolbar='''<!-- BONE_ACQ_UI_BEGIN -->
               <label>Nombre detector 1 <input id="boneAcqName1" type="text" maxlength="80" value="Detector 1" required></label>
               <label>Nombre detector 2 <input id="boneAcqName2" type="text" maxlength="80" value="Detector 2" required></label>
               <label id="boneAcqVelocityWrap" hidden>Velocidad de camilla <input id="boneAcqVelocity" type="number" min="0.1" max="60" step="0.025" value="10" required disabled> cm/min</label>
+              <label id="boneAcqContoursWrap" hidden>Contornos automáticos <select id="boneAcqContours" class="live-study"><option value="auto">Activados</option><option value="fixed">Desactivados · distancia fija</option></select></label>
               <label id="boneAcqCriterionWrap">Terminar por <select id="boneAcqCriterion" class="live-study"><option value="counts">Cuentas totales objetivo</option><option value="time">Tiempo de adquisición</option></select></label>
               <label id="boneAcqTargetWrap">Objetivo <input id="boneAcqTarget" type="number" min="1" max="10000000" step="1" value="100000" required></label>
               <span id="boneAcqUnits">cuentas totales por detector</span>

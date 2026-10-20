@@ -1077,6 +1077,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       number('target',1,c.mode==='time'?57600:160000000,'Objetivo',true);
     }
     number('velocity',.1,60,'Velocidad de camilla');
+    c.contours=value.contours??'auto';
+    if(!['auto','fixed'].includes(c.contours))throw Error('Modo de contornos no válido.');
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());
     return c;
@@ -1218,6 +1220,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     for(const n of $('stop').querySelectorAll('input[data-label]')){
       const v=n.dataset.label==='Tiempo programado'&&a.mode==='time'?a.target+' s':
         n.dataset.label==='Conteos de paro (Kcts)'&&a.mode==='counts'?(a.target/1000).toLocaleString('es-CL'):
+        n.dataset.label==='Contornos automáticos'&&info.scan?(info.scan.contours==='fixed'?'Desactivados · distancia fija':'Activados'):
         n.dataset.label==='Condición registrada'?(a.mode==='counts'?'Cuentas':a.mode==='time'?'Tiempo':'Barrido'):null;
       if(v!==null){n.value=v;n.classList.remove('missing');n.title='Parámetro registrado por el simulador al adquirir.';}
     }
@@ -1235,6 +1238,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       ['Ancho de ventana (%)',s.windowWidth??'','Configuración registrada al adquirir']]);
     if(info.mdp?.start)group($('series'),'Tiempo registrado',[
       ['Inyección–examen (min)',(info.mdp.start.seconds/60).toLocaleString('es-CL'),'Tiempo al iniciar esta adquisición']]);
+    if(info.scan)group($('camera'),'Barrido registrado',[
+      ['Contornos automáticos',info.scan.contours==='fixed'?'Desactivados · distancia fija':'Activados','Configuración registrada al adquirir']]);
     stopMetadata();
   };
   function input(key,label,value,choices=null,opts={}){
@@ -1296,16 +1301,19 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       section('camera','Calibraciones',[field('Corrección de uniformidad','Sin mapa de corrección')]);
       section('camera','Orientación',[field('Posición del cuerpo','Posición actual del gantry'),field('Configuración basada','Geometría actual del simulador')]);
     }
-    help('camera',config.kind==='whole'?'La matriz de cuerpo entero tiene cuatro veces más filas que columnas. El barrido comienza donde está la camilla y posiciona los detectores automáticamente.':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
+    help('camera',config.kind==='whole'?'El barrido comienza donde está la camilla y alinea los detectores. Configura el seguimiento del contorno en «Condiciones de paro».':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
     section('series','Radiofármaco',[field('Isótopo','99mTc'),field('Fármaco','MDP'),
       input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,2000/37)),
       input('minutes','Inyección–examen (min)',config.minutes,null,range(0,179.99))]);
     help('series','El reloj del MDP avanza durante la adquisición hasta el límite de 180 minutos.');
     section('stop',config.kind==='whole'?'Barrido de cuerpo entero':'Condiciones de paro',config.kind==='whole'?[
-      input('velocity','Velocidad (cm/min)',config.velocity,null,range(.1,60)),field('Contornos automáticos','Activados'),field('Fin del barrido','Final del recorrido hacia los pies')]:[
+      input('velocity','Velocidad (cm/min)',config.velocity,null,range(.1,60)),
+      input('contours','Contornos automáticos',config.contours||'auto',[['auto','Activados'],['fixed','Desactivados · distancia fija']]),
+      field('Fin del barrido','Final del recorrido hacia los pies')]:[
       input('mode','Terminar por',config.mode,[['counts','Cuentas totales por detector'],['time','Tiempo por detector']]),
       input('target',config.mode==='time'?'Tiempo programado (s)':'Cuentas objetivo',config.target,null,range(1,config.mode==='time'?57600:160000000,'1')),
       field('Paro entre detectores','Cada detector al alcanzar su objetivo')]);
+    if(config.kind==='whole')help('stop','Activados: los detectores siguen el contorno. Desactivados: mantienen las distancias actuales al isocentro durante el barrido. Deben dejar espacio seguro para todo el recorrido; la protección contra colisiones permanece activa.');
     section('stop','Nombres de imágenes',[
       input('name1','Imagen 1',config.names[0],null,{type:'text',maxLength:80}),
       input('name2','Imagen 2',config.names[1],null,{type:'text',maxLength:80})]);
@@ -1336,7 +1344,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   }
   function read(validate=true){
     const c={...draft.config};
-    for(const [key,node] of inputs){if(validate&&!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=key==='collimator'||key==='mode'?node.value:Number(node.value);}
+    for(const [key,node] of inputs){if(validate&&!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=['collimator','mode','contours'].includes(key)?node.value:Number(node.value);}
     c.names=[inputs.get('name1').value,inputs.get('name2').value];
     return validate?window.GANTRY_PROCESSING_CONFIG.validate(c):c;
   }

@@ -248,10 +248,11 @@
     el('boneAcqTypeWrap').hidden=study!=='bone';
     const scanning=running&&session.mode==='scan';
     lockScan(scanning);
-    el('boneAcqPosition').textContent=scanning?'Barrido desde posición inicial → pies · detectores automáticos':wantWhole?check.reason:'';
+    el('boneAcqPosition').textContent=scanning?'Barrido desde posición inicial → pies · '+(session.contours==='fixed'?'distancias fijas':'contornos automáticos'):wantWhole?check.reason:'';
     for(const id of ['boneAcqCriterionWrap','boneAcqTargetWrap','boneAcqUnits'])el(id).hidden=wantWhole;
     el('boneAcqCriterion').disabled=el('boneAcqTarget').disabled=wantWhole;
     el('boneAcqVelocityWrap').hidden=!wantWhole;el('boneAcqVelocity').disabled=!wantWhole;
+    el('boneAcqContoursWrap').hidden=!wantWhole;el('boneAcqContours').disabled=!wantWhole||running||busy;
     el('boneAcqSpeedWrap').hidden=false;
     el('boneAcqFast').textContent='⏩ Avance rápido · '+speed+'×';
     el('boneAcqType').disabled=running||busy||saving||loadingSaved;
@@ -290,6 +291,7 @@
     const positioning={retracting:'Separando detectores para girar',aligning:'Alineando detectores con el paciente',positioning:'Acercando detectores'};
     const state=session.cancelled?'Cancelada por evento centinela':busy?'Completando instantánea':session.finished?'Finalizada':paused?'Pausada':session.mode==='scan'&&positioning[session.phase]?positioning[session.phase]:'Adquiriendo';
     el('boneAcqStatus').textContent=state+' · '+(session.mode==='scan'?session.velocity+' cm/min · '+session.travel.toFixed(1)+' / '+session.target.toFixed(1)+' cm':session.mode==='counts'?format(session.target)+' cuentas por detector':time(session.target)+' por detector')+(note?' · '+note:'');
+    if(session.mode==='scan')el('boneAcqStatus').textContent+=' · Contornos '+(session.contours==='fixed'?'desactivados':'activados');
     }
     if(archive)el('boneAcqStatus').textContent='Viendo guardada · '+new Date(archive.createdAt).toLocaleString('es-CL')+(running?' · actual en pausa':'');
     const mdpInfo=archive?archive.mdp:(session?.mdpStart?{start:session.mdpStart,end:session.mdpEnd||session.mdpStart,limit:session.mdpLimit}:null);
@@ -360,7 +362,7 @@
     if(kind()==='whole'&&!position().ok){el('boneAcqSetupError').textContent=position().reason;paint();return;}
     acquisitionView();
     if(kind()==='whole'){
-      try{session=whole.create(Number(el('boneAcqVelocity').value));session.countRate=rate;}
+      try{session=whole.create(Number(el('boneAcqVelocity').value),el('boneAcqContours').value||'auto');session.countRate=rate;}
       catch(error){el('boneAcqSetupError').textContent=error.message;return;}
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 160.000.000 cuentas enteras.':'Introduce entre 1 y 57.600 segundos enteros.';return;}
@@ -501,6 +503,7 @@
       el('boneAcqCriterion').value=config.mode;
       el('boneAcqTarget').value=String(config.target);manualGoal=true;
       el('boneAcqVelocity').value=String(config.velocity);
+      el('boneAcqContours').value=config.contours||'auto';
       el('boneAcqName1').value=config.names[0];el('boneAcqName2').value=config.names[1];
       el('boneAcqSetupError').textContent='';instantOnStart=false;
       if(!start())throw Error(el('boneAcqSetupError').textContent||(window.GANTRY_EXAM?.blocked?'Examen cancelado por colisión. Reinicia el examen desde el gantry.':'Las proyecciones no están listas para adquirir.'));

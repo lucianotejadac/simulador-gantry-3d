@@ -9,7 +9,9 @@
       ...(session.sampling?{sampling:structuredClone(session.sampling)}:{}),
       ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mibiStart?{mibi:{start:structuredClone(session.mibiStart),end:structuredClone(session.mibiEnd||session.mibiStart),limit:!!session.mibiLimit}}:{}),
-      ...(session.mode==='scan'?{scan:{velocity:session.velocity,travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
+      ...(session.mode==='scan'?{scan:{velocity:session.velocity,contours:session.contours||'auto',
+        ...(session.fixedDistances?{fixedDistances:structuredClone(session.fixedDistances)}:{}),
+        travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
       heads:session.heads.map(h=>({detector:h.detector,total:h.total,elapsed:h.elapsed,done:h.done,counts:h.counts.slice()}))};
   }
   function validate(record){
@@ -19,6 +21,8 @@
       !Array.isArray(record.heads)||record.heads.length!==2)throw Error('Adquisición guardada no válida');
     const height=record.height??record.n,kind=record.kind??'static';
     if(record.mode==='scan'&&(kind!=='whole'||!record.scan||!Number.isFinite(record.scan.velocity)||record.scan.velocity<.1||record.scan.velocity>60||!Number.isFinite(record.scan.travel)||record.scan.travel<0||record.scan.travel>record.target))throw Error('Datos de barrido no válidos');
+    if(record.scan?.contours!==undefined&&!['auto','fixed'].includes(record.scan.contours))throw Error('Contornos guardados no válidos');
+    if(record.scan?.contours==='fixed'&&(!record.scan.fixedDistances||!['detDist1','detDist2'].every(k=>Number.isFinite(record.scan.fixedDistances[k])&&record.scan.fixedDistances[k]>0)))throw Error('Distancias fijas no válidas');
     if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
       (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
     if(record.sampling){

@@ -11,6 +11,9 @@ const c=vm.createContext({window:w,document,location:{origin:'http://local'},set
 vm.runInContext(fs.readFileSync('scripts/processing_acquisition_config.js','utf8'),c);
 const validate=w.GANTRY_PROCESSING_CONFIG.validate;
 assert.equal(validate(base).target,5);
+assert.equal(validate({...base,contours:'fixed'}).contours,'fixed');
+assert.equal(validate(base).contours,'auto');
+assert.throws(()=>validate({...base,contours:'invalid'}),/contornos/);
 for(const matrix of [64,512]){
  assert.equal(validate({...base,matrix}).matrix,matrix);
  assert.throws(()=>validate({...base,kind:'whole',matrix}),/Matriz/);
@@ -52,6 +55,10 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  await send({type:'GANTRY_ACQUIRE_POSITION',field:'decubitus',value:'supine'});assert.deepEqual(positions,['acqProne','acqHeadIn']);assert.match(messages.at(-1).error,/Finaliza/);
  await send({type:'GANTRY_ACQUIRE_ACTION',id:'other',action:'stop'});assert.equal(calls.length,count);
  for(const action of ['pause','fast','instant','stop','save']){await send({type:'GANTRY_ACQUIRE_ACTION',id:'exam1',action});assert.equal(calls.at(-1),action);}
+ engine.active=false;
+ await send({type:'GANTRY_ACQUIRE_START',config:{...base,kind:'whole',contours:'fixed'}});
+ assert.equal(messages.at(-1).type,'GANTRY_ACQUIRE_STARTED');
+ assert.equal(calls.at(-1).kind,'whole');assert.equal(calls.at(-1).contours,'fixed');
  w.GANTRY_PROCESSING.active=false;const prior=messages.length;await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'static'});assert.equal(messages.length,prior);
  const engineCode=fs.readFileSync('scripts/bone_acquisition.js','utf8');assert(!engineCode.includes('if(window.GANTRY_PROCESSING?.active){clock='),'Processing must not freeze acquisition');
  console.log('OK: native acquisition configuration, matrix/energy/activity/time mapping, exact goal, source/origin, collision lock, duplicate start and stale command rejection.');
