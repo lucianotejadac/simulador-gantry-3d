@@ -41,5 +41,5 @@ const saved=window.GANTRY_BONE_STORAGE.snapshot(session,['AP','PA'],{study:'thyr
 assert.equal(saved.settings.administeredActivity.activityMBq,activity.activityMBq,'Saved settings use acquisition dose, not a later UI selection');
 activity.activityMBq=1;assert.notEqual(saved.administeredActivity.activityMBq,1,'Save an independent administration record');
 for(const id of ['mdp','mibi'])assert(html.includes(`id="${id}Unit"`)&&new RegExp(`id="${id}Unit"[^>]*><option>mCi</option>`).test(html),'mCi default');
-assert(html.includes('DÍA 7'));assert(html.includes('administeredActivity:window.GANTRY_ACTIVITY'));
+assert(html.includes('DÍA 7'));
 console.log('OK: all activity defaults, mCi/MBq equivalence, oral presets, day-7 decay, locking, final count/time response, saved metadata and existing model fallback.');

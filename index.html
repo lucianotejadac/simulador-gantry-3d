@@ -540,7 +540,7 @@
 <!-- WORKSPACE_LAYOUT_END -->
 <!-- FAST_LOAD_BEGIN -->
 <link rel="preload" href="assets/runtime/camera-response.6725edf4ddbe9366.js" as="script">
-<link rel="preload" href="assets/runtime/console-menus.4abd4d93cc4efbb8.js" as="script">
+<link rel="preload" href="assets/runtime/console-menus.cea9a62a6825ad5d.js" as="script">
 <link rel="preload" href="assets/runtime/exam-safety.11860a58637f7733.js" as="script">
 <link rel="preload" href="assets/runtime/final-preview.6509cb10482999eb.js" as="script">
 <link rel="preload" href="assets/runtime/gantry-positions.b1ea2d559482b07d.js" as="script">
@@ -550,7 +550,7 @@
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/pixel-grid.d84a41a18b7dcfad.js" as="script">
 <link rel="preload" href="assets/runtime/processing-controller.de62ea20adb2ee7c.js" as="script">
-<link rel="preload" href="assets/runtime/radiopharmaceutical.3a148d310b04241f.js" as="script">
+<link rel="preload" href="assets/runtime/radiopharmaceutical.59f7ddcd69b7b3c1.js" as="script">
 <link rel="preload" href="assets/runtime/study-activity.979b4ce401f48fe8.js" as="script">
 <link rel="preload" href="assets/runtime/symbia-room.40a36f2a15b3e0bc.bin" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/three-bundle.9848023754a347b2.js" as="script">
@@ -3823,7 +3823,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 (function(){
   'use strict';
   const data=window.GANTRY_MAG3_DATA,poses={},button=document.getElementById('injectMAG3');
-  let session=null,panel=null,ready=false,busy=false;
+  let session=null,administration=null,panel=null,ready=false,busy=false;
+  const startButton=document.createElement('button');startButton.id='startMAG3';startButton.type='button';startButton.className='live-setting';startButton.textContent='Iniciar adquisición';startButton.hidden=true;
+  button.insertAdjacentElement('afterend',startButton);
   const instantButton=document.createElement('button');instantButton.id='injectMAG3Instant';instantButton.type='button';instantButton.className='live-setting';instantButton.textContent='Adquisición instantánea';instantButton.hidden=true;
   button.insertAdjacentElement('afterend',instantButton);
   const pixels=data.width*data.height,componentCount=data.scales.down.length;
@@ -3843,7 +3845,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     const values=new Uint16Array(buffer);if(values.length!==componentCount*data.angles.length*pixels)throw Error('Serie MAG3 incompleta');
     poses[name]=Array.from({length:componentCount},(_,c)=>({width:data.width,height:data.height,pixelMm:data.pixelMm,scale:data.scales[name][c],window:1,
       frames:data.angles.map((_,a)=>values.subarray((c*data.angles.length+a)*pixels,(c*data.angles.length+a+1)*pixels))}));
-  })]).then(()=>{ready=true;button.title='Iniciar basal de 20 minutos desde la posición actual';window.dispatchEvent(new Event('mag3ready'));})
+  })]).then(()=>{ready=true;button.title='Inyectar MAG3 sin iniciar la adquisición';window.dispatchEvent(new Event('mag3ready'));})
     .catch(e=>{pending=null;button.title='No se pudo cargar MAG3: '+e.message;throw e;})
     .finally(()=>{button.disabled=false;button.textContent='inyectar MAG3';});
     return pending;
@@ -3940,7 +3942,9 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     document.getElementById('gantryLive').append(panel);
   }
   function syncPanel(){
-    instantButton.hidden=window.GANTRY_LIVE.settings.study!=='mag3';instantButton.disabled=busy||!!window.GANTRY_EXAM?.blocked;
+    startButton.hidden=instantButton.hidden=window.GANTRY_LIVE.settings.study!=='mag3';
+    instantButton.disabled=busy||!administration||!!window.GANTRY_EXAM?.blocked;
+    startButton.disabled=instantButton.disabled||!!session&&!session.finished;
     window.GANTRY_EXAM?.refresh();
     if(!panel)return;
     for(const id of ['pause','finish','fast','speed','instant','export','png']){const node=panel.shadowRoot.getElementById(id);if(node&&window.GANTRY_EXAM?.blocked)node.disabled=true;}
@@ -3957,12 +3961,30 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     if(!ready){try{await load();}catch(error){document.getElementById('mag3Status').textContent='No se pudo cargar MAG3. Pulsa inyectar para reintentar.';console.error(error);return;}}
     if(window.GANTRY_EXAM?.blocked||examRevision!==window.GANTRY_EXAM?.revision)return;
     if(session&&!session.finished){window.GANTRY_LIVE.setStudy('mag3');refresh();return;}
+    administration={metadata:window.GANTRY_ACTIVITY?.metadata('mag3')||null,
+      factor:window.GANTRY_ACTIVITY?.factor('mag3')??1,lastClock:performance.now()};
+    window.GANTRY_LIVE.setStudy('mag3');
+    window.GANTRY_RF?.didInject('mag3');
+    document.getElementById('mag3Status').textContent='MAG3 inyectado · señal en vivo activa · adquisición pendiente';
+    window.GANTRY_LIVE.update(window.GANTRY.G);syncPanel();
+  }
+  function injectionTime(){
+    if(!administration)return 0;
+    if(session?.administration===administration)return session.injectionDelay+session.time;
+    return Math.min(data.duration,(administration.metadata?.seconds||0)+Math.max(0,performance.now()-administration.lastClock)/1000);
+  }
+  function start(){
+    if(busy||window.GANTRY_BONE_ACQ?.active||window.GANTRY_AUTO?.busy||window.GANTRY_EXAM?.blocked)return false;
+    if(session&&!session.finished)return false;
+    if(!administration){document.getElementById('mag3Status').textContent='Pulsa Inyectar en la vista 3D.';return false;}
+    const delay=injectionTime();
+    if(delay>=data.duration){document.getElementById('mag3Status').textContent='La evolución MAG3 ha terminado. Inicia una nueva inyección antes de adquirir.';return false;}
     ensurePanel();panel.shadowRoot.innerHTML=html;
     const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>g.empty?Infinity:Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
     const n=window.GANTRY_LIVE.settings.matrix,geometry=detector===1?g1:g2;
     session={detector,n,geometry,cache:{},time:0,lastClock:performance.now(),speed:1,paused:false,finished:false,
-      injectionDelay:window.GANTRY_ACTIVITY?.metadata('mag3')?.seconds||0,
-      administeredActivity:window.GANTRY_ACTIVITY?.metadata('mag3')||null,activityFactor:window.GANTRY_ACTIVITY?.factor('mag3')??1,
+      administration,injectionDelay:delay,
+      administeredActivity:{...administration.metadata,seconds:delay},activityFactor:administration.factor,
       counts:new Uint32Array(n*n),frameCounts:new Uint32Array(n*n),expected:new Float64Array(n*n),total:0,expectedTotal:0,frameIndex:0,frames:[],history:[{time:0,geometry}]};
     const d=panel.shadowRoot;
     for(const id of ['sum','current']){
@@ -3977,8 +3999,8 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     d.getElementById('instant').onclick=instant;
     d.getElementById('gain').oninput=refresh;d.getElementById('frame').onchange=refresh;d.getElementById('export').onclick=saveJSON;
     d.getElementById('png').onclick=()=>{const a=document.createElement('a');a.href=d.getElementById('sum').toDataURL();a.download='mag3_basal_suma.png';a.click();};
-    window.GANTRY_RF?.didInject('mag3');
     window.GANTRY_LIVE.setStudy('mag3');document.getElementById('mag3Status').textContent='MAG3 basal · adquiriendo en cabezal '+detector;refresh();
+    return true;
   }
   async function instant(){
     if(window.GANTRY_EXAM?.blocked)return;
@@ -3990,27 +4012,30 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   }
   const liveCaches=[{},{}];
   function renderHead(target,G){
-    const g=window.GANTRY_LIVE.mag3Geometry(target.n,G),n=window.GANTRY_LIVE.settings.matrix,time=session?session.time+(session.injectionDelay||0):0;
-    if(!session||window.GANTRY_RF?.pending('mag3')){
+    const g=window.GANTRY_LIVE.mag3Geometry(target.n,G),n=window.GANTRY_LIVE.settings.matrix,time=injectionTime();
+    if(!administration||window.GANTRY_RF?.pending('mag3')){
       draw(target.canvas,new Float32Array(n*n),n);
       target.info.textContent='DETECTOR '+target.n+' · Sin inyección · 0 cuentas/s';
       return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate:0};
     }
-    const factor=session?.activityFactor??window.GANTRY_ACTIVITY?.factor('mag3')??1;
+    const factor=administration.factor;
     const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time).map(v=>v*factor));draw(target.canvas,values,n);
     const expectedRate=values.reduce((a,b)=>a+b,0);
     target.info.textContent='DETECTOR '+target.n+' · MAG3 basal · '+Math.round(g.rawAngle)+'° · '+labelTime(time)+' · '+Math.round(expectedRate).toLocaleString('es-CL')+' cuentas/s esperadas';
     return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate};
   }
   button.onclick=inject;
-  instantButton.onclick=async()=>{if(!session){document.getElementById('mag3Status').textContent='Pulsa Inyectar en la vista 3D.';return;}await instant();};
-  window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,instant,stateChanged,renderHead,
+  startButton.onclick=start;
+  instantButton.onclick=async()=>{if((!session||session.finished)&&!start())return;await instant();};
+  window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,start,instant,stateChanged,renderHead,
+    get injected(){return !!administration;},
+    get administration(){return administration?{...administration.metadata,seconds:injectionTime()}:null;},
     get state(){return session&&{cancelled:!!session.cancelled,time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
     cancelExam(){if(session&&!session.finished){session.cancelled=true;session.finished=true;session.paused=true;}refresh();},
-    resetExam(){if(session?.cancelled){session=null;if(panel)panel.hidden=true;}syncPanel();},
+    resetExam(){administration=null;if(session?.cancelled){session=null;if(panel)panel.hidden=true;}syncPanel();},
     // Pure numerical entry points used by offline acquisition tests.
     coefficients,fields,mix,accumulate,poissonEvents,data};
-  setInterval(()=>{if(!session)return;
+  setInterval(()=>{if(!session){if(administration&&window.GANTRY_LIVE.settings.study==='mag3')window.GANTRY_LIVE.update(window.GANTRY.G);return;}
     advance();refresh();if(window.GANTRY_LIVE.settings.study==='mag3')window.GANTRY_LIVE.update(window.GANTRY.G);
     document.getElementById('mag3Status').textContent='MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.cancelled?' · cancelada por evento centinela':session.finished?' · finalizada':session.paused?' · pausada':'');
   },100);
@@ -4971,7 +4996,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 <!-- PROCESSING_ENGINE_END -->
 <!-- CONSOLE_MENUS_BEGIN -->
 <link rel="stylesheet" data-console-menus href="assets/runtime/console-menus.c37f7a3a5078c291.css">
-<script src="assets/runtime/console-menus.4abd4d93cc4efbb8.js"></script>
+<script src="assets/runtime/console-menus.cea9a62a6825ad5d.js"></script>
 <!-- CONSOLE_MENUS_END -->
 <!-- GANTRY_POSITIONS_BEGIN -->
 <script src="assets/runtime/gantry-positions.b1ea2d559482b07d.js"></script>
@@ -4983,7 +5008,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 #rfPanel select,#rfPanel input,#rfPanel button{font:inherit;min-height:28px;max-width:100%}#rfPanel input{width:68px}
 #rfPanel .rf-study select{flex:1;min-width:0}#rfPanel [hidden]{display:none!important}
 #rfStatus,#rfError{flex-basis:100%}#rfError{color:#ffb99f}#rfError:empty{display:none}
-</style><script src="assets/runtime/radiopharmaceutical.3a148d310b04241f.js"></script>
+</style><script src="assets/runtime/radiopharmaceutical.59f7ddcd69b7b3c1.js"></script>
 <!-- RADIOPHARMACEUTICAL_END -->
 </body>
 </html>

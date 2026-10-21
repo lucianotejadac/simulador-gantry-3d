@@ -7,7 +7,7 @@
     ['Matriz',['liveMatrix64','liveMatrix128','liveMatrix256','liveMatrix512'],'choice'],
     ['Centrado',['liveRecenter','liveResetCenter']],
     ['Imagen en vivo',['bonePause','boneClear']],
-    ['MAG3',['injectMAG3','injectMAG3Instant']],
+    ['MAG3',['injectMAG3','startMAG3','injectMAG3Instant']],
     ['Evolución MDP',['mdpPlay']],
     ['Evolución MIBI',['mibiPlay','mibiUsual','mibiLate']],
     ['Imagen final',['finalPreviewNoise']],

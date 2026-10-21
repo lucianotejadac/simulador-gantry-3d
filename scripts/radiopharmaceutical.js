@@ -19,9 +19,9 @@
   const busy=()=>!!window.GANTRY_BONE_ACQ?.active||!!window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
   const model=id=>profiles[id]?.study==='bone'?window.GANTRY_MDP:id==='mibi'?window.GANTRY_MIBI:null;
   const timeFactor=()=>({min:1,h:60,d:1440}[timeUnit]);
-  function metadata(id=selected){return model(id)?.metadata()||window.GANTRY_ACTIVITY?.metadata(profiles[id]?.study);}
+  function metadata(id=selected){return (id==='mag3'&&window.GANTRY_MAG3?.administration)||model(id)?.metadata()||window.GANTRY_ACTIVITY?.metadata(profiles[id]?.study);}
   function pending(study=live()?.settings.study){
-    if(study==='mag3')return !window.GANTRY_MAG3?.state;
+    if(study==='mag3')return !window.GANTRY_MAG3?.injected;
     return study==='bone'&&selected==='bone3'&&!injected.bone3;
   }
   function blank(target){
@@ -51,6 +51,7 @@
   }
   function configure(dose,minutes,doseUnit=unit){
     if(busy()||injecting||window.GANTRY_EXAM?.blocked)throw Error('No se puede cambiar la administración durante una adquisición.');
+    if(selected==='mag3'&&window.GANTRY_MAG3?.injected)throw Error('La dosis ya fue inyectada; reinicia el examen para cambiar la administración.');
     const mbq=Number(dose)*(doseUnit==='mCi'?37:1),seconds=Number(minutes)*60;
     const id=profiles[selected]?.study,max=id==='bone'?180:id==='mibi'?720:id==='mag3'?19.99:id==='exploration'?43200:1440;
     if(dose===''||minutes===''||!Number.isFinite(mbq)||mbq<=0||!Number.isFinite(seconds)||seconds<0||seconds>max*60||id!=='exploration'&&mbq>2000)
@@ -72,7 +73,7 @@
     try{
       if(selected==='mag3'){
         await window.GANTRY_MAG3.inject();
-        if(!window.GANTRY_MAG3.state)throw Error('No se pudo iniciar la inyección.');
+        if(!window.GANTRY_MAG3.injected)throw Error('No se pudo iniciar la inyección.');
       }else{
         const m=metadata();
         injected.bone3=true;
@@ -96,12 +97,13 @@
     el('rfDoseLabel').textContent=oral?'Actividad oral':'Dosis administrada';
     el('rfTimeLabel').textContent=oral?'Administración–examen':'Inyección–examen';
     for(const id of ['rfDose','rfDosePreset','rfUnit','rfTime','rfTimeUnit'])el(id).disabled=locked;
+    if(selected==='mag3'&&window.GANTRY_MAG3?.injected)for(const id of ['rfDose','rfTime'])el(id).disabled=true;
     if(document.activeElement!==el('rfDose'))el('rfDose').value=+(m.activityMBq/(unit==='mCi'?37:1)).toFixed(3);
     const preset=el('rfDosePreset');for(const o of preset.options)o.textContent=String(Number(o.value)*(unit==='mCi'?1:37));preset.value=String(Math.round(m.activityMBq/37));
     if(document.activeElement!==el('rfTime'))el('rfTime').value=+(m.seconds/60/timeFactor()).toFixed(3);
     el('rfInject').hidden=!profiles[selected].dynamic;
     el('rfInject').disabled=locked||!pending()||!live().ready||!!window.GANTRY_AUTO?.busy;
-    el('rfStatus').textContent=profiles[selected].dynamic?(injecting?'Inyectando…':pending()?'Sin inyección · señal en vivo: 0':'Inyectado · '+(selected==='bone3'?'evolución MDP activa':'renograma activo')):(oral?'Vía oral':'Vía intravenosa');
+    el('rfStatus').textContent=profiles[selected].dynamic?(injecting?'Inyectando…':pending()?'Sin inyección · señal en vivo: 0':'Inyectado · señal en vivo activa'+(busy()?' · adquiriendo':' · adquisición independiente')):(oral?'Vía oral':'Vía intravenosa');
   }
   function resetExam(){injected.bone3=false;refresh();}
   function init(){
