@@ -126,7 +126,13 @@
       if(!document.hidden&&state.playing&&window.GANTRY_LIVE?.settings.study==='mibi'&&!window.GANTRY_BONE_ACQ?.active){advance(dt*state.speed);window.GANTRY_LIVE.update(window.GANTRY.G);}
     },100);render();
   }
-  window.GANTRY_MIBI={load,geometry,field,mix,fractions,timing,advance,step,render,metadata,
+  function configure(activityMBq,seconds){
+    if(window.GANTRY_BONE_ACQ?.active||!Number.isFinite(activityMBq)||activityMBq<=0||activityMBq>2000||!Number.isFinite(seconds)||seconds<0||seconds>LIMIT)return false;
+    Object.assign(state,{activityMBq,seconds,playing:false});
+    if(el('mibiActivity'))el('mibiActivity').value=+(activityMBq/(el('mibiUnit').value==='mCi'?37:1)).toFixed(3);
+    refresh();return true;
+  }
+  window.GANTRY_MIBI={load,geometry,field,mix,fractions,timing,advance,step,render,metadata,configure,
     get rate(){return state.activityMBq*SENSITIVITY;},get seconds(){return state.seconds;},
     begin(){state.playing=false;return metadata();},get remaining(){return LIMIT-state.seconds;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

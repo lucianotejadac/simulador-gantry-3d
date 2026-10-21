@@ -59,7 +59,7 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
  const bases=Array.from({length:10},(_,c)=>{const a=new Float32Array(128*128);a[c]=1;return a;});
  const field=M.mix(bases);
  const window={GANTRY_MIBI:M,GANTRY:{G:{}},GANTRY_LIVE:{settings:{study:'mibi',matrix:128},update(){assert(++updates<20,'recursive live updates');window.GANTRY_BONE_ACQ.advance();window.GANTRY_BONE_ACQ.sync('mibi',[field,field],M.rate);}}};
- const ui=vm.createContext({window,document,performance:{now:()=>now},setInterval:f=>timers.push(f),setTimeout});
+ const ui=vm.createContext({window,document,performance:{now:()=>now},setInterval:f=>timers.push(f),setTimeout,clearTimeout});
  vm.runInContext(fs.readFileSync('scripts/bone_acquisition.js','utf8'),ui);
  uiEl('boneAcqName1').value='MIBI AP';uiEl('boneAcqName2').value='MIBI PA';
  uiEl('boneAcqCriterion').value='time';uiEl('boneAcqTarget').value='60';uiEl('boneAcqSetup').onsubmit({preventDefault(){}});

@@ -98,6 +98,20 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
   if(kind==='static'){assert.equal(passed.mode,'counts');assert.equal(passed.target,12345);}
   if(instant)assert.equal(calls.at(-1),'instant');
  }
+ engine.active=false;w.GANTRY_RF={pending:()=>true};
+ await send({type:'GANTRY_ACQUIRE_START',config:base});assert.match(messages.at(-1).error,/Inyectar/);
+ let administration={activityMBq:370,seconds:12};
+ w.GANTRY_MDP.metadata=()=>administration;
+ w.GANTRY_MDP.configure=(activityMBq,seconds)=>{administration={activityMBq,seconds};return true;};
+ live.clearPersistence=()=>{};
+ await send({type:'GANTRY_ADMINISTRATION_UPDATE',activityMci:8,minutes:1});
+ assert.equal(administration.activityMBq,296);assert.equal(administration.seconds,60);
+ assert.equal(messages.at(-1).type,'GANTRY_ADMINISTRATION_STATE');
+ w.GANTRY_RF.pending=()=>false;
+ await send({type:'GANTRY_ACQUIRE_START',config:base});
+ assert.equal(calls.at(-1).activityMci,8);assert.equal(calls.at(-1).minutes,1,'Stale draft must not rewind the shared administration');
+ await send({type:'GANTRY_ADMINISTRATION_UPDATE',activityMci:25,minutes:20});
+ assert.equal(messages.at(-1).type,'GANTRY_ADMINISTRATION_ERROR');assert.equal(administration.activityMBq,296);
  w.GANTRY_PROCESSING.active=false;const prior=messages.length;await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'static'});assert.equal(messages.length,prior);
  const engineCode=fs.readFileSync('scripts/bone_acquisition.js','utf8');assert(!engineCode.includes('if(window.GANTRY_PROCESSING?.active){clock='),'Processing must not freeze acquisition');
  console.log('OK: native acquisition configuration, matrix/energy/activity/time mapping, exact goal, source/origin, collision lock, duplicate start and stale command rejection.');

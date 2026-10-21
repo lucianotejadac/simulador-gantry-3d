@@ -54,15 +54,16 @@
     }return count;
   }
   function accumulate(s,end){
-    end=Math.min(end,data.duration);const bases=fields(s.geometry,s.n,s.cache);
+    const delay=s.injectionDelay||0,duration=data.duration-delay;
+    end=Math.min(end,duration);const bases=fields(s.geometry,s.n,s.cache);
     while(s.time<end-1e-9){
-      const stop=Math.min(end,data.edges[s.frameIndex+1]),a=coefficients(s.time),b=coefficients(stop),lambda=mix(bases,a.map((v,c)=>(b[c]-v)*(s.activityFactor??1)));
+      const stop=Math.min(end,data.edges[s.frameIndex+1]),a=coefficients(s.time+delay),b=coefficients(stop+delay),lambda=mix(bases,a.map((v,c)=>(b[c]-v)*(s.activityFactor??1)));
       for(let i=0;i<lambda.length;i++)s.expected[i]+=lambda[i];
       s.total+=poissonEvents(lambda,s.counts,s.frameCounts,s.random);s.expectedTotal+=lambda.reduce((a,b)=>a+b,0);
       s.time=stop;
       if(stop>=data.edges[s.frameIndex+1]-1e-9){s.frames.push({start:data.edges[s.frameIndex],end:stop,counts:s.frameCounts.slice()});s.frameCounts.fill(0);s.frameIndex++;}
     }
-    if(s.time>=data.duration){s.finished=true;s.paused=true;}
+    if(s.time>=duration){s.finished=true;s.paused=true;}
   }
   function advance(now=performance.now()){
     if(window.GANTRY_EXAM?.blocked)return;
@@ -128,6 +129,7 @@
     document.querySelector('#gantryLive .gantry-live-grid').style.display=active?'none':'';
   }
   async function inject(){
+    if(window.GANTRY_BONE_ACQ?.active)return;
     if(window.GANTRY_AUTO?.busy)return;
     if(window.GANTRY_EXAM?.blocked)return;
     const examRevision=window.GANTRY_EXAM?.revision;
@@ -138,6 +140,7 @@
     const G=window.GANTRY.G,g1=window.GANTRY_LIVE.mag3Geometry(1,G),g2=window.GANTRY_LIVE.mag3Geometry(2,G),distance=g=>g.empty?Infinity:Math.abs(((g.rawAngle-180+540)%360)-180),detector=distance(g1)<distance(g2)?1:2;
     const n=window.GANTRY_LIVE.settings.matrix,geometry=detector===1?g1:g2;
     session={detector,n,geometry,cache:{},time:0,lastClock:performance.now(),speed:1,paused:false,finished:false,
+      injectionDelay:window.GANTRY_ACTIVITY?.metadata('mag3')?.seconds||0,
       administeredActivity:window.GANTRY_ACTIVITY?.metadata('mag3')||null,activityFactor:window.GANTRY_ACTIVITY?.factor('mag3')??1,
       counts:new Uint32Array(n*n),frameCounts:new Uint32Array(n*n),expected:new Float64Array(n*n),total:0,expectedTotal:0,frameIndex:0,frames:[],history:[{time:0,geometry}]};
     const d=panel.shadowRoot;
@@ -153,6 +156,7 @@
     d.getElementById('instant').onclick=instant;
     d.getElementById('gain').oninput=refresh;d.getElementById('frame').onchange=refresh;d.getElementById('export').onclick=saveJSON;
     d.getElementById('png').onclick=()=>{const a=document.createElement('a');a.href=d.getElementById('sum').toDataURL();a.download='mag3_basal_suma.png';a.click();};
+    window.GANTRY_RF?.didInject('mag3');
     window.GANTRY_LIVE.setStudy('mag3');document.getElementById('mag3Status').textContent='MAG3 basal · adquiriendo en cabezal '+detector;refresh();
   }
   async function instant(){
@@ -165,7 +169,12 @@
   }
   const liveCaches=[{},{}];
   function renderHead(target,G){
-    const g=window.GANTRY_LIVE.mag3Geometry(target.n,G),n=window.GANTRY_LIVE.settings.matrix,time=session?session.time:0;
+    const g=window.GANTRY_LIVE.mag3Geometry(target.n,G),n=window.GANTRY_LIVE.settings.matrix,time=session?session.time+(session.injectionDelay||0):0;
+    if(!session||window.GANTRY_RF?.pending('mag3')){
+      draw(target.canvas,new Float32Array(n*n),n);
+      target.info.textContent='DETECTOR '+target.n+' · Sin inyección · 0 cuentas/s';
+      return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate:0};
+    }
     const factor=session?.activityFactor??window.GANTRY_ACTIVITY?.factor('mag3')??1;
     const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time).map(v=>v*factor));draw(target.canvas,values,n);
     const expectedRate=values.reduce((a,b)=>a+b,0);
@@ -173,7 +182,7 @@
     return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate};
   }
   button.onclick=inject;
-  instantButton.onclick=async()=>{await inject();await instant();};
+  instantButton.onclick=async()=>{if(!session){document.getElementById('mag3Status').textContent='Pulsa Inyectar en la vista 3D.';return;}await instant();};
   window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,instant,stateChanged,renderHead,
     get state(){return session&&{cancelled:!!session.cancelled,time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
     cancelExam(){if(session&&!session.finished){session.cancelled=true;session.finished=true;session.paused=true;}refresh();},

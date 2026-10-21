@@ -353,6 +353,7 @@
     }
   }
   function start(){
+    if(window.GANTRY_RF?.pending(study)){el('boneAcqSetupError').textContent='Pulsa Inyectar en la vista 3D antes de adquirir.';return false;}
     if(window.GANTRY_AUTO?.busy){el('boneAcqSetupError').textContent='Espera a que termine el posicionamiento automático.';return false;}
     if(window.GANTRY_EXAM?.blocked)return false;
     if(!fields||busy||saving||loadingSaved||(session&&!session.finished))return;

@@ -32,6 +32,9 @@ vm.runInContext(fs.readFileSync(path.join(root,'scripts/mag3_acquisition.js'),'u
 function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return (s+.5)/4294967296;};}
 (async()=>{
  const api=window.GANTRY_MAG3;assert.equal(downloads.length,0);await api.loading;assert(api.ready);assert.equal(downloads.length,3);await api.load();assert.equal(downloads.length,3);assert.equal(packed.duration,1200);assert.equal(packed.edges.length,85);
+ const beforeInjection=api.renderHead({n:1,canvas:element('preview'),info:element('info')},window.GANTRY.G);
+ assert.equal(beforeInjection.expectedRate,0,'Live image stays empty before injection');
+ await elements.get('injectMAG3Instant').onclick();assert.equal(api.state,null,'Instant acquisition must not inject implicitly');
  // Exercise production zoom/centering functions and geometry, including flips and letterboxing.
  const framing=vm.runInContext(`(()=>{
    const result=[];const initialMatrix=acquisition.matrix;
@@ -116,6 +119,10 @@ function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;
  assert.equal(api.state.total,cancelled.total);assert.equal(api.state.time,cancelled.time);
  window.GANTRY_EXAM.blocked=false;api.resetExam();assert.equal(api.state,null);
  await api.inject();assert.equal(api.state.time,0);assert(!api.state.cancelled);
+ panel.shadowRoot.getElementById('finish').onclick();
+ window.GANTRY_ACTIVITY={metadata:()=>({activityMBq:185,seconds:120}),factor:()=>1,render(){}};
+ await api.inject();assert.equal(api.state.administeredActivity.seconds,120);
+ await api.instant();assert.equal(api.state.time,1080,'Two-minute delay leaves eighteen minutes inside the kinetic model');assert(api.state.finished);
  const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter(m=>!m[1].includes('type="module"')&&!m[1].includes('application/json'));
  for(const script of scripts)new vm.Script(script[2]);
  assert(html.includes(fs.readFileSync(path.join(root,'scripts/mag3_acquisition.js'),'utf8').replace(/\r\n/g,'\n').trim()),'Embedded engine is stale');

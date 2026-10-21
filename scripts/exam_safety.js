@@ -34,6 +34,7 @@
     record=null;revision++;persist();
     for(const [node,value] of disabled)node.disabled=value;disabled.clear();
     window.GANTRY_BONE_ACQ?.resetExam();window.GANTRY_MAG3?.resetExam();
+    window.GANTRY_RF?.resetExam();
     el('examSafetyHint').textContent='Libera el contacto y reinicia para comenzar un nuevo examen. Las adquisiciones anteriores guardadas se conservan.';
     refresh();window.GANTRY_LIVE?.update(window.GANTRY.G);return true;
   }

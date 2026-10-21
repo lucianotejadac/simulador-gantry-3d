@@ -14,6 +14,14 @@ assert(Math.abs(A.factor('exploration')-2**(-2/8.02))<1e-12,'Apply day 5 to day 
 for(const dose of [50,100,150,200])assert(A.setActivity('exploration',dose));
 assert(!A.setActivity('exploration',125));assert(A.setActivity('exploration',7400,'MBq'));
 assert.equal(A.rate('bone'),null);assert.equal(A.rate('mibi'),null);assert.equal(A.rate('mag3'),null);
+for(const id of ['thyroid','dmsa','maa','parathyroid']){
+ const initial=A.metadata(id).seconds/60,before=A.factor(id);
+ assert(A.setMinutes(id,initial+360.402));assert(Math.abs(A.factor(id)/before-.5)<1e-12);
+ assert(A.setMinutes(id,initial));
+ for(const invalid of [-1,Infinity,NaN,1441])assert(!A.setMinutes(id,invalid));
+}
+assert(A.setMinutes('mag3',2));assert.equal(A.metadata('mag3').seconds,120);assert.equal(A.factor('mag3'),1,'MAG3 timing is integrated by its kinetic engine, not applied again as a scalar');
+assert(!A.setMinutes('mag3',20));A.setMinutes('mag3',0);
 window.GANTRY_BONE_ACQ={active:true};assert(!A.setActivity('thyroid',10));window.GANTRY_BONE_ACQ.active=false;
 window.GANTRY_MAG3={state:{finished:false}};assert(!A.setActivity('mag3',10));window.GANTRY_MAG3.state.finished=true;
 assert(A.setActivity('mag3',10));assert.equal(A.factor('mag3'),2);

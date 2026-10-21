@@ -14,6 +14,12 @@
     try{window.GANTRY_PROCESSING_CONFIG.camera(config);}catch(_){return;}
     send({type:'GANTRY_CAMERA_PREVIEW',preview:++previewSerial,config});
   }
+  function updateAdministration(){
+    if(!draft||draft.id)return;
+    const dose=inputs.get('activityMci'),time=inputs.get('minutes');
+    if(!dose?.value||!time?.value||!dose.checkValidity()||!time.checkValidity())return;
+    send({type:'GANTRY_ADMINISTRATION_UPDATE',activityMci:Number(dose.value),minutes:Number(time.value)});
+  }
   const panes=['patient','summary','series','camera','stop','images'];
   const menu=document.createElement('select');menu.id='processingAcquireMenu';menu.setAttribute('aria-label','Adquirir');
   document.querySelector('.application-bar').prepend(menu);
@@ -269,6 +275,7 @@
       configurations.set(draft.listId,{config});
       for(const key of ['name1','name2'])inputs.get(key).addEventListener('input',()=>window.GANTRY_PROCESSING_LIST?.configuration(read(false),draft.listId));
       for(const key of cameraKeys)inputs.get(key).addEventListener('input',previewCamera);
+      for(const key of ['activityMci','minutes'])inputs.get(key).addEventListener('input',updateAdministration);
       previewCamera();
     }
     updateModeUI();
@@ -309,6 +316,13 @@
   window.addEventListener('message',event=>{
     if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;
     const d=event.data;
+    if(d.type==='GANTRY_ADMINISTRATION_ERROR')status(d.error,'error');
+    if(d.type==='GANTRY_ADMINISTRATION_STATE'&&draft&&!draft.id){
+      for(const key of ['activityMci','minutes']){
+        const node=inputs.get(key);
+        if(node&&document.activeElement!==node&&Number.isFinite(d[key])){node.value=String(d[key]);draft.config[key]=d[key];}
+      }
+    }
     if(d.type==='GANTRY_CAMERA_PREVIEW_RESULT'&&d.preview===previewSerial&&d.error)status(d.error,'error');
     if(d.type==='GANTRY_POSITION_STATE')syncPosition(d.position);
     if(d.type==='GANTRY_ACQUIRE_POSITION'&&d.request===waiting){waiting=null;setMenu();syncPosition(d.position);}

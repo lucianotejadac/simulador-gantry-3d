@@ -9,6 +9,9 @@ vm.runInContext(fs.readFileSync('scripts/icrp_live.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync('scripts/mdp.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync('scripts/bone_acquisition.js','utf8'),ctx);
 const M=ctx.window.GANTRY_MDP;
+assert(M.configure(370,0,true));assert.equal(M.metadata().playing,true);assert.equal(M.rate,37000);
+assert(!M.configure(0,0));assert(!M.configure(370,-1));assert(!M.configure(370,10801));
+assert(M.configure(740,7200));
 assert.deepEqual(data.angles,Array.from({length:360},(_,i)=>i),'one skeletal projection per degree');
 for(let t=0;t<=10800;t+=.25){
   for(const voiding of [false,true]){

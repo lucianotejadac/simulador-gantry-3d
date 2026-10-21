@@ -214,8 +214,10 @@
     if(el('boneCountRate'))el('boneCountRate').closest('label').hidden=true;
     for(const id of ['mdpActivity','mdpUnit','mdpMinutes','mdpTimeline','mdpPlay','mdpSpeed','mdpVoid'])el(id).disabled=!!locked;
     if(window.GANTRY_LIVE?.signal?.mode==='final')el('mdpPlay').disabled=true;
+    if(window.GANTRY_RF?.pending('bone'))el('mdpPlay').disabled=true;
     if(document.activeElement!==el('mdpMinutes'))el('mdpMinutes').value=(state.seconds/60).toFixed(2);
     el('mdpTimeline').value=state.seconds;
+    el('mdpSpeed').value=String(state.speed);
     el('mdpPlay').textContent=state.playing?'Pausar evolución':state.seconds>=LIMIT?'Reiniciar desde 0':'Reproducir evolución';
     const f=fractions(state.seconds,state.voidAt120),p=x=>(100*x).toFixed(1)+'%',clock=Math.floor(state.seconds+1e-6);
     el('mdpStats').textContent=(state.seconds<60?'Vascular':state.seconds<600?'Pool / captación':'Captación ósea')+' · '+Math.floor(clock/60)+':'+String(clock%60).padStart(2,'0')+' / 180:00 · Sangre '+p(f.blood)+' · Hueso '+p(f.bone)+' · Tejidos '+p(f.soft)+' · Riñones '+p(f.renal)+' · Vejiga '+p(f.bladder)+' · Eliminado '+p(f.excreted);
@@ -236,11 +238,17 @@
     el('mdpVoid').onchange=()=>{state.voidAt120=el('mdpVoid').checked;refresh();};
     let last=performance.now();setInterval(()=>{
       const now=performance.now(),dt=Math.min(.5,(now-last)/1000);last=now;
-      if(!document.hidden&&state.playing&&window.GANTRY_LIVE?.settings.study==='bone'&&!window.GANTRY_BONE_ACQ?.active){advance(dt*state.speed);window.GANTRY_LIVE.update(window.GANTRY.G);}
+      if(!document.hidden&&state.playing&&!window.GANTRY_RF?.pending('bone')&&window.GANTRY_LIVE?.settings.study==='bone'&&!window.GANTRY_BONE_ACQ?.active){advance(dt*state.speed);window.GANTRY_LIVE.update(window.GANTRY.G);}
     },100);
     render();
   }
-  window.GANTRY_MDP={load,geometry,field,mix,fractions,advance,step,render,metadata,ensureAngles,hasAngles,hasPose:name=>!!poses[name],
+  function configure(activityMBq,seconds,playing=false){
+    if(window.GANTRY_BONE_ACQ?.active||!Number.isFinite(activityMBq)||activityMBq<=0||activityMBq>2000||!Number.isFinite(seconds)||seconds<0||seconds>LIMIT)return false;
+    Object.assign(state,{activityMBq,seconds,playing,speed:playing?1:state.speed});
+    if(el('mdpActivity'))el('mdpActivity').value=+(activityMBq/(el('mdpUnit').value==='mCi'?37:1)).toFixed(3);
+    refresh();return true;
+  }
+  window.GANTRY_MDP={load,geometry,field,mix,fractions,advance,step,render,metadata,configure,ensureAngles,hasAngles,hasPose:name=>!!poses[name],
     get rate(){return state.activityMBq*SENSITIVITY;},get seconds(){return state.seconds;},
     begin(){state.playing=false;return metadata();},get remaining(){return LIMIT-state.seconds;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

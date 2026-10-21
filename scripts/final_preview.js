@@ -131,6 +131,7 @@
     });
   }
   function sync(study,targets,rate,state){
+    if(window.GANTRY_RF?.pending(study)){token++;clearTimeout(timer);key='';display=null;return;}
     if(window.GANTRY_EXAM?.blocked){token++;clearTimeout(timer);key='';return;}
     controls();if(!active())return;
     latest={targets,state};
