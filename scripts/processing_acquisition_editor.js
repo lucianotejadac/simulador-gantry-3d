@@ -257,13 +257,13 @@
     if(d.type==='GANTRY_POSITION_STATE')syncPosition(d.position);
     if(d.type==='GANTRY_ACQUIRE_POSITION'&&d.request===waiting){waiting=null;setMenu();syncPosition(d.position);}
     if(d.type==='GANTRY_ACQUIRE_CONFIG'&&d.request===waiting){waiting=null;render(d.config);}
-    if(d.type==='GANTRY_ACQUIRE_STARTED'&&d.request===waiting){waiting=null;lastId=d.id;lastState=null;if(draft)draft.id=d.id;status('Adquiriendo desde el gantry…');setMenu();}
+    if(d.type==='GANTRY_ACQUIRE_STARTED'&&d.request===waiting){waiting=null;lastId=d.id;lastState=null;if(draft)draft.id=d.id;window.GANTRY_PROCESSING_LIST?.started(d.id,lastConfig);updateModeUI();status('Adquiriendo desde el gantry…');setMenu();}
     if(d.type==='GANTRY_ACQUIRE_ERROR'&&(!d.request||d.request===waiting)){
       waiting=null;if(draft&&!draft.id)for(const node of inputs.values())node.disabled=false;status(d.error,'error');setMenu();syncPosition();
     }
     if(d.type==='GANTRY_ACQUIRE_ACTION_DONE'&&d.request===waiting){waiting=null;if(d.action==='save')status('Adquisición guardada en la caché de este navegador.');setMenu();}
     if(d.type==='GANTRY_ACQUIRE_PROGRESS'&&d.state?.id===lastId){
-      lastState=d.state;setMenu();if(!draft||draft.id!==lastId)return;
+      lastState=d.state;window.GANTRY_PROCESSING_LIST?.progress(d.state);setMenu();if(!draft||draft.id!==lastId)return;
       d.state.heads.forEach((h,i)=>{
         const image=d.images[i],canvas=$('gantryDraftImage'+i);canvas.width=image.width;canvas.height=image.height;
         canvas.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(image.rgba),image.width,image.height),0,0);
@@ -280,5 +280,5 @@
       status(d.message+' · '+d.state.speed+'×'+(d.state.finished&&!d.state.heads.every(h=>h.total>0)?' · Sin señal en uno de los detectores; no se importa al procesador.':''));
     }
   });
-  window.GANTRY_PROCESSING_EDITOR={finish};setMenu();
+  window.GANTRY_PROCESSING_EDITOR={finish,get currentId(){return draft?.id;},showCurrent(id){if(id===lastId){render(lastConfig,true);updateModeUI();}}};setMenu();
 })();

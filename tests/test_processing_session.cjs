@@ -38,9 +38,11 @@ const flush=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
   assert.equal(fresh.messages.length,0,'Reload creates an empty session');
 
   const nodes=new Map(),order=[];
-  const el=id=>{if(!nodes.has(id))nodes.set(id,{id,hidden:false});return nodes.get(id);};
+  const node=id=>({id,hidden:false,dataset:{},append(){},setAttribute(){},remove(){const i=order.indexOf(this.id);if(i>=0)order.splice(i,1);}});
+  const el=id=>{if(!nodes.has(id))nodes.set(id,node(id));return nodes.get(id);};
   const empty={};const nav={querySelector:()=>empty,append(){},insertBefore(button){const old=order.indexOf(button.id);if(old>=0)order.splice(old,1);order.push(button.id);}};
-  const s={document:{querySelector:()=>nav,createElement:()=>({}),head:{append(){}}},$:el,
+  let created=0;
+  const s={window:{},value:ds=>JSON.stringify(ds.info),document:{querySelector:()=>nav,createElement:()=>node('new-'+(++created)),createTextNode:text=>({textContent:text}),head:{append(){}}},$:el,
     acquisitionKinds:{whole:'whole',static:'static',dynamic:'dynamic'},modeStates:{},acquisitionInstances:{},
     currentAcquisition:'whole',dataset:null,updateModeUI(){}};
   vm.createContext(s);vm.runInContext(fs.readFileSync('scripts/processing_session_list.js','utf8'),s);
@@ -51,5 +53,12 @@ const flush=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
   assert.deepEqual(order,['mode-static','mode-whole'],'Chronological, not grouped by type');
   s.acquisitionKinds['static-2']='static';s.modeStates['static-2']={dataset:{}};s.updateModeUI();s.updateModeUI();
   assert.deepEqual(order,['mode-static','mode-whole','mode-static-2']);
+  s.window.GANTRY_PROCESSING_LIST.started('third',{kind:'static',names:['D1','D2']});
+  assert.equal(order.length,4,'Started acquisition appears immediately');
+  s.window.GANTRY_PROCESSING_LIST.progress({id:'third',mode:'time',target:10,heads:[{elapsed:5,total:8},{elapsed:7,total:9}]});
+  s.window.GANTRY_PROCESSING_LIST.started('third',{kind:'static',names:['D1','D2']});assert.equal(order.length,4,'Duplicate start ignored');
+  s.acquisitionKinds['static-3']='static';s.modeStates['static-3']={dataset:{info:{processing:{acquisitionId:'third'}}}};
+  s.updateModeUI();assert.deepEqual(order,['mode-static','mode-whole','mode-static-2','mode-static-3'],'Import replaces pending row in place');
+  s.window.GANTRY_PROCESSING_LIST.progress({id:'third',finished:true});s.updateModeUI();assert.equal(order.length,4,'Late progress does not duplicate imported row');
   console.log('OK: zero initial acquisitions, no cache import, FIFO per detector pair, deduplication, reopening retains session, reload starts empty and no placeholder/tool tiles.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

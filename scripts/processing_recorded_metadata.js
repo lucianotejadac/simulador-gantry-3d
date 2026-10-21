@@ -15,7 +15,7 @@
     const out={
       'Programación de cámara':'Óseo · MDP',
       'Órgano':'Sistema óseo',
-      'Detectores':'1 y 2 · imagen del detector '+(info.detector||detector),
+      'Detectores':'Ambos detectores (1 y 2)',
       'Configuración basada':'Geometría registrada del simulador'+varied,
       'Configuración basada en estudio':'Óseo · MDP',
       'Corrección de uniformidad':p.uniformityApplied===false?'No aplicada · sin mapa de corrección':p.uniformityApplied===true?'Aplicada':'No registrada',
