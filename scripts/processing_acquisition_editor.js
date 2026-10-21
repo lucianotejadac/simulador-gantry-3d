@@ -87,6 +87,7 @@
   }
   function finish(){
     if(!draft)return;
+    if(!draft.id)window.GANTRY_PROCESSING_LIST?.cancelConfiguration();
     for(const [id,nodes] of retained)$(id).replaceChildren(...nodes);
     retained.clear();inputs.clear();draft=null;document.body.classList.remove('gantry-acquisition-draft','gantry-whole-draft');
     $('modality').textContent=previousBadge;
@@ -231,6 +232,11 @@
     };
     for(const node of inputs.values())node.addEventListener('input',updateSummary);
     updateSummary();
+    if(!resume){
+      draft.listId=window.GANTRY_PROCESSING_LIST?.configuration(config);
+      for(const key of ['name1','name2'])inputs.get(key).addEventListener('input',()=>window.GANTRY_PROCESSING_LIST?.configuration(read(false)));
+    }
+    updateModeUI();
   }
   function read(validate=true){
     const c={...draft.config};
@@ -302,5 +308,5 @@
       status(d.message+' · '+d.state.speed+'×'+(d.state.finished&&!d.state.heads.every(h=>h.total>0)?' · Sin señal en uno de los detectores; no se importa al procesador.':''));
     }
   });
-  window.GANTRY_PROCESSING_EDITOR={finish,get currentId(){return draft?.id;},showCurrent(id){if(id===lastId){render(lastConfig,true);updateModeUI();}}};setMenu();
+  window.GANTRY_PROCESSING_EDITOR={finish,get currentId(){return draft?.id||draft?.listId;},showCurrent(id){if(id===lastId){render(lastConfig,true);updateModeUI();}}};setMenu();
 })();

@@ -25,15 +25,39 @@
     empty.hidden=order.size>0;
   }
   style.textContent+=' .acquisition-tabs button[data-acquisition-number]::before{content:attr(data-acquisition-number) " · ";font-weight:bold}.acquisition-tabs button{flex-shrink:0}';
-  function started(id,config){
-    if(order.has(id))return;
+  const configurationId='draft:configuration';
+  function configuration(config){
+    let entry=order.get(configurationId);
+    if(!entry){entry=createEntry(configurationId,config);order.set(configurationId,entry);}
+    entry.names=config.names.join(' / ');
+    entry.symbol.textContent=config.kind==='whole'?'▥':'▣';
+    entry.label.textContent=config.kind==='whole'?'Adquisición cuerpo entero':'Adquisición estática';
+    entry.detail.textContent=entry.names+' · Configuración';entry.button.title=entry.detail.textContent;
+    arrange();return configurationId;
+  }
+  function cancelConfiguration(){
+    const entry=order.get(configurationId);if(!entry)return;
+    entry.button.remove();order.delete(configurationId);arrange();
+  }
+  function createEntry(id,config){
     const button=document.createElement('button'),symbol=document.createElement('span'),detail=document.createElement('small');
     button.type='button';button.setAttribute('role','tab');button.setAttribute('aria-controls','acquisition-panel');
     symbol.className='mode-symbol';symbol.textContent=config.kind==='whole'?'▥':'▣';symbol.setAttribute('aria-hidden','true');
-    button.append(symbol,document.createTextNode(config.kind==='whole'?'Adquisición cuerpo entero':'Adquisición estática'),detail);
+    const label=document.createTextNode(config.kind==='whole'?'Adquisición cuerpo entero':'Adquisición estática');
+    button.append(symbol,label,detail);
     const names=config.names.join(' / ');detail.textContent=names+' · Adquiriendo';
-    button.onclick=()=>window.GANTRY_PROCESSING_EDITOR?.showCurrent(id);
-    order.set(id,{button,detail,names});arrange();
+    const entry={id,button,symbol,label,detail,names};
+    button.onclick=()=>window.GANTRY_PROCESSING_EDITOR?.showCurrent(entry.id);
+    return entry;
+  }
+  function started(id,config){
+    if(order.has(id))return;
+    const entry=order.get(configurationId)||createEntry(id,config);
+    entry.id=id;entry.names=config.names.join(' / ');entry.detail.textContent=entry.names+' · Adquiriendo';
+    // Promote the configuration tile in place instead of adding a second one.
+    const entries=[...order].map(([key,value])=>key===configurationId?[id,entry]:[key,value]);
+    order.clear();for(const [key,value] of entries)order.set(key,value);
+    order.set(id,entry);arrange();
   }
   function progress(state){
     const entry=order.get(state.id);if(!entry?.detail)return;
@@ -80,6 +104,6 @@
     flex.selected=null;
     populate();buildPanels();controls(!!pixels);renderAll();showTags();updateModeUI();refreshFlexible();
   }
-  window.GANTRY_PROCESSING_LIST={started,progress,remove};
+  window.GANTRY_PROCESSING_LIST={configuration,cancelConfiguration,started,progress,remove};
   updateModeUI();
 })();
