@@ -33,6 +33,7 @@ body.gantry-acquisition-draft .draft-image .scan{min-height:80px;flex:1}
 .console-prepare label{font-size:12px}
 .console-prepare select{flex:1;min-width:95px;height:28px}
 .console-prepare button{flex-basis:100%;text-align:left}
+.console-prepare button:is([data-acquire="retake"],[data-acquire="delete"]){flex:1 1 calc(50% - 3px)}
 .console-transport{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:6px 0}
 #acquisitionConsole button{font-size:12px;padding:6px 4px;white-space:normal;min-width:0}
 .console-transport b{display:block;font-size:24px;color:#000080;line-height:1.2;margin-bottom:3px}

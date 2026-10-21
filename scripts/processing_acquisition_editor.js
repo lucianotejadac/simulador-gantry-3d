@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   let draft=null,serial=0,waiting=null,lastConfig=null,lastId=null,lastState=null,previousBadge='',actionModel=null,positionState=null;
-  const retained=new Map(),inputs=new Map();
+  const retained=new Map(),inputs=new Map(),configurations=new Map();
   const panes=['patient','summary','series','camera','stop','images'];
   const menu=document.createElement('select');menu.id='processingAcquireMenu';menu.setAttribute('aria-label','Adquirir');
   document.querySelector('.application-bar').prepend(menu);
@@ -24,7 +24,7 @@
     <div class="console-prepare">
       <button type="button" data-acquire="add">Agregar adquisición</button>
       <button type="button" data-acquire="retake">Adquirir de nuevo</button>
-      <button type="button" data-acquire="cancel" hidden>Cancelar configuración</button></div>
+      <button type="button" data-acquire="delete" hidden>Eliminar adquisición</button></div>
     <div class="console-transport">
       <button type="button" data-acquire="start" title="Iniciar adquisición"><b aria-hidden="true">▶</b> Iniciar</button>
       <button type="button" data-acquire="pause"><b aria-hidden="true">Ⅱ</b> <span>Pausar</span></button>
@@ -46,7 +46,25 @@
   document.body.append(retakeDialog);
   style.textContent+='#retakeConfirmation{max-width:440px;background:#c0c0c0;border:3px outset #eee;padding:16px;font:14px Arial;color:#000}#retakeConfirmation::backdrop{background:#0008}#retakeConfirmation h2{font-size:18px;color:#000080}#retakeConfirmation p{line-height:1.4}#retakeConfirmation button{padding:8px;margin-top:8px}';
   $('retakeCancel').onclick=()=>retakeDialog.close();
-  $('retakeConfirm').onclick=()=>{const id=retakeDialog.dataset.acquisitionId;retakeDialog.close();request('GANTRY_ACQUIRE_RETAKE',{id});setMenu();};
+  const retakeDescription=retakeDialog.querySelectorAll('p');
+  function confirmAction(action,id){
+    const deleting=action==='delete',pending=configurations.has(id);
+    retakeDialog.dataset.acquisitionId=id;retakeDialog.dataset.action=action;
+    $('retakeTitle').textContent=deleting?'¿Eliminar adquisición?':'¿Adquirir de nuevo?';
+    retakeDescription[0].textContent=deleting&&pending?'Se eliminará la configuración seleccionada de la lista. Todavía no tiene imágenes adquiridas.':'Se borrarán las imágenes de ambos detectores de la adquisición seleccionada y su copia guardada en este navegador. Las demás adquisiciones se conservarán.';
+    retakeDescription[1].textContent=deleting?'Las demás adquisiciones y configuraciones pendientes se conservarán.':'Se mantendrán el tipo de adquisición y sus parámetros para preparar la nueva toma.';
+    $('retakeConfirm').textContent=deleting?'Eliminar adquisición':'Borrar imágenes y preparar nueva toma';
+    retakeDialog.showModal();$('retakeCancel').focus();
+  }
+  $('retakeConfirm').onclick=()=>{
+    const id=retakeDialog.dataset.acquisitionId,action=retakeDialog.dataset.action;retakeDialog.close();
+    if(action==='delete'&&configurations.has(id)){
+      if(draft?.listId===id)finish(false);
+      configurations.delete(id);window.GANTRY_PROCESSING_LIST.cancelConfiguration(id);
+      window.GANTRY_PROCESSING_LIST.selectLast();status('Adquisición eliminada.');
+    }else request(action==='delete'?'GANTRY_ACQUIRE_DELETE':'GANTRY_ACQUIRE_RETAKE',{id});
+    setMenu();
+  };
   const send=data=>parent.postMessage({...data,version:1},location.origin);
   function request(type,extra={}){const id=++serial;waiting=id;send({type,request:id,...extra});return id;}
   function setMenu(){
@@ -54,7 +72,7 @@
     const kind=draft?.config.kind||info?.acquisition?.kind||lastConfig?.kind||'static';
     actionModel=window.GANTRY_ACQUISITION_ACTIONS.model({draftId:draft?.id,hasDraft:!!draft,lastId,state:lastState,waiting:!!waiting,kind,selectedId});
     const {running,ready,type,phase,actions}=actionModel;
-    const caption=(draft||lastId?type+' · ':'')+phase+'…';
+    const caption=(draft||lastId||selectedId?type+' · ':'')+phase+'…';
     const signature=JSON.stringify([caption,actions]);
     if(menu.dataset.signature!==signature){
       const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=caption;placeholder.disabled=true;
@@ -69,7 +87,7 @@
       menu.value='';menu.dataset.signature=signature;
     }
     menu.disabled=!!waiting;
-    $('consoleState').textContent=(draft||lastId?type+' · ':'')+phase;
+    $('consoleState').textContent=(draft||lastId||selectedId?type+' · ':'')+phase;
     for(const button of consoleBar.querySelectorAll('button[data-acquire]')){
       const id=button.dataset.acquire,a=actions.find(a=>a.id===id);
       button.disabled=!a?.enabled;
@@ -81,20 +99,23 @@
       }
       if(id==='retake'||id==='add')button.hidden=!!draft||!selectedId||running;
       if(id==='add')button.title='Conserva las imágenes anteriores y agrega otra adquisición '+(kind==='whole'?'de cuerpo entero':'estática')+' a la lista.';
-      if(id==='cancel')button.hidden=!ready;
+      if(id==='delete')button.hidden=!ready&&(!selectedId||running);
     }
     $('acquisitionSaveStatus').textContent=!draft&&selectedId?(saved.get(selectedId)||'Guardada en esta sesión · guardado automático en el navegador') : '';
   }
-  function finish(){
+  function finish(preserve=true){
     if(!draft)return;
-    if(!draft.id)window.GANTRY_PROCESSING_LIST?.cancelConfiguration();
+    if(!draft.id&&preserve){
+      const config=read(false),tab=document.querySelector('.tabs button[aria-selected="true"]')?.id;
+      configurations.set(draft.listId,{config,tab});window.GANTRY_PROCESSING_LIST.configuration(config,draft.listId);
+    }
     for(const [id,nodes] of retained)$(id).replaceChildren(...nodes);
     retained.clear();inputs.clear();draft=null;document.body.classList.remove('gantry-acquisition-draft','gantry-whole-draft');
     $('modality').textContent=previousBadge;
     updateModeUI();setMenu();
   }
   const originalSelect=selectMode;
-  selectMode=function(...args){finish();const result=originalSelect(...args);setMenu();return result;};
+  selectMode=function(...args){if(waiting)return;finish();const result=originalSelect(...args);setMenu();return result;};
   const originalLoadFile=loadFile;
   loadFile=async function(...args){finish();return originalLoadFile(...args);};
   const originalFlexible=openFlexible;
@@ -170,11 +191,11 @@
     help('camera','Define la orientación de las imágenes, igual que Adquisición → Posición de paciente. No mueve al paciente ni a los detectores.');
     syncPosition(p);
   }
-  function render(config,resume=false){
+  function render(config,resume=false,listId=null){
     if(!resume&&config.kind==='whole'&&![128,256].includes(config.matrix))config={...config,matrix:config.matrix<128?128:256};
     finish();stopDynamic();closeFlexible();saveMode();
     for(const id of panes){retained.set(id,Array.from($(id).childNodes));$(id).replaceChildren();}
-    draft={config,id:resume?lastId:null};document.body.classList.add('gantry-acquisition-draft');
+    draft={config,id:resume?lastId:null,listId};document.body.classList.add('gantry-acquisition-draft');
     document.body.classList.toggle('gantry-whole-draft',config.kind==='whole');
     previousBadge=$('modality').textContent;$('modality').textContent='SIMULADO';
     $('mode-heading').textContent='Nueva adquisición '+(config.kind==='whole'?'cuerpo entero':'estática')+' · SIMULADA';
@@ -233,8 +254,9 @@
     for(const node of inputs.values())node.addEventListener('input',updateSummary);
     updateSummary();
     if(!resume){
-      draft.listId=window.GANTRY_PROCESSING_LIST?.configuration(config);
-      for(const key of ['name1','name2'])inputs.get(key).addEventListener('input',()=>window.GANTRY_PROCESSING_LIST?.configuration(read(false)));
+      draft.listId=window.GANTRY_PROCESSING_LIST?.configuration(config,listId||undefined);
+      configurations.set(draft.listId,{config});
+      for(const key of ['name1','name2'])inputs.get(key).addEventListener('input',()=>window.GANTRY_PROCESSING_LIST?.configuration(read(false),draft.listId));
     }
     updateModeUI();
   }
@@ -249,8 +271,7 @@
     if(!actionModel?.actions.find(a=>a.id===action)?.enabled)return;
     try{
       if(action==='static'||action==='whole'){
-        if(draft&&!draft.id)render({...read(false),kind:action});
-        else request('GANTRY_ACQUIRE_CONFIG',{kind:action});
+        request('GANTRY_ACQUIRE_CONFIG',{kind:action});
       }
       else if(action==='add'){
         const kind=recorded()?.acquisition?.kind;
@@ -258,11 +279,10 @@
         request('GANTRY_ACQUIRE_CONFIG',{kind});
         status('Las adquisiciones anteriores se conservan. La nueva toma se agregará debajo en la lista.');
       }
-      else if(action==='cancel')finish();
-      else if(action==='retake'){
-        const info=recorded(),id=info?.processing?.acquisitionId||info?.recordId;
+      else if(action==='retake'||action==='delete'){
+        const info=recorded(),id=draft&&!draft.id?draft.listId:info?.processing?.acquisitionId||info?.recordId;
         if(!id)throw Error('Selecciona la adquisición que quieres repetir.');
-        retakeDialog.dataset.acquisitionId=id;retakeDialog.showModal();$('retakeCancel').focus();
+        confirmAction(action,id);
       }
       else if(action==='current')render(lastConfig,true);
       else if((action==='start'||action==='instant')&&draft&&!draft.id){
@@ -284,8 +304,17 @@
       if(lastId===d.id){lastId=null;lastState=null;}render(d.config);
       status('Imágenes anteriores eliminadas. Revisa la posición del gantry y los parámetros antes de adquirir de nuevo.');
     }
+    if(d.type==='GANTRY_ACQUIRE_DELETE'&&d.request===waiting){
+      waiting=null;finish();window.GANTRY_PROCESSING_LIST.remove(d.id);saved.delete(d.id);
+      if(lastId===d.id){lastId=null;lastState=null;}
+      window.GANTRY_PROCESSING_LIST.selectLast();setMenu();status('Adquisición eliminada.');
+    }
     if(d.type==='GANTRY_ACQUIRE_SAVED'){saved.set(d.id,d.error||'Guardada automáticamente en este navegador');setMenu();}
-    if(d.type==='GANTRY_ACQUIRE_STARTED'&&d.request===waiting){waiting=null;lastId=d.id;lastState=null;if(draft)draft.id=d.id;window.GANTRY_PROCESSING_LIST?.started(d.id,lastConfig);updateModeUI();status('Adquiriendo desde el gantry…');setMenu();}
+    if(d.type==='GANTRY_ACQUIRE_STARTED'&&d.request===waiting){
+      waiting=null;lastId=d.id;lastState=null;const listId=draft?.listId;
+      if(draft)draft.id=d.id;configurations.delete(listId);
+      window.GANTRY_PROCESSING_LIST?.started(d.id,lastConfig,listId);updateModeUI();status('Adquiriendo desde el gantry…');setMenu();
+    }
     if(d.type==='GANTRY_ACQUIRE_ERROR'&&(!d.request||d.request===waiting)){
       waiting=null;if(draft&&!draft.id)for(const node of inputs.values())node.disabled=false;status(d.error,'error');setMenu();syncPosition();
     }
@@ -308,5 +337,11 @@
       status(d.message+' · '+d.state.speed+'×'+(d.state.finished&&!d.state.heads.every(h=>h.total>0)?' · Sin señal en uno de los detectores; no se importa al procesador.':''));
     }
   });
-  window.GANTRY_PROCESSING_EDITOR={finish,get currentId(){return draft?.id||draft?.listId;},showCurrent(id){if(id===lastId){render(lastConfig,true);updateModeUI();}}};setMenu();
+  window.GANTRY_PROCESSING_EDITOR={finish,get currentId(){return draft?.id||draft?.listId;},showCurrent(id){
+    if(waiting||draft?.listId===id||draft?.id===id)return;
+    const pending=configurations.get(id);
+    if(pending){render(pending.config,false,id);if(pending.tab)$(pending.tab)?.click();}
+    else if(id===lastId)render(lastConfig,true);
+    updateModeUI();
+  }};setMenu();
 })();

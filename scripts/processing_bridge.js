@@ -115,17 +115,17 @@
   el('boneProcessingRefresh').onclick=()=>refresh().then(sync).catch(e=>{status.textContent=e.message;});
   el('boneProcessingSend').onclick=send;
   el('boneProcessingRetry').onclick=()=>{if(!ready)load();};
-  async function retake(id){
+  async function removeAcquisition(id,repeat=false){
     if(busy()||pending)throw Error('Espera a que termine la adquisición y su recepción antes de repetirla.');
     const entries=[...completed].filter(([,r])=>(r.processing?.acquisitionId||r.id)===id);
     if(!entries.length)throw Error('La adquisición seleccionada ya no está disponible.');
-    const config=window.GANTRY_PROCESSING_CONFIG.fromRecord(entries[0][1]);
+    const config=repeat?window.GANTRY_PROCESSING_CONFIG.fromRecord(entries[0][1]):null;
     await Promise.all(entries.map(([key])=>saving.get(key)));
     await storage().removeAcquisition(id);
     for(const [key] of entries){completed.delete(key);catalog.delete(key);imported.delete(key);saving.delete(key);}
     window.GANTRY_BONE_ACQ.discardFinished(id);
     await refresh();return config;
   }
-  window.GANTRY_PROCESSING={open,close,remember,retake,get active(){return active;}};
+  window.GANTRY_PROCESSING={open,close,remember,retake:id=>removeAcquisition(id,true),removeAcquisition,get active(){return active;}};
   window.GANTRY_PROCESSING_ACQUISITION.attach(frame);
 })();

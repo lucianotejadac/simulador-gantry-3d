@@ -25,8 +25,8 @@
     empty.hidden=order.size>0;
   }
   style.textContent+=' .acquisition-tabs button[data-acquisition-number]::before{content:attr(data-acquisition-number) " · ";font-weight:bold}.acquisition-tabs button{flex-shrink:0}';
-  const configurationId='draft:configuration';
-  function configuration(config){
+  let configurationSerial=0;
+  function configuration(config,configurationId='draft:'+ ++configurationSerial){
     let entry=order.get(configurationId);
     if(!entry){entry=createEntry(configurationId,config);order.set(configurationId,entry);}
     entry.names=config.names.join(' / ');
@@ -35,7 +35,7 @@
     entry.detail.textContent=entry.names+' · Configuración';entry.button.title=entry.detail.textContent;
     arrange();return configurationId;
   }
-  function cancelConfiguration(){
+  function cancelConfiguration(configurationId){
     const entry=order.get(configurationId);if(!entry)return;
     entry.button.remove();order.delete(configurationId);arrange();
   }
@@ -50,7 +50,7 @@
     button.onclick=()=>window.GANTRY_PROCESSING_EDITOR?.showCurrent(entry.id);
     return entry;
   }
-  function started(id,config){
+  function started(id,config,configurationId){
     if(order.has(id))return;
     const entry=order.get(configurationId)||createEntry(id,config);
     entry.id=id;entry.names=config.names.join(' / ');entry.detail.textContent=entry.names+' · Adquiriendo';
@@ -104,6 +104,7 @@
     flex.selected=null;
     populate();buildPanels();controls(!!pixels);renderAll();showTags();updateModeUI();refreshFlexible();
   }
-  window.GANTRY_PROCESSING_LIST={configuration,cancelConfiguration,started,progress,remove};
+  function selectLast(){const entry=[...order.values()].at(-1);if(entry)entry.button.click();else updateModeUI();}
+  window.GANTRY_PROCESSING_LIST={configuration,cancelConfiguration,started,progress,remove,selectLast};
   updateModeUI();
 })();
