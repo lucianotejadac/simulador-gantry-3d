@@ -1,6 +1,15 @@
 /* Shared validation for the viewer's acquisition form and the gantry receiver. */
 (function(){
   'use strict';
+  function camera(value){
+    if(!value||typeof value!=='object')throw Error('Parámetros de cámara incompletos.');
+    const c={};
+    for(const [key,choices,label] of [['kind',['static','whole'],'Tipo de adquisición'],['matrix',value.kind==='whole'?[128,256]:[64,128,256,512],'Matriz'],['zoom',[1,1.5,1.75,2],'Zoom'],['collimator',['LEHR','MELP','HE','NONE'],'Colimador'],['windowWidth',[10,15,20,25],'Ancho de ventana']]){
+      if(!choices.includes(value[key]))throw Error(label+' no válido.');c[key]=value[key];
+    }
+    if(!Number.isInteger(value.energyCenter)||value.energyCenter<80||value.energyCenter>450)throw Error('Centro de energía fuera de rango.');
+    c.energyCenter=value.energyCenter;return c;
+  }
   function validate(value){
     if(!value||typeof value!=='object')throw Error('Parámetros de adquisición incompletos.');
     const c={};
@@ -10,10 +19,7 @@
       if(typeof n!=='number'||!Number.isFinite(n)||n<min||n>max||(integer&&!Number.isInteger(n)))throw Error(label+' fuera de rango.');
       c[key]=n;
     };
-    choice('kind',['static','whole'],'Tipo de adquisición');
-    choice('matrix',c.kind==='whole'?[128,256]:[64,128,256,512],'Matriz');choice('zoom',[1,1.5,1.75,2],'Zoom');
-    choice('collimator',['LEHR','MELP','HE','NONE'],'Colimador');
-    number('energyCenter',80,450,'Centro de energía',true);choice('windowWidth',[10,15,20,25],'Ancho de ventana');
+    Object.assign(c,camera(value));
     number('activityMci',.1,2000/37,'Actividad (mCi)');number('minutes',0,179.99,'Tiempo inyección–examen (min)');
     if(c.kind==='whole'){
       // Compatibility defaults for the static controls; the scan engine stops
@@ -36,5 +42,5 @@
       activityMci:m?.activityMBq/37,minutes:Math.min(179.99,m?.seconds/60),mode:r.mode,target:r.target,
       velocity:r.scan?.velocity||10,contours:r.scan?.contours||'auto',names:r.names});
   }
-  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord};
+  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord,camera};
 })();

@@ -3,6 +3,17 @@
   'use strict';
   let draft=null,serial=0,waiting=null,lastConfig=null,lastId=null,lastState=null,previousBadge='',actionModel=null,positionState=null;
   const retained=new Map(),inputs=new Map(),configurations=new Map();
+  const cameraKeys=['matrix','zoom','collimator','energyCenter','windowWidth'];let previewSerial=0;
+  function previewCamera(){
+    if(!draft||draft.id||lastId&&lastState?.finished!==true)return;
+    const config={kind:draft.config.kind};
+    for(const key of cameraKeys){
+      const node=inputs.get(key);if(!node||!node.checkValidity())return;
+      config[key]=key==='collimator'?node.value:Number(node.value);
+    }
+    try{window.GANTRY_PROCESSING_CONFIG.camera(config);}catch(_){return;}
+    send({type:'GANTRY_CAMERA_PREVIEW',preview:++previewSerial,config});
+  }
   const panes=['patient','summary','series','camera','stop','images'];
   const menu=document.createElement('select');menu.id='processingAcquireMenu';menu.setAttribute('aria-label','Adquirir');
   document.querySelector('.application-bar').prepend(menu);
@@ -257,6 +268,8 @@
       draft.listId=window.GANTRY_PROCESSING_LIST?.configuration(config,listId||undefined);
       configurations.set(draft.listId,{config});
       for(const key of ['name1','name2'])inputs.get(key).addEventListener('input',()=>window.GANTRY_PROCESSING_LIST?.configuration(read(false),draft.listId));
+      for(const key of cameraKeys)inputs.get(key).addEventListener('input',previewCamera);
+      previewCamera();
     }
     updateModeUI();
   }
@@ -296,6 +309,7 @@
   window.addEventListener('message',event=>{
     if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;
     const d=event.data;
+    if(d.type==='GANTRY_CAMERA_PREVIEW_RESULT'&&d.preview===previewSerial&&d.error)status(d.error,'error');
     if(d.type==='GANTRY_POSITION_STATE')syncPosition(d.position);
     if(d.type==='GANTRY_ACQUIRE_POSITION'&&d.request===waiting){waiting=null;setMenu();syncPosition(d.position);}
     if(d.type==='GANTRY_ACQUIRE_CONFIG'&&d.request===waiting){waiting=null;render(d.config);}

@@ -20,6 +20,15 @@
         position:positionState(),geometry:el('g3dHud').textContent.trim(),...(s.study==='bone'?{energyCenter:s.energyCenter,windowWidth:s.windowWidth}:{})};
     }
     const change=(id,value)=>{const node=el(id);node.value=String(value);node.dispatchEvent(new Event('change',{bubbles:true}));};
+    function applyCamera(c){
+      if(live().settings.study!=='bone')live().setStudy('bone');
+      if(live().settings.study!=='bone')throw Error('No se pudo seleccionar el estudio óseo.');
+      if(live().signal.mode!=='live')live().setSignalMode('live');
+      for(const [key,setter] of [['matrix','setMatrix'],['zoom','setZoom'],['collimator','setCollimator'],['energyCenter','setEnergyCenter'],['windowWidth','setWindowWidth']]){
+        if(live().settings[key]!==c[key])live()[setter](c[key]);
+      }
+      live().update(window.GANTRY.G);
+    }
     async function start(raw,instant){
       const c=window.GANTRY_PROCESSING_CONFIG.validate(raw);
       if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de iniciar otra.');
@@ -27,10 +36,7 @@
       if(window.GANTRY_AUTO?.busy)throw Error('Espera a que termine el posicionamiento automático.');
       preparing=true;
       try{
-        if(live().settings.study!=='bone')live().setStudy('bone');
-        if(live().settings.study!=='bone')throw Error('No se pudo seleccionar el estudio óseo.');
-        live().setSignalMode('live');live().setMatrix(c.matrix);live().setZoom(c.zoom);
-        live().setCollimator(c.collimator);live().setEnergyCenter(c.energyCenter);live().setWindowWidth(c.windowWidth);
+        applyCamera(c);
         change('mdpUnit','mCi');change('mdpActivity',c.activityMci);change('mdpMinutes',c.minutes);
         live().update(window.GANTRY.G);
         const deadline=performance.now()+45000;
@@ -48,9 +54,13 @@
     window.addEventListener('message',async event=>{
       if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.version!==1||!window.GANTRY_PROCESSING.active)return;
       const d=event.data;
-      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION','GANTRY_ACQUIRE_RETAKE','GANTRY_ACQUIRE_DELETE'].includes(d.type))return;
+      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION','GANTRY_ACQUIRE_RETAKE','GANTRY_ACQUIRE_DELETE','GANTRY_CAMERA_PREVIEW'].includes(d.type))return;
       try{
-        if(d.type==='GANTRY_ACQUIRE_RETAKE'||d.type==='GANTRY_ACQUIRE_DELETE'){
+        if(d.type==='GANTRY_CAMERA_PREVIEW'){
+          const c=window.GANTRY_PROCESSING_CONFIG.camera(d.config);
+          if(preparing||otherBusy()||window.GANTRY_EXAM?.blocked)throw Error('Finaliza la adquisición activa o reinicia el examen antes de cambiar la cámara en vivo.');
+          applyCamera(c);post({type:'GANTRY_CAMERA_PREVIEW_RESULT',preview:d.preview});
+        }else if(d.type==='GANTRY_ACQUIRE_RETAKE'||d.type==='GANTRY_ACQUIRE_DELETE'){
           if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de repetir otra.');
           if(typeof d.id!=='string')throw Error('Adquisición no válida.');
           preparing=true;
@@ -79,7 +89,7 @@
           await engine().controlFromProcessing(d.action);
           post({type:'GANTRY_ACQUIRE_ACTION_DONE',request:d.request,action:d.action});
         }
-      }catch(error){post({type:'GANTRY_ACQUIRE_ERROR',request:d.request,error:error.message});}
+      }catch(error){post(d.type==='GANTRY_CAMERA_PREVIEW'?{type:'GANTRY_CAMERA_PREVIEW_RESULT',preview:d.preview,error:error.message}:{type:'GANTRY_ACQUIRE_ERROR',request:d.request,error:error.message});}
     });
     // Thumbnails are only for progress display. Final DICOM keeps original counts.
     const previews=[document.createElement('canvas'),document.createElement('canvas')];

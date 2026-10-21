@@ -29,10 +29,16 @@ const menu=action=>{$('processingAcquireMenu').value=action;$('processingAcquire
 const prepare=kind=>{menu(kind);const request=messages.at(-1);assert.equal(request.type,'GANTRY_ACQUIRE_CONFIG');receive({type:request.type,request:request.request,config:{...config,kind}});};
 const edit=(id,val)=>{$('gantryDraft-'+id).value=String(val);$('gantryDraft-'+id).dispatchEvent(new w.Event('input'));};
 prepare('static');assert.equal(list().length,1);const first=list()[0];
+assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW','Opening a draft updates the live camera');
+for(const [key,value] of [['matrix',128],['zoom',2],['collimator','HE'],['energyCenter',180],['windowWidth',25]]){
+  edit(key,value);assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW');assert.equal(messages.at(-1).config[key],value);
+}
+const countBeforeInvalid=messages.length;edit('energyCenter','');assert.equal(messages.length,countBeforeInvalid,'Incomplete numeric input leaves last valid live settings');edit('energyCenter',140);
 edit('matrix',128);edit('target',7);edit('name1','Primera AP');$('tab-stop').click();
 prepare('whole');assert.equal(list().length,2,'New configuration must not replace the first');const second=list()[1];
 edit('velocity',8);edit('contours','fixed');
 first.click();assert.equal($('gantryDraft-matrix').value,'128');assert.equal($('gantryDraft-target').value,'7');assert.equal($('gantryDraft-name1').value,'Primera AP');
+assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW');assert.equal(messages.at(-1).config.collimator,'HE','Returning to a draft restores its live preview');
 assert.equal($('tab-stop').getAttribute('aria-selected'),'true');
 second.click();assert.equal($('gantryDraft-velocity').value,'8');assert.equal($('gantryDraft-contours').value,'fixed');
 assert.equal(list().length,2);
