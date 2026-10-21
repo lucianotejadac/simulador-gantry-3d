@@ -1,7 +1,7 @@
 /* One action model for the acquisition menu and its transport controls. */
 (function(){
   'use strict';
-  function model({draftId,hasDraft,lastId,state,waiting,kind}){
+  function model({draftId,hasDraft,lastId,state,waiting,kind,selectedId}){
     const running=!!lastId&&state?.finished!==true;
     const ready=hasDraft&&!draftId;
     const completed=!!lastId&&!running;
@@ -19,7 +19,7 @@
       action('fast','Avance rápido · '+(state?.speed||1)+'×',running,'Adquisición'),
       action('stop','Finalizar adquisición',running,'Adquisición'),
       action('current','Ver adquisición actual',!!lastId&&!hasDraft,'Resultados'),
-      action('save','Guardar adquisición',completed&&!ready&&!state?.cancelled,'Resultados')
+      action('retake','Adquirir de nuevo',!!selectedId&&!running&&!hasDraft,'Resultados')
     ]};
   }
   window.GANTRY_ACQUISITION_ACTIONS={model};

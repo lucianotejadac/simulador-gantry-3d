@@ -48,9 +48,15 @@
     window.addEventListener('message',async event=>{
       if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.version!==1||!window.GANTRY_PROCESSING.active)return;
       const d=event.data;
-      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION'].includes(d.type))return;
+      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION','GANTRY_ACQUIRE_RETAKE'].includes(d.type))return;
       try{
-        if(d.type==='GANTRY_ACQUIRE_CONFIG'){
+        if(d.type==='GANTRY_ACQUIRE_RETAKE'){
+          if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de repetir otra.');
+          if(typeof d.id!=='string')throw Error('Adquisición no válida.');
+          preparing=true;
+          try{const config=await window.GANTRY_PROCESSING.retake(d.id);if(owned===d.id)owned=null;post({type:'GANTRY_ACQUIRE_RETAKE',request:d.request,id:d.id,config});}
+          finally{preparing=false;}
+        }else if(d.type==='GANTRY_ACQUIRE_CONFIG'){
           if(!['static','whole'].includes(d.kind))throw Error('Tipo de adquisición no válido.');
           if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de preparar otra.');
           post({type:'GANTRY_ACQUIRE_CONFIG',request:d.request,config:defaults(d.kind)});

@@ -25,6 +25,14 @@ assert.equal(whole.kind,'whole');
 assert.equal(whole.velocity,12);
 assert.equal(whole.mode,'counts');
 assert.equal(whole.target,400000,'Whole body ignores stale hidden static targets');
+const fromRecord=w.GANTRY_PROCESSING_CONFIG.fromRecord;
+const saved={kind:'static',n:128,settings:{...live.settings},processing:{first:{settings:{...base}}},mdp:{start:{activityMBq:555,seconds:7500}},mode:'time',target:5,names:['Anterior','Posterior']};
+assert.equal(fromRecord(saved).zoom,1.5,'Repeat uses recorded settings, not the current camera');
+assert.equal(fromRecord(saved).minutes,125);
+assert.equal(fromRecord(saved).activityMci,15);
+assert.equal(fromRecord(saved).target,5);
+assert.equal(fromRecord({...saved,kind:'whole',mode:'scan',scan:{velocity:8,contours:'fixed'}}).velocity,8);
+assert.equal(fromRecord({...saved,kind:'whole',mode:'scan',scan:{velocity:8,contours:'fixed'}}).contours,'fixed');
 vm.runInContext(fs.readFileSync('scripts/processing_acquisition_bridge.js','utf8'),c);w.GANTRY_PROCESSING_ACQUISITION.attach(frame);
 const send=async data=>listeners.message({origin:'http://local',source:frame.contentWindow,data:{version:1,request:1,...data}});
 (async()=>{

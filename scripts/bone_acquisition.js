@@ -499,6 +499,13 @@
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();if(document.hidden)clearScanDebt();});
   window.GANTRY_BONE_ACQ={advance,sync,selectStudy,
+    async cacheSaved(id){await refreshSaved();if(session?.id===id)el('boneAcqCacheStatus').textContent='Adquisición guardada automáticamente en este navegador';},
+    discardFinished(id){
+      if(session?.id===id&&session.finished){session=null;archive=null;fields=null;}
+      for(const [key,saved] of sessions)if(saved.session?.id===id&&saved.session.finished)sessions.delete(key);
+      if((archive?.processing?.acquisitionId||archive?.id)===id)archive=null;
+      refreshSaved().catch(()=>{});window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);
+    },
     startConfigured(config){
       if(study!=='bone'||busy||saving||loadingSaved||session&&!session.finished)throw Error('Hay una adquisición u operación en curso.');
       el('boneAcqType').value=config.kind;

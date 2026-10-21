@@ -30,5 +30,11 @@
     c.names=value.names.map(n=>n.trim());
     return c;
   }
-  window.GANTRY_PROCESSING_CONFIG={validate};
+  function fromRecord(r){
+    const s=r.processing?.first?.settings||r.settings||{},m=r.mdp?.start;
+    return validate({kind:r.kind||'static',matrix:r.n,zoom:s.zoom,collimator:s.collimator,energyCenter:s.energyCenter,windowWidth:s.windowWidth,
+      activityMci:m?.activityMBq/37,minutes:Math.min(179.99,m?.seconds/60),mode:r.mode,target:r.target,
+      velocity:r.scan?.velocity||10,contours:r.scan?.contours||'auto',names:r.names});
+  }
+  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord};
 })();

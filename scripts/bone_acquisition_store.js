@@ -72,6 +72,14 @@
           tx.objectStore('catalog').put({...meta,totals:heads.map(h=>h.total)});
         });
       },
+      async removeAcquisition(id){
+        return transaction(['records','catalog'],'readwrite',tx=>{
+          const request=tx.objectStore('records').getAll();
+          request.onsuccess=()=>{for(const record of request.result)if((record.processing?.acquisitionId||record.id)===id){
+            tx.objectStore('records').delete(record.id);tx.objectStore('catalog').delete(record.id);
+          }};
+        });
+      },
       async list(){return transaction(['catalog'],'readonly',(tx,set)=>{const r=tx.objectStore('catalog').getAll();r.onsuccess=()=>set(r.result.sort((a,b)=>b.createdAt-a.createdAt));});},
       async get(id){const record=await transaction(['records'],'readonly',(tx,set)=>{const r=tx.objectStore('records').get(id);r.onsuccess=()=>set(r.result);});return validate(record);}
     };

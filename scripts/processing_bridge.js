@@ -4,9 +4,25 @@
   const el=id=>document.getElementById(id);
   let active=false,ready=false,pending=null,loaded=false,catalog=new Map(),request=0,loadTimer,refreshing=false;
   const completed=new Map(),imported=new Set();
+  const saving=new Map();let cache;
+  const storage=()=>cache||(cache=window.GANTRY_BONE_STORAGE.createStore(window.indexedDB));
+  function autoSave(record){
+    const key=identity(record);if(saving.has(key))return saving.get(key);
+    const task=Promise.resolve().then(()=>storage().save(record)).then(async()=>{
+      await window.GANTRY_BONE_ACQ.cacheSaved?.(record.processing?.acquisitionId||record.id);
+      frame.contentWindow.postMessage({type:'GANTRY_ACQUIRE_SAVED',version:1,id:record.processing?.acquisitionId||record.id},location.origin);
+      return true;
+    }).catch(error=>{
+      status.textContent='No se pudo guardar automáticamente: '+error.message+'. La adquisición sigue disponible en esta sesión.';
+      frame.contentWindow.postMessage({type:'GANTRY_ACQUIRE_SAVED',version:1,id:record.processing?.acquisitionId||record.id,error:status.textContent},location.origin);
+      return false;
+    });saving.set(key,task);return task;
+  }
   const identity=r=>(r.processing?.acquisitionId||r.id)+':'+(r.totals||r.heads.map(h=>h.total)).join(':');
   function remember(record){
-    if(record?.study!=='bone'||!record.finished||!record.heads.every(h=>h.total>0))return;
+    if(record?.study!=='bone'||!record.finished)return;
+    autoSave(record);
+    if(!record.heads.every(h=>h.total>0))return;
     completed.set(identity(record),record);
     if(active)setTimeout(()=>refresh().then(sync).catch(error=>{status.textContent=error.message;}),0);
   }
@@ -99,6 +115,17 @@
   el('boneProcessingRefresh').onclick=()=>refresh().then(sync).catch(e=>{status.textContent=e.message;});
   el('boneProcessingSend').onclick=send;
   el('boneProcessingRetry').onclick=()=>{if(!ready)load();};
-  window.GANTRY_PROCESSING={open,close,remember,get active(){return active;}};
+  async function retake(id){
+    if(busy()||pending)throw Error('Espera a que termine la adquisición y su recepción antes de repetirla.');
+    const entries=[...completed].filter(([,r])=>(r.processing?.acquisitionId||r.id)===id);
+    if(!entries.length)throw Error('La adquisición seleccionada ya no está disponible.');
+    const config=window.GANTRY_PROCESSING_CONFIG.fromRecord(entries[0][1]);
+    await Promise.all(entries.map(([key])=>saving.get(key)));
+    await storage().removeAcquisition(id);
+    for(const [key] of entries){completed.delete(key);catalog.delete(key);imported.delete(key);saving.delete(key);}
+    window.GANTRY_BONE_ACQ.discardFinished(id);
+    await refresh();return config;
+  }
+  window.GANTRY_PROCESSING={open,close,remember,retake,get active(){return active;}};
   window.GANTRY_PROCESSING_ACQUISITION.attach(frame);
 })();

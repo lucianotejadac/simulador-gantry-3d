@@ -66,6 +66,20 @@
     if($('mode-flex'))$('mode-flex').hidden=true;
     return result;
   };
-  window.GANTRY_PROCESSING_LIST={started,progress};
+  function remove(id){
+    const removedUIDs=new Set();
+    for(const key of Object.keys(acquisitionKinds))if(identity(key)===id){
+      for(const state of Object.values(acquisitionInstances[key]||{}))removedUIDs.add(state.dataset?.string('x00080018'));
+      delete acquisitionInstances[key];modeStates[key]=null;$('mode-'+key).hidden=true;
+      if(key===currentAcquisition){dataset=null;pixels=null;rows=[];frameCount=0;frameSize=0;defaults={};currentFilename='';}
+    }
+    const entry=order.get(id);if(entry?.detail)entry.button.remove();order.delete(id);
+    const assets=new Set(flex.assets.filter(a=>removedUIDs.has(a.uid)).map(a=>a.id));
+    flex.assets=flex.assets.filter(a=>!assets.has(a.id));
+    for(const page of flex.pages)page.items=page.items.filter(item=>!assets.has(item.asset));
+    flex.selected=null;
+    populate();buildPanels();controls(!!pixels);renderAll();showTags();updateModeUI();refreshFlexible();
+  }
+  window.GANTRY_PROCESSING_LIST={started,progress,remove};
   updateModeUI();
 })();

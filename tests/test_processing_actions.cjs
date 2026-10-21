@@ -14,10 +14,10 @@ assert.equal(model(acquiring).actions.find(a=>a.id==='fast').label,'Avance rápi
 const paused=model({...acquiring,state:{paused:true,finished:false}});
 assert.equal(paused.phase,'En pausa');
 assert.equal(paused.actions.find(a=>a.id==='pause').label,'Reanudar adquisición');
-const done={...idle,lastId:'a',state:{finished:true},kind:'whole'};
-assert.deepEqual(enabled(model(done)),['static','whole','current','save']);
-assert(!enabled(model({...done,hasDraft:true})).includes('save'),'New draft must not save the previous acquisition');
-assert(!enabled(model({...done,state:{finished:true,cancelled:true}})).includes('save'));
+const done={...idle,lastId:'a',state:{finished:true},kind:'whole',selectedId:'older'};
+assert.deepEqual(enabled(model(done)),['static','whole','current','retake']);
+assert(!enabled(model({...done,hasDraft:true})).includes('retake'),'New draft must not overwrite the previous acquisition');
+assert(!enabled(model({...done,selectedId:null})).includes('retake'));
 assert.deepEqual(enabled(model({...acquiring,waiting:true})),[]);
 const ids=Array.from(model(idle).actions,a=>a.id);
 assert.deepEqual(Array.from(model(acquiring).actions,a=>a.id),ids,'Menu action order is stable');

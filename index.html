@@ -820,7 +820,7 @@
         <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
       </details>
       <div id="boneProcessingStatus" role="status"></div>
-      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=27f443d25640b107"></iframe>
+      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=7518b72c84a91da8"></iframe>
     </section>
     <!-- PROCESSING_UI_END -->
 <section class="gantry-live" id="gantryLive" aria-label="Controles y adquisiciones">
@@ -4376,6 +4376,14 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
           tx.objectStore('catalog').put({...meta,totals:heads.map(h=>h.total)});
         });
       },
+      async removeAcquisition(id){
+        return transaction(['records','catalog'],'readwrite',tx=>{
+          const request=tx.objectStore('records').getAll();
+          request.onsuccess=()=>{for(const record of request.result)if((record.processing?.acquisitionId||record.id)===id){
+            tx.objectStore('records').delete(record.id);tx.objectStore('catalog').delete(record.id);
+          }};
+        });
+      },
       async list(){return transaction(['catalog'],'readonly',(tx,set)=>{const r=tx.objectStore('catalog').getAll();r.onsuccess=()=>set(r.result.sort((a,b)=>b.createdAt-a.createdAt));});},
       async get(id){const record=await transaction(['records'],'readonly',(tx,set)=>{const r=tx.objectStore('records').get(id);r.onsuccess=()=>set(r.result);});return validate(record);}
     };
@@ -4884,6 +4892,13 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   canvases.forEach((canvas,i)=>canvas.onclick=event=>{if(!archive&&session?.kind!=='whole')window.GANTRY_LIVE.recenterFromCanvas(i+1,event);});
   document.addEventListener('visibilitychange',()=>{clock=performance.now();if(document.hidden)clearScanDebt();});
   window.GANTRY_BONE_ACQ={advance,sync,selectStudy,
+    async cacheSaved(id){await refreshSaved();if(session?.id===id)el('boneAcqCacheStatus').textContent='Adquisición guardada automáticamente en este navegador';},
+    discardFinished(id){
+      if(session?.id===id&&session.finished){session=null;archive=null;fields=null;}
+      for(const [key,saved] of sessions)if(saved.session?.id===id&&saved.session.finished)sessions.delete(key);
+      if((archive?.processing?.acquisitionId||archive?.id)===id)archive=null;
+      refreshSaved().catch(()=>{});window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);
+    },
     startConfigured(config){
       if(study!=='bone'||busy||saving||loadingSaved||session&&!session.finished)throw Error('Hay una adquisición u operación en curso.');
       el('boneAcqType').value=config.kind;
@@ -4933,7 +4948,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 </script>
 <!-- BONE_ACQ_ENGINE_END -->
 <!-- PROCESSING_ENGINE_BEGIN -->
-<script src="assets/runtime/processing-controller.eec83b4904d87966.js"></script>
+<script src="assets/runtime/processing-controller.de75515b9cefbf5c.js"></script>
 <!-- PROCESSING_ENGINE_END -->
 <!-- CONSOLE_MENUS_BEGIN -->
 <link rel="stylesheet" data-console-menus href="assets/runtime/console-menus.c37f7a3a5078c291.css">
