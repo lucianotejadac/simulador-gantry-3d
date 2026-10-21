@@ -1106,6 +1106,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     return {running,ready,type,phase,actions:[
       action('static','Nueva adquisición estática',!running,'Configuración'),
       action('whole','Nueva adquisición cuerpo entero',!running,'Configuración'),
+      action('add','Agregar adquisición',!!selectedId&&!running&&!hasDraft,'Configuración'),
       action('cancel','Cancelar configuración',ready,'Configuración'),
       action('start','Iniciar adquisición',ready,'Adquisición'),
       action('instant','Adquisición instantánea',ready||running,'Adquisición'),
@@ -1199,6 +1200,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     <div class="console-summary" id="consoleSummary">Prepara una adquisición para configurar la cámara y las condiciones de paro.</div>
     <div class="console-state" id="consoleState" role="status"></div>
     <div class="console-prepare">
+      <button type="button" data-acquire="add">Agregar adquisición</button>
       <button type="button" data-acquire="retake">Adquirir de nuevo</button>
       <button type="button" data-acquire="cancel" hidden>Cancelar configuración</button></div>
     <div class="console-transport">
@@ -1255,7 +1257,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
           const icon=button.querySelector('b');button.replaceChildren(icon,document.createTextNode(' '+a.label));
         }else button.textContent=a.label;
       }
-      if(id==='retake')button.hidden=!!draft||!selectedId||running;
+      if(id==='retake'||id==='add')button.hidden=!!draft||!selectedId||running;
+      if(id==='add')button.title='Conserva las imágenes anteriores y agrega otra adquisición '+(kind==='whole'?'de cuerpo entero':'estática')+' a la lista.';
       if(id==='cancel')button.hidden=!ready;
     }
     $('acquisitionSaveStatus').textContent=!draft&&selectedId?(saved.get(selectedId)||'Guardada en esta sesión · guardado automático en el navegador') : '';
@@ -1420,6 +1423,12 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       if(action==='static'||action==='whole'){
         if(draft&&!draft.id)render({...read(false),kind:action});
         else request('GANTRY_ACQUIRE_CONFIG',{kind:action});
+      }
+      else if(action==='add'){
+        const kind=recorded()?.acquisition?.kind;
+        if(!['static','whole'].includes(kind))throw Error('Selecciona una adquisición para agregar otra del mismo tipo.');
+        request('GANTRY_ACQUIRE_CONFIG',{kind});
+        status('Las adquisiciones anteriores se conservan. La nueva toma se agregará debajo en la lista.');
       }
       else if(action==='cancel')finish();
       else if(action==='retake'){

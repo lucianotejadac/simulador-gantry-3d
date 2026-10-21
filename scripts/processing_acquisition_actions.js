@@ -12,6 +12,7 @@
     return {running,ready,type,phase,actions:[
       action('static','Nueva adquisición estática',!running,'Configuración'),
       action('whole','Nueva adquisición cuerpo entero',!running,'Configuración'),
+      action('add','Agregar adquisición',!!selectedId&&!running&&!hasDraft,'Configuración'),
       action('cancel','Cancelar configuración',ready,'Configuración'),
       action('start','Iniciar adquisición',ready,'Adquisición'),
       action('instant','Adquisición instantánea',ready||running,'Adquisición'),
