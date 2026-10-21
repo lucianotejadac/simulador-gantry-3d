@@ -1,18 +1,19 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync('scripts/bone_whole_body.js','utf8');
-function fixture(n=64,startZ=200,velocity=10,contours='auto'){
+function fixture(n=64,startZ=200,velocity=10,contours='auto',camera={}){
   const pose={width:560/3,height:500,headRow:20,footRow:480};
   const G={tableZ:startZ,tableH:88,detDist1:50,detDist2:50,arms:'down',rot:0,detectorSeparation:180};
-  const settings={matrix:n,zoom:1,headFirst:false,decubitus:'supine',collimator:'LEHR',energyCenter:140,windowWidth:20};
-  const sampled=[],times=[],distances=[],stats={fields:0,guards:0,renders:0,yields:0};
+  const settings={matrix:n,zoom:1,headFirst:false,decubitus:'supine',collimator:'LEHR',energyCenter:140,windowWidth:20,...camera};
+  const sampled=[],times=[],distances=[],projections=[],responses=[],stats={fields:0,guards:0,renders:0,yields:0};
   const W={
     GANTRY:{G,LIM:{detDist1:[12,50],detDist2:[12,50]},render(){stats.renders++;}},
     GANTRY_PATIENT3D:{headFirst:false},
-    GANTRY_LIVE:{settings,setZoom(){},resetImageCenter(){},framePair:a=>({lo:a,hi:a,mix:0}),distanceMetrics:cm=>{distances.push(cm);return {blur:cm/20};}},
+    GANTRY_LIVE:{settings,setZoom(){throw Error('Acquisition must not reset zoom');},resetImageCenter(){throw Error('Acquisition must not reset centering');},framePair:a=>({lo:a,hi:a,mix:0}),distanceMetrics:(cm,...args)=>{distances.push(cm);responses.push(args);return {blur:cm/20};}},
     GANTRY3D:{limits:g=>({d1:g.tableZ<100?30:20,d2:25}),surfaceGaps:()=>null,collision:{guard(){stats.guards++;}}},
     GANTRY_MDP:{seconds:7200,rate:100,get remaining(){return 10800-this.seconds;},geometry:()=>pose,
       metadata(){return {seconds:this.seconds,voidAt120:true};},advance(t){this.seconds+=t;},
       field(p,pair,crop,w,h,flipX,flipY,m,s,name,cache,t){
+        projections.push({crop:{...crop},w,h,flipX,flipY});
         stats.fields++;times.push(t);return {values:new Float32Array(w*h).fill(pair.lo===0?20000:10000)};
       }},
     GANTRY_BONE_CORE:{poisson:mu=>{sampled.push(mu);return Math.round(mu);}}
@@ -21,10 +22,43 @@ function fixture(n=64,startZ=200,velocity=10,contours='auto'){
     setTimeout(fn){stats.yields++;return setTimeout(fn,0);}});
   vm.runInContext(source,ctx);
   const api=W.GANTRY_BONE_WHOLE,scan=api.create(velocity,contours);
-  return {W,G,api,scan,sampled,times,stats,pose,distances,ctx};
+  return {W,G,api,scan,sampled,times,stats,pose,distances,ctx,projections,responses};
 }
 function near(a,b){assert(Math.abs(a-b)<1e-6*Math.max(1,Math.abs(b)),`${a} != ${b}`);}
 (async()=>{
+  // Nonstandard camera settings must survive both entry paths and reach the
+  // projection/exposure calculation, not only the saved UI labels.
+  const camera={zoom:2,collimator:'HE',energyCenter:97,windowWidth:10,
+    centers:{1:{x:.2,y:.1},2:{x:-.15,y:-.25}},decubitus:'prone'};
+  for(const instant of [false,true]){
+    const f=fixture(128,200,20,'fixed',camera),before=JSON.stringify(f.W.GANTRY_LIVE.settings);
+    const base=f.api.geometry(f.pose,128),s=f.scan;
+    near(s.crop.w,base.crop.w/2);near(s.crop.h,base.crop.h/2);
+    near(s.sampling.pixelMm,base.sampling.pixelMm/2);
+    assert.equal(s.height,512);assert.equal(s.velocity,20);
+    if(instant)await f.api.instant(s,100);
+    else{
+      f.api.advance(s,100,.5,false);
+      const fields=f.api.fields().fields;
+      s.step(fields,100,s.target*60/s.velocity);
+    }
+    assert.equal(JSON.stringify(f.W.GANTRY_LIVE.settings),before);
+    assert(f.responses.every(args=>JSON.stringify(args)===JSON.stringify(['bone','HE',97,10])));
+    for(let j=0;j<2;j++){
+      const p=f.projections[j],center=camera.centers[j+1];
+      near(p.crop.x+p.crop.w/2,f.pose.width/2+center.x*560/3);
+      near(p.crop.y+p.crop.h/2,f.pose.height/2+center.y*560/3);
+      assert(p.flipX,'Declared orientation reaches projection');
+      near(s.heads[j].elapsed,525);
+    }
+    if(instant){
+      for(let j=0;j<2;j++)for(let y=0;y<s.height;y++){
+        const frame=s.frames[j],row=frame.crop.y+(y+.5)*frame.crop.h/s.height;
+        const expected=f.api.exposure(row,s.fromRow+frame.offsetY,s.toRow+frame.offsetY,280/3/2,525)*(j?.5:1);
+        near(f.sampled[j*s.n*s.height+y*s.n+s.n/2],expected);
+      }
+    }
+  }
   for(const n of [64,128,256,512]){
     const f=fixture(n),before=performance.now();await f.api.instant(f.scan,100);
     const s=f.scan;

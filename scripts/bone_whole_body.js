@@ -14,14 +14,18 @@
     if(G.tableZ<=16)return {ok:false,reason:'La camilla ya alcanzó el final del recorrido hacia los pies.'};
     return {ok:true,reason:'Inicio en posición actual · detectores automáticos · pies hacia adentro'};
   }
-  function geometry(pose,n){
+  function geometry(pose,n,settings={},detector=1){
     const sourcePixelMm=pose.pixelMm||3;
-    const width=FIELD_WIDTH_MM/sourcePixelMm,height=4*width;
-    return {width:n,height:4*n,pixelMm:FIELD_WIDTH_MM/n,sourcePixelMm,
-      sampling:{pixelMm:FIELD_WIDTH_MM/n,widthMm:FIELD_WIDTH_MM,heightMm:4*FIELD_WIDTH_MM,
+    const zoom=settings.zoom??1,fieldWidth=FIELD_WIDTH_MM/zoom;
+    const width=fieldWidth/sourcePixelMm,height=4*width;
+    // Centers use fractions of the unzoomed 560 mm live detector field.
+    const center=settings.centers?.[detector]||{x:0,y:0};
+    const offsetX=(center.x||0)*560/sourcePixelMm,offsetY=(center.y||0)*560/sourcePixelMm;
+    return {width:n,height:4*n,pixelMm:fieldWidth/n,sourcePixelMm,zoom,offsetY,
+      sampling:{pixelMm:fieldWidth/n,widthMm:fieldWidth,heightMm:4*fieldWidth,
         reference:'WB_scanspeed.dcm · SIEMENS NM Encore2 · 256×1024',
-        proportional:n!==256},
-      crop:{x:(pose.width-width)/2,y:(pose.height-height)/2,w:width,h:height}};
+        proportional:n!==256||zoom!==1},
+      crop:{x:(pose.width-width)/2+offsetX,y:(pose.height-height)/2+offsetY,w:width,h:height}};
   }
   // Exact exposure of a source row while a finite detector window translates.
   function exposure(row,from,to,half,seconds){
@@ -29,10 +33,11 @@
     return seconds*Math.max(0,Math.min(to,row+half)-Math.max(from,row-half))/(to-from);
   }
   class Scan {
-    constructor(n,velocity,pose,startZ=200,random=Math.random){
+    constructor(n,velocity,pose,startZ=200,random=Math.random,settings={}){
       if(![64,128,256,512].includes(n)||!Number.isFinite(velocity)||velocity<.1||velocity>60)throw Error('Introduce una velocidad entre 0,1 y 60 cm/min.');
       if(!Number.isFinite(startZ)||startZ<=16)throw Error('No queda recorrido hacia los pies desde esta posición.');
-      Object.assign(this,geometry(pose,n));
+      Object.assign(this,geometry(pose,n,settings));
+      this.frames=[1,2].map(detector=>geometry(pose,n,settings,detector));
       this.n=n;this.kind='whole';this.mode='scan';this.velocity=velocity;this.startZ=startZ;this.endZ=16;
       this.target=(startZ-this.endZ)*175/184;this.travel=0;this.finished=false;this.phase='positioning';this.random=random;
       this.fromRow=pose.headRow+(200-startZ)/184*(pose.footRow-pose.headRow);this.toRow=pose.footRow;
@@ -45,15 +50,16 @@
       const dt=Math.min(seconds,(this.target-this.travel)*60/this.velocity),from=this.row;
       const travel=Math.min(this.target,this.travel+dt*this.velocity/60);
       const to=this.fromRow+(this.toRow-this.fromRow)*travel/this.target;
-      const half=280/this.sourcePixelMm,poisson=window.GANTRY_BONE_CORE.poisson;
+      const half=280/(this.sourcePixelMm*this.zoom),poisson=window.GANTRY_BONE_CORE.poisson;
       fields.forEach((f,j)=>{
+        const {crop,offsetY}=this.frames[j];
         const h=this.heads[j];if(f.values.length!==h.counts.length)throw Error('Campo incompatible con el barrido');
         for(let y=0;y<this.height;y++){
-          const row=this.crop.y+(y+.5)*this.crop.h/this.height;
-          const dtRow=exposure(row,from,to,half,dt);if(!dtRow)continue;
+          const row=crop.y+(y+.5)*crop.h/this.height;
+          const dtRow=exposure(row,from+offsetY,to+offsetY,half,dt);if(!dtRow)continue;
           for(let x=0;x<this.n;x++){
-            // Same 56 cm transverse field as the live detector at zoom 1.
-            if(Math.abs((x+.5)/this.n-.5)*this.crop.w>half)continue;
+            // Same active field and electronic zoom as the live detector.
+            if(Math.abs((x+.5)/this.n-.5)*crop.w>half)continue;
             const i=y*this.n+x,v=poisson(f.values[i]*rate*dtRow/2000000,this.random);
             h.counts[i]+=v;h.total+=v;
           }
@@ -103,9 +109,8 @@
     if(!['auto','fixed'].includes(contours))throw Error('Modo de contornos no válido.');
     const status=position();if(!status.ok)throw Error(status.reason);
     const G=window.GANTRY.G;
-    window.GANTRY_LIVE.setZoom(1);window.GANTRY_LIVE.resetImageCenter();
     const pose=window.GANTRY_MDP?.geometry(G.arms==='up'?'up':'down')||window.GANTRY_ICRP.poses[G.arms==='up'?'up':'down'];
-    const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ);
+    const scan=new Scan(window.GANTRY_LIVE.settings.matrix,velocity,pose,G.tableZ,Math.random,window.GANTRY_LIVE.settings);
     scan.contours=contours;
     if(contours==='fixed')scan.fixedDistances={detDist1:G.detDist1,detDist2:G.detDist2};
     // Both 0/360 and 180 put the detector faces parallel to the patient.
@@ -215,15 +220,15 @@
       const sample=fields({...positioned,tableZ:(virtual.tableZ+nextZ)/2},t+dt/2,projectionCaches).fields;
       const from=scan.fromRow+(scan.toRow-scan.fromRow)*travel/scan.target;
       const to=scan.fromRow+(scan.toRow-scan.fromRow)*nextTravel/scan.target;
-      for(let y=0;y<scan.height;y++){
-        const row=scan.crop.y+(y+.5)*scan.crop.h/scan.height;
-        const weight=exposure(row,from,to,280/scan.sourcePixelMm,dt)*(mdp?.rate??rate)/2000000;
+      for(let j=0;j<2;j++)for(let y=0;y<scan.height;y++){
+        const {crop,offsetY}=scan.frames[j],half=280/(scan.sourcePixelMm*scan.zoom);
+        const row=crop.y+(y+.5)*crop.h/scan.height;
+        const weight=exposure(row,from+offsetY,to+offsetY,half,dt)*(mdp?.rate??rate)/2000000;
         if(!weight)continue;
         for(let x=0;x<scan.n;x++){
-          if(Math.abs((x+.5)/scan.n-.5)*scan.crop.w>280/scan.sourcePixelMm)continue;
+          if(Math.abs((x+.5)/scan.n-.5)*crop.w>half)continue;
           const i=y*scan.n+x;
-          expected[0][i]+=sample[0].values[i]*weight;
-          expected[1][i]+=sample[1].values[i]*weight;
+          expected[j][i]+=sample[j].values[i]*weight;
         }
       }
       virtual=end;elapsed+=dt;
@@ -255,7 +260,7 @@
     const live=window.GANTRY_LIVE,settings=live.settings;
     const pose=window.GANTRY_MDP?.geometry(G.arms==='up'?'up':'down')||window.GANTRY_ICRP?.poses[G.arms==='up'?'up':'down'];
     if(!pose)throw Error('Preparando el fantoma óseo');
-    const size=geometry(pose,settings.matrix);
+    const sizes=[1,2].map(detector=>geometry(pose,settings.matrix,settings,detector)),size=sizes[0];
     const gaps=window.GANTRY3D?.surfaceGaps(G);
     const physicalProne=(document.getElementById('pos')?.value||'').toLowerCase().startsWith('pron');
     const raw=G.rot+(physicalProne?180:0);
@@ -269,9 +274,10 @@
     });
     const flipX=physicalProne!==(settings.decubitus==='prone');
     const mdp=window.GANTRY_MDP;
-    const nextKey=JSON.stringify([G.arms,size,pairs,metrics,flipX,seconds,mdp?.metadata().voidAt120]);
+    const nextKey=JSON.stringify([G.arms,sizes,pairs,metrics,flipX,seconds,mdp?.metadata().voidAt120]);
     if(nextKey!==key){
       cached={...size,fields:pairs.map((pair,i)=>{
+        const size=sizes[i];
         const signature=JSON.stringify([G.arms,size,pair,metrics[i],flipX]);
         if(mdp){
           let cache=projectionCaches?.[i].get(signature)||(!projectionCaches&&detectorFields[i]?.mdpCache)||{};
@@ -280,9 +286,9 @@
             // The scan owns this bounded response cache; discard it afterward.
             if(projectionCaches[i].size>8)projectionCaches[i].delete(projectionCaches[i].keys().next().value);
           }
-          detectorFields[i]={key:signature,mdpCache:cache,field:mdp.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240,G.arms==='up'?'up':'down',cache,seconds)};
+          detectorFields[i]={key:signature,mdpCache:cache,field:mdp.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240*size.zoom,G.arms==='up'?'up':'down',cache,seconds)};
         }else if(detectorFields[i]?.key!==signature)detectorFields[i]={key:signature,
-          field:window.GANTRY_ICRP.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240)};
+          field:window.GANTRY_ICRP.field(pose,pair,size.crop,size.width,size.height,flipX,false,metrics[i],metrics[i].blur*size.width/240*size.zoom)};
         return detectorFields[i].field;
       })};
       key=nextKey;

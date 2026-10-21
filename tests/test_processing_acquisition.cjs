@@ -85,6 +85,19 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  await send({type:'GANTRY_ACQUIRE_START',config:{...base,kind:'whole',contours:'fixed'}});
  assert.equal(messages.at(-1).type,'GANTRY_ACQUIRE_STARTED');
  assert.equal(calls.at(-1).kind,'whole');assert.equal(calls.at(-1).contours,'fixed');
+ for(const kind of ['static','whole'])for(const instant of [false,true]){
+  engine.active=false;
+  const configured={...base,kind,matrix:kind==='static'?64:256,zoom:2,collimator:'NONE',energyCenter:97,windowWidth:10,
+   mode:'counts',target:12345,velocity:7.5,contours:'fixed',activityMci:8,minutes:47};
+  await send({type:'GANTRY_ACQUIRE_START',config:configured,instant});
+  assert.equal(messages.at(-1).type,'GANTRY_ACQUIRE_STARTED');
+  for(const key of ['matrix','zoom','collimator','energyCenter','windowWidth'])assert.equal(live.settings[key],configured[key],kind+' '+key);
+  const passed=instant?calls.at(-2):calls.at(-1);
+  assert.equal(passed.velocity,7.5);assert.equal(passed.contours,'fixed');
+  assert.equal(passed.activityMci,8);assert.equal(passed.minutes,47);
+  if(kind==='static'){assert.equal(passed.mode,'counts');assert.equal(passed.target,12345);}
+  if(instant)assert.equal(calls.at(-1),'instant');
+ }
  w.GANTRY_PROCESSING.active=false;const prior=messages.length;await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'static'});assert.equal(messages.length,prior);
  const engineCode=fs.readFileSync('scripts/bone_acquisition.js','utf8');assert(!engineCode.includes('if(window.GANTRY_PROCESSING?.active){clock='),'Processing must not freeze acquisition');
  console.log('OK: native acquisition configuration, matrix/energy/activity/time mapping, exact goal, source/origin, collision lock, duplicate start and stale command rejection.');
