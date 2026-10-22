@@ -550,7 +550,7 @@
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/pixel-grid.d84a41a18b7dcfad.js" as="script">
 <link rel="preload" href="assets/runtime/processing-controller.620803e0109b6fb6.js" as="script">
-<link rel="preload" href="assets/runtime/radiopharmaceutical.59f7ddcd69b7b3c1.js" as="script">
+<link rel="preload" href="assets/runtime/radiopharmaceutical.b340bfc4a7d67de8.js" as="script">
 <link rel="preload" href="assets/runtime/study-activity.979b4ce401f48fe8.js" as="script">
 <link rel="preload" href="assets/runtime/symbia-room.40a36f2a15b3e0bc.bin" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/three-bundle.9848023754a347b2.js" as="script">
@@ -4029,6 +4029,12 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
   instantButton.onclick=async()=>{if((!session||session.finished)&&!start())return;await instant();};
   window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,start,instant,stateChanged,renderHead,
     get injected(){return !!administration;},
+    resetInjection(){
+      if(busy||session&&!session.finished||window.GANTRY_BONE_ACQ?.active||window.GANTRY_EXAM?.blocked||window.GANTRY_AUTO?.busy)throw Error('Finaliza la adquisición o el movimiento antes de reiniciar la inyección.');
+      administration=null;
+      syncPanel();
+      document.getElementById('mag3Status').textContent='Sin inyección · pulsa Inyectar en la vista 3D';
+    },
     get administration(){return administration?{...administration.metadata,seconds:injectionTime()}:null;},
     get state(){return session&&{cancelled:!!session.cancelled,time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
     cancelExam(){if(session&&!session.finished){session.cancelled=true;session.finished=true;session.paused=true;}refresh();},
@@ -4037,7 +4043,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
     coefficients,fields,mix,accumulate,poissonEvents,data};
   setInterval(()=>{if(!session){if(administration&&window.GANTRY_LIVE.settings.study==='mag3')window.GANTRY_LIVE.update(window.GANTRY.G);return;}
     advance();refresh();if(window.GANTRY_LIVE.settings.study==='mag3')window.GANTRY_LIVE.update(window.GANTRY.G);
-    document.getElementById('mag3Status').textContent='MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.cancelled?' · cancelada por evento centinela':session.finished?' · finalizada':session.paused?' · pausada':'');
+    document.getElementById('mag3Status').textContent=!administration?'Sin inyección · pulsa Inyectar en la vista 3D':'MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.cancelled?' · cancelada por evento centinela':session.finished?' · finalizada':session.paused?' · pausada':'');
   },100);
 })();
 
@@ -5046,7 +5052,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 #rfPanel select,#rfPanel input,#rfPanel button{font:inherit;min-height:28px;max-width:100%}#rfPanel input{width:68px}
 #rfPanel .rf-study select{flex:1;min-width:0}#rfPanel [hidden]{display:none!important}
 #rfStatus,#rfError{flex-basis:100%}#rfError{color:#ffb99f}#rfError:empty{display:none}
-</style><script src="assets/runtime/radiopharmaceutical.59f7ddcd69b7b3c1.js"></script>
+</style><script src="assets/runtime/radiopharmaceutical.b340bfc4a7d67de8.js"></script>
 <!-- RADIOPHARMACEUTICAL_END -->
 </body>
 </html>

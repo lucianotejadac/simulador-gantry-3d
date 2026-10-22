@@ -208,6 +208,12 @@
   instantButton.onclick=async()=>{if((!session||session.finished)&&!start())return;await instant();};
   window.GANTRY_MAG3={load,get loading(){return load();},get ready(){return ready;},inject,start,instant,stateChanged,renderHead,
     get injected(){return !!administration;},
+    resetInjection(){
+      if(busy||session&&!session.finished||window.GANTRY_BONE_ACQ?.active||window.GANTRY_EXAM?.blocked||window.GANTRY_AUTO?.busy)throw Error('Finaliza la adquisición o el movimiento antes de reiniciar la inyección.');
+      administration=null;
+      syncPanel();
+      document.getElementById('mag3Status').textContent='Sin inyección · pulsa Inyectar en la vista 3D';
+    },
     get administration(){return administration?{...administration.metadata,seconds:injectionTime()}:null;},
     get state(){return session&&{cancelled:!!session.cancelled,time:session.time,total:session.total,expectedTotal:session.expectedTotal,detector:session.detector,frames:session.frames.length,paused:session.paused,finished:session.finished,speed:session.speed,busy,matrix:session.n,administeredActivity:session.administeredActivity};},
     cancelExam(){if(session&&!session.finished){session.cancelled=true;session.finished=true;session.paused=true;}refresh();},
@@ -216,6 +222,6 @@
     coefficients,fields,mix,accumulate,poissonEvents,data};
   setInterval(()=>{if(!session){if(administration&&window.GANTRY_LIVE.settings.study==='mag3')window.GANTRY_LIVE.update(window.GANTRY.G);return;}
     advance();refresh();if(window.GANTRY_LIVE.settings.study==='mag3')window.GANTRY_LIVE.update(window.GANTRY.G);
-    document.getElementById('mag3Status').textContent='MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.cancelled?' · cancelada por evento centinela':session.finished?' · finalizada':session.paused?' · pausada':'');
+    document.getElementById('mag3Status').textContent=!administration?'Sin inyección · pulsa Inyectar en la vista 3D':'MAG3 basal · '+labelTime(session.time)+' · '+session.total.toLocaleString('es-CL')+' cuentas'+(session.cancelled?' · cancelada por evento centinela':session.finished?' · finalizada':session.paused?' · pausada':'');
   },100);
 })();

@@ -51,7 +51,7 @@
   }
   function configure(dose,minutes,doseUnit=unit){
     if(busy()||injecting||window.GANTRY_EXAM?.blocked)throw Error('No se puede cambiar la administración durante una adquisición.');
-    if(selected==='mag3'&&window.GANTRY_MAG3?.injected)throw Error('La dosis ya fue inyectada; reinicia el examen para cambiar la administración.');
+    if(selected==='mag3'&&window.GANTRY_MAG3?.injected)throw Error('La dosis ya fue inyectada; pulsa Reiniciar inyección para cambiar la administración.');
     const mbq=Number(dose)*(doseUnit==='mCi'?37:1),seconds=Number(minutes)*60;
     const id=profiles[selected]?.study,max=id==='bone'?180:id==='mibi'?720:id==='mag3'?19.99:id==='exploration'?43200:1440;
     if(dose===''||minutes===''||!Number.isFinite(mbq)||mbq<=0||!Number.isFinite(seconds)||seconds<0||seconds>max*60||id!=='exploration'&&mbq>2000)
@@ -81,6 +81,23 @@
       }
     }finally{injecting=false;refresh();}
   }
+  function resetInjection(){
+    if(injecting||busy()||window.GANTRY_EXAM?.blocked||window.GANTRY_AUTO?.busy)throw Error('Espera a que termine la adquisición o el movimiento del equipo.');
+    if(!profiles[selected]?.dynamic)return;
+    if(!live().ready)throw Error('Espera a que termine la carga del estudio.');
+    if(selected==='mag3'){
+      if(!window.GANTRY_ACTIVITY.setMinutes('mag3',0))throw Error('No se pudo reiniciar el tiempo de inyección.');
+      window.GANTRY_MAG3.resetInjection();
+      window.GANTRY_ACTIVITY.render();
+    }else{
+      if(!window.GANTRY_MDP.configure(metadata().activityMBq,0,false))throw Error('No se pudo reiniciar la inyección.');
+      injected.bone3=false;
+    }
+    for(const n of [1,2]){
+      const canvas=el('liveD'+n);if(canvas)blank({n,canvas,info:el('liveInfoD'+n)||{}});
+    }
+    refresh();
+  }
   function render(){
     if(!el('rfPanel')||!live())return;
     const study=live().settings.study;
@@ -103,6 +120,8 @@
     if(document.activeElement!==el('rfTime'))el('rfTime').value=+(m.seconds/60/timeFactor()).toFixed(3);
     el('rfInject').hidden=!profiles[selected].dynamic;
     el('rfInject').disabled=locked||!pending()||!live().ready||!!window.GANTRY_AUTO?.busy;
+    el('rfResetInjection').hidden=!profiles[selected].dynamic;
+    el('rfResetInjection').disabled=locked||!live().ready||!!window.GANTRY_AUTO?.busy;
     el('rfStatus').textContent=profiles[selected].dynamic?(injecting?'Inyectando…':pending()?'Sin inyección · señal en vivo: 0':'Inyectado · señal en vivo activa'+(busy()?' · adquiriendo':' · adquisición independiente')):(oral?'Vía oral':'Vía intravenosa');
   }
   function resetExam(){injected.bone3=false;refresh();}
@@ -115,7 +134,7 @@
       <select id="rfUnit" aria-label="Unidad de dosis"><option>mCi</option><option>MBq</option></select></label>
       <label><span id="rfTimeLabel">Inyección–examen</span> <input id="rfTime" type="number" min="0" step="any" required aria-label="Tiempo inyección examen">
       <select id="rfTimeUnit" aria-label="Unidad de tiempo"><option value="min">min</option><option value="h">h</option><option value="d">días</option></select></label>
-      <button id="rfInject" type="button" hidden>Inyectar</button><span id="rfStatus" role="status"></span><span id="rfError" role="alert"></span>`;
+      <button id="rfInject" type="button" hidden>Inyectar</button><button id="rfResetInjection" type="button" hidden>Reiniciar inyección</button><span id="rfStatus" role="status"></span><span id="rfError" role="alert"></span>`;
     host.prepend(panel);
     for(const [id,p] of Object.entries(profiles)){const o=document.createElement('option');o.value=id;o.textContent=p.label;el('rfSelect').append(o);}
     const action=fn=>async()=>{try{el('rfError').textContent='';await fn();}catch(e){el('rfError').textContent=e.message;render();}};
@@ -125,9 +144,10 @@
     el('rfUnit').onchange=()=>{unit=el('rfUnit').value;render();};
     el('rfTimeUnit').onchange=()=>{timeUnit=el('rfTimeUnit').value;render();};
     el('rfInject').onclick=action(async()=>{apply();await inject();});
+    el('rfResetInjection').onclick=action(resetInjection);
     render();setInterval(render,250);
   }
-  window.GANTRY_RF={profiles,select,configure,inject,pending,blank,render,metadata,resetExam,
+  window.GANTRY_RF={profiles,select,configure,inject,resetInjection,pending,blank,render,metadata,resetExam,
     didInject(){render();},get selected(){return selected;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
