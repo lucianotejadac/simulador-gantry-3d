@@ -1213,7 +1213,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     body.gantry-acquisition-draft .field :is(input:not([readonly]),select){background:#ffffe1;color:#000;width:100%;min-width:0;border:2px inset #eee;padding:3px;font:inherit;box-sizing:border-box}
     body.gantry-acquisition-draft :is(#static-overview,#acquisition-instance-wrap,.metadata,.viewer>.toolbar){display:none!important}
     body.gantry-acquisition-draft #acquisition-thumbnails{display:none}
-    body.gantry-whole-draft #consoleSummary{display:none}
+    body.gantry-acquisition-draft #consoleSummary{display:none}
     .draft-image{display:flex;flex-direction:column;min-height:0}.draft-image .scan{background:#000;min-height:120px}
     .draft-image canvas{width:100%;height:100%;object-fit:contain}.draft-counts{font-size:12px;padding:6px;background:#eee}
     .draft-progress{width:100%;height:8px}.draft-help{font-size:12px;line-height:1.4;margin:8px 0}
@@ -1410,11 +1410,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       input('collimator','Colimador',config.collimator,[['LEHR','LEHR'],['MELP','MELP'],['HE','HE'],['NONE','Sin colimador']]),
       input('energyCenter','Centro de energía (keV)',config.energyCenter,null,range(80,450,'1')),
       input('windowWidth','Ancho de ventana (%)',config.windowWidth,[10,15,20,25])]);
-    if(config.kind==='whole')positionControl(config);
-    else{
-      section('camera','Calibraciones',[field('Corrección de uniformidad','Sin mapa de corrección')]);
-      section('camera','Orientación',[field('Posición del cuerpo','Posición actual del gantry'),field('Configuración basada','Geometría actual del simulador')]);
-    }
+    positionControl(config);
     help('camera',config.kind==='whole'?'El barrido comienza donde está la camilla y alinea los detectores. Configura el seguimiento del contorno en «Condiciones de paro».':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
     section('series','Radiofármaco',[field('Isótopo','99mTc'),field('Fármaco','MDP'),
       input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,2000/37)),

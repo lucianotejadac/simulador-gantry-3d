@@ -30,12 +30,30 @@ const prepare=kind=>{menu(kind);const request=messages.at(-1);assert.equal(reque
 const edit=(id,val)=>{$('gantryDraft-'+id).value=String(val);$('gantryDraft-'+id).dispatchEvent(new w.Event('input'));};
 prepare('static');assert.equal(list().length,1);const first=list()[0];
 assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW','Opening a draft updates the live camera');
+assert.deepEqual([...$('gantryDraft-matrix').options].map(o=>o.value),['64','128','256','512']);
+assert($('gantryDraft-mode')&&$('gantryDraft-target'),'Static acquisition keeps count/time stop conditions');
+assert(!$('gantryDraft-velocity')&&!$('gantryDraft-contours'),'Static acquisition has no scan controls');
+assert(!$('camera').textContent.includes('Calibraciones'));
+assert(!$('camera').textContent.includes('Posición actual del gantry'));
+assert.equal(w.getComputedStyle($('consoleSummary')).display,'none','Hide duplicate camera summary for static acquisition too');
+const declared=$('gantryDraft-position-decubitus');assert(declared);
+declared.value='prone';declared.dispatchEvent(new w.Event('change'));
+const positionRequest=messages.at(-1);assert.equal(positionRequest.type,'GANTRY_ACQUIRE_POSITION');assert.equal(positionRequest.value,'prone');
+receive({type:'GANTRY_ACQUIRE_POSITION',request:positionRequest.request,position:{decubitus:'prone',entry:'headIn',locked:false}});
+assert.equal($('gantryDraft-position-entry').value,'headIn');
+receive({type:'GANTRY_POSITION_STATE',position:{decubitus:'supine',entry:'headOut',locked:true}});
+assert(declared.disabled,'Position controls respect the shared acquisition lock');
+receive({type:'GANTRY_POSITION_STATE',position:{decubitus:'supine',entry:'headOut',locked:false}});
+assert(!declared.disabled);assert.equal(declared.value,'supine');
 for(const [key,value] of [['matrix',128],['zoom',2],['collimator','HE'],['energyCenter',180],['windowWidth',25]]){
   edit(key,value);assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW');assert.equal(messages.at(-1).config[key],value);
 }
 const countBeforeInvalid=messages.length;edit('energyCenter','');assert.equal(messages.length,countBeforeInvalid,'Incomplete numeric input leaves last valid live settings');edit('energyCenter',140);
 edit('matrix',128);edit('target',7);edit('name1','Primera AP');$('tab-stop').click();
 prepare('whole');assert.equal(list().length,2,'New configuration must not replace the first');const second=list()[1];
+assert.deepEqual([...$('gantryDraft-matrix').options].map(o=>o.value),['128','256']);
+assert(!$('gantryDraft-mode')&&!$('gantryDraft-target'),'Whole-body scan keeps its own stop conditions');
+assert($('gantryDraft-position-decubitus')&&$('gantryDraft-position-entry'),'Both acquisition types share declared-position controls');
 edit('velocity',8);edit('contours','fixed');
 first.click();assert.equal($('gantryDraft-matrix').value,'128');assert.equal($('gantryDraft-target').value,'7');assert.equal($('gantryDraft-name1').value,'Primera AP');
 assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW');assert.equal(messages.at(-1).config.collimator,'HE','Returning to a draft restores its live preview');
