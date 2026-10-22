@@ -67,7 +67,9 @@ s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important
               (ROOT / 'scripts/processing_session_list.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_receiver.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/dynamic_correction.js').read_text(encoding='utf-8') + '\n' +
-              (ROOT / 'scripts/processing_dynamic_correction.js').read_text(encoding='utf-8') + '\n</script>\n</body>')
+              (ROOT / 'scripts/processing_dynamic_correction.js').read_text(encoding='utf-8') + '\n' +
+              (ROOT / 'scripts/processing_roi.js').read_text(encoding='utf-8') + '\n' +
+              (ROOT / 'scripts/processing_analysis.js').read_text(encoding='utf-8') + '\n</script>\n</body>')
 # The private 32-bit teaching SOP carries administered activity in MBq, like NM.
 s = s.replace("sop==='1.2.840.10008.5.1.4.1.1.20'?'MBq'", "(sop==='1.2.840.10008.5.1.4.1.1.20'||sop==='2.25.216145721041023267506752105223475669900')?'MBq'")
 (DEST / 'index.html').write_text(s, encoding='utf-8', newline='\n')
