@@ -44,6 +44,16 @@ function environment(whole=false){
  assert.equal(api.processingCurrent().names[0],'Desde visor AP');
  assert.equal(api.processingCurrent().mode,'time');
  configured.window.GANTRY_EXAM={blocked:true};assert.throws(()=>api.startConfigured(cfg),/colisión/);
+ const dynamic=environment(),dyn=dynamic.window.GANTRY_BONE_ACQ;
+ dynamic.window.GANTRY_RF={pending:()=>true};
+ const dynConfig={...cfg,kind:'dynamic',target:7,phases:[{frames:3,seconds:1},{frames:2,seconds:2}]};
+ assert.throws(()=>dyn.startConfigured(dynConfig),/Inyectar/);assert(!dyn.active,'Dynamic start must not inject implicitly');
+ dynamic.window.GANTRY_RF.pending=()=>false;dyn.startConfigured(dynConfig);
+ assert.equal(dyn.state.kind,'dynamic');dynamic.tick(2.5);
+ assert.equal(dyn.processingCurrent().dynamic.frames.length,3);
+ await dyn.controlFromProcessing('pause');const beforePause=dyn.state.heads[0].elapsed;dynamic.tick(3);assert.equal(dyn.state.heads[0].elapsed,beforePause);
+ await dyn.controlFromProcessing('instant');assert(dyn.state.finished);assert.equal(dyn.state.heads[0].elapsed,7);
+ const dynamicRecord=dyn.processingCurrent();assert.equal(dynamicRecord.dynamic.frames.length,5);dynamic.storage.validate(dynamicRecord);
  const preview=environment(true);
  preview.window.GANTRY_LIVE.signal={mode:'final'};
  preview.window.GANTRY_LIVE.setSignalMode=mode=>{preview.window.GANTRY_LIVE.signal.mode=mode;preview.window.GANTRY_LIVE.update();};

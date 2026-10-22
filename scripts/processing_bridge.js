@@ -51,7 +51,7 @@
     for(const [key,record] of catalog){
       const row=document.createElement('label'),check=document.createElement('input'),text=document.createElement('span');
       check.type='checkbox';check.value=key;check.checked=selected.has(key);
-      text.textContent='De esta sesión · '+(record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names.join(' / ')+' · '+new Date(record.createdAt).toLocaleString('es-CL');
+      text.textContent='De esta sesión · '+(record.kind==='whole'?'Cuerpo entero':record.kind==='dynamic'?'Dinámica':'Estática')+' · '+record.names.join(' / ')+' · '+new Date(record.createdAt).toLocaleString('es-CL');
       row.append(check,text);el('boneProcessingList').append(row);
     }
     if(!catalog.size)el('boneProcessingList').textContent='Sin adquisiciones en esta sesión. Usa Adquirir para iniciar la primera.';

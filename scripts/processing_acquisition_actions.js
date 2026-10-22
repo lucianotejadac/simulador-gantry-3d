@@ -5,13 +5,14 @@
     const running=!!lastId&&state?.finished!==true;
     const ready=hasDraft&&!draftId;
     const completed=(!!lastId||!!selectedId)&&!running;
-    const type=kind==='whole'?'Cuerpo entero':'Estática';
+    const type=kind==='whole'?'Cuerpo entero':kind==='dynamic'?'Dinámica':'Estática';
     const phase=waiting?'Preparando':ready?'Configuración':running?(state?.paused?'En pausa':'Adquiriendo'):
       completed?(state?.cancelled?'Cancelada':'Finalizada'):'Sin adquisición';
     const action=(id,label,enabled,group)=>({id,label,enabled:!waiting&&enabled,group});
     return {running,ready,type,phase,actions:[
       action('static','Nueva adquisición estática',!running,'Configuración'),
       action('whole','Nueva adquisición cuerpo entero',!running,'Configuración'),
+      action('dynamic','Nueva adquisición dinámica',!running,'Configuración'),
       action('add','Agregar adquisición',!!selectedId&&!running&&!hasDraft,'Configuración'),
       action('start','Iniciar adquisición',ready&&!running,'Adquisición'),
       action('instant','Adquisición instantánea',ready&&!running||running&&!ready,'Adquisición'),

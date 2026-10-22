@@ -38,8 +38,10 @@
     const settings=record.processing?.first?.settings||record.settings||{},mdp=record.mdp?.start;
     const when=new Date(record.processing?.startedAt||record.createdAt),stamp=when.toISOString().replace(/[-:]/g,''),date=stamp.slice(0,8),time=stamp.slice(9,15);
     const output=[];
-    for(let j=0;j<2;j++){
-      const head=record.heads[j],orientation=label(record,j),sopUID=await uid(identity+':'+j);
+    const dynamic=record.kind==='dynamic'?record.dynamic:null;
+    for(let j=0;j<(dynamic?1:2);j++){
+      const head=dynamic?{...record.heads[0],total:record.heads.reduce((s,h)=>s+h.total,0),counts:(()=>{const out=new Uint32Array(dynamic.frames.length*2*record.n**2);dynamic.frames.forEach((f,i)=>f.heads.forEach((c,d)=>out.set(c,(i*2+d)*record.n**2)));return out;})()}:record.heads[j];
+      const orientation=dynamic?'Dos detectores · secuencia temporal':label(record,j),sopUID=await uid(identity+':'+j);
       const pixelMm=record.sampling?.pixelMm||record.processing?.first?.detectors?.[j]?.pixelMm;
       const spacing=Number.isFinite(pixelMm)&&pixelMm>0?String(Number(pixelMm.toPrecision(10))):'';
       let max=0;for(const n of head.counts)max=Math.max(max,n);
@@ -51,10 +53,11 @@
       const info={simulation:true,recordId:record.id,detector:j+1,total:head.total,elapsed:head.elapsed,
         heads:record.heads.map(h=>({detector:h.detector,elapsed:h.elapsed,total:h.total,done:h.done})),
         acquisition:{kind:record.kind||'static',mode:record.mode,target:record.target,names:record.names},
+        ...(dynamic?{dynamic:{phases:dynamic.phases,timings:dynamic.frames.flatMap(f=>[1,2].map(detector=>({detector,phase:f.phase,index:f.index,start:f.start,end:f.end,partial:!!f.partial})))}}:{}),
         mdp:record.mdp||null,settings,processing:record.processing||null,scan:record.scan||null,sampling:record.sampling||null,
         stoppedEarly:!head.done,encoding:bits===16?'NM16':'PRIVATE_GANTRY_COUNTS32'};
-      const description=(record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names[j]+' · SIMULADO';
-      const tags=[['00080005','CS','ISO_IR 192'],['00080008','CS','DERIVED\\SECONDARY\\'+(record.kind==='whole'?'WHOLE BODY':'STATIC')+'\\SIMULATED'],
+      const description=(dynamic?'Dinámica':record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names[j]+' · SIMULADO';
+      const tags=[['00080005','CS','ISO_IR 192'],['00080008','CS','DERIVED\\SECONDARY\\'+(dynamic?'DYNAMIC':record.kind==='whole'?'WHOLE BODY':'STATIC')+'\\SIMULATED'],
         ['00080016','UI',sop],['00080018','UI',sopUID],['00080020','DA',date],['00080030','TM',time],['00080022','DA',date],['00080032','TM',time],['00080201','SH','+0000'],['00080050','SH',''],
         ['00080060','CS','NM'],['00080070','LO','Gantry educativo'],['00080080','LO','Simulación docente'],['00080090','PN',''],
         ['00081030','LO','Cintigrafía ósea simulada ICRP 145'],['0008103e','LO',description.slice(0,64)],
@@ -75,10 +78,23 @@
       if(center>0&&width>0)tags.push(['00540010','US',1],['00540011','US',1],sequence('00540012',[[['00540018','SH','99mTc'],sequence('00540013',[[['00540014','DS',center*(1-width/200)],['00540015','DS',center*(1+width/200)]]])]]));
       if(mdp)tags.push(sequence('00540016',[[['00180031','LO','99mTc-MDP'],['00181074','DS',mdp.activityMBq],['00181075','DS',mdp.halfLifeMinutes*60]]]));
       if(record.scan)tags.push(['00181300','DS',record.scan.velocity/6],['00181302','DS',record.scan.travel*10]);
+      if(dynamic){
+        const replace=(tag,vr,v)=>{const i=tags.findIndex(t=>t[0]===tag);if(i>=0)tags.splice(i,1);tags.push([tag,vr,v]);};
+        const timing=info.dynamic.timings;
+        replace('00280008','IS',timing.length);replace('00280009','AT',[0x00540020,0x00540030,0x00540100]);
+        replace('00540020','US',timing.map(f=>f.detector));replace('00540021','US',2);
+        tags.splice(tags.findIndex(t=>t[0]==='00181242'),1);
+        tags.splice(tags.findIndex(t=>t[0]==='00540022'),1);
+        tags.push(sequence('00540022',[0,1].map(d=>[['00181180','SH',settings.collimator||''],['00280031','DS',String(settings.zoom||1)+'\\'+String(settings.zoom||1)],
+          sequence('00540220',[[['00080100','SH','D'+(d+1)],['00080102','SH','99GANTRY'],['00080104','LO',label(record,d).slice(0,64)]]])])));
+        tags.push(['00180071','CS','TIME'],['00540030','US',timing.map(f=>f.phase)],['00540031','US',dynamic.phases.length],
+          ['00540100','US',timing.map(f=>f.index)],['00540101','US',dynamic.frames.length],
+          sequence('00540032',dynamic.phases.map((p,i)=>[['00540033','US',dynamic.frames.filter(f=>f.phase===i+1).length],['00181242','IS',p.seconds*1000],['00540036','IS',0],['00540038','IS',0]])));
+      }
       const meta=dataset([['00020001','OB',new Uint8Array([0,1])],['00020002','UI',sop],['00020003','UI',sopUID],['00020010','UI','1.2.840.10008.1.2.1'],['00020012','UI',PRIVATE32],['00020013','SH','GANTRY_SIM_1']]);
       const prefix=new Uint8Array(132);prefix.set(encoder.encode('DICM'),128);
       const bytes=concat([prefix,element('00020000','UL',meta.length),meta,dataset(tags)]);
-      output.push({name:'oseo-'+record.id.replace(/[^a-zA-Z0-9-]/g,'').slice(0,48)+'-D'+(j+1)+'.dcm',bytes:bytes.buffer,total:head.total,rows:record.height||record.n,cols:record.n,uid:sopUID,group:identity,orientation});
+      output.push({name:'oseo-'+record.id.replace(/[^a-zA-Z0-9-]/g,'').slice(0,48)+'-D'+(j+1)+'.dcm',bytes:bytes.buffer,total:head.total,rows:record.height||record.n,cols:record.n,frames:dynamic?dynamic.frames.length*2:1,uid:sopUID,group:identity,orientation});
     }
     return output;
   }

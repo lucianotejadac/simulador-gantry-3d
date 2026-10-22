@@ -31,7 +31,7 @@
     if(!entry){entry=createEntry(configurationId,config);order.set(configurationId,entry);}
     entry.names=config.names.join(' / ');
     entry.symbol.textContent=config.kind==='whole'?'▥':'▣';
-    entry.label.textContent=config.kind==='whole'?'Adquisición cuerpo entero':'Adquisición estática';
+    entry.label.textContent=config.kind==='whole'?'Adquisición cuerpo entero':config.kind==='dynamic'?'Adquisición dinámica':'Adquisición estática';
     entry.detail.textContent=entry.names+' · Configuración';entry.button.title=entry.detail.textContent;
     arrange();return configurationId;
   }
@@ -43,7 +43,7 @@
     const button=document.createElement('button'),symbol=document.createElement('span'),detail=document.createElement('small');
     button.type='button';button.setAttribute('role','tab');button.setAttribute('aria-controls','acquisition-panel');
     symbol.className='mode-symbol';symbol.textContent=config.kind==='whole'?'▥':'▣';symbol.setAttribute('aria-hidden','true');
-    const label=document.createTextNode(config.kind==='whole'?'Adquisición cuerpo entero':'Adquisición estática');
+    const label=document.createTextNode(config.kind==='whole'?'Adquisición cuerpo entero':config.kind==='dynamic'?'Adquisición dinámica':'Adquisición estática');
     button.append(symbol,label,detail);
     const names=config.names.join(' / ');detail.textContent=names+' · Adquiriendo';
     const entry={id,button,symbol,label,detail,names};

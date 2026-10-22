@@ -1058,7 +1058,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   function camera(value){
     if(!value||typeof value!=='object')throw Error('Parámetros de cámara incompletos.');
     const c={};
-    for(const [key,choices,label] of [['kind',['static','whole'],'Tipo de adquisición'],['matrix',value.kind==='whole'?[128,256]:[64,128,256,512],'Matriz'],['zoom',[1,1.5,1.75,2],'Zoom'],['collimator',['LEHR','MELP','HE','NONE'],'Colimador'],['windowWidth',[10,15,20,25],'Ancho de ventana']]){
+    for(const [key,choices,label] of [['kind',['static','whole','dynamic'],'Tipo de adquisición'],['matrix',value.kind==='whole'?[128,256]:[64,128,256,512],'Matriz'],['zoom',[1,1.5,1.75,2],'Zoom'],['collimator',['LEHR','MELP','HE','NONE'],'Colimador'],['windowWidth',[10,15,20,25],'Ancho de ventana']]){
       if(!choices.includes(value[key]))throw Error(label+' no válido.');c[key]=value[key];
     }
     if(!Number.isInteger(value.energyCenter)||value.energyCenter<80||value.energyCenter>450)throw Error('Centro de energía fuera de rango.');
@@ -1079,6 +1079,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       // Compatibility defaults for the static controls; the scan engine stops
       // at the end of the table travel, never on a static count/time target.
       c.mode='counts';c.target=400000;
+    }else if(c.kind==='dynamic'){
+      c.phases=phases(value.phases,c.matrix);c.mode='time';c.target=c.phases.reduce((s,p)=>s+p.frames*p.seconds,0);
     }else{
       choice('mode',['counts','time'],'Condición de paro');
       number('target',1,c.mode==='time'?57600:160000000,'Objetivo',true);
@@ -1094,9 +1096,19 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const s=r.processing?.first?.settings||r.settings||{},m=r.mdp?.start;
     return validate({kind:r.kind||'static',matrix:r.n,zoom:s.zoom,collimator:s.collimator,energyCenter:s.energyCenter,windowWidth:s.windowWidth,
       activityMci:m?.activityMBq/37,minutes:Math.min(179.99,m?.seconds/60),mode:r.mode,target:r.target,
-      velocity:r.scan?.velocity||10,contours:r.scan?.contours||'auto',names:r.names});
+      velocity:r.scan?.velocity||10,contours:r.scan?.contours||'auto',names:r.names,phases:r.dynamic?.phases});
   }
-  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord,camera};
+  function phases(list,n){
+    if(!Array.isArray(list)||!list.length||list.length>3)throw Error('Configura entre una y tres fases.');
+    const result=list.map(p=>{
+      if(!Number.isInteger(p.frames)||p.frames<1||p.frames>240||!Number.isInteger(p.seconds)||p.seconds<1||p.seconds>600)throw Error('Cada fase requiere 1–240 imágenes y 1–600 segundos por imagen.');
+      return {frames:p.frames,seconds:p.seconds};
+    });
+    if(result.reduce((s,p)=>s+p.frames*p.seconds,0)>10800)throw Error('La secuencia no puede superar 180 minutos.');
+    if(result.reduce((s,p)=>s+p.frames,0)*n*n*8>64*1024*1024)throw Error('La secuencia supera 64 MB de cuentas. Reduce la matriz o el número de imágenes.');
+    return result;
+  }
+  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord,camera,phases};
 })();
 
 /* One action model for the acquisition menu and its transport controls. */
@@ -1106,13 +1118,14 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const running=!!lastId&&state?.finished!==true;
     const ready=hasDraft&&!draftId;
     const completed=(!!lastId||!!selectedId)&&!running;
-    const type=kind==='whole'?'Cuerpo entero':'Estática';
+    const type=kind==='whole'?'Cuerpo entero':kind==='dynamic'?'Dinámica':'Estática';
     const phase=waiting?'Preparando':ready?'Configuración':running?(state?.paused?'En pausa':'Adquiriendo'):
       completed?(state?.cancelled?'Cancelada':'Finalizada'):'Sin adquisición';
     const action=(id,label,enabled,group)=>({id,label,enabled:!waiting&&enabled,group});
     return {running,ready,type,phase,actions:[
       action('static','Nueva adquisición estática',!running,'Configuración'),
       action('whole','Nueva adquisición cuerpo entero',!running,'Configuración'),
+      action('dynamic','Nueva adquisición dinámica',!running,'Configuración'),
       action('add','Agregar adquisición',!!selectedId&&!running&&!hasDraft,'Configuración'),
       action('start','Iniciar adquisición',ready&&!running,'Adquisición'),
       action('instant','Adquisición instantánea',ready&&!running||running&&!ready,'Adquisición'),
@@ -1400,8 +1413,9 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     draft={config,id:resume?lastId:null,listId};document.body.classList.add('gantry-acquisition-draft');
     document.body.classList.toggle('gantry-whole-draft',config.kind==='whole');
     previousBadge=$('modality').textContent;$('modality').textContent='SIMULADO';
-    $('mode-heading').textContent='Nueva adquisición '+(config.kind==='whole'?'cuerpo entero':'estática')+' · SIMULADA';
-    $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie',config.kind==='whole'?'Nueva · cuerpo entero':'Nueva · estática'));
+    const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
+    $('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
+    $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie','Nueva · '+kindLabel));
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
       input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
@@ -1416,7 +1430,17 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,2000/37)),
       input('minutes','Inyección–examen (min)',config.minutes,null,range(0,179.99))]);
     help('series','El reloj del MDP avanza durante la adquisición hasta el límite de 180 minutos.');
-    section('stop',config.kind==='whole'?'Barrido de cuerpo entero':'Condiciones de paro',config.kind==='whole'?[
+    if(config.kind==='dynamic'){
+      section('stop','Secuencia dinámica',[input('phaseCount','Número de fases',(config.phases||[]).length||1,[1,2,3])]);
+      for(let i=0;i<3;i++){
+        const phase=config.phases?.[i]||{frames:30,seconds:2};
+        section('stop','Fase '+(i+1),[input('phaseFrames'+i,'Imágenes · fase '+(i+1),phase.frames,null,range(1,240,'1')),
+          input('phaseSeconds'+i,'Segundos por imagen · fase '+(i+1),phase.seconds,null,range(1,600,'1'))]);
+      }
+      const syncPhases=()=>{for(let i=0;i<3;i++){const enabled=i<Number(inputs.get('phaseCount').value);for(const key of ['phaseFrames','phaseSeconds']){const node=inputs.get(key+i);node.disabled=!enabled;node.closest('fieldset').hidden=!enabled;}}};
+      inputs.get('phaseCount').onchange=syncPhases;syncPhases();
+      help('stop','La secuencia termina al completar las fases. Inyectar y adquirir son acciones independientes. Las imágenes originales se conservan para revisar y corregir movimiento después.');
+    }else section('stop',config.kind==='whole'?'Barrido de cuerpo entero':'Condiciones de paro',config.kind==='whole'?[
       input('velocity','Velocidad (cm/min)',config.velocity,null,range(.1,60)),
       input('contours','Contornos automáticos',config.contours||'auto',[['auto','Activados'],['fixed','Desactivados · distancia fija']]),
       field('Fin del barrido','Final del recorrido hacia los pies')]:[
@@ -1431,7 +1455,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       const timed=inputs.get('mode').value==='time',target=inputs.get('target');target.max=timed?'57600':'160000000';target.value=timed?'300':'400000';
       const label=timed?'Tiempo programado (s)':'Cuentas objetivo';target.setAttribute('aria-label',label);target.parentElement.querySelector('label').textContent=label;
     };
-    section('summary','Nueva adquisición',[field('Tipo',config.kind==='whole'?'Cuerpo entero':'Estática'),field('Origen','Gantry · fantoma ICRP 145')]);
+    section('summary','Nueva adquisición',[field('Tipo',kindLabel),field('Origen','Gantry · fantoma ICRP 145')]);
     help('summary',config.kind==='whole'?
       'Fija los parámetros de cámara, la actividad y la velocidad de la camilla. El barrido termina al final del recorrido hacia los pies; no utiliza un límite de cuentas ni un tiempo programado.':
       'Fija los parámetros en «Parámetros de cámara», la actividad en «Información de serie» y el objetivo en «Condiciones de paro». Luego elige Iniciar adquisición en el menú Adquirir.');
@@ -1465,18 +1489,19 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const c={...draft.config};
     for(const [key,node] of inputs){if(validate&&!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=['collimator','mode','contours'].includes(key)?node.value:Number(node.value);}
     c.names=[inputs.get('name1').value,inputs.get('name2').value];
+    if(c.kind==='dynamic')c.phases=Array.from({length:c.phaseCount},(_,i)=>({frames:c['phaseFrames'+i],seconds:c['phaseSeconds'+i]}));
     return validate?window.GANTRY_PROCESSING_CONFIG.validate(c):c;
   }
   function performAction(action){
     if(waiting)return;
     if(!actionModel?.actions.find(a=>a.id===action)?.enabled)return;
     try{
-      if(action==='static'||action==='whole'){
+      if(action==='static'||action==='whole'||action==='dynamic'){
         request('GANTRY_ACQUIRE_CONFIG',{kind:action});
       }
       else if(action==='add'){
         const kind=recorded()?.acquisition?.kind;
-        if(!['static','whole'].includes(kind))throw Error('Selecciona una adquisición para agregar otra del mismo tipo.');
+        if(!['static','whole','dynamic'].includes(kind))throw Error('Selecciona una adquisición para agregar otra del mismo tipo.');
         request('GANTRY_ACQUIRE_CONFIG',{kind});
         status('Las adquisiciones anteriores se conservan. La nueva toma se agregará debajo en la lista.');
       }
@@ -1658,7 +1683,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     if(!entry){entry=createEntry(configurationId,config);order.set(configurationId,entry);}
     entry.names=config.names.join(' / ');
     entry.symbol.textContent=config.kind==='whole'?'▥':'▣';
-    entry.label.textContent=config.kind==='whole'?'Adquisición cuerpo entero':'Adquisición estática';
+    entry.label.textContent=config.kind==='whole'?'Adquisición cuerpo entero':config.kind==='dynamic'?'Adquisición dinámica':'Adquisición estática';
     entry.detail.textContent=entry.names+' · Configuración';entry.button.title=entry.detail.textContent;
     arrange();return configurationId;
   }
@@ -1670,7 +1695,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const button=document.createElement('button'),symbol=document.createElement('span'),detail=document.createElement('small');
     button.type='button';button.setAttribute('role','tab');button.setAttribute('aria-controls','acquisition-panel');
     symbol.className='mode-symbol';symbol.textContent=config.kind==='whole'?'▥':'▣';symbol.setAttribute('aria-hidden','true');
-    const label=document.createTextNode(config.kind==='whole'?'Adquisición cuerpo entero':'Adquisición estática');
+    const label=document.createTextNode(config.kind==='whole'?'Adquisición cuerpo entero':config.kind==='dynamic'?'Adquisición dinámica':'Adquisición estática');
     button.append(symbol,label,detail);
     const names=config.names.join(' / ');detail.textContent=names+' · Adquiriendo';
     const entry={id,button,symbol,label,detail,names};
@@ -1763,12 +1788,13 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   for(const key of ['zoom','window','level'])$('flex-'+key).oninput=e=>updateFlexImage(key,e.target.value);
   const reply=data=>parent.postMessage({...data,version:1},location.origin);
   function check(file){
-    if(!(file.bytes instanceof ArrayBuffer)||file.bytes.byteLength>32*1024*1024)throw Error('Tamaño de imagen no válido.');
+    if(!(file.bytes instanceof ArrayBuffer)||file.bytes.byteLength>68*1024*1024)throw Error('Tamaño de imagen no válido.');
     const ds=dicomParser.parseDicom(new Uint8Array(file.bytes)),r=ds.uint16('x00280010'),c=ds.uint16('x00280011'),bits=ds.uint16('x00280100'),pixel=ds.elements.x7fe00010;
     if(ds.string('x00110010')!=='GANTRY_SIMULATION')throw Error('Sólo se admiten adquisiciones de este simulador.');
-    if(!pixel||![16,32].includes(bits)||r!==file.rows||c!==file.cols||r*c>1024*1024*6||pixel.length!==r*c*bits/8||ds.string('x00080018')!==file.uid)throw Error('Matriz o identificador no válido.');
+    const frames=Number(ds.string('x00280008')||1);
+    if(!Number.isInteger(frames)||frames<1||frames>1440||frames!==(file.frames||1)||!pixel||![16,32].includes(bits)||r!==file.rows||c!==file.cols||r*c>1024*1024*6||pixel.length!==r*c*frames*bits/8||ds.string('x00080018')!==file.uid)throw Error('Matriz o identificador no válido.');
     const view=new DataView(ds.byteArray.buffer,ds.byteArray.byteOffset+pixel.dataOffset,pixel.length);
-    let total=0;for(let i=0;i<r*c;i++)total+=bits===16?view.getUint16(i*2,true):view.getUint32(i*4,true);
+    let total=0;for(let i=0;i<r*c*frames;i++)total+=bits===16?view.getUint16(i*2,true):view.getUint32(i*4,true);
     if(total!==file.total)throw Error('Las cuentas recibidas no coinciden con el original.');
     return {file,ds,total};
   }
@@ -1809,6 +1835,104 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     finally{receiving=false;}
   });
   reply({type:'GANTRY_PROCESSING_READY'});
+})();
+
+/* Planar adaptation of the normalized image registration and integer translation
+   in cardiaco-movil/correccion.js, Luciano Tejada Castro, MIT (see credits).
+   No rotating-head/90-degree assumptions; proposals are reviewed per detector. */
+(function(){
+  'use strict';
+  function shift(image,n,dx,dy){
+    if(image.length!==n*n||!Number.isInteger(dx)||!Number.isInteger(dy)||Math.abs(dx)>=n||Math.abs(dy)>=n)throw Error('Desplazamiento no válido');
+    const counts=new Float64Array(image.length);let before=0,after=0;
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+      before+=image[y*n+x];const sx=x-dx,sy=y-dy;
+      if(sx>=0&&sx<n&&sy>=0&&sy<n)after+=counts[y*n+x]=image[sy*n+sx];
+    }
+    return {counts,lost:before-after};
+  }
+  function reduce(image,n){
+    const size=Math.min(n,64),scale=n/size,out=new Float64Array(size*size);
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++)out[Math.floor(y/scale)*size+Math.floor(x/scale)]+=image[y*n+x];
+    const smooth=new Float64Array(out.length);
+    for(let y=1;y<size-1;y++)for(let x=1;x<size-1;x++)for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)smooth[y*size+x]+=out[(y+dy)*size+x+dx]/9;
+    return {values:smooth,size,scale};
+  }
+  function estimate(reference,image,n){
+    const A=reduce(reference,n),B=reduce(image,n),a=A.values,b=B.values,N=A.size,R=6;
+    let best=Infinity,second=Infinity,bx=0,by=0;
+    if(reference.reduce((s,v)=>s+v,0)<200||image.reduce((s,v)=>s+v,0)<200)return {reliable:false,reason:'Pocas cuentas para estimar movimiento.'};
+    for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){
+      let sa=0,sb=0,saa=0,sbb=0,sab=0,c=0;
+      for(let y=R;y<N-R;y++)for(let x=R;x<N-R;x++){
+        const p=a[y*N+x],q=b[(y-dy)*N+x-dx];sa+=p;sb+=q;saa+=p*p;sbb+=q*q;sab+=p*q;c++;
+      }
+      if(sa<=0||sb<=0||saa*c-sa*sa<1e-8||sbb*c-sb*sb<1e-8)continue;
+      const error=(saa/(sa*sa)-2*sab/(sa*sb)+sbb/(sb*sb))*c;
+      if(error<best){second=best;best=error;bx=dx;by=dy;}else second=Math.min(second,error);
+    }
+    if(!Number.isFinite(best)||Math.abs(bx)===R||Math.abs(by)===R||second-best<1e-8)return {reliable:false,reason:'Registro ambiguo o fuera del rango de búsqueda. Ajusta manualmente.'};
+    return {reliable:true,dx:Math.round(bx*A.scale),dy:Math.round(by*A.scale),error:best};
+  }
+  window.GANTRY_FRAME_CORRECTION={shift,estimate};
+})();
+
+/* Derived display only: original DICOM counts remain immutable. Store offsets,
+   not duplicate image sequences, and restore them when revisiting a series. */
+(function(){
+  'use strict';
+  const records=new Map();let active=null;
+  const box=document.createElement('details');box.id='dynamicCorrection';box.hidden=true;
+  box.innerHTML='<summary>Corrección de movimiento de frames</summary><p>Revisa los cambios de captación antes de aceptar un desplazamiento. Cada detector se corrige por separado. Las imágenes originales se conservan.</p><label>Detector <select id="corrDetector"><option value="0">1</option><option value="1">2</option></select></label> <label>Frame de referencia <input id="corrReference" type="number" min="1" value="1" step="1"></label> <button id="corrEstimate">Proponer desplazamiento</button><br><label>X (píxeles, derecha +) <input id="corrX" type="number" value="0" step="1"></label> <label>Y (píxeles, abajo +) <input id="corrY" type="number" value="0" step="1"></label> <button id="corrApply">Aplicar al frame</button> <button id="corrReset">Restaurar frame</button> <button id="corrResetAll">Restaurar secuencia</button><br><label>Mostrar <select id="corrView"><option value="corrected">Corregida</option><option value="original">Original</option></select></label><p id="corrStatus" role="status"></p><p>Los bordes sin medición quedan en cero. La corrección se guarda en este navegador. El archivo original y las páginas de análisis conservan las cuentas originales.</p>';
+  document.querySelector('#acquisition-panel .viewer').append(box);
+  const style=document.createElement('style');style.textContent='#dynamicCorrection{padding:8px;border:2px groove #fff;font:12px Arial}#dynamicCorrection input{width:65px}#dynamicCorrection p{line-height:1.4}#dynamicCorrection[hidden]{display:none}';document.head.append(style);
+  function info(){try{return JSON.parse(value(dataset,'00111010'));}catch(_){return null;}}
+  function state(){
+    const metadata=info();if(!pixels||currentMode!=='dynamic'||!metadata?.dynamic)return null;
+    const uid=dataset.string('x00080018');let s=records.get(uid);
+    if(!s){s={uid,offsets:{}};try{s.offsets=JSON.parse(localStorage.getItem('gantry.correction.'+uid)||'{}');}catch(_){}records.set(uid,s);}
+    return s;
+  }
+  function selected(){return Number($('frame-'+$('corrDetector').value)?.value);}
+  function sync(){
+    active=state();box.hidden=!active||!!window.GANTRY_PROCESSING_EDITOR?.currentId;if(box.hidden)return;
+    const f=selected(),o=active.offsets[f]||{dx:0,dy:0};$('corrX').value=o.dx;$('corrY').value=o.dy;
+    const n=num(dataset,'00280011');for(const id of ['corrX','corrY']){$(id).min=1-n;$(id).max=n-1;}
+    $('corrReference').max=dynamicSteps.length;
+  }
+  function persist(){try{localStorage.setItem('gantry.correction.'+active.uid,JSON.stringify(active.offsets));return true;}catch(_){return false;}}
+  const originalRender=render;
+  render=function(i){
+    const s=state(),f=Number($('frame-'+i)?.value),o=s?.offsets[f],original=pixels;
+    if(!o||$('corrView').value==='original')return originalRender(i);
+    const n=num(dataset,'00280011');
+    if(!Number.isInteger(o.dx)||!Number.isInteger(o.dy)||Math.abs(o.dx)>=n||Math.abs(o.dy)>=n)return originalRender(i);
+    const start=f*frameSize,raw=original.slice(start,start+frameSize),derived=window.GANTRY_FRAME_CORRECTION.shift(raw,n,o.dx,o.dy);
+    // Render one corrected frame with bounded scratch storage, then restore.
+    try{pixels.set(derived.counts,start);const result=originalRender(i);$('caption-'+i).textContent+=' · corregida';return result;}
+    finally{original.set(raw,start);pixels=original;}
+  };
+  const originalStep=setDynamicStep;setDynamicStep=function(...args){const result=originalStep(...args);sync();return result;};
+  const originalMode=updateModeUI;updateModeUI=function(...args){const r=originalMode(...args);sync();return r;};
+  const originalDuration=frameDuration;frameDuration=function(f){const timing=info()?.dynamic?.timings?.[f];return timing?(timing.end-timing.start)*1000:originalDuration(f);};
+  $('corrDetector').onchange=sync;$('corrView').onchange=()=>renderAll();
+  const act=fn=>()=>{stopDynamic();try{if(!state())return;fn();}catch(e){$('corrStatus').textContent=e.message;}};
+  $('corrEstimate').onclick=act(()=>{
+    const f=selected(),step=dynamicSteps[Number($('corrReference').value)-1],reference=step?.frames[Number($('corrDetector').value)+1];
+    if(reference===undefined||reference===f)throw Error('Elige otro frame de referencia del mismo detector.');
+    const n=num(dataset,'00280011'),r=window.GANTRY_FRAME_CORRECTION.estimate(pixels.subarray(reference*frameSize,(reference+1)*frameSize),pixels.subarray(f*frameSize,(f+1)*frameSize),n);
+    if(!r.reliable)throw Error(r.reason);
+    $('corrX').value=r.dx;$('corrY').value=r.dy;$('corrStatus').textContent='Propuesta: X '+r.dx+', Y '+r.dy+' píxeles. Revisa y pulsa Aplicar al frame.';
+  });
+  $('corrApply').onclick=act(()=>{
+    const f=selected(),dx=Number($('corrX').value),dy=Number($('corrY').value),n=num(dataset,'00280011');
+    if(!$('corrX').value||!$('corrY').value)throw Error('Indica X e Y.');
+    const result=window.GANTRY_FRAME_CORRECTION.shift(pixels.subarray(f*frameSize,(f+1)*frameSize),n,dx,dy);
+    active.offsets[f]={dx,dy};const saved=persist();$('corrView').value='corrected';renderAll();
+    $('corrStatus').textContent='Frame '+(f+1)+' corregido · '+result.lost.toLocaleString('es-CL')+' cuentas fuera del campo.'+(saved?' Guardado.':' No se pudo guardar; conserva esta pestaña.');
+  });
+  $('corrReset').onclick=act(()=>{delete active.offsets[selected()];persist();renderAll();sync();$('corrStatus').textContent='Frame original restaurado.';});
+  $('corrResetAll').onclick=act(()=>{active.offsets={};persist();renderAll();sync();$('corrStatus').textContent='Secuencia original restaurada.';});
 })();
 
 </script>

@@ -196,7 +196,8 @@
   function step(session,fields,seconds){
     let remaining=Math.min(seconds,LIMIT-state.seconds);
     while(remaining>1e-8&&!session.finished){
-      const dt=Math.min(remaining,state.seconds<60?1:5, state.voidAt120&&state.seconds<7200?7200-state.seconds:Infinity);
+      const frameRemaining=session.dynamic?session.dynamic.schedule[session.dynamic.frames.length].end-session.heads[0].elapsed:Infinity;
+      const dt=Math.min(remaining,state.seconds<60?1:5,frameRemaining, state.voidAt120&&state.seconds<7200?7200-state.seconds:Infinity);
       const previous=Math.max(...session.heads.map(h=>h.elapsed));
       session.step(fields.map(f=>mix(f.mdpBases,state.seconds+dt/2)),state.activityMBq*SENSITIVITY,dt);
       const used=Math.max(...session.heads.map(h=>h.elapsed))-previous;

@@ -25,12 +25,13 @@
   for(const key of ['zoom','window','level'])$('flex-'+key).oninput=e=>updateFlexImage(key,e.target.value);
   const reply=data=>parent.postMessage({...data,version:1},location.origin);
   function check(file){
-    if(!(file.bytes instanceof ArrayBuffer)||file.bytes.byteLength>32*1024*1024)throw Error('Tamaño de imagen no válido.');
+    if(!(file.bytes instanceof ArrayBuffer)||file.bytes.byteLength>68*1024*1024)throw Error('Tamaño de imagen no válido.');
     const ds=dicomParser.parseDicom(new Uint8Array(file.bytes)),r=ds.uint16('x00280010'),c=ds.uint16('x00280011'),bits=ds.uint16('x00280100'),pixel=ds.elements.x7fe00010;
     if(ds.string('x00110010')!=='GANTRY_SIMULATION')throw Error('Sólo se admiten adquisiciones de este simulador.');
-    if(!pixel||![16,32].includes(bits)||r!==file.rows||c!==file.cols||r*c>1024*1024*6||pixel.length!==r*c*bits/8||ds.string('x00080018')!==file.uid)throw Error('Matriz o identificador no válido.');
+    const frames=Number(ds.string('x00280008')||1);
+    if(!Number.isInteger(frames)||frames<1||frames>1440||frames!==(file.frames||1)||!pixel||![16,32].includes(bits)||r!==file.rows||c!==file.cols||r*c>1024*1024*6||pixel.length!==r*c*frames*bits/8||ds.string('x00080018')!==file.uid)throw Error('Matriz o identificador no válido.');
     const view=new DataView(ds.byteArray.buffer,ds.byteArray.byteOffset+pixel.dataOffset,pixel.length);
-    let total=0;for(let i=0;i<r*c;i++)total+=bits===16?view.getUint16(i*2,true):view.getUint32(i*4,true);
+    let total=0;for(let i=0;i<r*c*frames;i++)total+=bits===16?view.getUint16(i*2,true):view.getUint32(i*4,true);
     if(total!==file.total)throw Error('Las cuentas recibidas no coinciden con el original.');
     return {file,ds,total};
   }

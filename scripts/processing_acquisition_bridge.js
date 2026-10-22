@@ -16,7 +16,7 @@
       const s=live().settings,mdp=window.GANTRY_MDP.metadata();
       return {kind,matrix:kind==='whole'?Math.max(128,Math.min(256,s.matrix)):s.matrix,zoom:s.zoom,collimator:s.collimator,energyCenter:140,windowWidth:20,
         activityMci:mdp.activityMBq/37,minutes:Math.min(179.99,mdp.seconds/60),mode:'counts',target:400000,
-        velocity:10,contours:el('boneAcqContours')?.value||'auto',names:['Detector 1','Detector 2'],
+        velocity:10,contours:el('boneAcqContours')?.value||'auto',names:['Detector 1','Detector 2'],phases:[{frames:60,seconds:1}],
         position:positionState(),geometry:el('g3dHud').textContent.trim(),...(s.study==='bone'?{energyCenter:s.energyCenter,windowWidth:s.windowWidth}:{})};
     }
     const change=(id,value)=>{const node=el(id);node.value=String(value);node.dispatchEvent(new Event('change',{bubbles:true}));};
@@ -77,8 +77,9 @@
           try{const config=await (d.type==='GANTRY_ACQUIRE_DELETE'?window.GANTRY_PROCESSING.removeAcquisition(d.id):window.GANTRY_PROCESSING.retake(d.id));if(owned===d.id)owned=null;post({type:d.type,request:d.request,id:d.id,config});}
           finally{preparing=false;}
         }else if(d.type==='GANTRY_ACQUIRE_CONFIG'){
-          if(!['static','whole'].includes(d.kind))throw Error('Tipo de adquisición no válido.');
+          if(!['static','whole','dynamic'].includes(d.kind))throw Error('Tipo de adquisición no válido.');
           if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de preparar otra.');
+          if(d.kind==='dynamic'&&window.GANTRY_RF?.selected!=='bone3')window.GANTRY_RF?.select('bone3');
           post({type:'GANTRY_ACQUIRE_CONFIG',request:d.request,config:defaults(d.kind)});
         }else if(d.type==='GANTRY_ACQUIRE_POSITION'){
           const p=positionState();

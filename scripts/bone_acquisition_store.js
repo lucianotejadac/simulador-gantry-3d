@@ -7,6 +7,7 @@
       ...(session.administeredActivity?{administeredActivity:structuredClone(session.administeredActivity)}:{}),
       ...(session.processing?{processing:structuredClone(session.processing)}:{}),
       ...(session.sampling?{sampling:structuredClone(session.sampling)}:{}),
+      ...(session.dynamic?{dynamic:session.dynamicSnapshot()}:{}),
       ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mibiStart?{mibi:{start:structuredClone(session.mibiStart),end:structuredClone(session.mibiEnd||session.mibiStart),limit:!!session.mibiLimit}}:{}),
       ...(session.mode==='scan'?{scan:{velocity:session.velocity,contours:session.contours||'auto',
@@ -23,7 +24,7 @@
     if(record.mode==='scan'&&(kind!=='whole'||!record.scan||!Number.isFinite(record.scan.velocity)||record.scan.velocity<.1||record.scan.velocity>60||!Number.isFinite(record.scan.travel)||record.scan.travel<0||record.scan.travel>record.target))throw Error('Datos de barrido no válidos');
     if(record.scan?.contours!==undefined&&!['auto','fixed'].includes(record.scan.contours))throw Error('Contornos guardados no válidos');
     if(record.scan?.contours==='fixed'&&(!record.scan.fixedDistances||!['detDist1','detDist2'].every(k=>Number.isFinite(record.scan.fixedDistances[k])&&record.scan.fixedDistances[k]>0)))throw Error('Distancias fijas no válidas');
-    if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole'].includes(kind)||
+    if(!Number.isInteger(height)||height<record.n||height>record.n*6||!['static','whole','dynamic'].includes(kind)||
       (kind==='static'&&height!==record.n))throw Error('Formato de imagen no válido');
     if(record.sampling){
       const s=record.sampling;
@@ -36,6 +37,17 @@
         !Number.isFinite(h.elapsed)||h.elapsed<0||!Number.isSafeInteger(h.total)||h.total<0||h.counts.reduce((a,b)=>a+b,0)!==h.total)
         throw Error('Datos de cuentas incompletos');
     });
+    if(kind==='dynamic'){
+      const d=record.dynamic;
+      if(record.mode!=='time'||height!==record.n||!d||!Array.isArray(d.phases)||!Array.isArray(d.frames)||d.frames.length>720)throw Error('Secuencia dinámica no válida');
+      const sums=record.heads.map(h=>new Uint32Array(h.counts.length));let end=0;
+      for(const f of d.frames){
+        if(!Number.isFinite(f.start)||!Number.isFinite(f.end)||Math.abs(f.start-end)>1e-6||f.end<=f.start||!Array.isArray(f.heads)||f.heads.length!==2)throw Error('Tiempos dinámicos no válidos');
+        end=f.end;
+        f.heads.forEach((counts,j)=>{if(!(counts instanceof Uint32Array)||counts.length!==sums[j].length)throw Error('Frame incompleto');for(let i=0;i<counts.length;i++)sums[j][i]+=counts[i];});
+      }
+      record.heads.forEach((h,j)=>{if(Math.abs(h.elapsed-end)>1e-6||h.counts.some((v,i)=>v!==sums[j][i]))throw Error('Los frames no coinciden con las cuentas adquiridas');});
+    }
     return record;
   }
   function createStore(indexedDB){
@@ -66,7 +78,7 @@
     return {
       async save(record){
         validate(record);
-        const {heads,settings,...meta}=record;
+        const {heads,settings,dynamic,...meta}=record;
         return transaction(['records','catalog'],'readwrite',tx=>{
           tx.objectStore('records').put(record);
           tx.objectStore('catalog').put({...meta,totals:heads.map(h=>h.total)});

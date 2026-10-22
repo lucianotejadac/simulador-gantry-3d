@@ -215,8 +215,9 @@
     draft={config,id:resume?lastId:null,listId};document.body.classList.add('gantry-acquisition-draft');
     document.body.classList.toggle('gantry-whole-draft',config.kind==='whole');
     previousBadge=$('modality').textContent;$('modality').textContent='SIMULADO';
-    $('mode-heading').textContent='Nueva adquisición '+(config.kind==='whole'?'cuerpo entero':'estática')+' · SIMULADA';
-    $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie',config.kind==='whole'?'Nueva · cuerpo entero':'Nueva · estática'));
+    const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
+    $('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
+    $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie','Nueva · '+kindLabel));
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
       input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
@@ -231,7 +232,17 @@
       input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,2000/37)),
       input('minutes','Inyección–examen (min)',config.minutes,null,range(0,179.99))]);
     help('series','El reloj del MDP avanza durante la adquisición hasta el límite de 180 minutos.');
-    section('stop',config.kind==='whole'?'Barrido de cuerpo entero':'Condiciones de paro',config.kind==='whole'?[
+    if(config.kind==='dynamic'){
+      section('stop','Secuencia dinámica',[input('phaseCount','Número de fases',(config.phases||[]).length||1,[1,2,3])]);
+      for(let i=0;i<3;i++){
+        const phase=config.phases?.[i]||{frames:30,seconds:2};
+        section('stop','Fase '+(i+1),[input('phaseFrames'+i,'Imágenes · fase '+(i+1),phase.frames,null,range(1,240,'1')),
+          input('phaseSeconds'+i,'Segundos por imagen · fase '+(i+1),phase.seconds,null,range(1,600,'1'))]);
+      }
+      const syncPhases=()=>{for(let i=0;i<3;i++){const enabled=i<Number(inputs.get('phaseCount').value);for(const key of ['phaseFrames','phaseSeconds']){const node=inputs.get(key+i);node.disabled=!enabled;node.closest('fieldset').hidden=!enabled;}}};
+      inputs.get('phaseCount').onchange=syncPhases;syncPhases();
+      help('stop','La secuencia termina al completar las fases. Inyectar y adquirir son acciones independientes. Las imágenes originales se conservan para revisar y corregir movimiento después.');
+    }else section('stop',config.kind==='whole'?'Barrido de cuerpo entero':'Condiciones de paro',config.kind==='whole'?[
       input('velocity','Velocidad (cm/min)',config.velocity,null,range(.1,60)),
       input('contours','Contornos automáticos',config.contours||'auto',[['auto','Activados'],['fixed','Desactivados · distancia fija']]),
       field('Fin del barrido','Final del recorrido hacia los pies')]:[
@@ -246,7 +257,7 @@
       const timed=inputs.get('mode').value==='time',target=inputs.get('target');target.max=timed?'57600':'160000000';target.value=timed?'300':'400000';
       const label=timed?'Tiempo programado (s)':'Cuentas objetivo';target.setAttribute('aria-label',label);target.parentElement.querySelector('label').textContent=label;
     };
-    section('summary','Nueva adquisición',[field('Tipo',config.kind==='whole'?'Cuerpo entero':'Estática'),field('Origen','Gantry · fantoma ICRP 145')]);
+    section('summary','Nueva adquisición',[field('Tipo',kindLabel),field('Origen','Gantry · fantoma ICRP 145')]);
     help('summary',config.kind==='whole'?
       'Fija los parámetros de cámara, la actividad y la velocidad de la camilla. El barrido termina al final del recorrido hacia los pies; no utiliza un límite de cuentas ni un tiempo programado.':
       'Fija los parámetros en «Parámetros de cámara», la actividad en «Información de serie» y el objetivo en «Condiciones de paro». Luego elige Iniciar adquisición en el menú Adquirir.');
@@ -280,18 +291,19 @@
     const c={...draft.config};
     for(const [key,node] of inputs){if(validate&&!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=['collimator','mode','contours'].includes(key)?node.value:Number(node.value);}
     c.names=[inputs.get('name1').value,inputs.get('name2').value];
+    if(c.kind==='dynamic')c.phases=Array.from({length:c.phaseCount},(_,i)=>({frames:c['phaseFrames'+i],seconds:c['phaseSeconds'+i]}));
     return validate?window.GANTRY_PROCESSING_CONFIG.validate(c):c;
   }
   function performAction(action){
     if(waiting)return;
     if(!actionModel?.actions.find(a=>a.id===action)?.enabled)return;
     try{
-      if(action==='static'||action==='whole'){
+      if(action==='static'||action==='whole'||action==='dynamic'){
         request('GANTRY_ACQUIRE_CONFIG',{kind:action});
       }
       else if(action==='add'){
         const kind=recorded()?.acquisition?.kind;
-        if(!['static','whole'].includes(kind))throw Error('Selecciona una adquisición para agregar otra del mismo tipo.');
+        if(!['static','whole','dynamic'].includes(kind))throw Error('Selecciona una adquisición para agregar otra del mismo tipo.');
         request('GANTRY_ACQUIRE_CONFIG',{kind});
         status('Las adquisiciones anteriores se conservan. La nueva toma se agregará debajo en la lista.');
       }

@@ -35,6 +35,31 @@
       this.heads=[1,2].map(detector=>({detector,counts:new Uint32Array(n*height),total:0,elapsed:0,done:false}));
     }
     step(fields,rate,seconds,eventLimit=Infinity){
+      if(!this.dynamic)return this.stepCounts(fields,rate,seconds,eventLimit);
+      let remaining=seconds;
+      while(remaining>1e-9&&!this.finished){
+        const elapsed=this.heads[0].elapsed,next=this.dynamic.schedule[this.dynamic.frames.length];
+        const dt=Math.min(remaining,next.end-elapsed);
+        this.stepCounts(fields,rate,dt,eventLimit);remaining-=dt;
+        if(this.heads[0].elapsed>=next.end-1e-9)this.captureFrame(next);
+      }
+    }
+    enableDynamic(phases){
+      let end=0;const schedule=[];
+      phases.forEach((p,phase)=>{for(let i=0;i<p.frames;i++){const start=end;end+=p.seconds;schedule.push({phase:phase+1,index:i+1,start,end});}});
+      this.kind='dynamic';this.dynamic={phases:structuredClone(phases),schedule,frames:[]};
+      this.frameBaseline=this.heads.map(h=>h.counts.slice());
+    }
+    captureFrame(timing){
+      const heads=this.heads.map((h,j)=>{const counts=h.counts.map((v,i)=>v-this.frameBaseline[j][i]);this.frameBaseline[j].set(h.counts);return counts;});
+      this.dynamic.frames.push({...timing,heads});
+    }
+    dynamicSnapshot(){
+      const result=structuredClone(this.dynamic),next=result.schedule[result.frames.length],end=this.heads[0].elapsed;
+      if(next&&end>next.start+1e-9)result.frames.push({...next,end,partial:true,heads:this.heads.map((h,j)=>h.counts.map((v,i)=>v-this.frameBaseline[j][i]))});
+      delete result.schedule;return result;
+    }
+    stepCounts(fields,rate,seconds,eventLimit=Infinity){
       for(let j=0;j<2;j++){
         const h=this.heads[j],f=fields[j];if(h.done)continue;
         if(!f||f.values.length!==h.counts.length)throw Error('Campo o matriz incompatible');
@@ -408,7 +433,7 @@
     try{
       await new Promise(resolve=>setTimeout(resolve,0));
       if(window.GANTRY_EXAM?.blocked)return;
-      if(session.n>=512&&window.GANTRY_FINAL_PREVIEW){
+      if(session.kind!=='dynamic'&&session.n>=512&&window.GANTRY_FINAL_PREVIEW){
         const model=study==='bone'?window.GANTRY_MDP:study==='mibi'?window.GANTRY_MIBI:null,m=model?.metadata(),results=[];
         for(let j=0;j<2;j++){
           const head=session.heads[j];if(head.done){results.push(null);continue;}
@@ -509,7 +534,7 @@
     },
     startConfigured(config){
       if(study!=='bone'||busy||saving||loadingSaved||session&&!session.finished)throw Error('Hay una adquisición u operación en curso.');
-      el('boneAcqType').value=config.kind;
+      el('boneAcqType').value=config.kind==='dynamic'?'static':config.kind;
       el('boneAcqCriterion').value=config.mode;
       el('boneAcqTarget').value=String(config.target);manualGoal=true;
       el('boneAcqVelocity').value=String(config.velocity);
@@ -517,6 +542,7 @@
       el('boneAcqName1').value=config.names[0];el('boneAcqName2').value=config.names[1];
       el('boneAcqSetupError').textContent='';instantOnStart=false;
       if(!start())throw Error(el('boneAcqSetupError').textContent||(window.GANTRY_EXAM?.blocked?'Examen cancelado por colisión. Reinicia el examen desde el gantry.':'Las proyecciones no están listas para adquirir.'));
+      if(config.kind==='dynamic')session.enableDynamic(config.phases);
       return session.id;
     },
     async controlFromProcessing(action){
