@@ -86,7 +86,7 @@ assert(w.document.querySelector('[data-acquire="delete"]').disabled,'Deletion bl
 w.GANTRY_PROCESSING_EDITOR.finish();
 receive({type:'GANTRY_ACQUIRE_PROGRESS',state:{id:'acquired-first',finished:true,heads:[{total:10,elapsed:7},{total:9,elapsed:7}],mode:'time',target:7},images:[]});
 const info={processing:{acquisitionId:'acquired-first'},acquisition:{kind:'static',mode:'time'},settings:{}};
-const ds={info,string:tag=>tag==='x00110010'?'GANTRY_SIMULATION':tag==='x00080018'?'image-first':''};
+const ds={info,uint16:()=>128,string:tag=>tag==='x00110010'?'GANTRY_SIMULATION':tag==='x00080018'?'image-first':''};
 w.GANTRY_RECORDED_METADATA={fields:()=>({})};
 w.modeStates.static={dataset:ds};w.acquisitionInstances.static={D1:{dataset:ds}};
 w.selectMode('static');assert.equal(list().length,2);

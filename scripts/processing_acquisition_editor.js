@@ -1,8 +1,20 @@
 /* Acquisition drafts use the viewer's existing patient/camera/stop panes. */
 (function(){
   'use strict';
-  let draft=null,serial=0,waiting=null,lastConfig=null,lastId=null,lastState=null,previousBadge='',actionModel=null,positionState=null;
+  let draft=null,serial=0,waiting=null,lastConfig=null,lastId=null,lastState=null,previousBadge='',previousFrozen=false,actionModel=null,positionState=null;
   const retained=new Map(),inputs=new Map(),configurations=new Map();
+  const acquisitionTabs=new Map();let loadingTabs=0;
+  function selectedTab(){return document.querySelector('.tabs button[aria-selected="true"]')?.id;}
+  function restoreTab(){
+    const info=recorded(),id=info?.processing?.acquisitionId||info?.recordId;
+    const tab=acquisitionTabs.get(id);if(tab)$(tab)?.click();
+  }
+  document.querySelector('.tabs').addEventListener('click',event=>{
+    if(loadingTabs)return;
+    const tab=event.target.closest('button');if(!tab)return;
+    const info=recorded(),id=draft?.id||draft?.listId||info?.processing?.acquisitionId||info?.recordId;
+    if(id)acquisitionTabs.set(id,tab.id);
+  });
   const cameraKeys=['matrix','zoom','collimator','energyCenter','windowWidth'];let previewSerial=0;
   function previewCamera(){
     if(!draft||draft.id||$('acquisition-panel').hidden||lastId&&lastState?.finished!==true)return;
@@ -122,6 +134,7 @@
   }
   function finish(preserve=true){
     if(!draft)return;
+    acquisitionTabs.set(draft.id||draft.listId,selectedTab());
     send({type:'GANTRY_CAMERA_PREVIEW_END'});
     if(!draft.id&&preserve){
       const config=read(false),tab=document.querySelector('.tabs button[aria-selected="true"]')?.id;
@@ -129,13 +142,20 @@
     }
     for(const [id,nodes] of retained)$(id).replaceChildren(...nodes);
     retained.clear();inputs.clear();draft=null;document.body.classList.remove('gantry-acquisition-draft','gantry-whole-draft');
+    document.body.classList.toggle('gantry-acquisition-frozen',previousFrozen);
     $('modality').textContent=previousBadge;
     updateModeUI();setMenu();
   }
   const originalSelect=selectMode;
-  selectMode=function(...args){if(waiting)return;finish();const result=originalSelect(...args);setMenu();return result;};
+  selectMode=function(...args){
+    if(waiting)return;finish();loadingTabs++;
+    try{const result=originalSelect(...args);restoreTab();setMenu();return result;}finally{loadingTabs--;}
+  };
   const originalLoadFile=loadFile;
-  loadFile=async function(...args){finish();return originalLoadFile(...args);};
+  loadFile=async function(...args){
+    finish();loadingTabs++;
+    try{const result=await originalLoadFile(...args);restoreTab();return result;}finally{loadingTabs--;}
+  };
   const originalFlexible=openFlexible;
   openFlexible=function(...args){finish();return originalFlexible(...args);};
   // Recorded simulator settings remain read-only after acquisition; external
@@ -145,7 +165,7 @@
     try{return JSON.parse(value(dataset,'00111010'));}catch(_){return null;}
   }
   function stopMetadata(){
-    if(draft)return;const info=recorded(),a=info?.acquisition;if(!a)return;
+    if(draft||document.body.classList.contains('gantry-acquisition-frozen'))return;const info=recorded(),a=info?.acquisition;if(!a)return;
     const fields=window.GANTRY_RECORDED_METADATA.fields(info,currentMode==='whole'?info.detector:selectedDetector+1);
     for(const id of ['camera','summary','series','stop','static-overview'])for(const n of $(id)?.querySelectorAll('input[data-label]')||[]){
       const v=fields[n.dataset.label];
@@ -155,21 +175,21 @@
     for(const hint of $('stop').querySelectorAll('.hint'))hint.textContent='Parámetros y tiempos registrados al adquirir. Los tiempos corresponden al examen simulado, incluso si se utilizó avance rápido o adquisición instantánea.';
   }
   const originalConditions=renderDetectorConditions;
-  renderDetectorConditions=function(){originalConditions();stopMetadata();};
+  renderDetectorConditions=function(){if(document.body.classList.contains('gantry-acquisition-frozen'))return;originalConditions();stopMetadata();};
   const originalPopulate=populate;
   populate=function(){
+    document.body.classList.remove('gantry-acquisition-frozen');
     originalPopulate();if(draft)return;
     const info=recorded();if(!info)return;
-    const s=info.settings||{};
-    group($('camera'),'Detector y ventana registrados',[
-      ['Colimador',s.collimator==='NONE'?'Sin colimador':s.collimator||'','Configuración registrada al adquirir'],
-      ['Centro de energía (keV)',s.energyCenter??'','Configuración registrada al adquirir'],
-      ['Ancho de ventana (%)',s.windowWidth??'','Configuración registrada al adquirir']]);
-    if(info.mdp?.start)group($('series'),'Tiempo registrado',[
-      ['Inyección–examen (min)',(info.mdp.start.seconds/60).toLocaleString('es-CL'),'Tiempo al iniciar esta adquisición']]);
-    if(info.scan)group($('camera'),'Barrido registrado',[
-      ['Contornos automáticos',info.scan.contours==='fixed'?'Desactivados · distancia fija':'Activados','Configuración registrada al adquirir']]);
-    stopMetadata();
+    const s=info.processing?.first?.settings||info.settings||{},a=info.acquisition||{},m=info.mdp?.start;
+    const config={kind:a.kind||currentMode,matrix:dataset.uint16('x00280011'),zoom:s.zoom,collimator:s.collimator,
+      energyCenter:s.energyCenter,windowWidth:s.windowWidth,activityMci:m?m.activityMBq/37:null,minutes:m?m.seconds/60:null,
+      mode:a.mode,target:a.target,velocity:info.scan?.velocity,contours:info.scan?.contours,
+      names:a.names||['Detector 1','Detector 2'],phases:info.dynamic?.phases,
+      position:{decubitus:s.decubitus,entry:typeof s.headFirst==='boolean'?(s.headFirst?'headIn':'headOut'):null}};
+    for(const id of ['patient','camera','series','stop','summary'])$(id).replaceChildren();
+    inputs.clear();renderFields(config,true);inputs.clear();
+    document.body.classList.add('gantry-acquisition-frozen');
     setMenu();
   };
   function input(key,label,value,choices=null,opts={}){
@@ -179,20 +199,20 @@
     node.setAttribute('aria-label',label);node.dataset.label=label;
     if(choices)for(const entry of choices){const [val,text]=Array.isArray(entry)?entry:[entry,String(entry)];const option=document.createElement('option');option.value=String(val);option.textContent=text;node.append(option);}
     else{node.type=opts.type||'number';Object.assign(node,opts);node.required=true;}
-    node.value=String(value);old.replaceWith(node);inputs.set(key,node);return row;
+    node.value=value==null?'':String(value);old.replaceWith(node);inputs.set(key,node);return row;
   }
   function section(host,title,rows){const box=document.createElement('fieldset');box.className='group';const legend=document.createElement('legend');legend.textContent=title;const fields=document.createElement('div');fields.className='fields';fields.append(...rows);box.append(legend,fields);$(host).append(box);}
   function help(host,text){const p=document.createElement('p');p.className='draft-help';p.textContent=text;$(host).append(p);}
   function syncPosition(p){
     if(p)positionState=p;
-    if(!positionState)return;
+    if(!positionState||!draft||draft.id)return;
     for(const key of ['decubitus','entry']){
       const select=$('gantryDraft-position-'+key);if(!select)continue;
       select.value=positionState[key];select.disabled=!!waiting||positionState.locked;
     }
   }
-  function positionControl(config){
-    const p=positionState||config.position||{decubitus:'supine',entry:'headOut',locked:true};
+  function positionControl(config,locked=false){
+    const p=locked?(config.position||{}):positionState||config.position||{decubitus:'supine',entry:'headOut',locked:true};
     const rows=[
       ['decubitus','Decúbito',[['supine','Supino'],['prone','Prono']]],
       ['entry','Orientación',[['headIn','Cabeza dentro'],['headOut','Cabeza fuera']]]
@@ -201,23 +221,18 @@
       select.id='gantryDraft-position-'+key;select.setAttribute('aria-label',label);
       row.querySelector('label').htmlFor=select.id;
       for(const [value,text] of options){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option);}
+      select.value=p[key]||'';select.disabled=locked;
       row.querySelector('input').replaceWith(select);
       select.onchange=()=>{request('GANTRY_ACQUIRE_POSITION',{field:key,value:select.value});setMenu();syncPosition();};
       return row;
     });
     section('camera','Posición declarada del paciente',rows);
     help('camera','Define la orientación de las imágenes, igual que Adquisición → Posición de paciente. No mueve al paciente ni a los detectores.');
-    syncPosition(p);
+    if(!locked)syncPosition(p);
   }
-  function render(config,resume=false,listId=null){
-    if(!resume&&config.kind==='whole'&&![128,256].includes(config.matrix))config={...config,matrix:config.matrix<128?128:256};
-    finish();stopDynamic();closeFlexible();saveMode();
-    for(const id of panes){retained.set(id,Array.from($(id).childNodes));$(id).replaceChildren();}
-    draft={config,id:resume?lastId:null,listId};document.body.classList.add('gantry-acquisition-draft');
-    document.body.classList.toggle('gantry-whole-draft',config.kind==='whole');
-    previousBadge=$('modality').textContent;$('modality').textContent='SIMULADO';
+  function renderFields(config,locked=false){
     const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
-    $('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
+    if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
     $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie','Nueva · '+kindLabel));
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
@@ -227,7 +242,7 @@
       input('collimator','Colimador',config.collimator,[['LEHR','LEHR'],['MELP','MELP'],['HE','HE'],['NONE','Sin colimador']]),
       input('energyCenter','Centro de energía (keV)',config.energyCenter,null,range(80,450,'1')),
       input('windowWidth','Ancho de ventana (%)',config.windowWidth,[10,15,20,25])]);
-    positionControl(config);
+    positionControl(config,locked);
     help('camera',config.kind==='whole'?'El barrido comienza donde está la camilla y alinea los detectores. Configura el seguimiento del contorno en «Condiciones de paro».':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
     section('series','Radiofármaco',[field('Isótopo','99mTc'),field('Fármaco','MDP'),
       input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,2000/37)),
@@ -262,6 +277,22 @@
     help('summary',config.kind==='whole'?
       'Fija los parámetros de cámara, la actividad y la velocidad de la camilla. El barrido termina al final del recorrido hacia los pies; no utiliza un límite de cuentas ni un tiempo programado.':
       'Fija los parámetros en «Parámetros de cámara», la actividad en «Información de serie» y el objetivo en «Condiciones de paro». Luego elige Iniciar adquisición en el menú Adquirir.');
+    if(locked)for(const id of ['patient','camera','series','stop','summary']){
+      for(const node of $(id).querySelectorAll('input,select')){
+        if(node.tagName==='SELECT')node.disabled=true;else node.readOnly=true;
+      }
+    }
+  }
+  function render(config,resume=false,listId=null){
+    if(!resume&&config.kind==='whole'&&![128,256].includes(config.matrix))config={...config,matrix:config.matrix<128?128:256};
+    finish();stopDynamic();closeFlexible();saveMode();
+    previousFrozen=document.body.classList.contains('gantry-acquisition-frozen');
+    document.body.classList.remove('gantry-acquisition-frozen');
+    for(const id of panes){retained.set(id,Array.from($(id).childNodes));$(id).replaceChildren();}
+    draft={config,id:resume?lastId:null,listId};document.body.classList.add('gantry-acquisition-draft');
+    document.body.classList.toggle('gantry-whole-draft',config.kind==='whole');
+    previousBadge=$('modality').textContent;$('modality').textContent='SIMULADO';
+    renderFields(config,resume);
     for(let i=0;i<2;i++){
       const panel=document.createElement('div');panel.className='draft-image';
       const title=document.createElement('div');title.className='image-head';title.textContent='Detector '+(i+1);
@@ -293,7 +324,8 @@
     for(const [key,node] of inputs){if(validate&&!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=['collimator','mode','contours'].includes(key)?node.value:Number(node.value);}
     c.names=[inputs.get('name1').value,inputs.get('name2').value];
     if(c.kind==='dynamic')c.phases=Array.from({length:c.phaseCount},(_,i)=>({frames:c['phaseFrames'+i],seconds:c['phaseSeconds'+i]}));
-    return validate?window.GANTRY_PROCESSING_CONFIG.validate(c):c;
+    c.position={...(positionState||c.position)};
+    return validate?{...window.GANTRY_PROCESSING_CONFIG.validate(c),position:c.position}:c;
   }
   function performAction(action){
     if(waiting)return;
@@ -316,7 +348,9 @@
       else if(action==='current')render(lastConfig,true);
       else if((action==='start'||action==='instant')&&draft&&!draft.id){
         const config=read();lastConfig=config;request('GANTRY_ACQUIRE_START',{config,instant:action==='instant'});
-        for(const node of inputs.values())node.disabled=true;status('Preparando adquisición con los parámetros indicados…');
+        for(const node of inputs.values())node.disabled=true;
+        for(const key of ['decubitus','entry'])$('gantryDraft-position-'+key).disabled=true;
+        status('Preparando adquisición con los parámetros indicados…');
       }else request('GANTRY_ACQUIRE_ACTION',{action,id:lastId});
     }catch(error){status(error.message,'error');}
     setMenu();

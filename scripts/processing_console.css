@@ -14,10 +14,12 @@ body:not(.flex-mode) .field :is(input,select){min-height:28px}
 body:not(.flex-mode) .viewer{border:2px groove #eee;padding:6px;gap:4px}
 body:not(.flex-mode) .viewer-head h2{font-size:14px}
 body:not(.flex-mode) .images{gap:9px}
-body.gantry-acquisition-draft .tabs{flex-wrap:wrap;overflow:visible;padding:0 3px;gap:2px}
-body.gantry-acquisition-draft .tabs button{flex:1 1 45%;white-space:normal}
-body.gantry-acquisition-draft #tab-camera{order:-2}
-body.gantry-acquisition-draft #tab-stop{order:-1}
+body:is(.gantry-acquisition-draft,.gantry-acquisition-frozen) .tabs{flex-wrap:wrap;overflow:visible;padding:0 3px;gap:2px}
+body:is(.gantry-acquisition-draft,.gantry-acquisition-frozen) .tabs button{flex:1 1 45%;white-space:normal}
+body:is(.gantry-acquisition-draft,.gantry-acquisition-frozen) #tab-camera{order:-2}
+body:is(.gantry-acquisition-draft,.gantry-acquisition-frozen) #tab-stop{order:-1}
+body.gantry-acquisition-frozen .field :is(input,select){background:#ffffe1;color:#000;opacity:1;width:100%;min-width:0;border:2px inset #eee;padding:3px;font:inherit;box-sizing:border-box}
+body.gantry-acquisition-frozen #static-overview{display:none!important}
 body:not(.flex-mode) .image-head{color:#000080;padding:3px 0;font-weight:bold}
 body:not(.flex-mode) .scan{background:#070b17;border:1px solid #72788a}
 body.gantry-acquisition-draft .draft-image .scan{min-height:80px;flex:1}
