@@ -113,6 +113,7 @@
       if(signature!==lastPosition){lastPosition=signature;post({type:'GANTRY_POSITION_STATE',position});}
       if(!owned)return;
       const state=engine().state;if(!state||state.id!==owned||state.finished&&finalSent===owned)return;
+      engine().refreshPreview?.();
       sending=true;
       try{
         const images=previews.map((out,i)=>{

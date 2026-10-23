@@ -83,6 +83,21 @@
       this.finished=this.heads.every(h=>h.done);
     }
   }
+  function dynamicPreview(acquisition){
+    const d=acquisition.dynamic;if(!d)return null;
+    const next=d.schedule?.[d.frames.length],end=acquisition.heads[0].elapsed;
+    // At a frame boundary, keep the frame just completed until the next one
+    // starts collecting. Never show the sum of previous frames.
+    const partial=next&&(end>next.start+1e-9||!d.frames.length);
+    const frame=partial?next:d.frames.at(-1);if(!frame)return null;
+    const elapsed=partial?Math.max(0,end-frame.start):frame.end-frame.start;
+    const heads=acquisition.heads.map((h,j)=>{
+      const counts=partial?h.counts.map((v,i)=>v-acquisition.frameBaseline[j][i]):frame.heads[j];
+      return {...h,counts,total:counts.reduce((sum,v)=>sum+v,0),elapsed};
+    });
+    return {heads,info:{number:d.frames.length+(partial?1:0),totalFrames:d.phases.reduce((n,p)=>n+p.frames,0),
+      phase:frame.phase,index:frame.index,elapsed,duration:frame.end-frame.start,totals:heads.map(h=>h.total)}};
+  }
   // EANM delayed planar bone imaging. These are editable acquisition goals,
   // not multipliers on the physical count rate. Segment selection is heuristic.
   function matrixFactor(n){return Math.max(1,(n/256)**2);}
@@ -100,7 +115,7 @@
     const cps=(field?.sum||0)*rate/2000000;
     return cps>0?target/cps:Infinity;
   }
-  window.GANTRY_BONE_CORE={Acquisition,poisson,suggestedGoal,estimatedSeconds,matrixFactor};
+  window.GANTRY_BONE_CORE={Acquisition,poisson,suggestedGoal,estimatedSeconds,matrixFactor,dynamicPreview};
   const el=id=>document.getElementById(id),bar=el('boneAcqControls');
   if(!bar)return;
   let session=null,fields=null,rate=4000,study='',clock=performance.now(),speed=1,paused=false,busy=false;
@@ -327,7 +342,9 @@
     if(mibiInfo)el('boneAcqStatus').textContent+=' · MIBI '+mibiInfo.start.activityMBq.toFixed(0)+' MBq · '+(mibiInfo.start.seconds/60).toFixed(1)+' → '+(mibiInfo.end.seconds/60).toFixed(1)+' min · '+(window.GANTRY_MIBI?.timing(mibiInfo.start.seconds,mibiInfo.start.protocol).label||mibiInfo.start.protocol)+(mibiInfo.limit?' · Fin del modelo a 12 h':'');
     if(!active)return;
     const now=performance.now();if(!force&&now-lastPaint<180)return;lastPaint=now;
-    shown.heads.forEach((h,j)=>{
+    const framePreview=dynamicPreview(shown);
+    shown.heads.forEach((aggregate,j)=>{
+      const h=framePreview?.heads[j]||aggregate;
       draw(h,j,shown.n,shown.height||shown.n);
       const title=el('boneAcqTitle'+(j+1));title.textContent=(archive?'GUARDADA':'ADQUISICIÓN')+' D'+(j+1)+' · '+shownNames[j]+' · '+(labels[shown.study||shown.settings?.study||'bone']||'Estudio')+(shown.kind==='whole'?' · CUERPO ENTERO':'');title.title=title.textContent;
       const mean=(h.total/h.counts.length).toLocaleString('es-CL',{maximumSignificantDigits:3});
@@ -336,7 +353,12 @@
         '\nMedia: '+mean+' cuentas/píxel · matriz '+shown.n+'×'+(shown.height||shown.n)+' completa'+
         (shown.sampling?'\nPíxel cuadrado: '+shown.sampling.pixelMm.toLocaleString('es-CL',{maximumFractionDigits:3})+' mm':'');
       el('boneAcqProgress'+(j+1)).max=shown.target;
-      el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?h.total:h.elapsed;
+      if(framePreview){
+        const f=framePreview.info;
+        title.textContent+=' · Fase '+f.phase+' · Imagen '+f.index+' ('+f.number+'/'+f.totalFrames+')';title.title=title.textContent;
+        el('boneAcqInfo'+(j+1)).title='Cuentas y media de la imagen dinámica mostrada; no incluyen las imágenes anteriores.';
+      }
+      el('boneAcqProgress'+(j+1)).value=shown.mode==='scan'?(shown.scan?.travel??shown.travel):shown.mode==='counts'?aggregate.total:aggregate.elapsed;
     });
   }
   function selectStudy(nextStudy){
@@ -574,7 +596,8 @@
     pauseForPreview(){if(busy||saving||loadingSaved||(session?.mode==='scan'&&!session.finished))return false;advance();if(session&&!session.finished){paused=true;note='Adquisición pausada para vista previa';}paint();return true;},
     get scanning(){return session?.mode==='scan'&&!session.finished;},
     get active(){return !!session&&!session.finished;},get matrix(){return session?.n;},
-    get state(){return session&&{id:session.id,cancelled:!!session.cancelled,study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
+    refreshPreview(){paint(true);},
+    get state(){return session&&{id:session.id,cancelled:!!session.cancelled,study:session.study,kind:session.kind,height:session.height,mode:session.mode,phase:session.phase,travel:session.travel,velocity:session.velocity,target:session.target,matrix:session.n,finished:session.finished,paused,speed,busy,dynamicFrame:dynamicPreview(session)?.info||null,heads:session.heads.map(({total,elapsed,done})=>({total,elapsed,done}))};}};
   setInterval(()=>{advance();paint();},100);
   window.GANTRY_LIVE?.update(window.GANTRY.G);
 })();

@@ -102,5 +102,22 @@ edit('phaseFrames0',3);edit('phaseSeconds0',1);edit('phaseFrames1',2);edit('phas
 assert($('gantryDraft-phaseFrames2').disabled);
 menu('start');const dynamic=messages.at(-1);assert.equal(dynamic.type,'GANTRY_ACQUIRE_START');
 assert.equal(dynamic.config.kind,'dynamic');assert.equal(dynamic.config.target,11);assert.equal(dynamic.config.phases.length,2);
+const displayed=new Map();
+w.ImageData=class{constructor(data,width,height){Object.assign(this,{data,width,height});}};
+w.HTMLCanvasElement.prototype.getContext=function(){return {putImageData:im=>displayed.set(this.id,Array.from(im.data))};};
+receive({type:'GANTRY_ACQUIRE_STARTED',request:dynamic.request,id:'running-dynamic'});
+const progress=(number,totals,rgba)=>receive({type:'GANTRY_ACQUIRE_PROGRESS',message:'Adquiriendo',
+ state:{id:'running-dynamic',kind:'dynamic',mode:'time',target:11,speed:1,finished:false,
+ heads:[{total:100,elapsed:number,done:false},{total:90,elapsed:number,done:false}],
+ dynamicFrame:{number,totalFrames:5,phase:1,index:number,elapsed:.5,duration:1,totals}},
+ images:[0,1].map(()=>({width:1,height:1,rgba:new Uint8Array(rgba).buffer}))});
+progress(1,[7,5],[255,255,255,255]);
+assert($('gantryDraftStats0').textContent.includes('Conteos de la imagen7'));
+progress(2,[2,1],[12,12,12,255]);
+assert($('gantryDraftStats0').textContent.includes('Imagen2 / 5'));
+assert($('gantryDraftStats0').textContent.includes('Conteos de la imagen2'));
+assert($('gantryDraftStats1').textContent.includes('Conteos de la imagen1'));
+assert.deepEqual(displayed.get('gantryDraftImage0'),[12,12,12,255],'Replace image rather than accumulate');
+assert.equal($('gantryDraftProgress0').value,2,'Overall progress does not reset with frame counts');
 dom.window.close();
 console.log('OK: multiple pending tiles, edited settings and tab retained across navigation, explicit delete/cancel, selected-tile promotion and running lock.');

@@ -8,6 +8,30 @@ for(const phases of [[],[{frames:0,seconds:1}],[{frames:1,seconds:.5}],[{frames:
 assert.throws(()=>C.validate({...config,matrix:512,phases:[{frames:60,seconds:1}]}),/64 MB/);
 let seed=42;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return (seed+.5)/4294967296;};
 const field={values:new Float64Array(4096).fill(1000),sum:4096000};
+// A moving point must leave no trail in the acquiring-frame display, while
+// the stored cumulative counts and completed frames remain untouched.
+const preview=env.window.GANTRY_BONE_CORE.dynamicPreview;
+const spot=index=>{const values=new Float64Array(4096);values[index]=400;return {values,sum:400};};
+const moving=new Acquisition(64,'time',4,random);moving.enableDynamic([{frames:2,seconds:1},{frames:1,seconds:2}]);
+assert.equal(preview(moving).info.number,1);assert.equal(preview(moving).heads[0].total,0);
+moving.step([spot(5),spot(7)],2000000,1);
+assert.equal(preview(moving).info.number,1);assert.equal(preview(moving).heads[0].counts[5],moving.dynamic.frames[0].heads[0][5]);
+moving.step([spot(20),spot(22)],2000000,.25);
+const current=preview(moving),savedTotals=moving.heads.map(h=>h.total);
+assert.equal(current.info.number,2);assert.equal(current.info.elapsed,.25);
+assert.equal(current.heads[0].counts[5],0);assert(current.heads[0].counts[20]>0);
+assert.equal(current.heads[1].counts[7],0);assert(current.heads[1].counts[22]>0);
+assert(current.heads[0].total<moving.heads[0].total);assert.deepEqual(moving.heads.map(h=>h.total),savedTotals);
+assert.deepEqual(preview(moving).heads[0].counts,current.heads[0].counts,'Paused preview is stable');
+moving.step([spot(20),spot(22)],2000000,.75);
+assert.equal(preview(moving).info.number,2);assert.equal(preview(moving).heads[0].counts[5],0);
+moving.step([spot(30),spot(32)],2000000,.5);
+assert.equal(preview(moving).info.phase,2);assert.equal(preview(moving).info.index,1);
+assert.equal(preview(moving).info.duration,2);assert.equal(preview(moving).heads[0].counts[20],0);
+moving.step([spot(30),spot(32)],2000000,50);
+assert(moving.finished);assert.equal(preview(moving).info.number,3);
+assert.deepEqual(preview(moving).heads[0].counts,moving.dynamic.frames[2].heads[0]);
+assert.equal(preview(new Acquisition(64,'time',4,random)),null,'Static acquisitions keep accumulated display');
 const session=new Acquisition(64,'time',11,random);session.enableDynamic(config.phases);session.study='bone';
 session.step([field,field],1000,2.5);assert.equal(session.dynamic.frames.length,2);assert.equal(session.heads[0].elapsed,2.5);
 const partial=S.snapshot(session,config.names,{study:'bone'},1700000000000,'partial');S.validate(partial);
