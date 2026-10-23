@@ -676,11 +676,11 @@ function addPickedImages(){
  const ids=new Set([...$('flex-picker-list').querySelectorAll('input:checked')].map(c=>c.value));const chosen=flex.assets.filter(a=>ids.has(a.id));if(!chosen.length)return;
  const current=flexPage(),groups=new Map();for(const a of chosen){if(!groups.has(a.study))groups.set(a.study,[]);groups.get(a.study).push(a);}
  let firstPage=null,firstItem=null;
- const batches=[];for(const [study,assets] of groups)for(let start=0;start<assets.length;start+=8)batches.push([study,assets.slice(start,start+8)]);
- for(const [study,assets] of batches){let p=(!current.study||current.study===study)&&current.items.length+assets.length<=8?current:flexNewPage(assets[0]);if(!p.study){p.study=study;p.meta=assets[0].meta;}const wasEmpty=!p.items.length;
-  for(const a of assets){const offset=p.items.length%8*22;const item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:360,h:a.rows/a.cols>2?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:!a.mono1};boundsFlexible(item);p.items.push(item);if(!firstItem){firstPage=p;firstItem=item;}}
+ const batches=[...groups];
+ for(const [study,assets] of batches){let p=(!current.study||current.study===study)?current:flexNewPage(assets[0]);if(!p.study){p.study=study;p.meta=assets[0].meta;}
+  for(const a of assets){const offset=p.items.length%8*22;const item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:!a.mono1};boundsFlexible(item);p.items.push(item);firstPage=p;firstItem=item;}
   for(const item of p.items)if(flexAsset(item)?.dynamicFrames&&!item.dynamic)configureFlexDynamic(item,'target',32);
-  if(wasEmpty)arrangeFlexible(p);p.edited=true;
+  p.edited=true;
  }
  flex.page=firstPage.id;flex.selected=firstItem.id;$('flex-picker').close();refreshFlexible();$('flex-message').textContent=chosen.length+' imagen(es) agregada(s).'+(groups.size>1?' Los estudios distintos se colocaron en páginas separadas.':'');
 }
@@ -1867,8 +1867,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const empty=flex.pages.find(p=>!p.edited&&!p.items.length&&!p.texts?.length&&!p.header);
     const page=empty||flexNewPage(assets[0]);
     if(empty){page.study=assets[0].study;page.meta=assets[0].meta;page.header=copyFlexHeader(flex.header);}
-    for(const a of assets){const item={id:++flex.serial,asset:a.id,x:24,y:PAGE.top,w:360,h:a.rows/a.cols>2?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:true};page.items.push(item);}
-    arrangeFlexible(page);page.edited=true;flex.page=page.id;flex.selected=page.items[0].id;
+    for(const a of assets){const offset=page.items.length%8*22,item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:true};boundsFlexible(item);page.items.push(item);}
+    page.edited=true;flex.page=page.id;flex.selected=page.items.at(-1).id;
   }
   window.addEventListener('message',async event=>{
     if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;

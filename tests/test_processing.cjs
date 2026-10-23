@@ -78,7 +78,7 @@ print('pydicom: pixel totals, dimensions, duration and dose verified')`],{input:
  const selectedModes=[];
  const globals={window:{addEventListener:(n,fn)=>listeners[n]=fn},parent,location:{origin:'http://local'},dicomParser:parser,ArrayBuffer,Uint8Array,DataView,File,
    acquisitionInstances:{static:{}},selectMode:(...args)=>selectedModes.push(args),
-   flex:{assets:[],pages:[],serial:0,header:null},PAGE:{top:100},$:()=>({textContent:''}),stopDynamic(){},openFlexible(){},refreshFlexible(){},arrangeFlexible(){},
+   flex:{assets:[],pages:[],serial:0,header:null},PAGE:{top:100},$:()=>({textContent:''}),stopDynamic(){},openFlexible(){},refreshFlexible(){},boundsFlexible(){},arrangeFlexible(){throw Error('Images must not be automatically arranged');},
    async loadFile(file,ds){imports.push(file);globals.acquisitionInstances.static[ds.string('x00080018')]={};globals.flex.assets.push({uid:ds.string('x00080018'),id:ds.string('x00080018')+':0',rows:ds.uint16('x00280010'),cols:ds.uint16('x00280011'),window:50,level:25});},
    flexNewPage(){const p={id:globals.flex.pages.length+1,items:[]};globals.flex.pages.push(p);return p;}};
  vm.runInContext(fs.readFileSync('scripts/processing_receiver.js','utf8'),vm.createContext(globals));

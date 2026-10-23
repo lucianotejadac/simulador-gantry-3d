@@ -55,6 +55,18 @@ for old, new in {
 s = re.sub(r"status\('Abre un archivo DICOM de '.*?\);",
            "status('Selecciona Adquirir para iniciar una adquisición del simulador.');", s)
 s = s.replace('if(window.showSaveFilePicker){', 'if(window.showSaveFilePicker&&window.top===window){')
+# New images start as a stack; only "Ordenar página" arranges them in a grid.
+# The page is 1200 x 900, so whole-body frames use a scaled 256 x 1024 ratio.
+for old, new in {
+    'w:360,h:a.rows/a.cols>2?640:360': "w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360",
+    'if(wasEmpty)arrangeFlexible(p);p.edited=true;': 'p.edited=true;',
+    'const wasEmpty=!p.items.length;': '',
+    'if(!firstItem){firstPage=p;firstItem=item;}': 'firstPage=p;firstItem=item;',
+    'const batches=[];for(const [study,assets] of groups)for(let start=0;start<assets.length;start+=8)batches.push([study,assets.slice(start,start+8)]);': 'const batches=[...groups];',
+    '(!current.study||current.study===study)&&current.items.length+assets.length<=8?current:flexNewPage(assets[0])': '(!current.study||current.study===study)?current:flexNewPage(assets[0])',
+}.items():
+    assert old in s, old
+    s = s.replace(old, new)
 # Header entry can be dismissed without saving in the simulator edition.
 s = s.replace('flex.headerRequired=required&&!existing;', 'flex.headerRequired=false;')
 s = s.replace("flex.headerRequired?'Establecer encabezado obligatorio':'Editar encabezado común'", "existing?'Editar encabezado común':'Establecer encabezado'")

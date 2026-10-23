@@ -42,8 +42,8 @@
     const empty=flex.pages.find(p=>!p.edited&&!p.items.length&&!p.texts?.length&&!p.header);
     const page=empty||flexNewPage(assets[0]);
     if(empty){page.study=assets[0].study;page.meta=assets[0].meta;page.header=copyFlexHeader(flex.header);}
-    for(const a of assets){const item={id:++flex.serial,asset:a.id,x:24,y:PAGE.top,w:360,h:a.rows/a.cols>2?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:true};page.items.push(item);}
-    arrangeFlexible(page);page.edited=true;flex.page=page.id;flex.selected=page.items[0].id;
+    for(const a of assets){const offset=page.items.length%8*22,item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:true};boundsFlexible(item);page.items.push(item);}
+    page.edited=true;flex.page=page.id;flex.selected=page.items.at(-1).id;
   }
   window.addEventListener('message',async event=>{
     if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;
