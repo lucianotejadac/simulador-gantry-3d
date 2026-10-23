@@ -62,8 +62,18 @@ for old, new in {
     'if(wasEmpty)arrangeFlexible(p);p.edited=true;': 'p.edited=true;',
     'const wasEmpty=!p.items.length;': '',
     'if(!firstItem){firstPage=p;firstItem=item;}': 'firstPage=p;firstItem=item;',
+    'boundsFlexible(item);p.items.push(item);': 'window.GANTRY_PROCESSING_ANALYSIS?.prepareFlexible(item,a);boundsFlexible(item);p.items.push(item);',
     'const batches=[];for(const [study,assets] of groups)for(let start=0;start<assets.length;start+=8)batches.push([study,assets.slice(start,start+8)]);': 'const batches=[...groups];',
     '(!current.study||current.study===study)&&current.items.length+assets.length<=8?current:flexNewPage(assets[0])': '(!current.study||current.study===study)?current:flexNewPage(assets[0])',
+}.items():
+    assert old in s, old
+    s = s.replace(old, new)
+# Page items hold an independent, serializable copy of their ROI processing.
+for old, new in {
+    "const a=source||flexAsset(i),key=[a.id,i.window,i.level,i.invert].join('|');": "const a=source||flexAsset(i),mask=(i.roiMasks||[]).filter(r=>window.GANTRY_ROI.valid(r,a.cols,a.rows)),key=[a.id,i.window,i.level,i.invert,JSON.stringify(mask)].join('|');",
+    'const p=a.data[j];let g=': 'const visible=window.GANTRY_ROI.visible(mask,j%a.cols+.5,Math.floor(j/a.cols)+.5),p=a.data[j];let g=',
+    'if(invert)g=255-g;im.data[j*4]': 'if(!visible)g=0;if(invert)g=255-g;im.data[j*4]',
+    'canvasText(ctx,a.seriesName,x+5': "canvasText(ctx,a.seriesName+(i.roiMasks?.length?' · enmascarada':''),x+5",
 }.items():
     assert old in s, old
     s = s.replace(old, new)

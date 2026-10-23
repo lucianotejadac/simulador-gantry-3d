@@ -4,7 +4,8 @@ const fs=require('node:fs'),assert=require('node:assert/strict'),{JSDOM,VirtualC
 const errors=[],raster=new Map(),vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));
 const dom=new JSDOM(fs.readFileSync('processing/index.html','utf8'),{url:'http://local/processing/',runScripts:'dangerously',virtualConsole:vc,beforeParse(w){
  w.TextDecoder=TextDecoder;w.TextEncoder=TextEncoder;w.structuredClone=structuredClone;Object.defineProperty(w,'crypto',{value:require('node:crypto').webcrypto});
- w.HTMLCanvasElement.prototype.getContext=function(){const id=this.id;return {createImageData:(x,y)=>({data:new w.Uint8ClampedArray(x*y*4)}),putImageData(img){raster.set(id,img.data.slice());},drawImage(){},fillRect(){},clearRect(){},save(){},restore(){},setTransform(){},scale(){},translate(){},rotate(){},strokeRect(){},fillText(){},measureText:()=>({width:10})};};
+ w.HTMLCanvasElement.prototype.getContext=function(){const id=this.id,canvas=this;return {createImageData:(x,y)=>({data:new w.Uint8ClampedArray(x*y*4)}),putImageData(img){canvas.testRaster=img.data.slice();raster.set(id,canvas.testRaster);},drawImage(){},fillRect(){},clearRect(){},save(){},restore(){},setTransform(){},scale(){},translate(){},rotate(){},strokeRect(){},fillText(){},beginPath(){},rect(){},clip(){},measureText:()=>({width:10})};};
+ w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  w.HTMLCanvasElement.prototype.toDataURL=()=>'';w.URL.createObjectURL=()=>'';w.URL.revokeObjectURL=()=>{};
 }}),w=dom.window,$=id=>w.document.getElementById(id),tick=()=>new Promise(r=>setTimeout(r,5));
 async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eval(`loadFile({name:${JSON.stringify(name)},arrayBuffer:async()=>testBytes.buffer},dicomParser.parseDicom(testBytes))`);await tick();}
@@ -100,6 +101,43 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  draw.onpointerdown({clientX:0,clientY:0,pointerId:5,preventDefault(){}});draw.onpointerup({clientX:128,clientY:512});
  assert.equal(Number($('analysisWindow').value),1);assert.equal(Number($('analysisLevel').value),.5);
  assert.equal(raster.get('analysisSelected')[0],0,'Fully hidden images do not turn white or produce invalid levels');
+ // Copy masked processing, not raw pixels, into a manually added flexible-page image.
+ $('roiReset').click();maskHotspot();
+ $('analysisWindow').value='33';$('analysisLevel').value='9.5';$('analysisWindow').dispatchEvent(new w.Event('input'));await tick();
+ $('roiOriginal').checked=true;$('roiOriginal').dispatchEvent(new w.Event('change'));
+ w.openFlexible();$('header-close').click();
+ const addUID=uid=>{
+  $('flex-add-images').click();
+  for(const box of $('flex-picker-list').querySelectorAll('input')){box.checked=box.value.startsWith(uid+':');box.dispatchEvent(new w.Event('change'));}
+  $('flex-pick-submit').click();
+ };
+ // Transfer the selected detector without mixing its masks with detector 2.
+ const sourceUID=w.eval('flex.assets.filter(a=>a.kind==="whole").find(a=>a.series===dataset.string("x0020000e")&&a.detector===1).uid');
+ addUID(sourceUID);
+ const item=w.eval('flexItem()'),asset=w.eval('flexAsset(flexItem())');
+ assert.equal(item.roiMasks.length,1);assert.equal(item.window,33);assert.equal(item.level,9.5);
+ assert.equal(item.invert,false,'Copy the processed display contrast even when Ver original was used temporarily');
+ const pageRaster=w.eval('rasterFlexible(flexItem()).testRaster');
+ assert.equal(pageRaster[0],0);assert(pageRaster[(400*128+100)*4]>0);
+ item.invert=true;
+ assert.equal(w.eval('rasterFlexible(flexItem()).testRaster')[0],255,'Inverted masked areas remain white regardless of contrast');
+ item.invert=false;
+ assert.equal(asset.data[0],1000,'Original asset pixels are unchanged');
+ assert.equal(w.eval('projectPages().at(-1).items.at(-1).roiMasks.length'),1,'Project serialization includes the ROI snapshot');
+ tabs[1].click();$('roiReset').click();
+ assert.equal(item.roiMasks.length,1,'Later analysis edits do not silently rewrite the composed page');
+ w.openFlexible();addUID(sourceUID);
+ assert.equal(w.eval('flexItem().roiMasks'),undefined,'Adding after removing ROI uses the original');
+ w.eval('Object.assign(flexItem(),{window:33,level:9.5,invert:false})');
+ assert(w.eval('rasterFlexible(flexItem()).testRaster')[0]>0,'Raster cache distinguishes masked and original copies');
+ // The same handoff applies to square static images.
+ for(let i=0;i<files.length;i++)await load(new w.Uint8Array(files[i].bytes),'static-mask-'+i+'.dcm');
+ tabs[1].click();$('roiImage').value='0';$('roiImage').dispatchEvent(new w.Event('change'));
+ $('analysisSelected').getBoundingClientRect=()=>({left:0,top:0,width:64,height:64});
+ draw.onpointerdown({clientX:0,clientY:0,pointerId:6,preventDefault(){}});draw.onpointerup({clientX:32,clientY:32});
+ const staticUID=w.eval('flex.assets.find(a=>a.kind==="static"&&a.detector===1).uid');
+ w.openFlexible();addUID(staticUID);
+ assert.equal(w.eval('flexItem().roiMasks.length'),1);assert.equal(w.eval('rasterFlexible(flexItem()).testRaster')[0],0);
  const R=w.GANTRY_ROI,image=new w.Float64Array(16).fill(1),ellipse={shape:'ellipse',mode:'keep',x0:0,y0:0,x1:4,y1:4};
  const kept=R.apply(image,4,4,[ellipse]);assert.equal(kept.removed,4);assert.equal(kept.counts[0],0);assert.equal(kept.counts[5],1);assert.equal(image[0],1);
  assert.equal(kept.min,1,'Artificial zeros outside a keep mask are excluded from window statistics');assert.equal(kept.max,1);assert.equal(kept.visiblePixels,12);

@@ -636,10 +636,10 @@ function refreshFlexControls(){
  $('flex-invert').checked=i.invert;
 }
 function rasterFlexible(i,source=null){
- const a=source||flexAsset(i),key=[a.id,i.window,i.level,i.invert].join('|');
+ const a=source||flexAsset(i),mask=(i.roiMasks||[]).filter(r=>window.GANTRY_ROI.valid(r,a.cols,a.rows)),key=[a.id,i.window,i.level,i.invert,JSON.stringify(mask)].join('|');
  if(flex.cache.has(key))return flex.cache.get(key);
  const c=document.createElement('canvas');c.width=a.cols;c.height=a.rows;const ctx=c.getContext('2d'),im=ctx.createImageData(a.cols,a.rows),invert=i.invert!==a.mono1;
- for(let j=0;j<a.data.length;j++){const p=a.data[j];let g=i.window<=1?(p>i.level-.5?255:0):clamp(((p-(i.level-.5))/(i.window-1)+.5)*255,0,255);if(invert)g=255-g;im.data[j*4]=im.data[j*4+1]=im.data[j*4+2]=g;im.data[j*4+3]=255;}
+ for(let j=0;j<a.data.length;j++){const visible=window.GANTRY_ROI.visible(mask,j%a.cols+.5,Math.floor(j/a.cols)+.5),p=a.data[j];let g=i.window<=1?(p>i.level-.5?255:0):clamp(((p-(i.level-.5))/(i.window-1)+.5)*255,0,255);if(!visible)g=0;if(invert)g=255-g;im.data[j*4]=im.data[j*4+1]=im.data[j*4+2]=g;im.data[j*4+3]=255;}
  ctx.putImageData(im,0,0);if(flex.cache.size>=24)flex.cache.delete(flex.cache.keys().next().value);flex.cache.set(key,c);return c;
 }
 function canvasText(ctx,text,x,y,max,font='14px Arial'){
@@ -649,7 +649,7 @@ function drawFlexible(target=$('flex-canvas'),exporting=false){
  const p=flexPage();if(!p)return;const ctx=target.getContext('2d');ctx.save();ctx.scale(target.width/PAGE.w,target.height/PAGE.h);ctx.fillStyle='white';ctx.fillRect(0,0,PAGE.w,PAGE.h);
  for(const i of p.items){
   const a=flexAsset(i),x=i.x,y=i.y,w=i.w,h=i.h,innerH=h-44;
-  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.fillStyle='#c5c1e3';ctx.fillRect(x,y,w,22);ctx.fillRect(x,y+h-22,w,22);ctx.fillStyle='#111';canvasText(ctx,a.seriesName,x+5,y+16,w-10,'bold 13px Arial');
+  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.fillStyle='#c5c1e3';ctx.fillRect(x,y,w,22);ctx.fillRect(x,y+h-22,w,22);ctx.fillStyle='#111';canvasText(ctx,a.seriesName+(i.roiMasks?.length?' · enmascarada':''),x+5,y+16,w-10,'bold 13px Arial');
   const caption=a.projection+' · '+a.cols+'×'+a.rows+(!a.dynamicFrames&&a.duration!==null?' · '+pretty(a.duration/1000)+' s':'')+(a.isotope?' · '+a.isotope:'');canvasText(ctx,caption,x+5,y+h-6,w-10,'12px Arial');
   ctx.save();ctx.beginPath();ctx.rect(x,y+22,w,innerH);ctx.clip();ctx.fillStyle=(i.invert!==a.mono1)?'#fff':'#000';ctx.fillRect(x,y+22,w,innerH);
   const ratio=(a.cols*a.spacing[1])/(a.rows*a.spacing[0]),fitW=Math.min(w,innerH*ratio),fitH=fitW/ratio,dw=fitW*i.zoom,dh=fitH*i.zoom;
@@ -678,7 +678,7 @@ function addPickedImages(){
  let firstPage=null,firstItem=null;
  const batches=[...groups];
  for(const [study,assets] of batches){let p=(!current.study||current.study===study)?current:flexNewPage(assets[0]);if(!p.study){p.study=study;p.meta=assets[0].meta;}
-  for(const a of assets){const offset=p.items.length%8*22;const item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:!a.mono1};boundsFlexible(item);p.items.push(item);firstPage=p;firstItem=item;}
+  for(const a of assets){const offset=p.items.length%8*22;const item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:!a.mono1};window.GANTRY_PROCESSING_ANALYSIS?.prepareFlexible(item,a);boundsFlexible(item);p.items.push(item);firstPage=p;firstItem=item;}
   for(const item of p.items)if(flexAsset(item)?.dynamicFrames&&!item.dynamic)configureFlexDynamic(item,'target',32);
   p.edited=true;
  }
@@ -1867,7 +1867,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const empty=flex.pages.find(p=>!p.edited&&!p.items.length&&!p.texts?.length&&!p.header);
     const page=empty||flexNewPage(assets[0]);
     if(empty){page.study=assets[0].study;page.meta=assets[0].meta;page.header=copyFlexHeader(flex.header);}
-    for(const a of assets){const offset=page.items.length%8*22,item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:true};boundsFlexible(item);page.items.push(item);}
+    for(const a of assets){const offset=page.items.length%8*22,item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:true};window.GANTRY_PROCESSING_ANALYSIS?.prepareFlexible(item,a);boundsFlexible(item);page.items.push(item);}
     page.edited=true;flex.page=page.id;flex.selected=page.items.at(-1).id;
   }
   window.addEventListener('message',async event=>{
@@ -2032,7 +2032,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
 (function(){
   'use strict';
   let opened=false,timer=null,images=[],chosen=0,drag=null,identity='',galleryKey='',windowKey='';
-  const masks=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
+  const masks=new Map(),maskedDisplays=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
   panel.innerHTML=`<div class="mode-heading">Visualización / Análisis</div>
     <p id="analysisEmpty">Selecciona una adquisición terminada en la columna izquierda.</p>
     <div id="analysisContent" hidden>
@@ -2062,7 +2062,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
         <button data-nudge="-1,0" aria-label="Mover frame a la izquierda">←</button><button data-nudge="1,0" aria-label="Mover frame a la derecha">→</button>
         <button data-nudge="0,-1" aria-label="Mover frame arriba">↑</button><button data-nudge="0,1" aria-label="Mover frame abajo">↓</button><span>1 píxel por pulsación</span></div>
       <div id="analysisFrames" aria-label="Todos los frames del detector"></div>
-      <p>Procesamiento reversible, guardado en este navegador. El DICOM y la página flexible conservan las imágenes originales.</p>
+      <p>Procesamiento reversible, guardado en este navegador. El DICOM conserva la imagen original. Al agregarla a Página flexible se copia la versión enmascarada con su ventana y nivel.</p>
     </div>`;
   document.querySelector('.workspace').append(panel);
   $('analysisDynamic').append($('dynamicCorrection'));$('dynamicCorrection').open=true;
@@ -2109,9 +2109,12 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   function key(s){return s.dataset.string('x00080018');}
   function dimensions(s){return [num(s.dataset,'00280011'),num(s.dataset,'00280010')];}
   function rois(s){
-    const id=key(s);if(!masks.has(id)){
+    return savedMasks(key(s),...dimensions(s));
+  }
+  function savedMasks(id,w,h){
+    if(!masks.has(id)){
       let saved=[];try{saved=JSON.parse(localStorage.getItem('gantry.roi.'+id)||'[]');}catch(_){}
-      const [w,h]=dimensions(s);masks.set(id,Array.isArray(saved)?saved.filter(r=>window.GANTRY_ROI.valid(r,w,h)):[]);
+      masks.set(id,Array.isArray(saved)?saved.filter(r=>window.GANTRY_ROI.valid(r,w,h)):[]);
     }return masks.get(id);
   }
   function persist(s){try{localStorage.setItem('gantry.roi.'+key(s),JSON.stringify(rois(s)));return true;}catch(_){return false;}}
@@ -2127,8 +2130,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       invert=$('analysisInvert').checked!==(s.dataset.string('x00280004')==='MONOCHROME1');
     for(let y=0;y<height;y++)for(let x=0;x<size;x++){
       const px=Math.floor(x*w/size),py=Math.floor(y*h/height),sx=px-o.dx,sy=py-o.dy,
-        p=sx>=0&&sx<w&&sy>=0&&sy<h&&window.GANTRY_ROI.visible(mask,px+.5,py+.5)?counts[sy*w+sx]:0;
-      let g=win<=1?(p>level-.5?255:0):Math.max(0,Math.min(255,((p-(level-.5))/(win-1)+.5)*255));if(invert)g=255-g;
+        visible=window.GANTRY_ROI.visible(mask,px+.5,py+.5),p=sx>=0&&sx<w&&sy>=0&&sy<h?counts[sy*w+sx]:0;
+      let g=win<=1?(p>level-.5?255:0):Math.max(0,Math.min(255,((p-(level-.5))/(win-1)+.5)*255));if(!visible)g=0;if(invert)g=255-g;
       const i=(y*size+x)*4;image.data[i]=image.data[i+1]=image.data[i+2]=g;image.data[i+3]=255;
     }
     ctx.putImageData(image,0,0);
@@ -2192,6 +2195,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       // All-zero or fully hidden images stay black, including threshold mode.
       $('analysisLevel').value=result.max===0?.5:(result.min+result.max)/2;
     }
+    if(mask.length)maskedDisplays.set(key(s),{signature:JSON.stringify(mask),window:Number($('analysisWindow').value),level:Number($('analysisLevel').value),invert:$('analysisInvert').checked});
     paint($('analysisSelected'),s,0,{dx:0,dy:0},mask);
     $('analysisSelectedLabel').textContent=(value(s.dataset,'0008103e')||'Imagen')+(mask.length?' · enmascarada':' · original');
     $('analysisStatus').textContent=rois(s).length+' ROI · '+result.removed.toLocaleString('es-CL')+' cuentas ocultas en esta vista. Original conservado.';
@@ -2223,7 +2227,21 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   const renderPrevious=renderAll;renderAll=function(...args){const r=renderPrevious(...args);schedule();return r;};
   const stepPrevious=setDynamicStep;setDynamicStep=function(...args){const r=stepPrevious(...args);schedule();return r;};
   const flexiblePrevious=openFlexible;openFlexible=function(...args){show(false);return flexiblePrevious(...args);};
-  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,get opened(){return opened;}};
+  function prepareFlexible(item,asset){
+    if(!['static','whole'].includes(asset.kind)||asset.dynamicFrames)return;
+    const mask=savedMasks(asset.uid,asset.cols,asset.rows);if(!mask.length)return;
+    // Copy the processing into this page item; keep its acquired pixels untouched.
+    item.roiMasks=mask.map(r=>({...r}));
+    const result=window.GANTRY_ROI.apply(asset.data,asset.cols,asset.rows,mask);
+    const saved=maskedDisplays.get(asset.uid),current=source();
+    const display=current&&key(current)===asset.uid&&!$('roiOriginal').checked?
+      {window:Number($('analysisWindow').value),level:Number($('analysisLevel').value),invert:$('analysisInvert').checked}:
+      saved?.signature===JSON.stringify(mask)?saved:null;
+    item.window=display&&Number.isFinite(display.window)&&display.window>=1?display.window:Math.max(1,result.max-result.min+1);
+    item.level=display&&Number.isFinite(display.level)?display.level:result.max===0?.5:(result.min+result.max)/2;
+    if(display)item.invert=display.invert;
+  }
+  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,prepareFlexible,get opened(){return opened;}};
   show(false);
 })();
 

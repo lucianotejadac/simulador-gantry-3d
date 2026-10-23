@@ -3,7 +3,7 @@
 (function(){
   'use strict';
   let opened=false,timer=null,images=[],chosen=0,drag=null,identity='',galleryKey='',windowKey='';
-  const masks=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
+  const masks=new Map(),maskedDisplays=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
   panel.innerHTML=`<div class="mode-heading">Visualización / Análisis</div>
     <p id="analysisEmpty">Selecciona una adquisición terminada en la columna izquierda.</p>
     <div id="analysisContent" hidden>
@@ -33,7 +33,7 @@
         <button data-nudge="-1,0" aria-label="Mover frame a la izquierda">←</button><button data-nudge="1,0" aria-label="Mover frame a la derecha">→</button>
         <button data-nudge="0,-1" aria-label="Mover frame arriba">↑</button><button data-nudge="0,1" aria-label="Mover frame abajo">↓</button><span>1 píxel por pulsación</span></div>
       <div id="analysisFrames" aria-label="Todos los frames del detector"></div>
-      <p>Procesamiento reversible, guardado en este navegador. El DICOM y la página flexible conservan las imágenes originales.</p>
+      <p>Procesamiento reversible, guardado en este navegador. El DICOM conserva la imagen original. Al agregarla a Página flexible se copia la versión enmascarada con su ventana y nivel.</p>
     </div>`;
   document.querySelector('.workspace').append(panel);
   $('analysisDynamic').append($('dynamicCorrection'));$('dynamicCorrection').open=true;
@@ -80,9 +80,12 @@
   function key(s){return s.dataset.string('x00080018');}
   function dimensions(s){return [num(s.dataset,'00280011'),num(s.dataset,'00280010')];}
   function rois(s){
-    const id=key(s);if(!masks.has(id)){
+    return savedMasks(key(s),...dimensions(s));
+  }
+  function savedMasks(id,w,h){
+    if(!masks.has(id)){
       let saved=[];try{saved=JSON.parse(localStorage.getItem('gantry.roi.'+id)||'[]');}catch(_){}
-      const [w,h]=dimensions(s);masks.set(id,Array.isArray(saved)?saved.filter(r=>window.GANTRY_ROI.valid(r,w,h)):[]);
+      masks.set(id,Array.isArray(saved)?saved.filter(r=>window.GANTRY_ROI.valid(r,w,h)):[]);
     }return masks.get(id);
   }
   function persist(s){try{localStorage.setItem('gantry.roi.'+key(s),JSON.stringify(rois(s)));return true;}catch(_){return false;}}
@@ -98,8 +101,8 @@
       invert=$('analysisInvert').checked!==(s.dataset.string('x00280004')==='MONOCHROME1');
     for(let y=0;y<height;y++)for(let x=0;x<size;x++){
       const px=Math.floor(x*w/size),py=Math.floor(y*h/height),sx=px-o.dx,sy=py-o.dy,
-        p=sx>=0&&sx<w&&sy>=0&&sy<h&&window.GANTRY_ROI.visible(mask,px+.5,py+.5)?counts[sy*w+sx]:0;
-      let g=win<=1?(p>level-.5?255:0):Math.max(0,Math.min(255,((p-(level-.5))/(win-1)+.5)*255));if(invert)g=255-g;
+        visible=window.GANTRY_ROI.visible(mask,px+.5,py+.5),p=sx>=0&&sx<w&&sy>=0&&sy<h?counts[sy*w+sx]:0;
+      let g=win<=1?(p>level-.5?255:0):Math.max(0,Math.min(255,((p-(level-.5))/(win-1)+.5)*255));if(!visible)g=0;if(invert)g=255-g;
       const i=(y*size+x)*4;image.data[i]=image.data[i+1]=image.data[i+2]=g;image.data[i+3]=255;
     }
     ctx.putImageData(image,0,0);
@@ -163,6 +166,7 @@
       // All-zero or fully hidden images stay black, including threshold mode.
       $('analysisLevel').value=result.max===0?.5:(result.min+result.max)/2;
     }
+    if(mask.length)maskedDisplays.set(key(s),{signature:JSON.stringify(mask),window:Number($('analysisWindow').value),level:Number($('analysisLevel').value),invert:$('analysisInvert').checked});
     paint($('analysisSelected'),s,0,{dx:0,dy:0},mask);
     $('analysisSelectedLabel').textContent=(value(s.dataset,'0008103e')||'Imagen')+(mask.length?' · enmascarada':' · original');
     $('analysisStatus').textContent=rois(s).length+' ROI · '+result.removed.toLocaleString('es-CL')+' cuentas ocultas en esta vista. Original conservado.';
@@ -194,6 +198,20 @@
   const renderPrevious=renderAll;renderAll=function(...args){const r=renderPrevious(...args);schedule();return r;};
   const stepPrevious=setDynamicStep;setDynamicStep=function(...args){const r=stepPrevious(...args);schedule();return r;};
   const flexiblePrevious=openFlexible;openFlexible=function(...args){show(false);return flexiblePrevious(...args);};
-  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,get opened(){return opened;}};
+  function prepareFlexible(item,asset){
+    if(!['static','whole'].includes(asset.kind)||asset.dynamicFrames)return;
+    const mask=savedMasks(asset.uid,asset.cols,asset.rows);if(!mask.length)return;
+    // Copy the processing into this page item; keep its acquired pixels untouched.
+    item.roiMasks=mask.map(r=>({...r}));
+    const result=window.GANTRY_ROI.apply(asset.data,asset.cols,asset.rows,mask);
+    const saved=maskedDisplays.get(asset.uid),current=source();
+    const display=current&&key(current)===asset.uid&&!$('roiOriginal').checked?
+      {window:Number($('analysisWindow').value),level:Number($('analysisLevel').value),invert:$('analysisInvert').checked}:
+      saved?.signature===JSON.stringify(mask)?saved:null;
+    item.window=display&&Number.isFinite(display.window)&&display.window>=1?display.window:Math.max(1,result.max-result.min+1);
+    item.level=display&&Number.isFinite(display.level)?display.level:result.max===0?.5:(result.min+result.max)/2;
+    if(display)item.invert=display.invert;
+  }
+  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,prepareFlexible,get opened(){return opened;}};
   show(false);
 })();
