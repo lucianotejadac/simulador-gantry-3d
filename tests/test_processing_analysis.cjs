@@ -44,6 +44,36 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  tabs[0].click();tabs[1].click();assert($('analysisStatus').textContent.startsWith('1 ROI'),'Reopening preserves mask');
  assert(Object.keys(w.localStorage).some(k=>k.startsWith('gantry.roi.')));
  $('roiUndo').click();assert($('analysisStatus').textContent.startsWith('0 ROI'));assert(raster.get('analysisSelected')[0]>0);
+ // Whole-body images use rectangular native coordinates, with independent masks per detector.
+ w.eval(`var wholeRecord={...staticRecord,id:'whole-mask-test',kind:'whole',n:128,height:512,mode:'scan',target:160,
+ scan:{velocity:10,contours:'auto',travel:160},
+ heads:[1,2].map(detector=>({detector,counts:new Uint32Array(128*512).fill(100),total:128*512*100,elapsed:960,done:true}))};`);
+ const wholeFiles=await w.GANTRY_PROCESSING_DICOM.files(w.wholeRecord,'2.25.556');
+ for(let i=0;i<wholeFiles.length;i++)await load(new w.Uint8Array(wholeFiles[i].bytes),'whole-'+i+'.dcm');
+ assert.equal(w.eval('currentMode'),'whole');assert(!$('analysisStatic').hidden);
+ assert.equal($('roiImage').options.length,2);
+ $('roiImage').value='0';$('roiImage').dispatchEvent(new w.Event('change'));
+ const wholeOriginal=w.eval('Array.from(pixels)');
+ $('analysisSelected').getBoundingClientRect=()=>({left:10,top:20,width:256,height:1024});
+ draw.onpointerdown({clientX:10,clientY:20,pointerId:2,preventDefault(){}});
+ draw.onpointermove({clientX:138,clientY:532});draw.onpointerup({clientX:138,clientY:532});
+ assert.equal(raster.get('analysisSelected')[0],0);
+ assert(raster.get('analysisSelected')[(511*128+127)*4]>0,'Lower end of the scan remains visible');
+ assert($('analysisStatus').textContent.includes('1.638.400'),'Mask uses 64 by 256 native pixels');
+ $('roiImage').value='1';$('roiImage').dispatchEvent(new w.Event('change'));
+ assert($('analysisStatus').textContent.startsWith('0 ROI'));assert(raster.get('analysisSelected')[0]>0);
+ $('roiImage').value='0';$('roiImage').dispatchEvent(new w.Event('change'));
+ assert.equal(raster.get('analysisSelected')[0],0);
+ $('roiOriginal').checked=true;$('roiOriginal').dispatchEvent(new w.Event('change'));assert(raster.get('analysisSelected')[0]>0);
+ $('roiOriginal').checked=false;$('roiOriginal').dispatchEvent(new w.Event('change'));
+ tabs[0].click();tabs[1].click();assert.equal(raster.get('analysisSelected')[0],0);
+ $('roiUndo').click();assert(raster.get('analysisSelected')[0]>0);
+ $('roiShape').value='ellipse';$('roiMode').value='keep';
+ draw.onpointerdown({clientX:10,clientY:20,pointerId:3,preventDefault(){}});
+ draw.onpointerup({clientX:266,clientY:1044});
+ assert.equal(raster.get('analysisSelected')[0],0);assert(raster.get('analysisSelected')[(256*128+64)*4]>0);
+ $('roiReset').click();assert(raster.get('analysisSelected')[0]>0);
+ assert.deepEqual(w.eval('Array.from(pixels)'),wholeOriginal,'Whole-body originals stay immutable');
  const R=w.GANTRY_ROI,image=new w.Float64Array(16).fill(1),ellipse={shape:'ellipse',mode:'keep',x0:0,y0:0,x1:4,y1:4};
  const kept=R.apply(image,4,4,[ellipse]);assert.equal(kept.removed,4);assert.equal(kept.counts[0],0);assert.equal(kept.counts[5],1);assert.equal(image[0],1);
  assert.throws(()=>R.apply(image,4,4,[{...ellipse,x1:NaN}]));

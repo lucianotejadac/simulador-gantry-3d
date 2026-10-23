@@ -2035,6 +2035,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       <div id="analysisDynamic"></div>
       <label id="analysisImageSelect">Imagen <select id="roiImage"></select></label>
       <div id="analysisStatic" hidden>
+        <strong>Enmascarar imagen</strong>
         <label>ROI <select id="roiShape"><option value="rectangle">Rectangular</option><option value="ellipse">Elíptica</option></select></label>
         <label>Máscara <select id="roiMode"><option value="exclude">Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
         <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar máscaras</button>
@@ -2100,6 +2101,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     return [...new Map(all.map(s=>[s.dataset.string('x00080018'),s])).values()].sort((a,b)=>Number(a.dataset.string('x00200013'))-Number(b.dataset.string('x00200013')));
   }
   function source(){return images[chosen]||images[0];}
+  const canMask=()=>['static','whole'].includes(currentMode);
   function key(s){return s.dataset.string('x00080018');}
   function dimensions(s){return [num(s.dataset,'00280011'),num(s.dataset,'00280010')];}
   function rois(s){
@@ -2142,7 +2144,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       $('analysisWindow').value=$('window').value;$('analysisLevel').value=$('level').value;$('analysisInvert').checked=$('invert').checked;
       const [w,h]=dimensions(s0);$('analysisX').value=Math.floor(w/2);$('analysisY').value=Math.floor(h/2);
     }
-    $('analysisDynamic').hidden=!dynamic;$('analysisStatic').hidden=currentMode!=='static';
+    $('analysisDynamic').hidden=!dynamic;$('analysisStatic').hidden=!canMask();
     $('analysisImageSelect').hidden=dynamic;
     for(const id of ['analysisGuides','analysisReferenceFigure','analysisNudge','analysisFrames'])$(id).hidden=!dynamic;
     if(dynamic){window.GANTRY_DYNAMIC_CORRECTION.sync();drawDynamic();}
@@ -2177,7 +2179,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     }
   }
   function drawStatic(){
-    const s=source(),[w,h]=dimensions(s),mask=currentMode==='static'&&!$('roiOriginal').checked?rois(s):[];
+    const s=source(),[w,h]=dimensions(s),mask=canMask()&&!$('roiOriginal').checked?rois(s):[];
     paint($('analysisSelected'),s,0,{dx:0,dy:0},mask);
     $('analysisSelectedLabel').textContent=(value(s.dataset,'0008103e')||'Imagen')+(mask.length?' · enmascarada':' · original');
     const result=window.GANTRY_ROI.apply(raw(s),w,h,mask);
@@ -2189,14 +2191,14 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   function outline(p){const [w,h]=dimensions(source()),node=$('roiOutline');node.hidden=false;
     Object.assign(node.style,{left:100*Math.min(drag.x,p.x)/w+'%',top:100*Math.min(drag.y,p.y)/h+'%',width:100*Math.abs(p.x-drag.x)/w+'%',height:100*Math.abs(p.y-drag.y)/h+'%',borderRadius:$('roiShape').value==='ellipse'?'50%':'0'});}
   const draw=$('analysisDraw');
-  draw.onpointerdown=e=>{if(currentMode!=='static'||!source())return;e.preventDefault();drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
+  draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
   draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}};
   draw.onpointerup=e=>{if(!drag)return;const p=point(e),start=drag;drag=null;$('roiOutline').hidden=true;
     if(!p)return;const s=source(),[w,h]=dimensions(s),roi={shape:$('roiShape').value,mode:$('roiMode').value,x0:start.x,y0:start.y,x1:p.x,y1:p.y};
     if(!window.GANTRY_ROI.valid(roi,w,h))return;rois(s).push(roi);const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
   };
   draw.onpointercancel=()=>{drag=null;$('roiOutline').hidden=true;};
-  $('roiImage').onchange=()=>{chosen=Number($('roiImage').value);$('roiOriginal').checked=false;drawStatic();};
+  $('roiImage').onchange=()=>{drag=null;$('roiOutline').hidden=true;chosen=Number($('roiImage').value);$('roiOriginal').checked=false;drawStatic();};
   $('roiOriginal').onchange=drawStatic;
   $('roiUndo').onclick=()=>{rois(source()).pop();persist(source());drawStatic();};
   $('roiReset').onclick=()=>{masks.set(key(source()),[]);persist(source());drawStatic();};
