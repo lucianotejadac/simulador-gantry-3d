@@ -55,6 +55,10 @@ for old, new in {
 s = re.sub(r"status\('Abre un archivo DICOM de '.*?\);",
            "status('Selecciona Adquirir para iniciar una adquisición del simulador.');", s)
 s = s.replace('if(window.showSaveFilePicker){', 'if(window.showSaveFilePicker&&window.top===window){')
+# Header entry can be dismissed without saving in the simulator edition.
+s = s.replace('flex.headerRequired=required&&!existing;', 'flex.headerRequired=false;')
+s = s.replace("flex.headerRequired?'Establecer encabezado obligatorio':'Editar encabezado común'", "existing?'Editar encabezado común':'Establecer encabezado'")
+s = s.replace("flex.headerRequired?'Para usar Página flexible, establece primero un encabezado. Se aplicará a todas las páginas.':'Este encabezado es común: los cambios se aplicarán a todas las páginas actuales y nuevas.'", "'Puedes cerrar este cuadro sin completar el encabezado. Si lo aplicas, se usará en todas las páginas.'")
 s = re.sub(r"status\('Versión demo\..*?;", "status('Usa Adquirir para configurar una nueva adquisición en los campos de este visor.');", s)
 s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>\n<style>' +
               (ROOT / 'scripts/processing_console.css').read_text(encoding='utf-8') + '</style>\n<script>\n' +

@@ -22,4 +22,11 @@
     else document.getElementById(id)?.click();
   };
   bar.append(menu);
+  const header=document.getElementById('header-dialog');
+  if(!header)return;
+  const close=document.createElement('button');
+  close.id='header-close';close.type='button';close.className='header-close';
+  close.textContent='×';close.title='Cerrar';close.setAttribute('aria-label','Cerrar cuadro de encabezado');
+  close.onclick=()=>header.close();
+  header.append(close);
 })();

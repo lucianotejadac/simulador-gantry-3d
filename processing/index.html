@@ -744,12 +744,12 @@ function drawLayoutOverlays(ctx,p,exporting){
 }
 function openHeaderEditor(required=false){
  $('flex-context').hidden=true;const p=flexPage(),meta=p?.meta||flex.assets[0]?.meta||{},existing=flex.header||p?.header;
- flex.headerRequired=required&&!existing;
+ flex.headerRequired=false;
  const defaults={patient:meta.patient==='Paciente: sin dato'?'':meta.patient||'',rut:'',date:meta.date||'',exam:meta.exam==='Examen: sin dato'?'':meta.exam||'',institution:meta.institution||''};
  for(const key of Object.keys(defaults)){$('header-'+key).value=existing?.[key].value??defaults[key];$('header-show-'+key).checked=existing?.[key].show??true;}
  $('header-origin').textContent=meta.patientId?'Identificación DICOM: '+meta.patientId+'. Completa el RUT si corresponde.':'Los campos disponibles se toman de las imágenes cargadas; puedes completar los que faltan.';
- $('header-dialog-title').textContent=flex.headerRequired?'Establecer encabezado obligatorio':'Editar encabezado común';
- $('header-dialog-description').textContent=flex.headerRequired?'Para usar Página flexible, establece primero un encabezado. Se aplicará a todas las páginas.':'Este encabezado es común: los cambios se aplicarán a todas las páginas actuales y nuevas.';
+ $('header-dialog-title').textContent=existing?'Editar encabezado común':'Establecer encabezado';
+ $('header-dialog-description').textContent='Puedes cerrar este cuadro sin completar el encabezado. Si lo aplicas, se usará en todas las páginas.';
  $('header-validation').hidden=true;$('header-cancel').hidden=flex.headerRequired;$('header-remove').hidden=true;$('header-dialog').showModal();
 }
 function openTextEditor(edit=false){
@@ -1024,6 +1024,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   body:not(.flex-mode) .layout>.card:first-child{min-height:400px}
   body:not(.flex-mode) .viewer{min-height:650px}
 }
+#header-dialog-title{padding-right:38px}
+#header-dialog .header-close{position:absolute;top:4px;right:5px;width:26px;height:24px;padding:0;min-height:0;font:bold 20px/20px Arial;cursor:pointer}
 </style>
 <script>
 // Integrated simulator edition: export tools, no external image import.
@@ -1050,6 +1052,13 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     else document.getElementById(id)?.click();
   };
   bar.append(menu);
+  const header=document.getElementById('header-dialog');
+  if(!header)return;
+  const close=document.createElement('button');
+  close.id='header-close';close.type='button';close.className='header-close';
+  close.textContent='×';close.title='Cerrar';close.setAttribute('aria-label','Cerrar cuadro de encabezado');
+  close.onclick=()=>header.close();
+  header.append(close);
 })();
 
 /* Shared validation for the viewer's acquisition form and the gantry receiver. */

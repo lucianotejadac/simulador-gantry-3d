@@ -60,3 +60,5 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   body:not(.flex-mode) .layout>.card:first-child{min-height:400px}
   body:not(.flex-mode) .viewer{min-height:650px}
 }
+#header-dialog-title{padding-right:38px}
+#header-dialog .header-close{position:absolute;top:4px;right:5px;width:26px;height:24px;padding:0;min-height:0;font:bold 20px/20px Arial;cursor:pointer}
