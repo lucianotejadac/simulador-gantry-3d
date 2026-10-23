@@ -1883,8 +1883,12 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       window.GANTRY_PROCESSING_EDITOR?.finish();
       for(const entry of batch){await loadFile(new File([entry.file.bytes],entry.file.name),entry.ds);if(!flex.assets.some(a=>a.uid===entry.file.uid))throw Error('Error al cargar '+entry.file.name);}
       if(!flex.header)flex.header=Object.fromEntries(Object.entries({patient:'Fantoma ICRP 145 · SIMULADO',rut:'',date:'',exam:'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));
-      const groups=new Map();for(const item of batch){if(!groups.has(item.file.group))groups.set(item.file.group,[]);groups.get(item.file.group).push(item);}
-      for(const group of groups.values())addPage(group);
+      // Receiving acquisitions only fills the image library. Compose a page
+      // exclusively for the explicit "Componer seleccionadas" command.
+      if(data.view==='flex'){
+        const groups=new Map();for(const item of batch){if(!groups.has(item.file.group))groups.set(item.file.group,[]);groups.get(item.file.group).push(item);}
+        for(const group of groups.values())addPage(group);
+      }
       if(data.view==='acquisition'){
         const first=batch[0].file.uid;
         const key=Object.keys(acquisitionInstances).find(k=>acquisitionInstances[k][first]);
