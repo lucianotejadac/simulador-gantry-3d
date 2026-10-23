@@ -9,7 +9,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from numba import set_num_threads
 from bone_emission import bone_emission, PARAMETERS
-from build_mdp_vascular import VASCULAR_MODEL
+from build_mdp_vascular import main as rebuild_vascular
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT.parent
@@ -67,7 +67,6 @@ def main():
             (ROOT/name).write_bytes(raw)
             meta['poses'][pose][group] = {'url':name,'scales':scales.tolist()}
             print(pose, group, len(raw), 'bytes', flush=True)
-    meta['vascularModel'] = VASCULAR_MODEL
     meta['sensitivityCpsPerMBq'] = 100
     meta['halfLifeMinutes'] = 6.0067*60
     meta['sources'] = [
@@ -76,5 +75,6 @@ def main():
     meta['limitations'] = 'Educational kinetics and assumed 100 cps/MBq LEHR sensitivity before attenuation; not a measured camera calibration. ICRP anatomy, not ICRP pharmacokinetics. Continuous skeletal-envelope emission is an educational visual model, not measured regional uptake. 6 mm spatial sampling. Bone: 360 independently projected 1 degree views. Other organ bases retain 10 degree sampling with angular interpolation. Synthetic articulated arms.'
     meta['sourceHashes'] = {str(p.relative_to(WORK)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [WORK/'simulador-renograma-mc/salida_osea/cuerpo.npz', WORK/'icrp145-oseo-360/brazos-arriba/volumen_articulado.npz', WORK/'icrp145-oseo-360/correccion_huesos_largos.npz', ROOT/'scripts/bone_emission.py', ROOT/mag['urls']['down'], ROOT/mag['urls']['up']]}
     (ROOT/'assets/icrp145/mdp-provenance.json').write_text(json.dumps(meta,indent=2),encoding='utf-8')
+    rebuild_vascular()
 
 if __name__ == '__main__': main()

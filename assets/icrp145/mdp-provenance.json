@@ -423,7 +423,7 @@
         ]
       },
       "organs": {
-        "url": "assets/runtime/mdp-organs-down.2eb59ddcf7b0f414.bin",
+        "url": "assets/runtime/mdp-organs-down.dd1938e4cd22ba11.bin",
         "scales": [
           9.601552442006778e-09,
           8.006708629437753e-10,
@@ -1381,7 +1381,7 @@
         ]
       },
       "organs": {
-        "url": "assets/runtime/mdp-organs-up.448d6c18e76fbca6.bin",
+        "url": "assets/runtime/mdp-organs-up.d91c211fb4a67618.bin",
         "scales": [
           9.601552442006778e-09,
           8.006708629437753e-10,
@@ -2358,18 +2358,29 @@
   "nativeGeneratorHash": "fef97af391783b9eedd69b46964a51a7d7e0e81149ae8f5db35d86a3ea16ccc9",
   "depthGeneratorHash": "d8b9928161da877ceb22a4624c43ba24b8a22c9eff1ccfb6abb30d12d7c6fa98",
   "vascularModel": {
-    "model": "icrp-upper-abdominal-leg-arteries-v2",
+    "model": "icrp-continuous-lower-perfusion-v3",
     "sourceComponents": [
       12,
       13,
       14
     ],
-    "territoryWeights": [
-      0.3333333333333333,
-      0.3333333333333333,
-      0.3333333333333333
-    ],
-    "source": "Existing synthetic ICRP 145 vascular labels projected at 36 angles with attenuation.",
-    "limitations": "Equal territory activity fractions are illustrative. No patient anatomy, lesions or image pixels are included."
+    "territoryWeights": {
+      "upper": 0.3333333333333333,
+      "continuousAbdomenAndLegs": 0.6666666666666666
+    },
+    "geometry": {
+      "model": "icrp-pelvic-perfusion-paths-v1",
+      "rangeMm": [
+        -260,
+        220
+      ],
+      "edgeBlendMm": 30,
+      "centreSmoothingMm": 12,
+      "secondaryBranchFraction": 0.12,
+      "limitations": "Illustrative 3D perfusion appearance; source-derived main paths with reduced secondary branches, not validated vessel anatomy."
+    },
+    "source": "Synthetic ICRP 145 arterial labels, pelvis/thigh perfusion approximation, 36 attenuated angular projections.",
+    "limitations": "Illustrative concentration and geometry. No patient anatomy, lesions or image pixels are included.",
+    "generatorSha256": "a67c757331be70f0885da9f66c8e14fd2346a79e4976842febcba747d0d471ec"
   }
 }

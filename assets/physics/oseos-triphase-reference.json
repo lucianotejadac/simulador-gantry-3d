@@ -16,7 +16,8 @@
     1002
   ],
   "injectionTimesAvailable": false,
-  "phantomCorrection": "Include ICRP upper, abdominal and leg arterial bases with equal illustrative territory weights. No patient pixels are included.",
+  "phantomCorrection": "Initial fit used upper, abdominal and leg arterial bases with equal territory weights. Current revision retains upper activity at one third and combines abdomen/legs with continuous concentration; source-derived pelvic main paths are smoothed and secondary branches reduced before 3D projection. No patient pixels are included.",
+  "geometryRevision": "icrp-continuous-lower-perfusion-v3: exploratory teaching appearance. Fit errors below describe the previous v2 geometry, not a validation of this revision. The 9-second transit parameter is retained.",
   "kineticFit": {
     "model": "relative-vascular-contrast-v1",
     "fitCases": 6,
