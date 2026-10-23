@@ -1,0 +1,51 @@
+{
+  "reference": "OSEOS.rar: local reference audit, 2026-10-23",
+  "archiveSha256": "e06d7cac3913a12c16d41254013c882a73499ea5ba41d8b5b570c534d1d9db9e",
+  "cases": 20,
+  "nmInstances": 299,
+  "originalPrimaryInstances": 129,
+  "dynamicSequences": 17,
+  "framesPerDetector": 120,
+  "detectors": 2,
+  "dynamicMatrix": [
+    128,
+    128
+  ],
+  "frameDurationMs": [
+    1001,
+    1002
+  ],
+  "injectionTimesAvailable": false,
+  "phantomCorrection": "Include ICRP upper, abdominal and leg arterial bases with equal illustrative territory weights. No patient pixels are included.",
+  "kineticFit": {
+    "model": "relative-vascular-contrast-v1",
+    "fitCases": 6,
+    "validationCases": 3,
+    "parameterTauSeconds": 8.838597344987942,
+    "oldTauSeconds": 25,
+    "fitErrorBefore": 0.15513155311647608,
+    "fitErrorAfter": 0.020670347772784363,
+    "validationErrorBefore": 0.13834643813183112,
+    "validationErrorAfter": 0.04017713954633583,
+    "referenceMedianAtSeconds": {
+      "10": 0.2823208004248178,
+      "20": 0.1261738884351364,
+      "40": 0.07028249726721231,
+      "60": 0.061709765462437595,
+      "80": 0.057626254635102854
+    },
+    "limitations": "Relative planar appearance only, not blood clearance. Injection times missing. ROI geometry, pathology, bolus, attenuation and subject motion can affect contrast. Clinical pixels stay local; synthetic anatomy is not patient-matched."
+  },
+  "deployedArterialTransitSeconds": 9,
+  "unchanged": [
+    "systemic blood/bone/renal/urine activity fractions",
+    "physical decay",
+    "late bone emission and tissue-balance calibration",
+    "camera sensitivity and collimator response"
+  ],
+  "scope": "Exploratory relative appearance fit; not clinical validation or absolute pharmacokinetic calibration. No local focal uptake, hardware pattern or injection-site activity is transferred to the generic phantom.",
+  "sources": [
+    "https://tech.snmjournals.org/content/46/4/398",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/"
+  ]
+}

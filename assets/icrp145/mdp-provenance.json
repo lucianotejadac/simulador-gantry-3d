@@ -423,7 +423,7 @@
         ]
       },
       "organs": {
-        "url": "assets/runtime/mdp-organs-down.23220c63ee0b95ef.bin",
+        "url": "assets/runtime/mdp-organs-down.2eb59ddcf7b0f414.bin",
         "scales": [
           9.601552442006778e-09,
           8.006708629437753e-10,
@@ -431,7 +431,7 @@
           6.899700366602701e-08,
           2.670099163992745e-08,
           1.2494886014735584e-08,
-          3.191201969343638e-08
+          2.1274679795624252e-08
         ]
       },
       "nativeBone": {
@@ -1381,7 +1381,7 @@
         ]
       },
       "organs": {
-        "url": "assets/runtime/mdp-organs-up.29b6278dd71a4271.bin",
+        "url": "assets/runtime/mdp-organs-up.448d6c18e76fbca6.bin",
         "scales": [
           9.601552442006778e-09,
           8.006708629437753e-10,
@@ -1389,7 +1389,7 @@
           6.899700366602701e-08,
           2.670099163992745e-08,
           1.2494886014735584e-08,
-          3.191201969343638e-08
+          2.1274679795624252e-08
         ]
       },
       "nativeBone": {
@@ -2356,5 +2356,20 @@
   },
   "nativeBoneModel": "native-volume-3mm-no-camera-psf-v1",
   "nativeGeneratorHash": "fef97af391783b9eedd69b46964a51a7d7e0e81149ae8f5db35d86a3ea16ccc9",
-  "depthGeneratorHash": "d8b9928161da877ceb22a4624c43ba24b8a22c9eff1ccfb6abb30d12d7c6fa98"
+  "depthGeneratorHash": "d8b9928161da877ceb22a4624c43ba24b8a22c9eff1ccfb6abb30d12d7c6fa98",
+  "vascularModel": {
+    "model": "icrp-upper-abdominal-leg-arteries-v2",
+    "sourceComponents": [
+      12,
+      13,
+      14
+    ],
+    "territoryWeights": [
+      0.3333333333333333,
+      0.3333333333333333,
+      0.3333333333333333
+    ],
+    "source": "Existing synthetic ICRP 145 vascular labels projected at 36 angles with attenuation.",
+    "limitations": "Equal territory activity fractions are illustrative. No patient anatomy, lesions or image pixels are included."
+  }
 }

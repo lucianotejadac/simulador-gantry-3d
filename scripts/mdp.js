@@ -5,6 +5,10 @@
   const wrap=a=>(a%360+360)%360;
   const scatterAppearance=Object.freeze({model:'mdp-diffuse-v2-background',oddsMultiplier:6,sigmaMm:30,maxFraction:.55});
   const backgroundAppearance=Object.freeze({model:'mdp-tissue-balance-v1',boneRedistributionFraction:0.2640939054649198,transitionMinutes:Object.freeze([5,30])});
+  // Relative vessel-to-adjacent-tissue contrast fitted locally to OSEOS flow
+  // sequences, aligned at the local contrast peak (injection times unavailable).
+  // This is a spatial first-pass redistribution, not systemic blood clearance.
+  const vascularAppearance=Object.freeze({model:'mdp-triphase-oseos-v1',arterialTransitSeconds:9,reference:'assets/physics/oseos-triphase-reference.json'});
   const backgroundEligible=new WeakSet(),backgroundBones=new WeakMap();
   function neededChunks(name,angles){
     const d=data.poses[name].nativeBone;if(!d)return [];
@@ -55,7 +59,7 @@
     }
     const b=biological(t),excreted=voidAt120&&t>=120?biological(120).urine:0;
     const s=t*60,central=Math.exp(-s/6),lungs=(1-central)*Math.exp(-s/12);
-    const arteries=(1-central-lungs)*Math.exp(-s/25),decay=2**(-t/HALF);
+    const arteries=(1-central-lungs)*Math.exp(-s/vascularAppearance.arterialTransitSeconds),decay=2**(-t/HALF);
     // The inherited vascular basis strongly emphasizes the cardiac chambers.
     // Retain it for first pass/pool, then replace its spatial contrast with
     // diffuse background. This is a teaching display model, not zero blood
@@ -207,7 +211,7 @@
     if(state.seconds>=LIMIT&&!session.finished){session.finished=true;session.mdpLimit=true;}
   }
   const el=id=>document.getElementById(id);
-  function metadata(){return {...state,scatterAppearance:{...scatterAppearance},backgroundAppearance:{...backgroundAppearance,transitionMinutes:[...backgroundAppearance.transitionMinutes]},model:'mdp-v2',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
+  function metadata(){return {...state,scatterAppearance:{...scatterAppearance},backgroundAppearance:{...backgroundAppearance,transitionMinutes:[...backgroundAppearance.transitionMinutes]},vascularAppearance:{...vascularAppearance},vascularPhantom:data.vascularModel?.model||null,model:'mdp-v3-triphase',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
   function render(){
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;

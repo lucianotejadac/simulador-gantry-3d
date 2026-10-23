@@ -13,7 +13,13 @@ function blur(source){
     assert.deepEqual(currentBlur(input,w,h,sigma),previousBlur(input,w,h,sigma),'Gaussian pixels and zero padding unchanged');
   }
   // Isolate the historical pixel-space optimization; physical response is tested separately.
-  const before=await fixture(sources,false),after=await fixture({},false);
+  const after=await fixture({},false);
+  // Compare caching with identical kinetics: the OSEOS appearance fit changed
+  // vascular transit independently of the historical projection optimization.
+  assert(sources.mdp.includes('Math.exp(-s/25)'));
+  const historical={...sources,mdp:sources.mdp.replace('Math.exp(-s/25)',
+    'Math.exp(-s/'+after.GANTRY_MDP.metadata().vascularAppearance.arterialTransitSeconds+')')};
+  const before=await fixture(historical,false);
   let cases=0;
   for(const energy of [80,120,140,200,450])for(const width of [10,15,20,25])for(const col of ['LEHR','MELP','HE']){
     const options={n:32,energy,width,col,angle:cases%2?180:33.5,move:cases%3};

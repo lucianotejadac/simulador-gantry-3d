@@ -9,6 +9,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from numba import set_num_threads
 from bone_emission import bone_emission, PARAMETERS
+from build_mdp_vascular import VASCULAR_MODEL
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT.parent
@@ -58,7 +59,7 @@ def main():
         # Keep the 360 real skeletal projections separate from the existing
         # seven organ bases: no tenfold duplication of background data in RAM.
         meta['poses'][pose] = {}
-        groups = {'bone':np.array(bone)[None], 'organs':np.stack([old[7],old[8],kidney,old[6],old[10],old[11],.5*(old[12]+old[13])])}
+        groups = {'bone':np.array(bone)[None], 'organs':np.stack([old[7],old[8],kidney,old[6],old[10],old[11],(old[12]+old[13]+old[14])/3])}
         for group, frames in groups.items():
             scales = frames.max(axis=(1,2,3))/65535
             raw = zlib.compress(np.rint(frames/scales[:,None,None,None]).astype('<u2').tobytes(),9)
@@ -66,6 +67,7 @@ def main():
             (ROOT/name).write_bytes(raw)
             meta['poses'][pose][group] = {'url':name,'scales':scales.tolist()}
             print(pose, group, len(raw), 'bytes', flush=True)
+    meta['vascularModel'] = VASCULAR_MODEL
     meta['sensitivityCpsPerMBq'] = 100
     meta['halfLifeMinutes'] = 6.0067*60
     meta['sources'] = [
