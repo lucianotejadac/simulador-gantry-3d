@@ -1,4 +1,4 @@
-/* Session acquisitions only: no empty type slots or tool tiles in the list.
+/* Session acquisitions followed by the permanent flexible-page entry.
    Keep the underlying slots for the viewer's series/pair bookkeeping. */
 (function(){
   'use strict';
@@ -23,6 +23,13 @@
       nav.insertBefore(button,empty);
     }
     empty.hidden=order.size>0;
+    const flexible=$('mode-flex');
+    if(flexible){
+      flexible.hidden=false;
+      nav.append(flexible);
+      // Resolve the current handler so draft and analysis wrappers also run.
+      flexible.onclick=()=>openFlexible();
+    }
   }
   style.textContent+=' .acquisition-tabs button[data-acquisition-number]::before{content:attr(data-acquisition-number) " · ";font-weight:bold}.acquisition-tabs button{flex-shrink:0}';
   let configurationSerial=0;
@@ -86,8 +93,9 @@
     // Append acquisitions in arrival order, even when the study type changes.
     arrange();
     const active=window.GANTRY_PROCESSING_EDITOR?.currentId;
-    for(const [id,entry] of order)entry.button.setAttribute('aria-selected',String(active?id===active:entry.key===currentAcquisition));
-    if($('mode-flex'))$('mode-flex').hidden=true;
+    const inFlexible=typeof flex!=='undefined'&&flex.visible;
+    for(const [id,entry] of order)entry.button.setAttribute('aria-selected',String(!inFlexible&&(active?id===active:entry.key===currentAcquisition)));
+    if($('mode-flex'))$('mode-flex').setAttribute('aria-selected',String(!!inFlexible));
     return result;
   };
   function remove(id){

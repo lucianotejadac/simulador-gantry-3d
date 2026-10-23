@@ -57,13 +57,14 @@ const flush=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
   const nodes=new Map(),order=[];
   const node=id=>({id,hidden:false,dataset:{},append(){},setAttribute(){},remove(){const i=order.indexOf(this.id);if(i>=0)order.splice(i,1);}});
   const el=id=>{if(!nodes.has(id))nodes.set(id,node(id));return nodes.get(id);};
-  const empty={};const nav={querySelector:()=>empty,append(){},insertBefore(button){const old=order.indexOf(button.id);if(old>=0)order.splice(old,1);order.push(button.id);}};
+  let lastAppended;const empty={};const nav={querySelector:()=>empty,append(button){lastAppended=button.id;},insertBefore(button){const old=order.indexOf(button.id);if(old>=0)order.splice(old,1);order.push(button.id);}};
   let created=0;
   const s={window:{},value:ds=>JSON.stringify(ds.info),document:{querySelector:()=>nav,createElement:()=>node('new-'+(++created)),createTextNode:text=>({textContent:text}),head:{append(){}}},$:el,
     acquisitionKinds:{whole:'whole',static:'static',dynamic:'dynamic'},modeStates:{},acquisitionInstances:{},
     currentAcquisition:'whole',dataset:null,updateModeUI(){}};
   vm.createContext(s);vm.runInContext(fs.readFileSync('scripts/processing_session_list.js','utf8'),s);
-  assert(['whole','static','dynamic','flex'].every(k=>el('mode-'+k).hidden));assert(!empty.hidden);
+  assert(['whole','static','dynamic'].every(k=>el('mode-'+k).hidden));assert(!empty.hidden);
+  assert(!el('mode-flex').hidden);assert.equal(lastAppended,'mode-flex','Flexible page is visible last even with no acquisitions');
   const list=s.window.GANTRY_PROCESSING_LIST,config={kind:'static',names:['D1','D2']};
   const draftId=list.configuration(config);assert.equal(order.length,1,'Configuration immediately creates a tile');assert(empty.hidden);
   const draftTile=order[0];
@@ -87,5 +88,6 @@ const flush=async()=>{for(let i=0;i<20;i++)await Promise.resolve();};
   s.acquisitionKinds['static-3']='static';s.modeStates['static-3']={dataset:{info:{processing:{acquisitionId:'third'}}}};
   s.updateModeUI();assert.deepEqual(order,['mode-static','mode-whole','mode-static-2','mode-static-3'],'Import replaces pending row in place');
   s.window.GANTRY_PROCESSING_LIST.progress({id:'third',finished:true});s.updateModeUI();assert.equal(order.length,4,'Late progress does not duplicate imported row');
-  console.log('OK: zero initial acquisitions, no cache import, FIFO per detector pair, deduplication, reopening retains session, reload starts empty and no placeholder/tool tiles.');
+  assert(!el('mode-flex').hidden);assert.equal(lastAppended,'mode-flex','Flexible page remains last as acquisitions accumulate');
+  console.log('OK: empty initial session, FIFO detector pairs, persistent drafts, deduplication and permanent flexible page at the end.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
