@@ -74,8 +74,35 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  assert.equal(raster.get('analysisSelected')[0],0);assert(raster.get('analysisSelected')[(256*128+64)*4]>0);
  $('roiReset').click();assert(raster.get('analysisSelected')[0]>0);
  assert.deepEqual(w.eval('Array.from(pixels)'),wholeOriginal,'Whole-body originals stay immutable');
+ // A hot region must stop dominating the display window once masked.
+ w.eval(`var contrastRecord={...wholeRecord,id:'whole-mask-contrast',heads:[1,2].map(detector=>{
+  const counts=new Uint32Array(128*512).fill(10*detector);counts[0]=1000*detector;counts[counts.length-1]=0;
+  return {detector,counts,total:counts.reduce((a,b)=>a+b,0),elapsed:960,done:true};})};`);
+ const contrastFiles=await w.GANTRY_PROCESSING_DICOM.files(w.contrastRecord,'2.25.557');
+ for(let i=0;i<contrastFiles.length;i++)await load(new w.Uint8Array(contrastFiles[i].bytes),'contrast-'+i+'.dcm');
+ $('roiImage').value='0';$('roiImage').dispatchEvent(new w.Event('change'));
+ assert.equal(Number($('analysisWindow').value),1001);
+ const dimPixel=raster.get('analysisSelected')[(400*128+100)*4];
+ $('analysisSelected').getBoundingClientRect=()=>({left:0,top:0,width:128,height:512});
+ $('roiShape').value='rectangle';$('roiMode').value='exclude';
+ const maskHotspot=()=>{draw.onpointerdown({clientX:0,clientY:0,pointerId:4,preventDefault(){}});draw.onpointerup({clientX:64,clientY:256});};
+ maskHotspot();
+ assert.equal(Number($('analysisWindow').value),11);assert.equal(Number($('analysisLevel').value),5);
+ assert(raster.get('analysisSelected')[(400*128+100)*4]>dimPixel,'Visible tissue brightens after excluding the hot region');
+ $('analysisWindow').value='50';$('analysisWindow').dispatchEvent(new w.Event('input'));await tick();
+ assert.equal(Number($('analysisWindow').value),50,'Manual changes survive redraws while the mask is unchanged');
+ $('roiOriginal').checked=true;$('roiOriginal').dispatchEvent(new w.Event('change'));assert.equal(Number($('analysisWindow').value),1001);
+ $('roiOriginal').checked=false;$('roiOriginal').dispatchEvent(new w.Event('change'));assert.equal(Number($('analysisWindow').value),11);
+ $('roiImage').value='1';$('roiImage').dispatchEvent(new w.Event('change'));assert.equal(Number($('analysisWindow').value),2001);
+ $('roiImage').value='0';$('roiImage').dispatchEvent(new w.Event('change'));assert.equal(Number($('analysisWindow').value),11);
+ $('roiUndo').click();assert.equal(Number($('analysisWindow').value),1001);
+ maskHotspot();$('roiReset').click();assert.equal(Number($('analysisWindow').value),1001);
+ draw.onpointerdown({clientX:0,clientY:0,pointerId:5,preventDefault(){}});draw.onpointerup({clientX:128,clientY:512});
+ assert.equal(Number($('analysisWindow').value),1);assert.equal(Number($('analysisLevel').value),.5);
+ assert.equal(raster.get('analysisSelected')[0],0,'Fully hidden images do not turn white or produce invalid levels');
  const R=w.GANTRY_ROI,image=new w.Float64Array(16).fill(1),ellipse={shape:'ellipse',mode:'keep',x0:0,y0:0,x1:4,y1:4};
  const kept=R.apply(image,4,4,[ellipse]);assert.equal(kept.removed,4);assert.equal(kept.counts[0],0);assert.equal(kept.counts[5],1);assert.equal(image[0],1);
+ assert.equal(kept.min,1,'Artificial zeros outside a keep mask are excluded from window statistics');assert.equal(kept.max,1);assert.equal(kept.visiblePixels,12);
  assert.throws(()=>R.apply(image,4,4,[{...ellipse,x1:NaN}]));
  assert.deepEqual(errors,[]);dom.window.close();console.log('OK: analysis tab, all frames, common guides, selection/correction per detector, reversible native-coordinate ROI, persistence and immutable original pixels.');
 })().catch(e=>{console.error(e);dom.window.close();process.exitCode=1;});

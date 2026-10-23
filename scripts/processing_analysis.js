@@ -2,7 +2,7 @@
    reversible processing keyed by SOP UID. Acquisition buffers stay immutable. */
 (function(){
   'use strict';
-  let opened=false,timer=null,images=[],chosen=0,drag=null,identity='',galleryKey='';
+  let opened=false,timer=null,images=[],chosen=0,drag=null,identity='',galleryKey='',windowKey='';
   const masks=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
   panel.innerHTML=`<div class="mode-heading">Visualización / Análisis</div>
     <p id="analysisEmpty">Selecciona una adquisición terminada en la columna izquierda.</p>
@@ -15,7 +15,7 @@
         <label>Máscara <select id="roiMode"><option value="exclude">Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
         <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar máscaras</button>
         <label><input type="checkbox" id="roiOriginal">Ver original</label>
-        <p>Arrastra sobre la imagen para dibujar una ROI. Cada imagen conserva sus propias máscaras.</p></div>
+        <p>Arrastra sobre la imagen para dibujar una ROI. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
       <div class="analysis-toolbar"><label>Ventana <input id="analysisWindow" type="number" min="1" step="any"></label>
         <label>Nivel <input id="analysisLevel" type="number" step="any"></label>
         <label><input id="analysisInvert" type="checkbox">Invertir</label>
@@ -155,9 +155,16 @@
   }
   function drawStatic(){
     const s=source(),[w,h]=dimensions(s),mask=canMask()&&!$('roiOriginal').checked?rois(s):[];
+    const result=window.GANTRY_ROI.apply(raw(s),w,h,mask);
+    const nextWindowKey=JSON.stringify([key(s),mask,$('roiOriginal').checked]);
+    if(nextWindowKey!==windowKey){
+      windowKey=nextWindowKey;
+      $('analysisWindow').value=Math.max(1,result.max-result.min+1);
+      // All-zero or fully hidden images stay black, including threshold mode.
+      $('analysisLevel').value=result.max===0?.5:(result.min+result.max)/2;
+    }
     paint($('analysisSelected'),s,0,{dx:0,dy:0},mask);
     $('analysisSelectedLabel').textContent=(value(s.dataset,'0008103e')||'Imagen')+(mask.length?' · enmascarada':' · original');
-    const result=window.GANTRY_ROI.apply(raw(s),w,h,mask);
     $('analysisStatus').textContent=rois(s).length+' ROI · '+result.removed.toLocaleString('es-CL')+' cuentas ocultas en esta vista. Original conservado.';
     $('roiUndo').disabled=$('roiReset').disabled=!rois(s).length;
   }

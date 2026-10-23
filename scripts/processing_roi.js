@@ -12,9 +12,13 @@
   function visible(rois,x,y){return rois.every(r=>contains(r,x,y)===(r.mode==='keep'));}
   function apply(image,w,h,rois){
     if(image.length!==w*h||!rois.every(r=>valid(r,w,h)))throw Error('ROI no válida');
-    const counts=new Float64Array(image);let removed=0;
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(!visible(rois,x+.5,y+.5)){removed+=counts[y*w+x];counts[y*w+x]=0;}
-    return {counts,removed};
+    const counts=new Float64Array(image);let removed=0,min=Infinity,max=-Infinity,visiblePixels=0;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;
+      if(!visible(rois,x+.5,y+.5)){removed+=counts[i];counts[i]=0;}
+      else{min=Math.min(min,counts[i]);max=Math.max(max,counts[i]);visiblePixels++;}
+    }
+    return {counts,removed,min:visiblePixels?min:0,max:visiblePixels?max:0,visiblePixels};
   }
   window.GANTRY_ROI={valid,visible,apply};
 })();
