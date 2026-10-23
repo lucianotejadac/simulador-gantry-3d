@@ -62,6 +62,7 @@
     if(on)stopDynamic();
     if(document.body.classList.contains('flex-mode'))closeFlexible();
     opened=on;panel.hidden=!on;$('acquisition-panel').hidden=on;
+    window.GANTRY_PROCESSING_EDITOR?.setPreviewVisible(!on);
     tabs.forEach((b,i)=>b.setAttribute('aria-selected',String(on===!!i)));
     if(on)refresh();
   }

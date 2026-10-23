@@ -40,6 +40,7 @@ assert.equal(fromRecord({...saved,kind:'whole',mode:'scan',scan:{velocity:8,cont
 vm.runInContext(fs.readFileSync('scripts/processing_acquisition_bridge.js','utf8'),c);w.GANTRY_PROCESSING_ACQUISITION.attach(frame);
 const send=async data=>listeners.message({origin:'http://local',source:frame.contentWindow,data:{version:1,request:1,...data}});
 (async()=>{
+ const independent={...live.settings};
  const preview={kind:'static',matrix:512,zoom:2,collimator:'HE',energyCenter:180,windowWidth:25};
  await send({type:'GANTRY_CAMERA_PREVIEW',preview:1,config:preview});
  for(const key of ['matrix','zoom','collimator','energyCenter','windowWidth'])assert.equal(live.settings[key],preview[key]);
@@ -54,6 +55,13 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  await listeners.message({origin:'http://foreign',source:frame.contentWindow,data:{type:'GANTRY_CAMERA_PREVIEW',version:1,config:base}});
  await listeners.message({origin:'http://local',source:{},data:{type:'GANTRY_CAMERA_PREVIEW',version:1,config:base}});
  assert.equal(cameraUpdates.length,5);
+ await send({type:'GANTRY_CAMERA_PREVIEW_END'});
+ assert.deepEqual(live.settings,independent,'Leaving configuration restores the independent live camera');
+ assert.equal(engine.state,null);
+ await send({type:'GANTRY_CAMERA_PREVIEW',preview:5,config:preview});
+ assert.equal(live.settings.matrix,512,'Returning to a draft previews its parameters again');
+ w.GANTRY_PROCESSING_ACQUISITION.releasePreview();
+ assert.deepEqual(live.settings,independent,'Closing processing also restores live settings');
  await listeners.message({origin:'http://foreign',source:frame.contentWindow,data:{type:'GANTRY_ACQUIRE_START',version:1,config:base}});assert.equal(calls.length,0);
  await listeners.message({origin:'http://local',source:{},data:{type:'GANTRY_ACQUIRE_START',version:1,config:base}});assert.equal(calls.length,0);
  await send({type:'GANTRY_ACQUIRE_START',config:{...base,matrix:1024}});assert.equal(calls.length,0);assert.match(messages.at(-1).error,/Matriz/);
@@ -110,9 +118,17 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  w.GANTRY_RF.pending=()=>false;
  await send({type:'GANTRY_ACQUIRE_START',config:base});
  assert.equal(calls.at(-1).activityMci,8);assert.equal(calls.at(-1).minutes,1,'Stale draft must not rewind the shared administration');
+ const acquiringSettings={...live.settings};
+ await send({type:'GANTRY_CAMERA_PREVIEW_END'});
+ assert.deepEqual(live.settings,acquiringSettings,'Leaving the active tile must not change acquisition physics');
  await send({type:'GANTRY_ADMINISTRATION_UPDATE',activityMci:25,minutes:20});
  assert.equal(messages.at(-1).type,'GANTRY_ADMINISTRATION_ERROR');assert.equal(administration.activityMBq,296);
  w.GANTRY_PROCESSING.active=false;const prior=messages.length;await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'static'});assert.equal(messages.length,prior);
+ engine.active=false;
+ intervals[0]();
+ assert.deepEqual(live.settings,independent,'After acquisition ends, restore independent live settings even with processing hidden');
+ assert.equal(administration.activityMBq,296,'Restoring camera must not restore an old dose');
+ assert.equal(administration.seconds,60,'Restoring camera must not rewind injection time');
  const engineCode=fs.readFileSync('scripts/bone_acquisition.js','utf8');assert(!engineCode.includes('if(window.GANTRY_PROCESSING?.active){clock='),'Processing must not freeze acquisition');
  console.log('OK: native acquisition configuration, matrix/energy/activity/time mapping, exact goal, source/origin, collision lock, duplicate start and stale command rejection.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

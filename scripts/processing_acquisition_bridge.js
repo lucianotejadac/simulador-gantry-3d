@@ -7,6 +7,21 @@
     const live=()=>window.GANTRY_LIVE,engine=()=>window.GANTRY_BONE_ACQ;
     const post=(data,transfer=[])=>frame.contentWindow.postMessage({...data,version:1},location.origin,transfer);
     const otherBusy=()=>engine().active||window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
+    const cameraSetters=[['matrix','setMatrix'],['zoom','setZoom'],['collimator','setCollimator'],['energyCenter','setEnergyCenter'],['windowWidth','setWindowWidth']];
+    let independentCamera=null,previewing=false;
+    function retainLiveCamera(){
+      if(!independentCamera)independentCamera={study:live().settings.study,...Object.fromEntries(cameraSetters.map(([key])=>[key,live().settings[key]]))};
+    }
+    function restoreLiveCamera(){
+      if(!independentCamera||previewing||preparing||otherBusy())return;
+      const settings=independentCamera;independentCamera=null;
+      if(settings.study!==live().settings.study)return;
+      for(const [key,setter] of cameraSetters)if(live().settings[key]!==settings[key])live()[setter](settings[key]);
+      live().clearPersistence?.();live().update(window.GANTRY.G);
+    }
+    function releasePreview(){previewing=false;restoreLiveCamera();}
+    // Leaving the processor ends the temporary preview, even while its iframe is hidden.
+    window.GANTRY_PROCESSING_ACQUISITION.releasePreview=releasePreview;
     function positionState(){
       const declared=window.GANTRY_ACQUISITION||{};
       return {decubitus:declared.decubitus==='prone'?'prone':'supine',entry:declared.headFirst?'headIn':'headOut',
@@ -23,8 +38,9 @@
     function applyCamera(c){
       if(live().settings.study!=='bone')live().setStudy('bone');
       if(live().settings.study!=='bone')throw Error('No se pudo seleccionar el estudio óseo.');
+      retainLiveCamera();
       if(live().signal.mode!=='live')live().setSignalMode('live');
-      for(const [key,setter] of [['matrix','setMatrix'],['zoom','setZoom'],['collimator','setCollimator'],['energyCenter','setEnergyCenter'],['windowWidth','setWindowWidth']]){
+      for(const [key,setter] of cameraSetters){
         if(live().settings[key]!==c[key])live()[setter](c[key]);
       }
       live().update(window.GANTRY.G);
@@ -50,6 +66,7 @@
         }
         if(!window.GANTRY_PROCESSING.active)throw Error('Inicio cancelado al salir de procesamiento.');
         owned=engine().startConfigured(c);
+        previewing=false;
         if(instant)engine().controlFromProcessing('instant').catch(error=>post({type:'GANTRY_ACQUIRE_ERROR',error:error.message}));
         return owned;
       }finally{preparing=false;}
@@ -57,9 +74,11 @@
     window.addEventListener('message',async event=>{
       if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.version!==1||!window.GANTRY_PROCESSING.active)return;
       const d=event.data;
-      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION','GANTRY_ACQUIRE_RETAKE','GANTRY_ACQUIRE_DELETE','GANTRY_CAMERA_PREVIEW','GANTRY_ADMINISTRATION_UPDATE'].includes(d.type))return;
+      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION','GANTRY_ACQUIRE_RETAKE','GANTRY_ACQUIRE_DELETE','GANTRY_CAMERA_PREVIEW','GANTRY_CAMERA_PREVIEW_END','GANTRY_ADMINISTRATION_UPDATE'].includes(d.type))return;
       try{
-        if(d.type==='GANTRY_ADMINISTRATION_UPDATE'){
+        if(d.type==='GANTRY_CAMERA_PREVIEW_END'){
+          releasePreview();
+        }else if(d.type==='GANTRY_ADMINISTRATION_UPDATE'){
           if(preparing||otherBusy()||window.GANTRY_EXAM?.blocked)throw Error('Finaliza la adquisición antes de cambiar la administración.');
           if(typeof d.activityMci!=='number'||typeof d.minutes!=='number'||d.minutes>=180||!window.GANTRY_MDP.configure(d.activityMci*37,d.minutes*60))throw Error('Dosis o tiempo no válidos.');
           live().clearPersistence();live().update(window.GANTRY.G);
@@ -67,7 +86,7 @@
         }else if(d.type==='GANTRY_CAMERA_PREVIEW'){
           const c=window.GANTRY_PROCESSING_CONFIG.camera(d.config);
           if(preparing||otherBusy()||window.GANTRY_EXAM?.blocked)throw Error('Finaliza la adquisición activa o reinicia el examen antes de cambiar la cámara en vivo.');
-          applyCamera(c);
+          previewing=true;applyCamera(c);
           if(window.GANTRY_RF){const m=window.GANTRY_MDP.metadata();post({type:'GANTRY_ADMINISTRATION_STATE',activityMci:m.activityMBq/37,minutes:Math.min(179.99,m.seconds/60)});}
           post({type:'GANTRY_CAMERA_PREVIEW_RESULT',preview:d.preview});
         }else if(d.type==='GANTRY_ACQUIRE_RETAKE'||d.type==='GANTRY_ACQUIRE_DELETE'){
@@ -105,6 +124,7 @@
     // Thumbnails are only for progress display. Final DICOM keeps original counts.
     const previews=[document.createElement('canvas'),document.createElement('canvas')];
     setInterval(()=>{
+      restoreLiveCamera();
       if(!window.GANTRY_PROCESSING.active||sending)return;
       const m=window.GANTRY_MDP.metadata(),administration={activityMci:m.activityMBq/37,minutes:Math.min(179.99,m.seconds/60)};
       const administrationKey=JSON.stringify(administration);

@@ -70,9 +70,11 @@
     el('gantryLive').hidden=true;el('boneProcessingPane').hidden=false;
     el('boneProcessingTab').setAttribute('aria-selected','true');el('boneGantryTab').setAttribute('aria-selected','false');
     if(!loaded)load();
+    if(ready)frame.contentWindow.postMessage({type:'GANTRY_PROCESSING_SHOW',version:1},location.origin);
     try{await refresh();await sync();}catch(error){status.textContent='No se pudo leer el catálogo local: '+error.message;}
   }
   function close(){
+    window.GANTRY_PROCESSING_ACQUISITION?.releasePreview?.();
     active=false;tools.hidden=true;tools.open=false;el('boneProcessingPane').hidden=true;el('gantryLive').hidden=false;
     el('acquisitionMenuButton').disabled=false;
     el('boneProcessingTab').setAttribute('aria-selected','false');el('boneGantryTab').setAttribute('aria-selected','true');

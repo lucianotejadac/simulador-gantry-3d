@@ -62,7 +62,14 @@ second.click();assert.equal($('gantryDraft-velocity').value,'8');assert.equal($(
 assert.equal(list().length,2);
 // Leaving the draft to inspect an acquired slot must not discard it.
 w.GANTRY_PROCESSING_EDITOR.finish();w.selectMode('static');assert.equal(list().length,2);
+assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW_END','Recorded acquisition selection releases the live preview');
 second.click();assert.equal($('gantryDraft-velocity').value,'8');
+receive({type:'GANTRY_PROCESSING_SHOW'});
+assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW','Reopening processing restores the selected draft preview');
+w.GANTRY_PROCESSING_EDITOR.setPreviewVisible(false);
+assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW_END','Analysis releases the temporary camera preview');
+w.GANTRY_PROCESSING_EDITOR.setPreviewVisible(true);
+assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW','Returning to acquisition previews the retained draft');
 menu('delete');assert($('retakeConfirmation').open);$('retakeCancel').click();assert.equal(list().length,2);
 menu('delete');$('retakeConfirm').click();assert.equal(list().length,1);assert.equal(list()[0],first);
 assert.equal($('gantryDraft-target').value,'7','Deleting the second draft restores the first with its settings');
