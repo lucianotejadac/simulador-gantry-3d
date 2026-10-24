@@ -154,7 +154,9 @@
       scan.phase='positioning';if(render)window.GANTRY.render();return;
     }
     guard({...G,tableZ:nextZ});
-    scan.step(fields().fields,rate,dt);G.tableZ=scan.tableZ;if(render)window.GANTRY.render();
+    const mdp=window.GANTRY_MDP;
+    const exposureDt=Math.min(dt,(scan.target-scan.travel)*60/scan.velocity);
+    scan.step(fields(G,mdp?mdp.seconds+exposureDt/2:undefined).fields,rate,exposureDt);G.tableZ=scan.tableZ;if(render)window.GANTRY.render();
   }
   // Sum expected exposure, then sample once: sums of independent Poisson
   // acquisitions are Poisson too. Work scales with spatial quadrature, not
@@ -200,7 +202,8 @@
       const t=startSeconds+elapsed;
       // At most 5 cm per spatial segment; resolve early uptake and the void
       // discontinuity separately. Exposure at both detector edges is exact.
-      let dt=Math.min(duration-elapsed,300/scan.velocity,t<60?2:t<300?10:30);
+      const quantum=t<60?1:t<600?5:30,next=(Math.floor((t+1e-7)/quantum)+1)*quantum;
+      let dt=Math.min(duration-elapsed,300/scan.velocity,next-t);
       if(t<7200&&t+dt>7200)dt=7200-t;
       const travel=scan.travel+elapsed*scan.velocity/60;
       const nextTravel=Math.min(scan.target,travel+dt*scan.velocity/60);

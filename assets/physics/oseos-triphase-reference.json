@@ -48,5 +48,12 @@
   "sources": [
     "https://tech.snmjournals.org/content/46/4/398",
     "https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/"
-  ]
+  ],
+  "temporalReview": {
+    "date": "2026-10-24",
+    "model": "mdp-triphase-oseos-v2",
+    "reference": "assets/physics/mdp-temporal-calibration.json",
+    "timeOrigin": "Dynamic AcquisitionDate/Time = injection, supplied by user; injection time absent from DICOM.",
+    "scope": "Exploratory vessel/neighbour contrast, not organ activity or validated pharmacokinetics. Six of nine ROI curves peak in the first frame, preventing reliable arrival-time inference. Reserved curves were inspected during development and are not an independent validation. No clinical pixels or identifiers included."
+  }
 }

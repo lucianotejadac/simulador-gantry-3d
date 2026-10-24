@@ -5,10 +5,15 @@
   const wrap=a=>(a%360+360)%360;
   const scatterAppearance=Object.freeze({model:'mdp-diffuse-v2-background',oddsMultiplier:6,sigmaMm:30,maxFraction:.55});
   const backgroundAppearance=Object.freeze({model:'mdp-tissue-balance-v1',boneRedistributionFraction:0.2640939054649198,transitionMinutes:Object.freeze([5,30])});
-  // Relative vessel-to-adjacent-tissue contrast fitted locally to OSEOS flow
-  // sequences, aligned at the local contrast peak (injection times unavailable).
-  // This is a spatial first-pass redistribution, not systemic blood clearance.
-  const vascularAppearance=Object.freeze({model:'mdp-triphase-oseos-v1',arterialTransitSeconds:9,reference:'assets/physics/oseos-triphase-reference.json'});
+  // First-pass decay retained; a small residual is fitted on the acquisition
+  // clock (dynamic start = injection, supplied by the user). This redistributes
+  // circulating activity spatially; it does not change systemic clearance.
+  // Rise and post-120 s fade are smooth display constraints, not measured kinetics.
+  const vascularAppearance=Object.freeze({model:'mdp-triphase-oseos-v2',arterialTransitSeconds:9,
+    residualFraction:.0393,residualRiseStartSeconds:10,residualRiseEndSeconds:40,
+    residualFadeStartSeconds:120,residualFadeEndSeconds:600,
+    reference:'assets/physics/mdp-temporal-calibration.json'});
+  const smooth=(s,a,b)=>{const u=Math.max(0,Math.min(1,(s-a)/(b-a)));return u*u*(3-2*u);};
   const backgroundEligible=new WeakSet(),backgroundBones=new WeakMap();
   function neededChunks(name,angles){
     const d=data.poses[name].nativeBone;if(!d)return [];
@@ -59,7 +64,10 @@
     }
     const b=biological(t),excreted=voidAt120&&t>=120?biological(120).urine:0;
     const s=t*60,central=Math.exp(-s/6),lungs=(1-central)*Math.exp(-s/12);
-    const arteries=(1-central-lungs)*Math.exp(-s/vascularAppearance.arterialTransitSeconds),decay=2**(-t/HALF);
+    const fast=Math.exp(-s/vascularAppearance.arterialTransitSeconds);
+    const residual=vascularAppearance.residualFraction*smooth(s,vascularAppearance.residualRiseStartSeconds,vascularAppearance.residualRiseEndSeconds)
+      *(1-smooth(s,vascularAppearance.residualFadeStartSeconds,vascularAppearance.residualFadeEndSeconds));
+    const arteries=(1-central-lungs)*(fast+(1-fast)*residual),decay=2**(-t/HALF);
     // The inherited vascular basis strongly emphasizes the cardiac chambers.
     // Retain it for first pass/pool, then replace its spatial contrast with
     // diffuse background. This is a teaching display model, not zero blood
@@ -201,8 +209,11 @@
     let remaining=Math.min(seconds,LIMIT-state.seconds);
     while(remaining>1e-8&&!session.finished){
       const frameRemaining=session.dynamic?session.dynamic.schedule[session.dynamic.frames.length].end-session.heads[0].elapsed:Infinity;
-      const dt=Math.min(remaining,state.seconds<60?1:5,frameRemaining, state.voidAt120&&state.seconds<7200?7200-state.seconds:Infinity);
       const previous=Math.max(...session.heads.map(h=>h.elapsed));
+      const quantum=state.seconds<60?1:5,next=(Math.floor((state.seconds+1e-7)/quantum)+1)*quantum;
+      const targetRemaining=session.mode==='time'?session.target-previous:Infinity;
+      const dt=Math.min(remaining,next-state.seconds,frameRemaining,targetRemaining, state.voidAt120&&state.seconds<7200?7200-state.seconds:Infinity);
+      if(!(dt>0))break;
       session.step(fields.map(f=>mix(f.mdpBases,state.seconds+dt/2)),state.activityMBq*SENSITIVITY,dt);
       const used=Math.max(...session.heads.map(h=>h.elapsed))-previous;
       advance(Math.max(0,used));remaining-=dt;

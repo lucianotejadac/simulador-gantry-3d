@@ -14,7 +14,7 @@ function fixture(n=64,startZ=200,velocity=10,contours='auto',camera={}){
       metadata(){return {seconds:this.seconds,voidAt120:true};},advance(t){this.seconds+=t;},
       field(p,pair,crop,w,h,flipX,flipY,m,s,name,cache,t){
         projections.push({crop:{...crop},w,h,flipX,flipY});
-        stats.fields++;times.push(t);return {values:new Float32Array(w*h).fill(pair.lo===0?20000:10000)};
+        stats.fields++;times.push(t);return {values:new Float32Array(w*h).fill((pair.lo===0?20000:10000)*(this.testTemporalRate?.(t)??1))};
       }},
     GANTRY_BONE_CORE:{poisson:mu=>{sampled.push(mu);return Math.round(mu);}}
   };
@@ -76,6 +76,26 @@ function near(a,b){assert(Math.abs(a-b)<1e-6*Math.max(1,Math.abs(b)),`${a} != ${
     for(const h of s.heads)assert.equal(h.total,h.counts.reduce((a,b)=>a+b,0));
     console.log(`Instant ${n}: ${(performance.now()-before).toFixed(0)} ms; ${f.stats.fields} fields, simulated ${s.heads[0].elapsed}s`);
   }
+  // Each row integrates the tracer at its own time of passage, not the start
+  // image or a single whole-scan midpoint. A linear tracer has an exact integral.
+  const temporal=fixture(64,200,60,'fixed');temporal.W.GANTRY_MDP.seconds=128.228;
+  temporal.W.GANTRY_MDP.testTemporalRate=t=>t/100;
+  await temporal.api.instant(temporal.scan,100);
+  const ts=temporal.scan,duration=ts.heads[0].elapsed,half=280/ts.sourcePixelMm;
+  for(let y=0;y<ts.height;y++){
+    const row=ts.crop.y+(y+.5)*ts.crop.h/ts.height;
+    const enter=Math.max(0,(row-half-ts.fromRow)/(ts.toRow-ts.fromRow)*duration);
+    const exit=Math.min(duration,(row+half-ts.fromRow)/(ts.toRow-ts.fromRow)*duration);
+    if(exit-enter<5)continue;
+    const expected=(exit-enter)*(128.228+(enter+exit)/2)/100;
+    const actual=temporal.sampled[y*ts.n+ts.n/2];
+    assert(Math.abs(actual-expected)/expected<.005,'Time-dependent exposure must follow the scanned row within midpoint quadrature tolerance');
+  }
+  const timed=fixture(64,200,60,'fixed');timed.W.GANTRY_MDP.seconds=128.228;
+  timed.api.advance(timed.scan,100,.5,false);near(timed.times[0],128.478);
+  const end=fixture(64,16.01,60,'fixed');end.W.GANTRY_MDP.seconds=128.228;
+  const lastDuration=end.scan.target*60/end.scan.velocity;
+  end.api.advance(end.scan,100,.5,false);near(end.times[0],128.228+lastDuration/2);
   // Finishes only the remainder of an already-started scan, retaining counts.
   const partial=fixture(64,150,30),s=partial.scan;
   s.travel=20;partial.G.tableZ=s.tableZ;

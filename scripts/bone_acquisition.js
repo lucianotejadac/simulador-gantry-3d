@@ -211,7 +211,7 @@
     try{
       const mdp=window.GANTRY_MDP;
       while(seconds>1e-9&&!session.finished){
-        const dt=Math.min(.5,seconds,mdp?.remaining??Infinity);
+        const dt=Math.min(.5,seconds,mdp?.remaining??Infinity,(session.target-session.travel)*60/session.velocity);
         if(!(dt>0)){session.finished=true;session.mdpLimit=true;break;}
         whole.advance(session,mdp?.rate??session.countRate,dt,false);
         if(mdp){mdp.advance(dt,false);session.mdpEnd=mdp.metadata();if(mdp.remaining<=0){session.finished=true;session.mdpLimit=true;}}
