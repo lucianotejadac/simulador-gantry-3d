@@ -6,10 +6,12 @@ const live={settings:{study:'bone',matrix:256,zoom:1,collimator:'LEHR',energyCen
  setStudy(v){this.settings.study=v;},setSignalMode(){},setMatrix(v){this.settings.matrix=v;},setZoom(v){this.settings.zoom=v;},setCollimator(v){this.settings.collimator=v;},setEnergyCenter(v){this.settings.energyCenter=v;},setWindowWidth(v){this.settings.windowWidth=v;}};
 const engine={active:false,readyForProcessing:true,state:null,startConfigured(c){calls.push(structuredClone(c));this.active=true;this.state={id:'exam1'};return 'exam1';},async controlFromProcessing(a){calls.push(a);}};
 const cameraUpdates=[];
+const feedback=[];
 for(const setter of ['setMatrix','setZoom','setCollimator','setEnergyCenter','setWindowWidth']){
  const original=live[setter];live[setter]=function(value){cameraUpdates.push([setter,value]);original.call(this,value);};
 }
 const w={GANTRY_LIVE:live,GANTRY_BONE_ACQ:engine,GANTRY_MDP:{metadata:()=>({activityMBq:740,seconds:7200})},GANTRY:{G:{}},GANTRY_EXAM:{blocked:false},GANTRY_PROCESSING:{active:true},addEventListener:(n,f)=>listeners[n]=f};
+w.GANTRY_VALUE_FEEDBACK={changed:()=>feedback.push({...live.settings})};
 const document={getElementById:id=>{if(!nodes.has(id))nodes.set(id,{value:'',textContent:'Geometría actual',dispatchEvent:e=>calls.push([id,e.type])});return nodes.get(id);},createElement:()=>({})};
 const c=vm.createContext({window:w,document,location:{origin:'http://local'},setInterval:fn=>intervals.push(fn),setTimeout,performance,Event});
 vm.runInContext(fs.readFileSync('scripts/processing_acquisition_config.js','utf8'),c);
@@ -42,11 +44,13 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
 (async()=>{
  const preview={kind:'static',matrix:512,zoom:2,collimator:'HE',energyCenter:180,windowWidth:25};
  await send({type:'GANTRY_CAMERA_PREVIEW',preview:1,config:preview});
+ assert.equal(feedback.length,1);assert.equal(feedback[0].energyCenter,140,'Highlight captures pre-change values from processing');
  for(const key of ['matrix','zoom','collimator','energyCenter','windowWidth'])assert.equal(live.settings[key],preview[key]);
  assert.equal(engine.state,null,'Preview must not acquire or replace images');assert.equal(calls.length,0,'Preview must not alter activity/time');
  assert.equal(messages.at(-1).type,'GANTRY_CAMERA_PREVIEW_RESULT');assert.equal(messages.at(-1).preview,1);
  assert.equal(cameraUpdates.length,5);await send({type:'GANTRY_CAMERA_PREVIEW',preview:2,config:preview});
  assert.equal(cameraUpdates.length,5,'Identical preview must not rebuild camera fields');
+ assert.equal(feedback.length,1,'No-op preview must not flash ordinary count noise');
  await send({type:'GANTRY_CAMERA_PREVIEW',preview:3,config:{...preview,energyCenter:0,matrix:64}});
  assert(messages.at(-1).error);assert.equal(cameraUpdates.length,5,'Validate whole payload before applying changes');
  engine.active=true;await send({type:'GANTRY_CAMERA_PREVIEW',preview:4,config:base});engine.active=false;

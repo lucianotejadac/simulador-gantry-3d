@@ -5,7 +5,7 @@
   const duration=2500,resultPause=600,states=new WeakMap(),pending=new Map();
   let lastChange=-Infinity,observer,timer;
   const selector=[
-    '#liveInfoD1','#liveInfoD2','#boneAcqInfo1','#boneAcqInfo2',
+    '#liveInfoD1','#liveInfoD2','#liveCameraSettings','#boneAcqInfo1','#boneAcqInfo2',
     '#boneAcqEstimate','#g3dHud','#liveEnergyValue','#bonePersistenceValue',
     '#mdpStats','#mdpDose','#mibiStats','#mibiDose','#mibiTiming',
     '#studyActivityInfo','.pixel-total','.pixel-panel td'
@@ -117,6 +117,8 @@
     const panel=document.getElementById('gantryLive'),hud=document.getElementById('g3dHud');
     if(!panel)return;
     roots.push(panel);if(hud)roots.push(hud);
+    const monitors=document.getElementById('gantryLiveMonitors');
+    if(monitors&&!panel.contains(monitors))roots.push(monitors);
     document.querySelectorAll(selector).forEach(paint);
     observer=new MutationObserver(records=>{
       const hosts=new Set();
@@ -135,9 +137,12 @@
     });
     observe();
     const inputs=new WeakMap();
-    const parameter=/^(live(Collimator|EnergyCenter|WindowWidth)|bone(Persistence|CountRate|AcqCriterion|AcqTarget|AcqVelocity)|finalPreview(Criterion|Target)|mdp(Activity|Minutes|Timeline|Void)|mibi(Activity|Minutes|Timeline|Protocol|Void)|studyActivity)$/;
+    const parameter=/^(live(Collimator|EnergyCenter|WindowWidth)|bone(Persistence|CountRate|AcqCriterion|AcqTarget|AcqVelocity)|finalPreview(Criterion|Target)|mdp(Activity|Minutes|Timeline|Void)|mibi(Activity|Minutes|Timeline|Protocol|Void)|studyActivity|rf(Dose|DosePreset|Time|Select))$/;
     function input(event){
       const node=event.target;if(!parameter.test(node.id))return;
+      // Administration fields commit on change; typing alone does not alter dose.
+      if(node.id.startsWith('rf')&&event.type!=='change')return;
+      if(node.disabled||node.checkValidity&&!node.checkValidity())return;
       const value=node.type==='checkbox'?node.checked:node.value;
       if(inputs.has(node)&&inputs.get(node)===value)return;
       inputs.set(node,value);changed();
@@ -147,7 +152,8 @@
       const button=event.target.closest('button');
       if(button&&!button.disabled&&(
         (/^live(Zoom|Matrix)/.test(button.id)&&button.getAttribute('aria-pressed')!=='true')||
-        ['liveResetCenter','changePatientPosition','mibiUsual','mibiLate','boneAcqSuggested'].includes(button.id)||
+        ['liveResetCenter','changePatientPosition','mibiUsual','mibiLate','boneAcqSuggested',
+          'acqSupine','acqProne','acqHeadIn','acqHeadOut','rfInject','rfResetInjection'].includes(button.id)||
         button.matches('.armbtn,.pixel-panel button')))changed();
       if(event.target.matches('#liveD1,#liveD2')&&document.getElementById('liveRecenter')?.getAttribute('aria-pressed')==='true')changed();
     },true);

@@ -26,7 +26,8 @@
 }
 /* Leave room for the tip in the small count-per-pixel cells. */
 #gantryLive .pixel-panel td { height:46px;overflow:visible; }
-#gantryWorkspace #gantryLive .live-info,#gantryLive .pixel-total { line-height:2.4; }
+#gantryWorkspace #gantryLive .live-info,#gantryLive .pixel-total,
+#gantryLiveMonitors .live-info,#liveCameraSettings { line-height:2.4; }
 .value-change-pending {
   color: #16232e;
   animation: gantry-value-pending 1000ms ease-in-out infinite;

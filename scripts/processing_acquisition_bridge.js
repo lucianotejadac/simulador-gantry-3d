@@ -16,6 +16,7 @@
       if(!independentCamera||preparing||otherBusy())return;
       const settings=independentCamera;independentCamera=null;
       if(settings.study!==live().settings.study)return;
+      if(cameraSetters.some(([key])=>live().settings[key]!==settings[key]))window.GANTRY_VALUE_FEEDBACK?.changed();
       for(const [key,setter] of cameraSetters)if(live().settings[key]!==settings[key])live()[setter](settings[key]);
       live().clearPersistence?.();live().update(window.GANTRY.G);
     }
@@ -36,6 +37,7 @@
     }
     const change=(id,value)=>{const node=el(id);node.value=String(value);node.dispatchEvent(new Event('change',{bubbles:true}));};
     function applyCamera(c,field){
+      if(cameraSetters.some(([key])=>(!field||key===field)&&live().settings[key]!==c[key]))window.GANTRY_VALUE_FEEDBACK?.changed();
       if(live().settings.study!=='bone')live().setStudy('bone');
       if(live().settings.study!=='bone')throw Error('No se pudo seleccionar el estudio óseo.');
       if(live().signal.mode!=='live')live().setSignalMode('live');
@@ -80,7 +82,11 @@
           releasePreview();
         }else if(d.type==='GANTRY_ADMINISTRATION_UPDATE'){
           if(preparing||otherBusy()||window.GANTRY_EXAM?.blocked)throw Error('Finaliza la adquisición antes de cambiar la administración.');
-          if(typeof d.activityMci!=='number'||typeof d.minutes!=='number'||d.minutes>=180||!window.GANTRY_MDP.configure(d.activityMci*37,d.minutes*60))throw Error('Dosis o tiempo no válidos.');
+          if(typeof d.activityMci!=='number'||!Number.isFinite(d.activityMci)||d.activityMci<=0||d.activityMci*37>2000||
+            typeof d.minutes!=='number'||!Number.isFinite(d.minutes)||d.minutes<0||d.minutes>=180)throw Error('Dosis o tiempo no válidos.');
+          const before=window.GANTRY_MDP.metadata();
+          if(before.activityMBq!==d.activityMci*37||before.seconds!==d.minutes*60)window.GANTRY_VALUE_FEEDBACK?.changed();
+          if(!window.GANTRY_MDP.configure(d.activityMci*37,d.minutes*60))throw Error('Dosis o tiempo no válidos.');
           live().clearPersistence();live().update(window.GANTRY.G);
           post({type:'GANTRY_ADMINISTRATION_STATE',activityMci:d.activityMci,minutes:d.minutes});
         }else if(d.type==='GANTRY_CAMERA_PREVIEW'){
