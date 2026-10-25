@@ -536,7 +536,7 @@
 /* STARTUP_LOADING_CSS_END */
 </style>
 <!-- WORKSPACE_LAYOUT_BEGIN -->
-<link rel="stylesheet" href="assets/runtime/gantry-workspace.531fca31a3d635f8.css">
+<link rel="stylesheet" href="assets/runtime/gantry-workspace.3d85744bc81b1525.css">
 <!-- WORKSPACE_LAYOUT_END -->
 <!-- FAST_LOAD_BEGIN -->
 <link rel="preload" href="assets/runtime/camera-response.6725edf4ddbe9366.js" as="script">
@@ -549,7 +549,7 @@
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.faffddde42e1ec5f.js" as="script">
 <link rel="preload" href="assets/runtime/patient.dad8fa3ca2bc7760.glb" as="fetch" crossorigin>
 <link rel="preload" href="assets/runtime/pixel-grid.d84a41a18b7dcfad.js" as="script">
-<link rel="preload" href="assets/runtime/processing-controller.bbe21a6314c68224.js" as="script">
+<link rel="preload" href="assets/runtime/processing-controller.24f6942f95e824a2.js" as="script">
 <link rel="preload" href="assets/runtime/radiopharmaceutical.b340bfc4a7d67de8.js" as="script">
 <link rel="preload" href="assets/runtime/study-activity.979b4ce401f48fe8.js" as="script">
 <link rel="preload" href="assets/runtime/symbia-room.40a36f2a15b3e0bc.bin" as="fetch" crossorigin>
@@ -783,6 +783,7 @@
         </div>
         <section id="gantryLiveMonitors" aria-label="Pantallas de los detectores">
 <header class="live-monitor-title"><span class="live-dot" aria-hidden="true"></span><span id="liveDisplayMode">IMAGEN EN VIVO</span></header>
+<div id="liveCameraSettings" aria-label="Parámetros activos de la vista en vivo"></div>
 <div class="live-monitor-grid"><div class="live-card">
               <h3 class="bone-card-title">EN VIVO · DETECTOR 1</h3>
               <canvas id="liveD1" width="256" height="256" aria-label="Proyeccion en vivo del detector 1"></canvas>
@@ -822,7 +823,7 @@
         <button id="boneProcessingSend" type="button" disabled>Componer seleccionadas</button>
       </details>
       <div id="boneProcessingStatus" role="status"></div>
-      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=a322b4b003f644d4"></iframe>
+      <iframe id="boneProcessingFrame" title="Procesador de cintigrafía ósea" data-src="processing/index.html?v=1945666e394afbbe"></iframe>
     </section>
     <!-- PROCESSING_UI_END -->
 <section class="gantry-live" id="gantryLive" aria-label="Controles y adquisiciones">
@@ -1925,6 +1926,11 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   }
   function effectiveCountRate(){if(window.GANTRY_RF?.pending(acquisition.study))return 0;const activityRate=window.GANTRY_ACTIVITY?.rate(acquisition.study);if(activityRate!=null)return activityRate;return acquisition.study==='mibi'&&window.GANTRY_MIBI?window.GANTRY_MIBI.rate:acquisition.study==='bone'&&window.GANTRY_MDP?window.GANTRY_MDP.rate:boneSignal.rate;}
   function syncBoneControls(){
+    const liveCameraSettings=document.getElementById('liveCameraSettings');
+    if(liveCameraSettings)liveCameraSettings.textContent=acquisition.matrix+' × '+acquisition.matrix+' · Zoom '+acquisition.zoom+'× · '+
+      (acquisition.collimator==='NONE'?'Sin colimador':acquisition.collimator)+' · '+acquisition.energyCenter+' keV / '+acquisition.windowWidth+'%'+
+      (boneSignal.mode==='live'?' · Últimos '+String(boneSignal.duration).replace('.',',')+' s':'');
+
     window.GANTRY_MDP?.render();
     window.GANTRY_MIBI?.render();
     const active=activeStudy().linear===true && acquisition.study!=='mag3';
@@ -5062,7 +5068,7 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
 </script>
 <!-- BONE_ACQ_ENGINE_END -->
 <!-- PROCESSING_ENGINE_BEGIN -->
-<script src="assets/runtime/processing-controller.bbe21a6314c68224.js"></script>
+<script src="assets/runtime/processing-controller.24f6942f95e824a2.js"></script>
 <!-- PROCESSING_ENGINE_END -->
 <!-- CONSOLE_MENUS_BEGIN -->
 <link rel="stylesheet" data-console-menus href="assets/runtime/console-menus.c37f7a3a5078c291.css">

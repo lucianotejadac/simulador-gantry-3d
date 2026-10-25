@@ -1451,6 +1451,15 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       input('collimator','Colimador',config.collimator,[['LEHR','LEHR'],['MELP','MELP'],['HE','HE'],['NONE','Sin colimador']]),
       input('energyCenter','Centro de energía (keV)',config.energyCenter,null,range(80,450,'1')),
       input('windowWidth','Ancho de ventana (%)',config.windowWidth,[10,15,20,25])]);
+    const useLive=document.createElement('button');useLive.type='button';useLive.id='gantryApplyCameraLive';
+    useLive.textContent='Usar estos parámetros en la vista en vivo';
+    useLive.onclick=()=>{
+      try{
+        const camera=window.GANTRY_PROCESSING_CONFIG.camera(locked?config:read(false));
+        send({type:'GANTRY_CAMERA_PREVIEW',preview:++previewSerial,config:camera});
+      }catch(error){status(error.message,'error');}
+    };
+    $('camera').append(useLive);
     positionControl(config,locked);
     help('camera',config.kind==='whole'?'El barrido comienza donde está la camilla y alinea los detectores. Configura el seguimiento del contorno en «Condiciones de paro».':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
     section('series','Radiofármaco',[field('Isótopo','99mTc'),field('Fármaco','MDP'),
@@ -1574,7 +1583,10 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
         if(node&&document.activeElement!==node&&Number.isFinite(d[key])){node.value=String(d[key]);draft.config[key]=d[key];}
       }
     }
-    if(d.type==='GANTRY_CAMERA_PREVIEW_RESULT'&&d.preview===previewSerial&&d.error)status(d.error,'error');
+    if(d.type==='GANTRY_CAMERA_PREVIEW_RESULT'&&d.preview===previewSerial){
+      if(d.error)status(d.error,'error');
+      else status('Parámetros aplicados a la vista en vivo. La imagen adquirida conserva sus datos originales.');
+    }
     if(d.type==='GANTRY_POSITION_STATE')syncPosition(d.position);
     if(d.type==='GANTRY_ACQUIRE_POSITION'&&d.request===waiting){waiting=null;setMenu();syncPosition(d.position);}
     if(d.type==='GANTRY_ACQUIRE_CONFIG'&&d.request===waiting){waiting=null;render(d.config);}

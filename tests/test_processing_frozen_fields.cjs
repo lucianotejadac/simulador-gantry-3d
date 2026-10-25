@@ -56,6 +56,10 @@ async function load(file){w.testBytes=new w.Uint8Array(file.bytes);await w.eval(
   w.eval('renderDetectorConditions()');
   assert.deepEqual(form(),frozen,'Live updates do not rewrite acquired parameters');
   assert.equal(messages.length,messageCount,'Recorded forms never preview or send camera settings');
+  $('gantryApplyCameraLive').click();
+  const preview=messages.at(-1);assert.equal(preview.type,'GANTRY_CAMERA_PREVIEW');
+  for(const key of ['kind','matrix','zoom','collimator','energyCenter','windowWidth'])assert.equal(preview.config[key],config[key]);
+  assert.deepEqual(form(),frozen,'Explicitly copying camera parameters to live never modifies the acquired image metadata');
   const selectedKey=w.eval('currentAcquisition');
   menu(kind);const pending=messages.at(-1);receive({type:'GANTRY_ACQUIRE_CONFIG',request:pending.request,config});
   w.selectMode(selectedKey);

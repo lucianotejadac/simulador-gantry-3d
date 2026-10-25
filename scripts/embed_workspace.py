@@ -19,6 +19,19 @@ if 'id="gantryLiveMonitors"' not in html:
     monitors='<section id="gantryLiveMonitors" aria-label="Pantallas de los detectores">\n<header class="live-monitor-title"><span class="live-dot" aria-hidden="true"></span><span id="liveDisplayMode">IMAGEN EN VIVO</span></header>\n<div class="live-monitor-grid">'+''.join(cards)+'</div>\n</section>\n'
     html=html.replace('<section class="gantry-live" id="gantryLive"',monitors+'<section class="gantry-live" id="gantryLive"',1)
 html=html.replace('id="gantryLive" aria-label="Imagen en vivo de los detectores"','id="gantryLive" aria-label="Controles y adquisiciones"',1)
+if 'id="liveCameraSettings"' not in html:
+    anchor='<span id="liveDisplayMode">IMAGEN EN VIVO</span></header>'
+    assert anchor in html
+    html=html.replace(anchor,anchor+'\n<div id="liveCameraSettings" aria-label="Parámetros activos de la vista en vivo"></div>',1)
+if 'const liveCameraSettings=' not in html:
+    anchor='  function syncBoneControls(){'
+    assert anchor in html
+    html=html.replace(anchor,anchor+'''
+    const liveCameraSettings=document.getElementById('liveCameraSettings');
+    if(liveCameraSettings)liveCameraSettings.textContent=acquisition.matrix+' × '+acquisition.matrix+' · Zoom '+acquisition.zoom+'× · '+
+      (acquisition.collimator==='NONE'?'Sin colimador':acquisition.collimator)+' · '+acquisition.energyCenter+' keV / '+acquisition.windowWidth+'%'+
+      (boneSignal.mode==='live'?' · Últimos '+String(boneSignal.duration).replace('.',',')+' s':'');
+''',1)
 html=re.sub(r'(<div class="gantry-live-grid">)\s+(<div class="live-card bone-acq-card">)',r'\1\n            \2',html)
 url = asset((ROOT / 'scripts/gantry_workspace.css').read_bytes(), 'gantry-workspace', 'css')
 block = '<!-- WORKSPACE_LAYOUT_BEGIN -->\n<link rel="stylesheet" href="' + url + '">\n<!-- WORKSPACE_LAYOUT_END -->'

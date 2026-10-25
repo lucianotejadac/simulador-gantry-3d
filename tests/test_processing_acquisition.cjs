@@ -72,6 +72,11 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  await send({type:'GANTRY_ACQUIRE_START',config:{...base,matrix:1024}});assert.equal(calls.length,0);assert.match(messages.at(-1).error,/Matriz/);
  w.GANTRY_EXAM.blocked=true;await send({type:'GANTRY_ACQUIRE_START',config:base});assert.equal(calls.length,0);assert.match(messages.at(-1).error,/colisión/);w.GANTRY_EXAM.blocked=false;
  await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'whole'});assert.equal(messages.at(-1).config.kind,'whole');assert.equal(messages.at(-1).config.activityMci,20);
+ live.settings.study='exploration';
+ await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'static'});
+ for(const key of ['matrix','zoom','collimator','energyCenter','windowWidth'])assert.equal(messages.at(-1).config[key],live.settings[key],'New acquisition inherits the live camera even when switching study: '+key);
+ assert.equal(messages.at(-1).config.energyCenter,180,'Do not silently replace an off-peak energy by 140 keV');
+ live.settings.study='bone';
  const positions=[];w.GANTRY_ACQUISITION={decubitus:'supine',headFirst:false};
  w.GANTRY_AUTO={start:()=>{throw Error('Declared position must not move detectors');}};
  for(const [id,key,v] of [['acqSupine','decubitus','supine'],['acqProne','decubitus','prone'],['acqHeadIn','headFirst',true],['acqHeadOut','headFirst',false]]){
