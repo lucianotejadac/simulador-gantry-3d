@@ -16,7 +16,7 @@
     if(id)acquisitionTabs.set(id,tab.id);
   });
   const cameraKeys=['matrix','zoom','collimator','energyCenter','windowWidth'];let previewSerial=0;
-  function previewCamera(){
+  function previewCamera(field){
     if(!draft||draft.id||$('acquisition-panel').hidden||lastId&&lastState?.finished!==true)return;
     const config={kind:draft.config.kind};
     for(const key of cameraKeys){
@@ -24,7 +24,7 @@
       config[key]=key==='collimator'?node.value:Number(node.value);
     }
     try{window.GANTRY_PROCESSING_CONFIG.camera(config);}catch(_){return;}
-    send({type:'GANTRY_CAMERA_PREVIEW',preview:++previewSerial,config});
+    send({type:'GANTRY_CAMERA_PREVIEW',preview:++previewSerial,field,config});
   }
   function updateAdministration(){
     if(!draft||draft.id)return;
@@ -313,9 +313,8 @@
       draft.listId=window.GANTRY_PROCESSING_LIST?.configuration(config,listId||undefined);
       configurations.set(draft.listId,{config});
       for(const key of ['name1','name2'])inputs.get(key).addEventListener('input',()=>window.GANTRY_PROCESSING_LIST?.configuration(read(false),draft.listId));
-      for(const key of cameraKeys)inputs.get(key).addEventListener('input',previewCamera);
+      for(const key of cameraKeys)inputs.get(key).addEventListener('input',()=>previewCamera(key));
       for(const key of ['activityMci','minutes'])inputs.get(key).addEventListener('input',updateAdministration);
-      previewCamera();
     }
     updateModeUI();
   }
@@ -359,7 +358,6 @@
   window.addEventListener('message',event=>{
     if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;
     const d=event.data;
-    if(d.type==='GANTRY_PROCESSING_SHOW')previewCamera();
     if(d.type==='GANTRY_ADMINISTRATION_ERROR')status(d.error,'error');
     if(d.type==='GANTRY_ADMINISTRATION_STATE'&&draft&&!draft.id){
       for(const key of ['activityMci','minutes']){
@@ -415,7 +413,7 @@
     }
   });
   window.GANTRY_PROCESSING_EDITOR={finish,setPreviewVisible(visible){
-    if(visible)previewCamera();else send({type:'GANTRY_CAMERA_PREVIEW_END'});
+    if(!visible)send({type:'GANTRY_CAMERA_PREVIEW_END'});
   },get currentId(){return draft?.id||draft?.listId;},showCurrent(id){
     if(waiting||draft?.listId===id||draft?.id===id)return;
     const pending=configurations.get(id);

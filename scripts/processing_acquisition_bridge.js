@@ -8,19 +8,19 @@
     const post=(data,transfer=[])=>frame.contentWindow.postMessage({...data,version:1},location.origin,transfer);
     const otherBusy=()=>engine().active||window.GANTRY_MAG3?.state&&!window.GANTRY_MAG3.state.finished;
     const cameraSetters=[['matrix','setMatrix'],['zoom','setZoom'],['collimator','setCollimator'],['energyCenter','setEnergyCenter'],['windowWidth','setWindowWidth']];
-    let independentCamera=null,previewing=false;
+    let independentCamera=null;
     function retainLiveCamera(){
       if(!independentCamera)independentCamera={study:live().settings.study,...Object.fromEntries(cameraSetters.map(([key])=>[key,live().settings[key]]))};
     }
     function restoreLiveCamera(){
-      if(!independentCamera||previewing||preparing||otherBusy())return;
+      if(!independentCamera||preparing||otherBusy())return;
       const settings=independentCamera;independentCamera=null;
       if(settings.study!==live().settings.study)return;
       for(const [key,setter] of cameraSetters)if(live().settings[key]!==settings[key])live()[setter](settings[key]);
       live().clearPersistence?.();live().update(window.GANTRY.G);
     }
-    function releasePreview(){previewing=false;restoreLiveCamera();}
-    // Leaving the processor ends the temporary preview, even while its iframe is hidden.
+    function releasePreview(){restoreLiveCamera();}
+    // Navigation preserves manual settings. Only acquisition overrides are temporary.
     window.GANTRY_PROCESSING_ACQUISITION.releasePreview=releasePreview;
     function positionState(){
       const declared=window.GANTRY_ACQUISITION||{};
@@ -35,12 +35,12 @@
         position:positionState(),geometry:el('g3dHud').textContent.trim(),...(s.study==='bone'?{energyCenter:s.energyCenter,windowWidth:s.windowWidth}:{})};
     }
     const change=(id,value)=>{const node=el(id);node.value=String(value);node.dispatchEvent(new Event('change',{bubbles:true}));};
-    function applyCamera(c){
+    function applyCamera(c,field){
       if(live().settings.study!=='bone')live().setStudy('bone');
       if(live().settings.study!=='bone')throw Error('No se pudo seleccionar el estudio óseo.');
-      retainLiveCamera();
       if(live().signal.mode!=='live')live().setSignalMode('live');
       for(const [key,setter] of cameraSetters){
+        if(field&&key!==field)continue;
         if(live().settings[key]!==c[key])live()[setter](c[key]);
       }
       live().update(window.GANTRY.G);
@@ -53,6 +53,7 @@
       if(window.GANTRY_RF?.pending('bone'))throw Error('Pulsa Inyectar en la vista 3D antes de adquirir.');
       preparing=true;
       try{
+        retainLiveCamera();
         applyCamera(c);
         if(window.GANTRY_RF){
           const m=window.GANTRY_MDP.metadata();c.activityMci=m.activityMBq/37;c.minutes=Math.min(179.99,m.seconds/60);
@@ -66,7 +67,6 @@
         }
         if(!window.GANTRY_PROCESSING.active)throw Error('Inicio cancelado al salir de procesamiento.');
         owned=engine().startConfigured(c);
-        previewing=false;
         if(instant)engine().controlFromProcessing('instant').catch(error=>post({type:'GANTRY_ACQUIRE_ERROR',error:error.message}));
         return owned;
       }finally{preparing=false;}
@@ -86,7 +86,9 @@
         }else if(d.type==='GANTRY_CAMERA_PREVIEW'){
           const c=window.GANTRY_PROCESSING_CONFIG.camera(d.config);
           if(preparing||otherBusy()||window.GANTRY_EXAM?.blocked)throw Error('Finaliza la adquisición activa o reinicia el examen antes de cambiar la cámara en vivo.');
-          previewing=true;applyCamera(c);
+          if(d.field!==undefined&&!cameraSetters.some(([key])=>key===d.field))throw Error('Parámetro de cámara no válido.');
+          restoreLiveCamera();
+          applyCamera(c,d.field);
           if(window.GANTRY_RF){const m=window.GANTRY_MDP.metadata();post({type:'GANTRY_ADMINISTRATION_STATE',activityMci:m.activityMBq/37,minutes:Math.min(179.99,m.seconds/60)});}
           post({type:'GANTRY_CAMERA_PREVIEW_RESULT',preview:d.preview});
         }else if(d.type==='GANTRY_ACQUIRE_RETAKE'||d.type==='GANTRY_ACQUIRE_DELETE'){

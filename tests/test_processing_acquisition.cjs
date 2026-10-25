@@ -40,7 +40,6 @@ assert.equal(fromRecord({...saved,kind:'whole',mode:'scan',scan:{velocity:8,cont
 vm.runInContext(fs.readFileSync('scripts/processing_acquisition_bridge.js','utf8'),c);w.GANTRY_PROCESSING_ACQUISITION.attach(frame);
 const send=async data=>listeners.message({origin:'http://local',source:frame.contentWindow,data:{version:1,request:1,...data}});
 (async()=>{
- const independent={...live.settings};
  const preview={kind:'static',matrix:512,zoom:2,collimator:'HE',energyCenter:180,windowWidth:25};
  await send({type:'GANTRY_CAMERA_PREVIEW',preview:1,config:preview});
  for(const key of ['matrix','zoom','collimator','energyCenter','windowWidth'])assert.equal(live.settings[key],preview[key]);
@@ -55,13 +54,19 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  await listeners.message({origin:'http://foreign',source:frame.contentWindow,data:{type:'GANTRY_CAMERA_PREVIEW',version:1,config:base}});
  await listeners.message({origin:'http://local',source:{},data:{type:'GANTRY_CAMERA_PREVIEW',version:1,config:base}});
  assert.equal(cameraUpdates.length,5);
+ let manual={...live.settings};
  await send({type:'GANTRY_CAMERA_PREVIEW_END'});
- assert.deepEqual(live.settings,independent,'Leaving configuration restores the independent live camera');
+ assert.deepEqual(live.settings,manual,'Leaving configuration preserves the last manual camera settings');
  assert.equal(engine.state,null);
  await send({type:'GANTRY_CAMERA_PREVIEW',preview:5,config:preview});
- assert.equal(live.settings.matrix,512,'Returning to a draft previews its parameters again');
+ assert.equal(live.settings.matrix,512);
  w.GANTRY_PROCESSING_ACQUISITION.releasePreview();
- assert.deepEqual(live.settings,independent,'Closing processing also restores live settings');
+ assert.deepEqual(live.settings,manual,'Closing processing preserves manual settings');
+ await send({type:'GANTRY_CAMERA_PREVIEW',field:'windowWidth',config:{...base,windowWidth:10}});
+ manual.windowWidth=10;
+ assert.deepEqual(live.settings,manual,'Editing one field in an older draft must not overwrite other manual live settings');
+ await send({type:'GANTRY_CAMERA_PREVIEW',field:'unknown',config:base});
+ assert(messages.at(-1).error);assert.deepEqual(live.settings,manual);
  await listeners.message({origin:'http://foreign',source:frame.contentWindow,data:{type:'GANTRY_ACQUIRE_START',version:1,config:base}});assert.equal(calls.length,0);
  await listeners.message({origin:'http://local',source:{},data:{type:'GANTRY_ACQUIRE_START',version:1,config:base}});assert.equal(calls.length,0);
  await send({type:'GANTRY_ACQUIRE_START',config:{...base,matrix:1024}});assert.equal(calls.length,0);assert.match(messages.at(-1).error,/Matriz/);
@@ -126,7 +131,10 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  w.GANTRY_PROCESSING.active=false;const prior=messages.length;await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'static'});assert.equal(messages.length,prior);
  engine.active=false;
  intervals[0]();
- assert.deepEqual(live.settings,independent,'After acquisition ends, restore independent live settings even with processing hidden');
+ assert.deepEqual(live.settings,manual,'After acquisition ends, restore last manual live settings even with processing hidden');
+ live.setZoom(3);
+ intervals[0]();w.GANTRY_PROCESSING_ACQUISITION.releasePreview();
+ assert.equal(live.settings.zoom,3,'Later manual edits in the gantry cannot be undone by a stale restoration');
  assert.equal(administration.activityMBq,296,'Restoring camera must not restore an old dose');
  assert.equal(administration.seconds,60,'Restoring camera must not rewind injection time');
  const engineCode=fs.readFileSync('scripts/bone_acquisition.js','utf8');assert(!engineCode.includes('if(window.GANTRY_PROCESSING?.active){clock='),'Processing must not freeze acquisition');
