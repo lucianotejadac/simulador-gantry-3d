@@ -12,15 +12,16 @@
       <label id="analysisImageSelect">Imagen <select id="roiImage"></select></label>
       <div id="analysisStatic" hidden>
         <strong>ROI y mediciones</strong>
+        <button id="roiAdd" aria-pressed="true">Agregar ROI</button><button id="roiMask" aria-pressed="false">Enmascarar</button>
         <label>ROI <select id="roiShape"><option value="rectangle">Rectangular</option><option value="ellipse">Elíptica</option><option value="polygon">Punto por punto</option><option value="threshold">Punto por punto con umbral</option></select></label>
         <label id="roiThresholdLabel" hidden>Umbral mínimo (cuentas/píxel) <input id="roiThreshold" type="number" min="0" step="1" value="10"></label>
         <label id="roiThresholdTargetLabel" hidden>Editar ROI <select id="roiThresholdTarget"></select></label>
         <button id="roiFinish" hidden>Cerrar ROI</button><button id="roiCancel" hidden>Cancelar trazado</button>
-        <label>Uso <select id="roiMode"><option value="measure">Medir (sin enmascarar)</option><option value="exclude" selected>Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
+        <label id="roiMaskMode" hidden>Enmascarar <select id="roiMode"><option value="measure" hidden selected>Medir (sin enmascarar)</option><option value="exclude">Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
         <label>Nombre de nueva ROI <input id="roiName" type="text" maxlength="80" placeholder="Ej.: Riñón derecho"></label>
         <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar todas las ROI</button>
         <label><input type="checkbox" id="roiOriginal">Ver original</label>
-        <p>Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI (mínimo 3 puntos). El umbral de una ROI terminada se puede ajustar directamente; si hay varias, elige en Editar ROI. Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
+        <p>Elige Agregar ROI para medir o Enmascarar para ocultar o conservar una región. Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI (mínimo 3 puntos). El umbral de una ROI terminada se puede ajustar directamente; si hay varias, elige en Editar ROI. Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
       <div class="analysis-toolbar"><label>Ventana <input id="analysisWindow" type="number" min="1" step="any"></label>
         <label>Nivel <input id="analysisLevel" type="number" step="any"></label>
         <label><input id="analysisInvert" type="checkbox">Invertir</label>
@@ -60,7 +61,7 @@
     #analysisFrames{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:6px;margin:8px 0}
     #analysisFrames button{padding:4px;min-width:0;text-align:left}#analysisFrames button[data-reference=true]{border:2px solid #008da8}#analysisFrames button[aria-pressed=true]{outline:3px solid #f09a19;outline-offset:-3px}
     #analysisFrames .analysis-image{max-width:160px;margin:auto}#analysisFrames small{display:block;font-size:11px;line-height:1.35;margin-top:4px}
-    #analysisDraw{cursor:crosshair}.analysis-tab{background:transparent;border:0;border-right:1px solid white;font-size:12px;padding:5px}
+    #analysisPanel :is(#roiAdd,#roiMask)[aria-pressed=true]{border-style:inset;background:#d6def4;color:navy;font-weight:bold}#analysisDraw{cursor:crosshair}.analysis-tab{background:transparent;border:0;border-right:1px solid white;font-size:12px;padding:5px}
     .analysis-tab[aria-selected=true]{font-weight:bold;color:navy}
   `;document.head.append(style);
   const numericSliders=new Map(),imagePeaks=new WeakMap();
@@ -248,13 +249,22 @@
   function outline(p){const [w,h]=dimensions(source()),node=$('roiOutline');node.hidden=false;
     Object.assign(node.style,{left:100*Math.min(drag.x,p.x)/w+'%',top:100*Math.min(drag.y,p.y)/h+'%',width:100*Math.abs(p.x-drag.x)/w+'%',height:100*Math.abs(p.y-drag.y)/h+'%',borderRadius:$('roiShape').value==='ellipse'?'50%':'0'});}
   function cancelPolygon(){polygon=[];$('roiPolygon').hidden=true;$('roiFinish').disabled=true;}
-  function polygonOutline(){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.hidden=false;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ff2020" stroke-width="3" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 1px white)" points="'+polygon.map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ff2020" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
+  function polygonOutline(cursor){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.hidden=false;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ff2020" stroke-width="3" vector-effect="non-scaling-stroke" points="'+(cursor?[...polygon,cursor]:polygon).map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ff2020" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
   $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;thresholdTargets();syncSliders();};
   $('roiCancel').onclick=cancelPolygon;
+  function chooseRoiTool(mask){
+    cancelPolygon();drag=null;$('roiOutline').hidden=true;
+    $('roiMode').value=mask?'exclude':'measure';$('roiMaskMode').hidden=!mask;
+    $('roiAdd').setAttribute('aria-pressed',String(!mask));$('roiMask').setAttribute('aria-pressed',String(mask));
+    $('analysisStatus').textContent=mask?'Dibuja una ROI para enmascarar.':'Dibuja una ROI para medir sin ocultar la imagen.';
+  }
+  $('roiAdd').onclick=()=>chooseRoiTool(false);$('roiMask').onclick=()=>chooseRoiTool(true);
+
   $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);rois(s).push(roi);$('roiName').value='';editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
   const draw=$('analysisDraw');
   draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();if(['polygon','threshold'].includes($('roiShape').value)){const p=point(e);if(p){polygon.push(p);polygonOutline();}return;}drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
-  draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}};
+  draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}else if(polygon.length){const p=point(e);if(p)polygonOutline(p);}};
+  draw.onpointerleave=()=>{if(polygon.length)polygonOutline();};
   draw.onpointerup=e=>{if(!drag)return;const p=point(e),start=drag;drag=null;$('roiOutline').hidden=true;
     if(!p)return;const s=source(),[w,h]=dimensions(s),roi={shape:$('roiShape').value,mode:$('roiMode').value,x0:start.x,y0:start.y,x1:p.x,y1:p.y};
     if(!window.GANTRY_ROI.valid(roi,w,h))return;roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);rois(s).push(roi);$('roiName').value='';const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';

@@ -39,6 +39,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  $('roiThreshold').value='1000';$('roiThreshold').dispatchEvent(new w.Event('input'));assert.equal($('roiThresholdSlider').max,'1000');assert.equal($('roiThresholdSlider').value,'1000');
  $('roiThresholdSlider').value='20';$('roiThresholdSlider').dispatchEvent(new w.Event('input'));assert.equal($('roiThreshold').value,'20');
  const staticOriginal=w.eval('Array.from(pixels)');$('analysisSelected').getBoundingClientRect=()=>({left:10,top:20,width:128,height:128});
+ $('roiMask').click();assert.equal($('roiMode').value,'exclude');assert(!$('roiMaskMode').hidden);
  const draw=$('analysisDraw');draw.onpointerdown({clientX:10,clientY:20,pointerId:1,preventDefault(){}});draw.onpointermove({clientX:74,clientY:84});draw.onpointerup({clientX:74,clientY:84});
  assert($('analysisStatus').textContent.startsWith('1 ROI'));assert($('analysisStatus').textContent.includes('102.400'));
  assert.equal(raster.get('analysisSelected')[0],0);assert(raster.get('analysisSelected')[63*4]>0);
@@ -53,6 +54,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  // Polygon clicks persist and threshold masks use native counts, not display brightness.
  $('roiShape').value='polygon';$('roiShape').dispatchEvent(new w.Event('change'));
  for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
+ draw.onpointermove({clientX:90,clientY:100});assert($('roiPolygon').querySelector('polyline').getAttribute('points').endsWith('40,40'));assert.equal($('roiPolygon').querySelector('polyline').getAttribute('stroke'),'#ff2020');
  assert(!$('roiFinish').disabled);$('roiFinish').click();assert($('analysisStatus').textContent.startsWith('1 ROI'));
  assert.equal(raster.get('analysisSelected')[0],0);assert(raster.get('analysisSelected')[63*4]>0);
  $('roiUndo').click();$('roiShape').value='threshold';$('roiShape').dispatchEvent(new w.Event('change'));$('roiThreshold').value='101';
@@ -70,7 +72,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  assert(w.GANTRY_ROI.valid(JSON.parse(JSON.stringify(polygonMask)),2,2));
  $('roiUndo').click();$('roiShape').value='rectangle';$('roiShape').dispatchEvent(new w.Event('change'));
  // Named measurement ROI preserves pixels and supports later renaming / use changes.
- $('roiMode').value='measure';$('roiName').value='Renal derecha';
+ $('roiAdd').click();assert.equal($('roiMode').value,'measure');assert($('roiMaskMode').hidden);$('roiName').value='Renal derecha';
  const beforeMeasure=Array.from(raster.get('analysisSelected'));
  draw.onpointerdown({clientX:10,clientY:20,pointerId:3,preventDefault(){}});draw.onpointerup({clientX:74,clientY:84});
  assert.deepEqual(Array.from(raster.get('analysisSelected')),beforeMeasure,'Measuring does not mask image');
