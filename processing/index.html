@@ -2105,6 +2105,28 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     #analysisDraw{cursor:crosshair}.analysis-tab{background:transparent;border:0;border-right:1px solid white;font-size:12px;padding:5px}
     .analysis-tab[aria-selected=true]{font-weight:bold;color:navy}
   `;document.head.append(style);
+  const numericSliders=new Map(),imagePeaks=new WeakMap();
+  for(const id of ['roiThreshold','analysisWindow','analysisLevel','analysisX','analysisY']){
+    const input=$(id),box=document.createElement('span');box.className='analysis-number-slider';
+    input.replaceWith(box);box.append(input);
+    const slider=document.createElement('input');slider.type='range';slider.id=id+'Slider';slider.setAttribute('aria-label',({roiThreshold:'Umbral',analysisWindow:'Ventana',analysisLevel:'Nivel',analysisX:'Vertical X',analysisY:'Horizontal Y'})[id]);
+    const limits=document.createElement('span');limits.className='analysis-slider-limits';const low=document.createElement('span'),high=document.createElement('span');limits.append(low,high);box.append(slider,limits);
+    numericSliders.set(id,{input,slider,low,high});
+    slider.oninput=()=>{input.value=slider.value;input.dispatchEvent(new Event('input',{bubbles:true}));};
+    input.addEventListener('input',()=>syncSliders());
+  }
+  const sliderStyle=document.createElement('style');sliderStyle.textContent='#analysisPanel .analysis-number-slider{display:inline-flex;flex-direction:column;gap:2px;width:130px;vertical-align:top}#analysisPanel .analysis-number-slider input{width:100%;box-sizing:border-box;margin:0}#analysisPanel .analysis-number-slider input[type=range]{min-height:20px;padding:0}#analysisPanel .analysis-slider-limits{display:flex;justify-content:space-between;font-size:10px;line-height:1.2;color:#333}';document.head.append(sliderStyle);
+  function syncSliders(){
+    const s=source();if(!s)return;const [w,h]=dimensions(s);
+    let peak=imagePeaks.get(s.pixels);if(peak===undefined){peak=0;for(const n of s.pixels)peak=Math.max(peak,n);imagePeaks.set(s.pixels,peak);}
+    for(const [id,{input,slider,low,high}] of numericSliders){
+      const coordinate=id==='analysisX'||id==='analysisY',min=id==='analysisWindow'?1:0;
+      const natural=coordinate?(id==='analysisX'?w:h)-1:id==='analysisWindow'?Math.max(1,peak+1):Math.max(1,peak);
+      const max=coordinate?natural:Math.max(natural,Number(input.value)||0);
+      slider.min=min;slider.max=max;slider.step=id==='analysisLevel'||id==='analysisWindow'?'0.5':'1';slider.value=input.value||min;
+      low.textContent=String(min);high.textContent=String(max);
+    }
+  }
   const bar=document.querySelector('.application-bar'),spans=[...bar.children].filter(e=>e.tagName==='SPAN'&&!e.classList.contains('mode'));
   const tabs=spans.slice(0,2).map((span,i)=>{const b=document.createElement('button');b.className='analysis-tab';b.type='button';b.textContent=span.textContent;b.setAttribute('aria-controls',i?'analysisPanel':'acquisition-panel');b.onclick=()=>show(!!i);span.replaceWith(b);return b;});
   function show(on){
@@ -2178,7 +2200,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       const selector=$('roiImage'),previous=chosen;selector.replaceChildren();images.forEach((s,i)=>{const opt=document.createElement('option');opt.value=i;opt.textContent=value(s.dataset,'0008103e')||'Imagen '+(i+1);selector.append(opt);});chosen=Math.min(previous,images.length-1);selector.value=chosen;
       drawStatic();
     }
-    guides();
+    guides();syncSliders();
   }
   function drawDynamic(){
     const s=source(),det=Number($('corrDetector').value)+1,stepIndex=Math.max(0,Number($('dyn-slider').value)),f=dynamicSteps[stepIndex]?.frames[det];
@@ -2218,7 +2240,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     paint($('analysisSelected'),s,0,{dx:0,dy:0},mask);
     $('analysisSelectedLabel').textContent=(value(s.dataset,'0008103e')||'Imagen')+(mask.length?' · enmascarada':' · original');
     $('analysisStatus').textContent=rois(s).length+' ROI · '+result.removed.toLocaleString('es-CL')+' cuentas ocultas en esta vista. Original conservado.';
-    $('roiUndo').disabled=$('roiReset').disabled=!rois(s).length;
+    $('roiUndo').disabled=$('roiReset').disabled=!rois(s).length;syncSliders();
   }
   function point(e){const c=$('analysisSelected'),r=c.getBoundingClientRect(),[w,h]=dimensions(source());
     if(!r.width||!r.height)return null;return {x:Math.max(0,Math.min(w,(e.clientX-r.left)*w/r.width)),y:Math.max(0,Math.min(h,(e.clientY-r.top)*h/r.height))};}

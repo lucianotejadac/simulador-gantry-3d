@@ -33,6 +33,11 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  for(let i=0;i<files.length;i++)await load(new w.Uint8Array(files[i].bytes),'static-'+i+'.dcm');
  assert.equal(w.eval('currentMode'),'static');assert(!$('analysisStatic').hidden);assert($('analysisFrames').hidden);assert.equal($('roiImage').options.length,2);
  $('roiImage').value='0';$('roiImage').dispatchEvent(new w.Event('change'));
+ assert.equal($('roiThresholdSlider').min,'0');assert.equal($('roiThresholdSlider').max,'100');
+ $('analysisWindowSlider').value='50';$('analysisWindowSlider').dispatchEvent(new w.Event('input'));await tick();assert.equal($('analysisWindow').value,'50');
+ $('analysisLevel').value='25.5';$('analysisLevel').dispatchEvent(new w.Event('input'));assert.equal($('analysisLevelSlider').value,'25.5');
+ $('roiThreshold').value='1000';$('roiThreshold').dispatchEvent(new w.Event('input'));assert.equal($('roiThresholdSlider').max,'1000');assert.equal($('roiThresholdSlider').value,'1000');
+ $('roiThresholdSlider').value='20';$('roiThresholdSlider').dispatchEvent(new w.Event('input'));assert.equal($('roiThreshold').value,'20');
  const staticOriginal=w.eval('Array.from(pixels)');$('analysisSelected').getBoundingClientRect=()=>({left:10,top:20,width:128,height:128});
  const draw=$('analysisDraw');draw.onpointerdown({clientX:10,clientY:20,pointerId:1,preventDefault(){}});draw.onpointermove({clientX:74,clientY:84});draw.onpointerup({clientX:74,clientY:84});
  assert($('analysisStatus').textContent.startsWith('1 ROI'));assert($('analysisStatus').textContent.includes('102.400'));
