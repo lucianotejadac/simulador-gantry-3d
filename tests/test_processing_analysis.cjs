@@ -55,7 +55,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  $('roiShape').value='polygon';$('roiShape').dispatchEvent(new w.Event('change'));
  for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
  draw.onpointermove({clientX:90,clientY:100});assert($('roiPolygon').querySelector('polyline').getAttribute('points').endsWith('40,40'));assert.equal($('roiPolygon').querySelector('polyline').getAttribute('stroke'),'#ff2020');
- assert(!$('roiFinish').disabled);$('roiFinish').click();assert($('analysisStatus').textContent.startsWith('1 ROI'));
+ assert(!$('roiPolygon').hasAttribute('hidden'),'SVG trace is visible while drawing');assert(!$('roiFinish').disabled);$('roiFinish').click();assert($('analysisStatus').textContent.startsWith('1 ROI'));
  assert.equal(raster.get('analysisSelected')[0],0);assert(raster.get('analysisSelected')[63*4]>0);
  $('roiUndo').click();$('roiShape').value='threshold';$('roiShape').dispatchEvent(new w.Event('change'));$('roiThreshold').value='101';
  for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
@@ -77,6 +77,8 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  draw.onpointerdown({clientX:10,clientY:20,pointerId:3,preventDefault(){}});draw.onpointerup({clientX:74,clientY:84});
  assert.deepEqual(Array.from(raster.get('analysisSelected')),beforeMeasure,'Measuring does not mask image');
  assert($('roiMeasurements').textContent.includes('102.400'));assert($('roiSavedOutlines').textContent.includes('Renal derecha'));
+ const colorInput=$('roiMeasurements').querySelector('input[type=color]');colorInput.value='#00cfff';colorInput.dispatchEvent(new w.Event('input'));
+ assert.equal($('roiSavedOutlines').querySelector('rect').getAttribute('stroke'),'#00cfff');assert(Object.values(w.localStorage).some(v=>v.includes('#00cfff')));
  const rename=$('roiMeasurements').querySelector('input');rename.value='Renal editada';rename.dispatchEvent(new w.Event('change'));
  assert($('roiSavedOutlines').textContent.includes('Renal editada'));assert(Object.values(w.localStorage).some(v=>v.includes('Renal editada')));
  const metric=w.GANTRY_ROI.measure([1,2,3,4],2,2,{shape:'rectangle',mode:'measure',x0:0,y0:0,x1:2,y1:2},[2,3]);

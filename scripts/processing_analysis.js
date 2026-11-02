@@ -4,6 +4,8 @@
   'use strict';
   let polygon=[],editingThreshold=-1,thresholdImage='';
   let opened=false,timer=null,images=[],chosen=0,drag=null,identity='',galleryKey='',windowKey='';
+  const roiColors=['#ff2020','#00cfff','#38e05b','#ffca28','#de65ff','#ff851b','#00d7ba','#ff77b7'];
+  const roiColor=(r,i)=>/^#[0-9a-f]{6}$/i.test(r.color||'')?r.color:roiColors[i%roiColors.length];
   const masks=new Map(),maskedDisplays=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
   panel.innerHTML=`<div class="mode-heading">Visualización / Análisis</div>
     <p id="analysisEmpty">Selecciona una adquisición terminada en la columna izquierda.</p>
@@ -207,7 +209,7 @@
     thresholdTargets();
     const s=source(),[w,h]=dimensions(s),mask=canMask()&&!$('roiOriginal').checked?rois(s).filter(r=>r.mode!=='measure'):[];
     const result=window.GANTRY_ROI.apply(raw(s),w,h,mask);
-    const nextWindowKey=JSON.stringify([key(s),mask.map(({name,...r})=>r),$('roiOriginal').checked]);
+    const nextWindowKey=JSON.stringify([key(s),mask.map(({name,color,...r})=>r),$('roiOriginal').checked]);
     if(nextWindowKey!==windowKey){
       windowKey=nextWindowKey;
       $('analysisWindow').value=Math.max(1,result.max-result.min+1);
@@ -231,25 +233,27 @@
     list.forEach((roi,i)=>{
       const row=document.createElement('tr'),name=document.createElement('input');name.type='text';name.maxLength=80;name.value=roi.name||'ROI '+(i+1);name.setAttribute('aria-label','Nombre ROI '+(i+1));
       name.onchange=()=>{roi.name=name.value.trim()||'ROI '+(i+1);persist(s);drawStatic();};
+      const nameAndColor=document.createElement('span');nameAndColor.style.cssText='display:flex;align-items:center;gap:6px';const color=document.createElement('input');color.type='color';color.value=roiColor(roi,i);color.setAttribute('aria-label','Color ROI '+(i+1));color.style.cssText='width:38px;min-width:38px;height:28px;padding:1px';nameAndColor.append(name,color);
+      color.oninput=()=>{roi.color=color.value;persist(s);outline.setAttribute('stroke',roi.color);label.setAttribute('fill',roi.color);};
       const use=document.createElement('select');use.setAttribute('aria-label','Uso ROI '+(i+1));
       for(const [v,t] of [['measure','Medir'],['exclude','Ocultar interior'],['keep','Conservar interior']]){const o=document.createElement('option');o.value=v;o.textContent=t;use.append(o);}use.value=roi.mode;
       use.onchange=()=>{roi.mode=use.value;persist(s);drawStatic();};
       const result=window.GANTRY_ROI.measure(raw(s),w,h,roi,spacing);
-      for(const value of [name,use,format(result.total),format(result.mean),format(result.max),format(result.pixels),result.areaMm2===null?'No disponible':format(result.areaMm2)]){const td=document.createElement('td');td.style.cssText='padding:4px;border:1px solid #888';if(typeof value==='string')td.textContent=value;else td.append(value);row.append(td);}table.append(row);
+      for(const value of [nameAndColor,use,format(result.total),format(result.mean),format(result.max),format(result.pixels),result.areaMm2===null?'No disponible':format(result.areaMm2)]){const td=document.createElement('td');td.style.cssText='padding:4px;border:1px solid #888';if(typeof value==='string')td.textContent=value;else td.append(value);row.append(td);}table.append(row);
       const ns='http://www.w3.org/2000/svg',outline=document.createElementNS(ns,roi.points?'polygon':roi.shape==='ellipse'?'ellipse':'rect');
       let x,y;
       if(roi.points){outline.setAttribute('points',roi.points.map(p=>p.x+','+p.y).join(' '));x=Math.min(...roi.points.map(p=>p.x));y=Math.min(...roi.points.map(p=>p.y));}
       else{x=Math.min(roi.x0,roi.x1);y=Math.min(roi.y0,roi.y1);const width=Math.abs(roi.x1-roi.x0),height=Math.abs(roi.y1-roi.y0);const attrs=roi.shape==='ellipse'?{cx:x+width/2,cy:y+height/2,rx:width/2,ry:height/2}:{x,y,width,height};for(const [k,v] of Object.entries(attrs))outline.setAttribute(k,v);}
-      for(const [k,v] of Object.entries({fill:'none',stroke:'#ff2020','stroke-width':2,'vector-effect':'non-scaling-stroke'}))outline.setAttribute(k,v);svg.append(outline);
-      const label=document.createElementNS(ns,'text');label.textContent=roi.name||'ROI '+(i+1);label.setAttribute('x',x);label.setAttribute('y',Math.max(w/28,y-2));label.setAttribute('font-size',w/32);label.setAttribute('fill','#ff2020');label.setAttribute('stroke','white');label.setAttribute('stroke-width',w/500);label.setAttribute('paint-order','stroke');svg.append(label);
+      for(const [k,v] of Object.entries({fill:'none',stroke:roiColor(roi,i),'stroke-width':2,'vector-effect':'non-scaling-stroke'}))outline.setAttribute(k,v);svg.append(outline);
+      const label=document.createElementNS(ns,'text');label.textContent=roi.name||'ROI '+(i+1);label.setAttribute('x',x);label.setAttribute('y',Math.max(w/28,y-2));label.setAttribute('font-size',w/32);label.setAttribute('fill',roiColor(roi,i));label.setAttribute('stroke','white');label.setAttribute('stroke-width',w/500);label.setAttribute('paint-order','stroke');svg.append(label);
     });host.append(table);
   }
   function point(e){const c=$('analysisSelected'),r=c.getBoundingClientRect(),[w,h]=dimensions(source());
     if(!r.width||!r.height)return null;return {x:Math.max(0,Math.min(w,(e.clientX-r.left)*w/r.width)),y:Math.max(0,Math.min(h,(e.clientY-r.top)*h/r.height))};}
   function outline(p){const [w,h]=dimensions(source()),node=$('roiOutline');node.hidden=false;
     Object.assign(node.style,{left:100*Math.min(drag.x,p.x)/w+'%',top:100*Math.min(drag.y,p.y)/h+'%',width:100*Math.abs(p.x-drag.x)/w+'%',height:100*Math.abs(p.y-drag.y)/h+'%',borderRadius:$('roiShape').value==='ellipse'?'50%':'0'});}
-  function cancelPolygon(){polygon=[];$('roiPolygon').hidden=true;$('roiFinish').disabled=true;}
-  function polygonOutline(cursor){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.hidden=false;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ff2020" stroke-width="3" vector-effect="non-scaling-stroke" points="'+(cursor?[...polygon,cursor]:polygon).map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ff2020" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
+  function cancelPolygon(){polygon=[];$('roiPolygon').setAttribute('hidden','');$('roiFinish').disabled=true;}
+  function polygonOutline(cursor){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.removeAttribute('hidden');svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ff2020" stroke-width="3" vector-effect="non-scaling-stroke" points="'+(cursor?[...polygon,cursor]:polygon).map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ff2020" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
   $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;thresholdTargets();syncSliders();};
   $('roiCancel').onclick=cancelPolygon;
   function chooseRoiTool(mask){
@@ -260,14 +264,14 @@
   }
   $('roiAdd').onclick=()=>chooseRoiTool(false);$('roiMask').onclick=()=>chooseRoiTool(true);
 
-  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);rois(s).push(roi);$('roiName').value='';editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
+  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=roiColors[rois(s).length%roiColors.length];rois(s).push(roi);$('roiName').value='';editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
   const draw=$('analysisDraw');
   draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();if(['polygon','threshold'].includes($('roiShape').value)){const p=point(e);if(p){polygon.push(p);polygonOutline();}return;}drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
   draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}else if(polygon.length){const p=point(e);if(p)polygonOutline(p);}};
   draw.onpointerleave=()=>{if(polygon.length)polygonOutline();};
   draw.onpointerup=e=>{if(!drag)return;const p=point(e),start=drag;drag=null;$('roiOutline').hidden=true;
     if(!p)return;const s=source(),[w,h]=dimensions(s),roi={shape:$('roiShape').value,mode:$('roiMode').value,x0:start.x,y0:start.y,x1:p.x,y1:p.y};
-    if(!window.GANTRY_ROI.valid(roi,w,h))return;roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);rois(s).push(roi);$('roiName').value='';const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
+    if(!window.GANTRY_ROI.valid(roi,w,h))return;roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=roiColors[rois(s).length%roiColors.length];rois(s).push(roi);$('roiName').value='';const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
   };
   draw.onpointercancel=()=>{drag=null;$('roiOutline').hidden=true;};
   $('roiImage').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;chosen=Number($('roiImage').value);$('roiOriginal').checked=false;drawStatic();};
