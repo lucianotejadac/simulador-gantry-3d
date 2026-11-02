@@ -45,6 +45,22 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  tabs[0].click();tabs[1].click();assert($('analysisStatus').textContent.startsWith('1 ROI'),'Reopening preserves mask');
  assert(Object.keys(w.localStorage).some(k=>k.startsWith('gantry.roi.')));
  $('roiUndo').click();assert($('analysisStatus').textContent.startsWith('0 ROI'));assert(raster.get('analysisSelected')[0]>0);
+ // Polygon clicks persist and threshold masks use native counts, not display brightness.
+ $('roiShape').value='polygon';$('roiShape').dispatchEvent(new w.Event('change'));
+ for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
+ assert(!$('roiFinish').disabled);$('roiFinish').click();assert($('analysisStatus').textContent.startsWith('1 ROI'));
+ assert.equal(raster.get('analysisSelected')[0],0);assert(raster.get('analysisSelected')[63*4]>0);
+ $('roiUndo').click();$('roiShape').value='threshold';$('roiShape').dispatchEvent(new w.Event('change'));$('roiThreshold').value='101';
+ for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
+ $('roiFinish').click();assert(raster.get('analysisSelected')[0]>0,'100 counts below threshold stay visible');
+ $('roiUndo').click();$('roiThreshold').value='100';
+ for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
+ $('roiFinish').click();assert.equal(raster.get('analysisSelected')[0],0,'Threshold includes equal counts');
+ assert.deepEqual(w.eval('Array.from(pixels)'),staticOriginal);
+ const polygonMask={shape:'threshold',mode:'keep',threshold:50,points:[{x:0,y:0},{x:2,y:0},{x:2,y:2},{x:0,y:2}]};
+ assert.deepEqual(Array.from(w.GANTRY_ROI.apply([10,50,100,20],2,2,[polygonMask]).counts),[0,50,100,0]);
+ assert(w.GANTRY_ROI.valid(JSON.parse(JSON.stringify(polygonMask)),2,2));
+ $('roiUndo').click();$('roiShape').value='rectangle';$('roiShape').dispatchEvent(new w.Event('change'));
  // Whole-body images use rectangular native coordinates, with independent masks per detector.
  w.eval(`var wholeRecord={...staticRecord,id:'whole-mask-test',kind:'whole',n:128,height:512,mode:'scan',target:160,
  scan:{velocity:10,contours:'auto',travel:160},

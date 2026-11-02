@@ -2,20 +2,23 @@
 (function(){
   'use strict';
   function contains(roi,x,y){
+    if(roi.points){let inside=false;const pts=roi.points;for(let i=0,j=pts.length-1;i<pts.length;j=i++){const a=pts[i],b=pts[j];if((a.y>y)!==(b.y>y)&&x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)inside=!inside;}return inside;}
     const [x0,x1]=[Math.min(roi.x0,roi.x1),Math.max(roi.x0,roi.x1)],
       [y0,y1]=[Math.min(roi.y0,roi.y1),Math.max(roi.y0,roi.y1)];
     if(roi.shape==='ellipse')return ((x-(x0+x1)/2)/((x1-x0)/2))**2+((y-(y0+y1)/2)/((y1-y0)/2))**2<=1;
     return x>=x0&&x<x1&&y>=y0&&y<y1;
   }
-  function valid(roi,w,h){return roi&&['rectangle','ellipse'].includes(roi.shape)&&['exclude','keep'].includes(roi.mode)&&
+  function valid(roi,w,h){
+    if(roi&&['polygon','threshold'].includes(roi.shape))return ['exclude','keep'].includes(roi.mode)&&Array.isArray(roi.points)&&roi.points.length>=3&&roi.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=w&&p.y>=0&&p.y<=h)&&Math.abs(roi.points.reduce((a,p,i)=>{const q=roi.points[(i+1)%roi.points.length];return a+p.x*q.y-q.x*p.y;},0))>=2&&(roi.shape!=='threshold'||Number.isFinite(roi.threshold)&&roi.threshold>=0);
+    return roi&&['rectangle','ellipse'].includes(roi.shape)&&['exclude','keep'].includes(roi.mode)&&
     ['x0','x1','y0','y1'].every(k=>Number.isFinite(roi[k])&&roi[k]>=0&&roi[k]<=(k[0]==='x'?w:h))&&Math.abs(roi.x1-roi.x0)>=1&&Math.abs(roi.y1-roi.y0)>=1;}
-  function visible(rois,x,y){return rois.every(r=>contains(r,x,y)===(r.mode==='keep'));}
+  function visible(rois,x,y,count=0){return rois.every(r=>(contains(r,x,y)&&(r.shape!=='threshold'||count>=r.threshold))===(r.mode==='keep'));}
   function apply(image,w,h,rois){
     if(image.length!==w*h||!rois.every(r=>valid(r,w,h)))throw Error('ROI no válida');
     const counts=new Float64Array(image);let removed=0,min=Infinity,max=-Infinity,visiblePixels=0;
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const i=y*w+x;
-      if(!visible(rois,x+.5,y+.5)){removed+=counts[i];counts[i]=0;}
+      if(!visible(rois,x+.5,y+.5,counts[i])){removed+=counts[i];counts[i]=0;}
       else{min=Math.min(min,counts[i]);max=Math.max(max,counts[i]);visiblePixels++;}
     }
     return {counts,removed,min:visiblePixels?min:0,max:visiblePixels?max:0,visiblePixels};

@@ -71,7 +71,7 @@ for old, new in {
 # Page items hold an independent, serializable copy of their ROI processing.
 for old, new in {
     "const a=source||flexAsset(i),key=[a.id,i.window,i.level,i.invert].join('|');": "const a=source||flexAsset(i),mask=(i.roiMasks||[]).filter(r=>window.GANTRY_ROI.valid(r,a.cols,a.rows)),key=[a.id,i.window,i.level,i.invert,JSON.stringify(mask)].join('|');",
-    'const p=a.data[j];let g=': 'const visible=window.GANTRY_ROI.visible(mask,j%a.cols+.5,Math.floor(j/a.cols)+.5),p=a.data[j];let g=',
+    'const p=a.data[j];let g=': 'const visible=window.GANTRY_ROI.visible(mask,j%a.cols+.5,Math.floor(j/a.cols)+.5,a.data[j]),p=a.data[j];let g=',
     'if(invert)g=255-g;im.data[j*4]': 'if(!visible)g=0;if(invert)g=255-g;im.data[j*4]',
     'canvasText(ctx,a.seriesName,x+5': "canvasText(ctx,a.seriesName+(i.roiMasks?.length?' · enmascarada':''),x+5",
 }.items():

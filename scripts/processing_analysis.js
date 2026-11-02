@@ -2,6 +2,7 @@
    reversible processing keyed by SOP UID. Acquisition buffers stay immutable. */
 (function(){
   'use strict';
+  let polygon=[];
   let opened=false,timer=null,images=[],chosen=0,drag=null,identity='',galleryKey='',windowKey='';
   const masks=new Map(),maskedDisplays=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
   panel.innerHTML=`<div class="mode-heading">Visualización / Análisis</div>
@@ -11,11 +12,13 @@
       <label id="analysisImageSelect">Imagen <select id="roiImage"></select></label>
       <div id="analysisStatic" hidden>
         <strong>Enmascarar imagen</strong>
-        <label>ROI <select id="roiShape"><option value="rectangle">Rectangular</option><option value="ellipse">Elíptica</option></select></label>
+        <label>ROI <select id="roiShape"><option value="rectangle">Rectangular</option><option value="ellipse">Elíptica</option><option value="polygon">Punto por punto</option><option value="threshold">Punto por punto con umbral</option></select></label>
+        <label id="roiThresholdLabel" hidden>Umbral mínimo (cuentas/píxel) <input id="roiThreshold" type="number" min="0" step="1" value="10"></label>
+        <button id="roiFinish" hidden>Cerrar ROI</button><button id="roiCancel" hidden>Cancelar trazado</button>
         <label>Máscara <select id="roiMode"><option value="exclude">Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
         <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar máscaras</button>
         <label><input type="checkbox" id="roiOriginal">Ver original</label>
-        <p>Arrastra sobre la imagen para dibujar una ROI. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
+        <p>Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI (mínimo 3 puntos). Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
       <div class="analysis-toolbar"><label>Ventana <input id="analysisWindow" type="number" min="1" step="any"></label>
         <label>Nivel <input id="analysisLevel" type="number" step="any"></label>
         <label><input id="analysisInvert" type="checkbox">Invertir</label>
@@ -26,7 +29,7 @@
         <span>Coordenadas comunes a todos los frames (píxeles).</span></div>
       <div id="analysisPreviews">
         <figure id="analysisReferenceFigure"><figcaption id="analysisReferenceLabel">Referencia original</figcaption><div class="analysis-image"><canvas id="analysisReference"></canvas><i class="guide-x"></i><i class="guide-y"></i></div></figure>
-        <figure><figcaption id="analysisSelectedLabel"></figcaption><div id="analysisDraw" class="analysis-image"><canvas id="analysisSelected"></canvas><i class="guide-x"></i><i class="guide-y"></i><i id="roiOutline" hidden></i></div></figure>
+        <figure><figcaption id="analysisSelectedLabel"></figcaption><div id="analysisDraw" class="analysis-image"><canvas id="analysisSelected"></canvas><i class="guide-x"></i><i class="guide-y"></i><i id="roiOutline" hidden></i><svg id="roiPolygon" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" hidden></svg></div></figure>
       </div>
       <p id="analysisStatus" role="status"></p>
       <div id="analysisNudge" class="analysis-toolbar">Mover frame seleccionado:
@@ -101,7 +104,7 @@
       invert=$('analysisInvert').checked!==(s.dataset.string('x00280004')==='MONOCHROME1');
     for(let y=0;y<height;y++)for(let x=0;x<size;x++){
       const px=Math.floor(x*w/size),py=Math.floor(y*h/height),sx=px-o.dx,sy=py-o.dy,
-        visible=window.GANTRY_ROI.visible(mask,px+.5,py+.5),p=sx>=0&&sx<w&&sy>=0&&sy<h?counts[sy*w+sx]:0;
+        p=sx>=0&&sx<w&&sy>=0&&sy<h?counts[sy*w+sx]:0,visible=window.GANTRY_ROI.visible(mask,px+.5,py+.5,p);
       let g=win<=1?(p>level-.5?255:0):Math.max(0,Math.min(255,((p-(level-.5))/(win-1)+.5)*255));if(!visible)g=0;if(invert)g=255-g;
       const i=(y*size+x)*4;image.data[i]=image.data[i+1]=image.data[i+2]=g;image.data[i+3]=255;
     }
@@ -118,7 +121,7 @@
     panel.hidden=false;$('acquisition-panel').hidden=true;
     images=sourceImages();const empty=!images.length;$('analysisEmpty').hidden=!empty;$('analysisContent').hidden=empty;if(empty)return;
     const dynamic=currentMode==='dynamic',s0=images[0],id=s0.dataset.string('x0020000e')+':'+currentMode;
-    if(identity!==id){identity=id;chosen=0;galleryKey='';drag=null;$('roiOutline').hidden=true;$('roiOriginal').checked=false;
+    if(identity!==id){cancelPolygon();identity=id;chosen=0;galleryKey='';drag=null;$('roiOutline').hidden=true;$('roiOriginal').checked=false;
       $('analysisWindow').value=$('window').value;$('analysisLevel').value=$('level').value;$('analysisInvert').checked=$('invert').checked;
       const [w,h]=dimensions(s0);$('analysisX').value=Math.floor(w/2);$('analysisY').value=Math.floor(h/2);
     }
@@ -176,15 +179,20 @@
     if(!r.width||!r.height)return null;return {x:Math.max(0,Math.min(w,(e.clientX-r.left)*w/r.width)),y:Math.max(0,Math.min(h,(e.clientY-r.top)*h/r.height))};}
   function outline(p){const [w,h]=dimensions(source()),node=$('roiOutline');node.hidden=false;
     Object.assign(node.style,{left:100*Math.min(drag.x,p.x)/w+'%',top:100*Math.min(drag.y,p.y)/h+'%',width:100*Math.abs(p.x-drag.x)/w+'%',height:100*Math.abs(p.y-drag.y)/h+'%',borderRadius:$('roiShape').value==='ellipse'?'50%':'0'});}
+  function cancelPolygon(){polygon=[];$('roiPolygon').hidden=true;$('roiFinish').disabled=true;}
+  function polygonOutline(){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.hidden=false;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ffda35" stroke-width="1" points="'+polygon.map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ffda35"/>').join('');$('roiFinish').disabled=polygon.length<3;}
+  $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;$('roiThresholdLabel').hidden=$('roiShape').value!=='threshold';};
+  $('roiCancel').onclick=cancelPolygon;
+  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}rois(s).push(roi);const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
   const draw=$('analysisDraw');
-  draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
+  draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();if(['polygon','threshold'].includes($('roiShape').value)){const p=point(e);if(p){polygon.push(p);polygonOutline();}return;}drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
   draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}};
   draw.onpointerup=e=>{if(!drag)return;const p=point(e),start=drag;drag=null;$('roiOutline').hidden=true;
     if(!p)return;const s=source(),[w,h]=dimensions(s),roi={shape:$('roiShape').value,mode:$('roiMode').value,x0:start.x,y0:start.y,x1:p.x,y1:p.y};
     if(!window.GANTRY_ROI.valid(roi,w,h))return;rois(s).push(roi);const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
   };
   draw.onpointercancel=()=>{drag=null;$('roiOutline').hidden=true;};
-  $('roiImage').onchange=()=>{drag=null;$('roiOutline').hidden=true;chosen=Number($('roiImage').value);$('roiOriginal').checked=false;drawStatic();};
+  $('roiImage').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;chosen=Number($('roiImage').value);$('roiOriginal').checked=false;drawStatic();};
   $('roiOriginal').onchange=drawStatic;
   $('roiUndo').onclick=()=>{rois(source()).pop();persist(source());drawStatic();};
   $('roiReset').onclick=()=>{masks.set(key(source()),[]);persist(source());drawStatic();};
@@ -202,7 +210,7 @@
     if(!['static','whole'].includes(asset.kind)||asset.dynamicFrames)return;
     const mask=savedMasks(asset.uid,asset.cols,asset.rows);if(!mask.length)return;
     // Copy the processing into this page item; keep its acquired pixels untouched.
-    item.roiMasks=mask.map(r=>({...r}));
+    item.roiMasks=JSON.parse(JSON.stringify(mask));
     const result=window.GANTRY_ROI.apply(asset.data,asset.cols,asset.rows,mask);
     const saved=maskedDisplays.get(asset.uid),current=source();
     const display=current&&key(current)===asset.uid&&!$('roiOriginal').checked?
