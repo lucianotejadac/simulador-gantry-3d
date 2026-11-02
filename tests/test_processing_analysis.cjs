@@ -102,7 +102,14 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  const targetROI={shape:'rectangle',mode:'measure',x0:0,y0:0,x1:1,y1:2},bgROI={shape:'rectangle',mode:'background',x0:0,y0:0,x1:2,y1:2};
  const bg=w.GANTRY_ROI.background([10,2,20,4],2,2,targetROI,bgROI,[1,1]);assert.equal(bg.background.pixels,2);assert.equal(bg.background.mean,3);assert.equal(bg.estimated,6);assert.equal(bg.net,24);
  assert.equal(w.GANTRY_ROI.background([10,2,20,4],2,2,targetROI,targetROI,null).net,null,'Empty background must not be treated as zero');
- $('roiBackground').click();assert.equal($('roiMode').value,'background');draw.onpointerdown({clientX:10,clientY:20,pointerId:9,preventDefault(){}});draw.onpointerup({clientX:30,clientY:40});assert($('roiMeasurements').querySelector('[aria-label="ROI de referencia del fondo 1"]'));$('roiReset').click();$('roiMask').click();
+ $('roiBackground').click();assert($('analysisStatus').textContent.includes('Primero'));
+ $('roiAdd').click();draw.onpointerdown({clientX:30,clientY:40,pointerId:9,preventDefault(){}});draw.onpointerup({clientX:70,clientY:80});
+ $('roiBackground').click();assert($('backgroundCreate').closest('dialog').open);assert.equal($('backgroundReference').options.length,1);$('backgroundCreate').click();
+ assert(!$('backgroundCreate').closest('dialog').open);assert($('roiMeasurements').querySelector('[aria-label="ROI de referencia del fondo 2"]'));const initialBand=$('roiSavedOutlines').querySelector('path').getAttribute('d');
+ draw.onpointerdown({clientX:40,clientY:50,pointerId:10,preventDefault(){}});draw.onpointermove({clientX:50,clientY:50});draw.onpointerup({clientX:50,clientY:50});assert.notEqual($('roiSavedOutlines').querySelector('path').getAttribute('d'),initialBand);assert(Object.values(w.localStorage).some(v=>v.includes('"dx":5')));
+ const band=w.GANTRY_ROI.autoBackground(new Uint32Array(225).fill(10),15,15,{...targetROI,id:'organ',x0:5,y0:5,x1:8,y1:8});assert(w.GANTRY_ROI.valid(JSON.parse(JSON.stringify(band)),15,15));assert(band.cells.length>0);assert(!band.cells.includes(6*15+6));assert.equal(band.targetId,'organ');
+ $('roiReset').click();$('roiMask').click();
+
  // Whole-body images use rectangular native coordinates, with independent masks per detector.
  w.eval(`var wholeRecord={...staticRecord,id:'whole-mask-test',kind:'whole',n:128,height:512,mode:'scan',target:160,
  scan:{velocity:10,contours:'auto',travel:160},
