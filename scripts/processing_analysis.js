@@ -16,12 +16,12 @@
       <label id="analysisImageSelect">Imagen <select id="roiImage"></select></label>
       <div id="analysisStatic" hidden>
         <strong>ROI y mediciones</strong>
-        <button id="roiAdd" aria-pressed="true">Agregar ROI</button><button id="roiMask" aria-pressed="false">Enmascarar</button>
+        <button id="roiAdd" aria-pressed="true">Agregar ROI</button><button id="roiMask" aria-pressed="false">Enmascarar</button><button id="roiBackground" aria-pressed="false">Fondo</button>
         <label>ROI <select id="roiShape"><option value="rectangle">Rectangular</option><option value="ellipse">Elíptica</option><option value="polygon">Punto por punto</option><option value="threshold">Punto por punto con umbral</option></select></label>
         <label id="roiThresholdLabel" hidden>Umbral mínimo (cuentas/píxel) <input id="roiThreshold" type="number" min="0" step="1" value="10"></label>
         <label id="roiThresholdTargetLabel" hidden>Editar ROI <select id="roiThresholdTarget"></select></label>
         <button id="roiFinish" hidden>Cerrar ROI</button><button id="roiCancel" hidden>Cancelar trazado</button>
-        <label id="roiMaskMode" hidden>Enmascarar <select id="roiMode"><option value="measure" hidden selected>Medir (sin enmascarar)</option><option value="exclude">Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
+        <label id="roiMaskMode" hidden>Enmascarar <select id="roiMode"><option value="background" hidden>Fondo</option><option value="measure" hidden selected>Medir (sin enmascarar)</option><option value="exclude">Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
         <label>Nombre de nueva ROI <input id="roiName" type="text" maxlength="80" placeholder="Ej.: Riñón derecho"></label>
         <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar todas las ROI</button>
         <label><input type="checkbox" id="roiOriginal">Ver original</label>
@@ -65,7 +65,7 @@
     #analysisFrames{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:6px;margin:8px 0}
     #analysisFrames button{padding:4px;min-width:0;text-align:left}#analysisFrames button[data-reference=true]{border:2px solid #008da8}#analysisFrames button[aria-pressed=true]{outline:3px solid #f09a19;outline-offset:-3px}
     #analysisFrames .analysis-image{max-width:160px;margin:auto}#analysisFrames small{display:block;font-size:11px;line-height:1.35;margin-top:4px}
-    #analysisPanel :is(#roiAdd,#roiMask)[aria-pressed=true]{border-style:inset;background:#d6def4;color:navy;font-weight:bold}#analysisDraw{cursor:crosshair}.analysis-tab{background:transparent;border:0;border-right:1px solid white;font-size:12px;padding:5px}
+    #analysisPanel :is(#roiAdd,#roiMask,#roiBackground)[aria-pressed=true]{border-style:inset;background:#d6def4;color:navy;font-weight:bold}#analysisDraw{cursor:crosshair}.analysis-tab{background:transparent;border:0;border-right:1px solid white;font-size:12px;padding:5px}
     .analysis-tab[aria-selected=true]{font-weight:bold;color:navy}
   `;document.head.append(style);
   const numericSliders=new Map(),imagePeaks=new WeakMap();
@@ -75,7 +75,7 @@
     const slider=document.createElement('input');slider.type='range';slider.id=id+'Slider';slider.setAttribute('aria-label',({roiThreshold:'Umbral',analysisWindow:'Ventana',analysisLevel:'Nivel',analysisX:'Vertical X',analysisY:'Horizontal Y'})[id]);
     const limits=document.createElement('span');limits.className='analysis-slider-limits';const low=document.createElement('span'),high=document.createElement('span');limits.append(low,high);box.append(slider,limits);
     numericSliders.set(id,{input,slider,low,high});
-    slider.oninput=()=>{input.value=slider.value;input.dispatchEvent(new Event('input',{bubbles:true}));};
+    slider.oninput=()=>{input.value=id==='roiThreshold'?String(Math.round(Number(slider.value)**2/Number(slider.max))):slider.value;input.dispatchEvent(new Event('input',{bubbles:true}));};
     input.addEventListener('input',()=>syncSliders());
   }
   const sliderStyle=document.createElement('style');sliderStyle.textContent='#analysisPanel .analysis-number-slider{display:inline-flex;flex-direction:column;gap:2px;width:130px;vertical-align:top}#analysisPanel .analysis-number-slider input{width:100%;box-sizing:border-box;margin:0}#analysisPanel .analysis-number-slider input[type=range]{min-height:20px;padding:0}#analysisPanel .analysis-slider-limits{display:flex;justify-content:space-between;font-size:10px;line-height:1.2;color:#333}';document.head.append(sliderStyle);
@@ -87,7 +87,7 @@
       const natural=coordinate?(id==='analysisX'?w:h)-1:Math.max(1000,Math.ceil((peak+1)*4));
       const max=coordinate?natural:Math.max(natural,Number(input.value)||0,slider.dataset.image===key(s)?Number(slider.max)||0:0);
       slider.dataset.image=key(s);
-      slider.min=min;slider.max=max;slider.step=id==='analysisLevel'||id==='analysisWindow'?'0.5':'1';slider.value=input.value||min;
+      slider.min=min;slider.max=max;slider.step=id==='analysisLevel'||id==='analysisWindow'?'0.5':'1';slider.value=id==='roiThreshold'?Math.sqrt(Math.max(0,Number(input.value)||0)*max):input.value||min;if(id==='roiThreshold'){slider.step='0.01';slider.setAttribute('aria-valuetext',input.value+' cuentas por pixel');}
       low.textContent=String(min);high.textContent=String(max);
     }
   }
@@ -209,7 +209,7 @@
   });
   function drawStatic(){
     thresholdTargets();
-    const s=source(),[w,h]=dimensions(s),mask=canMask()&&!$('roiOriginal').checked?rois(s).filter(r=>r.mode!=='measure'):[];
+    const s=source(),[w,h]=dimensions(s),mask=canMask()&&!$('roiOriginal').checked?rois(s).filter(r=>!['measure','background'].includes(r.mode)):[];
     const result=window.GANTRY_ROI.apply(raw(s),w,h,mask);
     const nextWindowKey=JSON.stringify([key(s),mask.map(({name,color,...r})=>r),$('roiOriginal').checked]);
     if(nextWindowKey!==windowKey){
@@ -226,11 +226,12 @@
   }
   function renderMeasurements(){
     const s=source(),[w,h]=dimensions(s),list=rois(s),host=$('roiMeasurements'),svg=$('roiSavedOutlines');
+    let assigned=false;for(const r of list)if(!r.id){r.id=crypto.randomUUID();assigned=true;}if(assigned)persist(s);
     host.replaceChildren();host.hidden=!list.length;svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
     if(!list.length)return;
-    const description=document.createElement('p');description.textContent='Mediciones sobre las cuentas originales, independientes de ventana, nivel y otras máscaras. En ROI con umbral se cuentan solo los píxeles que lo cumplen.';host.append(description);
+    const description=document.createElement('p');description.textContent='Mediciones sobre las cuentas originales, independientes de ventana, nivel y otras máscaras. En ROI con umbral se cuentan solo los píxeles que lo cumplen.';host.append(description);const note=document.createElement('p');note.textContent='Fondo: dibuja una región cercana sin captación del órgano y selecciona su ROI de referencia. Se excluye el solapamiento con esa ROI. Fondo estimado = media del fondo × píxeles de la ROI; netas = cuentas ROI - fondo estimado. No se modifica la imagen. Si no hay píxeles válidos, no se calcula la corrección.';host.append(note);
     const table=document.createElement('table');table.style.cssText='border-collapse:collapse;width:100%;font-size:12px;margin:8px 0';
-    const header=document.createElement('tr');for(const text of ['Nombre','Uso','Cuentas totales','Media / píxel','Máximo / píxel','Área (píxeles)','Área (mm²)']){const th=document.createElement('th');th.textContent=text;header.append(th);}table.append(header);
+    const header=document.createElement('tr');for(const text of ['Nombre','Uso','Cuentas totales','Media / píxel','Máximo / píxel','Área (píxeles)','Área (mm²)','ROI de referencia','Fondo estimado','Cuentas netas']){const th=document.createElement('th');th.textContent=text;header.append(th);}table.append(header);
     const spacing=(s.dataset.string('x00280030')||'').split('\\').map(Number),format=n=>n.toLocaleString('es-CL',{maximumFractionDigits:2});
     list.forEach((roi,i)=>{
       const row=document.createElement('tr'),name=document.createElement('input');name.type='text';name.maxLength=80;name.value=roi.name||'ROI '+(i+1);name.setAttribute('aria-label','Nombre ROI '+(i+1));
@@ -238,10 +239,16 @@
       const nameAndColor=document.createElement('span');nameAndColor.style.cssText='display:flex;align-items:center;gap:6px';const color=document.createElement('input');color.type='color';color.value=roiColor(roi,i);color.setAttribute('aria-label','Color ROI '+(i+1));color.style.cssText='width:38px;min-width:38px;height:28px;padding:1px';nameAndColor.append(name,color);
       color.oninput=()=>{roi.color=color.value;persist(s);outline.setAttribute('stroke',roi.color);label.setAttribute('fill',roi.color);};
       const use=document.createElement('select');use.setAttribute('aria-label','Uso ROI '+(i+1));
-      for(const [v,t] of [['measure','Medir'],['exclude','Ocultar interior'],['keep','Conservar interior']]){const o=document.createElement('option');o.value=v;o.textContent=t;use.append(o);}use.value=roi.mode;
-      use.onchange=()=>{roi.mode=use.value;persist(s);drawStatic();};
-      const result=window.GANTRY_ROI.measure(raw(s),w,h,roi,spacing);
-      for(const value of [nameAndColor,use,format(result.total),format(result.mean),format(result.max),format(result.pixels),result.areaMm2===null?'No disponible':format(result.areaMm2)]){const td=document.createElement('td');td.style.cssText='padding:4px;border:1px solid #888';if(typeof value==='string')td.textContent=value;else td.append(value);row.append(td);}table.append(row);
+      for(const [v,t] of [['measure','Medir'],['background','Fondo'],['exclude','Ocultar interior'],['keep','Conservar interior']]){const o=document.createElement('option');o.value=v;o.textContent=t;use.append(o);}use.value=roi.mode;
+      use.onchange=()=>{roi.mode=use.value;if(roi.mode==='background'&&roi.shape==='threshold')roi.shape='polygon';persist(s);drawStatic();};
+      const reference=document.createElement('select');reference.setAttribute('aria-label','ROI de referencia del fondo '+(i+1));
+      const empty=document.createElement('option');empty.value='';empty.textContent='Seleccionar ROI';reference.append(empty);
+      for(const target of list)if(target!==roi&&target.mode!=='background'){const o=document.createElement('option');o.value=target.id;o.textContent=target.name||'ROI';reference.append(o);}reference.value=roi.targetId||'';
+      reference.onchange=()=>{roi.targetId=reference.value||null;persist(s);drawStatic();};
+      const target=roi.mode==='background'?list.find(r=>r.id===roi.targetId&&r!==roi&&r.mode!=='background'):null;
+      const correction=target?window.GANTRY_ROI.background(raw(s),w,h,target,roi,spacing):null;
+      const result=correction?.background||window.GANTRY_ROI.measure(raw(s),w,h,roi,spacing);
+      for(const value of [nameAndColor,use,format(result.total),format(result.mean),format(result.max),format(result.pixels),result.areaMm2===null?'No disponible':format(result.areaMm2),roi.mode==='background'?reference:'—',correction?.estimated==null?'—':format(correction.estimated),correction?.net==null?'—':format(correction.net)]){const td=document.createElement('td');td.style.cssText='padding:4px;border:1px solid #888';if(typeof value==='string')td.textContent=value;else td.append(value);row.append(td);}table.append(row);
       const ns='http://www.w3.org/2000/svg',outline=document.createElementNS(ns,roi.shape==='threshold'?'path':roi.points?'polygon':roi.shape==='ellipse'?'ellipse':'rect');
       let x,y;
       if(roi.points){if(roi.shape==='threshold')outline.setAttribute('d',window.GANTRY_ROI.contour(raw(s),w,h,roi));else outline.setAttribute('points',roi.points.map(p=>p.x+','+p.y).join(' '));x=Math.min(...roi.points.map(p=>p.x));y=Math.min(...roi.points.map(p=>p.y));}
@@ -261,12 +268,13 @@
   function chooseRoiTool(mask){
     cancelPolygon();drag=null;$('roiOutline').hidden=true;
     $('roiMode').value=mask?'exclude':'measure';$('roiMaskMode').hidden=!mask;
-    $('roiAdd').setAttribute('aria-pressed',String(!mask));$('roiMask').setAttribute('aria-pressed',String(mask));
+    $('roiAdd').setAttribute('aria-pressed',String(!mask));$('roiMask').setAttribute('aria-pressed',String(mask));$('roiBackground').setAttribute('aria-pressed','false');
     $('analysisStatus').textContent=mask?'Dibuja una ROI para enmascarar.':'Dibuja una ROI para medir sin ocultar la imagen.';
   }
   $('roiAdd').onclick=()=>chooseRoiTool(false);$('roiMask').onclick=()=>chooseRoiTool(true);
+  $('roiBackground').onclick=()=>{chooseRoiTool(false);$('roiMode').value='background';$('roiAdd').setAttribute('aria-pressed','false');$('roiBackground').setAttribute('aria-pressed','true');if($('roiShape').value==='threshold'){$('roiShape').value='polygon';$('roiShape').onchange();}$('analysisStatus').textContent='Dibuja el fondo junto a la ROI del órgano; después puedes elegir su ROI de referencia.';};
 
-  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=nextRoiColor();rois(s).push(roi);$('roiName').value='';editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
+  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=nextRoiColor();roi.id=crypto.randomUUID();if(roi.mode==='background'){if(roi.shape==='threshold')roi.shape='polygon';roi.targetId=rois(s).findLast(r=>r.mode!=='background')?.id||null;}rois(s).push(roi);$('roiName').value='';editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
   const draw=$('analysisDraw');
   draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();if(!tracingColor)tracingColor=roiColors[rois(source()).length%roiColors.length];if(['polygon','threshold'].includes($('roiShape').value)){if(e.detail>1)return;const p=point(e);if(p){polygon.push(p);polygonOutline();}return;}drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
   draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}else if(polygon.length){const p=point(e);if(p)polygonOutline(p);}};
@@ -281,7 +289,7 @@
 
   draw.onpointerup=e=>{if(!drag)return;const p=point(e),start=drag;drag=null;$('roiOutline').hidden=true;
     if(!p)return;const s=source(),[w,h]=dimensions(s),roi={shape:$('roiShape').value,mode:$('roiMode').value,x0:start.x,y0:start.y,x1:p.x,y1:p.y};
-    if(!window.GANTRY_ROI.valid(roi,w,h))return;roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=nextRoiColor();rois(s).push(roi);tracingColor=null;$('roiName').value='';const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
+    if(!window.GANTRY_ROI.valid(roi,w,h))return;roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=nextRoiColor();roi.id=crypto.randomUUID();if(roi.mode==='background'){if(roi.shape==='threshold')roi.shape='polygon';roi.targetId=rois(s).findLast(r=>r.mode!=='background')?.id||null;}rois(s).push(roi);tracingColor=null;$('roiName').value='';const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
   };
   draw.onpointercancel=()=>{tracingColor=null;drag=null;$('roiOutline').hidden=true;};
   $('roiImage').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;chosen=Number($('roiImage').value);$('roiOriginal').checked=false;drawStatic();};
@@ -300,7 +308,7 @@
   const flexiblePrevious=openFlexible;openFlexible=function(...args){show(false);return flexiblePrevious(...args);};
   function prepareFlexible(item,asset){
     if(!['static','whole'].includes(asset.kind)||asset.dynamicFrames)return;
-    const mask=savedMasks(asset.uid,asset.cols,asset.rows).filter(r=>r.mode!=='measure');if(!mask.length)return;
+    const mask=savedMasks(asset.uid,asset.cols,asset.rows).filter(r=>!['measure','background'].includes(r.mode));if(!mask.length)return;
     // Copy the processing into this page item; keep its acquired pixels untouched.
     item.roiMasks=JSON.parse(JSON.stringify(mask));
     const result=window.GANTRY_ROI.apply(asset.data,asset.cols,asset.rows,mask);

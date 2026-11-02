@@ -37,7 +37,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  $('analysisWindowSlider').value='50';$('analysisWindowSlider').dispatchEvent(new w.Event('input'));await tick();assert.equal($('analysisWindow').value,'50');
  $('analysisLevel').value='25.5';$('analysisLevel').dispatchEvent(new w.Event('input'));assert.equal($('analysisLevelSlider').value,'25.5');
  $('roiThreshold').value='1000';$('roiThreshold').dispatchEvent(new w.Event('input'));assert.equal($('roiThresholdSlider').max,'1000');assert.equal($('roiThresholdSlider').value,'1000');
- $('roiThresholdSlider').value='20';$('roiThresholdSlider').dispatchEvent(new w.Event('input'));assert.equal($('roiThreshold').value,'20');
+ $('roiThresholdSlider').value=String(Math.sqrt(20*Number($('roiThresholdSlider').max)));$('roiThresholdSlider').dispatchEvent(new w.Event('input'));assert.equal($('roiThreshold').value,'20');
  const staticOriginal=w.eval('Array.from(pixels)');$('analysisSelected').getBoundingClientRect=()=>({left:10,top:20,width:128,height:128});
  $('roiMask').click();assert.equal($('roiMode').value,'exclude');assert(!$('roiMaskMode').hidden);
  const draw=$('analysisDraw');draw.onpointerdown({clientX:10,clientY:20,pointerId:1,preventDefault(){}});draw.onpointermove({clientX:74,clientY:84});draw.onpointerup({clientX:74,clientY:84});
@@ -64,7 +64,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
  $('roiFinish').click();assert.equal(raster.get('analysisSelected')[0],0,'Threshold includes equal counts');assert($('roiSavedOutlines').querySelector('path').getAttribute('d').length>0);
  $('roiThreshold').value='101';$('roiThreshold').dispatchEvent(new w.Event('input'));assert(raster.get('analysisSelected')[0]>0,'Existing ROI reacts to edited threshold');assert.equal($('roiSavedOutlines').querySelector('path').getAttribute('d'),'','No contour when no pixels meet threshold');
- $('roiThresholdSlider').value='100';$('roiThresholdSlider').dispatchEvent(new w.Event('input'));assert.equal(raster.get('analysisSelected')[0],0,'Existing ROI reacts to slider');
+ $('roiThresholdSlider').value=String(Math.sqrt(100*Number($('roiThresholdSlider').max)));$('roiThresholdSlider').dispatchEvent(new w.Event('input'));assert.equal(raster.get('analysisSelected')[0],0,'Existing ROI reacts to slider');
  assert.equal($('analysisLevelSlider').min,'-1000');
  assert.deepEqual(w.eval('Array.from(pixels)'),staticOriginal);
  const polygonMask={shape:'threshold',mode:'keep',threshold:50,points:[{x:0,y:0},{x:2,y:0},{x:2,y:2},{x:0,y:2}]};
@@ -99,6 +99,10 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  assert($('analysisStatus').textContent.startsWith('2 ROI'));assert($('roiPolygon').hasAttribute('hidden'));
  const finalPolygon=$('roiSavedOutlines').querySelector('polygon');assert.equal(finalPolygon.getAttribute('stroke'),traceColor);assert.equal(finalPolygon.getAttribute('points').split(' ').length,3);
  $('roiReset').click();$('roiShape').value='rectangle';$('roiShape').dispatchEvent(new w.Event('change'));$('roiMask').click();
+ const targetROI={shape:'rectangle',mode:'measure',x0:0,y0:0,x1:1,y1:2},bgROI={shape:'rectangle',mode:'background',x0:0,y0:0,x1:2,y1:2};
+ const bg=w.GANTRY_ROI.background([10,2,20,4],2,2,targetROI,bgROI,[1,1]);assert.equal(bg.background.pixels,2);assert.equal(bg.background.mean,3);assert.equal(bg.estimated,6);assert.equal(bg.net,24);
+ assert.equal(w.GANTRY_ROI.background([10,2,20,4],2,2,targetROI,targetROI,null).net,null,'Empty background must not be treated as zero');
+ $('roiBackground').click();assert.equal($('roiMode').value,'background');draw.onpointerdown({clientX:10,clientY:20,pointerId:9,preventDefault(){}});draw.onpointerup({clientX:30,clientY:40});assert($('roiMeasurements').querySelector('[aria-label="ROI de referencia del fondo 1"]'));$('roiReset').click();$('roiMask').click();
  // Whole-body images use rectangular native coordinates, with independent masks per detector.
  w.eval(`var wholeRecord={...staticRecord,id:'whole-mask-test',kind:'whole',n:128,height:512,mode:'scan',target:160,
  scan:{velocity:10,contours:'auto',travel:160},

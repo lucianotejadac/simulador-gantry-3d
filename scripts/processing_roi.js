@@ -9,10 +9,10 @@
     return x>=x0&&x<x1&&y>=y0&&y<y1;
   }
   function valid(roi,w,h){
-    if(roi&&['polygon','threshold'].includes(roi.shape))return ['exclude','keep','measure'].includes(roi.mode)&&Array.isArray(roi.points)&&roi.points.length>=3&&roi.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=w&&p.y>=0&&p.y<=h)&&Math.abs(roi.points.reduce((a,p,i)=>{const q=roi.points[(i+1)%roi.points.length];return a+p.x*q.y-q.x*p.y;},0))>=2&&(roi.shape!=='threshold'||Number.isFinite(roi.threshold)&&roi.threshold>=0);
-    return roi&&['rectangle','ellipse'].includes(roi.shape)&&['exclude','keep','measure'].includes(roi.mode)&&
+    if(roi&&['polygon','threshold'].includes(roi.shape))return ['exclude','keep','measure','background'].includes(roi.mode)&&Array.isArray(roi.points)&&roi.points.length>=3&&roi.points.every(p=>Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=w&&p.y>=0&&p.y<=h)&&Math.abs(roi.points.reduce((a,p,i)=>{const q=roi.points[(i+1)%roi.points.length];return a+p.x*q.y-q.x*p.y;},0))>=2&&(roi.shape!=='threshold'||Number.isFinite(roi.threshold)&&roi.threshold>=0);
+    return roi&&['rectangle','ellipse'].includes(roi.shape)&&['exclude','keep','measure','background'].includes(roi.mode)&&
     ['x0','x1','y0','y1'].every(k=>Number.isFinite(roi[k])&&roi[k]>=0&&roi[k]<=(k[0]==='x'?w:h))&&Math.abs(roi.x1-roi.x0)>=1&&Math.abs(roi.y1-roi.y0)>=1;}
-  function visible(rois,x,y,count=0){return rois.every(r=>r.mode==='measure'||(contains(r,x,y)&&(r.shape!=='threshold'||count>=r.threshold))===(r.mode==='keep'));}
+  function visible(rois,x,y,count=0){return rois.every(r=>['measure','background'].includes(r.mode)||(contains(r,x,y)&&(r.shape!=='threshold'||count>=r.threshold))===(r.mode==='keep'));}
   function apply(image,w,h,rois){
     if(image.length!==w*h||!rois.every(r=>valid(r,w,h)))throw Error('ROI no válida');
     const counts=new Float64Array(image);let removed=0,min=Infinity,max=-Infinity,visiblePixels=0;
@@ -23,12 +23,17 @@
     }
     return {counts,removed,min:visiblePixels?min:0,max:visiblePixels?max:0,visiblePixels};
   }
-  function measure(image,w,h,roi,spacing){
+  function measure(image,w,h,roi,spacing,exclude=null){
     if(image.length!==w*h||!valid(roi,w,h))throw Error('ROI no valida');
     let total=0,pixels=0,max=0;
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const count=image[y*w+x];if(contains(roi,x+.5,y+.5)&&(roi.shape!=='threshold'||count>=roi.threshold)){total+=count;pixels++;max=Math.max(max,count);}}
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const count=image[y*w+x];if((!exclude||!contains(exclude,x+.5,y+.5))&&contains(roi,x+.5,y+.5)&&(roi.shape!=='threshold'||count>=roi.threshold)){total+=count;pixels++;max=Math.max(max,count);}}
     const areaMm2=Array.isArray(spacing)&&spacing.length===2&&spacing.every(v=>Number.isFinite(v)&&v>0)?pixels*spacing[0]*spacing[1]:null;
     return {total,pixels,mean:pixels?total/pixels:0,max,areaMm2};
+  }
+  function background(image,w,h,target,region,spacing){
+    const organ=measure(image,w,h,target,spacing),bg=measure(image,w,h,region,spacing,target);
+    const estimated=bg.pixels&&organ.pixels?bg.mean*organ.pixels:null;
+    return {organ,background:bg,estimated,net:estimated===null?null:organ.total-estimated};
   }
   // Exact boundary of the selected native pixels, including holes and separate islands.
   function contour(image,w,h,roi){
@@ -44,5 +49,5 @@
     }
     return edges.join('');
   }
-  window.GANTRY_ROI={valid,visible,apply,measure,contour};
+  window.GANTRY_ROI={valid,visible,apply,measure,contour,background};
 })();
