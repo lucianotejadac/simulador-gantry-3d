@@ -275,7 +275,7 @@
   let processingRemembered=null;
   function paint(force=false){
     const uiNow=performance.now();if(!force&&uiNow-lastUIPaint<100)return;lastUIPaint=uiNow;
-    if(session?.finished&&!session.cancelled&&session.study==='bone'&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
+    if(session?.finished&&!session.cancelled&&supported(session.study)&&processingRemembered!==session.id&&window.GANTRY_PROCESSING?.remember){
       window.GANTRY_PROCESSING.remember(storage.snapshot(session,names,{...window.GANTRY_LIVE.settings,rate,geometry:window.GANTRY.G},session.createdAt,session.id));
       processingRemembered=session.id;
     }
@@ -283,7 +283,7 @@
     window.GANTRY_MIBI?.render();
     window.GANTRY_ACTIVITY?.render();
     const active=supported(study),running=!!session&&!session.finished;
-    const processingButton=el('boneSendProcessing');if(processingButton)processingButton.hidden=study!=='bone';
+    const processingButton=el('boneSendProcessing');if(processingButton)processingButton.hidden=!supported(study);
     const displayWhole=(archive||session)?.kind==='whole'||(!archive&&!session&&kind()==='whole');
     el('gantryLive').classList.toggle('bone-whole-body',active&&displayWhole&&window.GANTRY_LIVE?.signal?.mode!=='final');
     const check=position(),wantWhole=kind()==='whole';

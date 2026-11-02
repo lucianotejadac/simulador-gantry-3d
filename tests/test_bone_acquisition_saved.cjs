@@ -44,6 +44,15 @@ function environment(whole=false){
  assert.equal(api.processingCurrent().names[0],'Desde visor AP');
  assert.equal(api.processingCurrent().mode,'time');
  configured.window.GANTRY_EXAM={blocked:true};assert.throws(()=>api.startConfigured(cfg),/colisión/);
+ for(const study of ['bone','dmsa','thyroid','maa','mibi','parathyroid','exploration']){
+  const e=environment(),acq=e.window.GANTRY_BONE_ACQ,received=[];
+  e.window.GANTRY_PROCESSING={active:true,remember:r=>received.push(r)};
+  e.window.GANTRY_LIVE.settings.study=study;e.window.GANTRY_LIVE.update();
+  acq.startConfigured(cfg);await acq.controlFromProcessing('instant');
+  assert.equal(received.length,1,study+' sends completed acquisition to analysis');
+  assert.equal(received[0].study,study);assert(received[0].finished);
+  e.window.GANTRY_LIVE.update();assert.equal(received.length,1,'No duplicate imports');
+ }
  const dynamic=environment(),dyn=dynamic.window.GANTRY_BONE_ACQ;
  dynamic.window.GANTRY_RF={pending:()=>true};
  const dynConfig={...cfg,kind:'dynamic',target:7,phases:[{frames:3,seconds:1},{frames:2,seconds:2}]};
