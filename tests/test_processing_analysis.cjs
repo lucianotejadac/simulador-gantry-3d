@@ -87,6 +87,15 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  assert.equal(limited.total,7);assert.equal(limited.pixels,2);assert.equal(limited.areaMm2,null);
  const use=$('roiMeasurements').querySelector('select');use.value='exclude';use.dispatchEvent(new w.Event('change'));assert.equal(raster.get('analysisSelected')[0],0);
  $('roiUndo').click();$('roiMode').value='exclude';
+ // The second ROI traces in its final color and closes once on browser double-click sequence.
+ $('roiAdd').click();draw.onpointerdown({clientX:10,clientY:20,detail:1,pointerId:7,preventDefault(){}});draw.onpointerup({clientX:30,clientY:40});
+ $('roiShape').value='polygon';$('roiShape').dispatchEvent(new w.Event('change'));
+ for(const [clientX,clientY] of [[10,20],[74,20],[74,84]])draw.onpointerdown({clientX,clientY,detail:1,preventDefault(){}});
+ const traceColor=$('roiPolygon').querySelector('polyline').getAttribute('stroke');assert.equal(traceColor,'#00cfff');
+ draw.onpointerdown({clientX:74,clientY:84,detail:2,preventDefault(){}});draw.ondblclick({clientX:74,clientY:84,detail:2,preventDefault(){}});
+ assert($('analysisStatus').textContent.startsWith('2 ROI'));assert($('roiPolygon').hasAttribute('hidden'));
+ const finalPolygon=$('roiSavedOutlines').querySelector('polygon');assert.equal(finalPolygon.getAttribute('stroke'),traceColor);assert.equal(finalPolygon.getAttribute('points').split(' ').length,3);
+ $('roiReset').click();$('roiShape').value='rectangle';$('roiShape').dispatchEvent(new w.Event('change'));$('roiMask').click();
  // Whole-body images use rectangular native coordinates, with independent masks per detector.
  w.eval(`var wholeRecord={...staticRecord,id:'whole-mask-test',kind:'whole',n:128,height:512,mode:'scan',target:160,
  scan:{velocity:10,contours:'auto',travel:160},

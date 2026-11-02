@@ -2057,6 +2057,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   let polygon=[],editingThreshold=-1,thresholdImage='';
   let opened=false,timer=null,images=[],chosen=0,drag=null,identity='',galleryKey='',windowKey='';
   const roiColors=['#ff2020','#00cfff','#38e05b','#ffca28','#de65ff','#ff851b','#00d7ba','#ff77b7'];
+  let tracingColor=null;
+  const nextRoiColor=()=>tracingColor||roiColors[rois(source()).length%roiColors.length];
   const roiColor=(r,i)=>/^#[0-9a-f]{6}$/i.test(r.color||'')?r.color:roiColors[i%roiColors.length];
   const masks=new Map(),maskedDisplays=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
   panel.innerHTML=`<div class="mode-heading">Visualización / Análisis</div>
@@ -2075,7 +2077,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
         <label>Nombre de nueva ROI <input id="roiName" type="text" maxlength="80" placeholder="Ej.: Riñón derecho"></label>
         <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar todas las ROI</button>
         <label><input type="checkbox" id="roiOriginal">Ver original</label>
-        <p>Elige Agregar ROI para medir o Enmascarar para ocultar o conservar una región. Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI (mínimo 3 puntos). El umbral de una ROI terminada se puede ajustar directamente; si hay varias, elige en Editar ROI. Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
+        <p>Elige Agregar ROI para medir o Enmascarar para ocultar o conservar una región. Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI o haz doble clic en el punto final (mínimo 3 puntos); se une al primero con una línea recta. El umbral de una ROI terminada se puede ajustar directamente; si hay varias, elige en Editar ROI. Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
       <div class="analysis-toolbar"><label>Ventana <input id="analysisWindow" type="number" min="1" step="any"></label>
         <label>Nivel <input id="analysisLevel" type="number" step="any"></label>
         <label><input id="analysisInvert" type="checkbox">Invertir</label>
@@ -2302,10 +2304,10 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   }
   function point(e){const c=$('analysisSelected'),r=c.getBoundingClientRect(),[w,h]=dimensions(source());
     if(!r.width||!r.height)return null;return {x:Math.max(0,Math.min(w,(e.clientX-r.left)*w/r.width)),y:Math.max(0,Math.min(h,(e.clientY-r.top)*h/r.height))};}
-  function outline(p){const [w,h]=dimensions(source()),node=$('roiOutline');node.hidden=false;
+  function outline(p){const [w,h]=dimensions(source()),node=$('roiOutline');node.hidden=false;node.style.borderColor=nextRoiColor();
     Object.assign(node.style,{left:100*Math.min(drag.x,p.x)/w+'%',top:100*Math.min(drag.y,p.y)/h+'%',width:100*Math.abs(p.x-drag.x)/w+'%',height:100*Math.abs(p.y-drag.y)/h+'%',borderRadius:$('roiShape').value==='ellipse'?'50%':'0'});}
-  function cancelPolygon(){polygon=[];$('roiPolygon').setAttribute('hidden','');$('roiFinish').disabled=true;}
-  function polygonOutline(cursor){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.removeAttribute('hidden');svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ff2020" stroke-width="3" vector-effect="non-scaling-stroke" points="'+(cursor?[...polygon,cursor]:polygon).map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ff2020" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
+  function cancelPolygon(){polygon=[];tracingColor=null;$('roiPolygon').setAttribute('hidden','');$('roiFinish').disabled=true;}
+  function polygonOutline(cursor){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.removeAttribute('hidden');svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="'+nextRoiColor()+'" stroke-width="3" vector-effect="non-scaling-stroke" points="'+(cursor?[...polygon,cursor]:polygon).map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="'+nextRoiColor()+'" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
   $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;thresholdTargets();syncSliders();};
   $('roiCancel').onclick=cancelPolygon;
   function chooseRoiTool(mask){
@@ -2316,16 +2318,24 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   }
   $('roiAdd').onclick=()=>chooseRoiTool(false);$('roiMask').onclick=()=>chooseRoiTool(true);
 
-  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=roiColors[rois(s).length%roiColors.length];rois(s).push(roi);$('roiName').value='';editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
+  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=nextRoiColor();rois(s).push(roi);$('roiName').value='';editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
   const draw=$('analysisDraw');
-  draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();if(['polygon','threshold'].includes($('roiShape').value)){const p=point(e);if(p){polygon.push(p);polygonOutline();}return;}drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
+  draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();if(!tracingColor)tracingColor=roiColors[rois(source()).length%roiColors.length];if(['polygon','threshold'].includes($('roiShape').value)){if(e.detail>1)return;const p=point(e);if(p){polygon.push(p);polygonOutline();}return;}drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
   draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}else if(polygon.length){const p=point(e);if(p)polygonOutline(p);}};
   draw.onpointerleave=()=>{if(polygon.length)polygonOutline();};
+  draw.ondblclick=e=>{
+    if(!canMask()||!source()||!['polygon','threshold'].includes($('roiShape').value)||!polygon.length)return;
+    e.preventDefault();const p=point(e);if(!p)return;
+    // The first click already appended the endpoint; the second must not duplicate it.
+    polygon[polygon.length-1]=p;polygonOutline();
+    if(polygon.length>=3)$('roiFinish').click();
+  };
+
   draw.onpointerup=e=>{if(!drag)return;const p=point(e),start=drag;drag=null;$('roiOutline').hidden=true;
     if(!p)return;const s=source(),[w,h]=dimensions(s),roi={shape:$('roiShape').value,mode:$('roiMode').value,x0:start.x,y0:start.y,x1:p.x,y1:p.y};
-    if(!window.GANTRY_ROI.valid(roi,w,h))return;roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=roiColors[rois(s).length%roiColors.length];rois(s).push(roi);$('roiName').value='';const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
+    if(!window.GANTRY_ROI.valid(roi,w,h))return;roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);roi.color=nextRoiColor();rois(s).push(roi);tracingColor=null;$('roiName').value='';const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
   };
-  draw.onpointercancel=()=>{drag=null;$('roiOutline').hidden=true;};
+  draw.onpointercancel=()=>{tracingColor=null;drag=null;$('roiOutline').hidden=true;};
   $('roiImage').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;chosen=Number($('roiImage').value);$('roiOriginal').checked=false;drawStatic();};
   $('roiOriginal').onchange=drawStatic;
   $('roiUndo').onclick=()=>{rois(source()).pop();persist(source());drawStatic();};
