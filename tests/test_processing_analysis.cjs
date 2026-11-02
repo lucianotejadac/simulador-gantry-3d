@@ -33,7 +33,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  for(let i=0;i<files.length;i++)await load(new w.Uint8Array(files[i].bytes),'static-'+i+'.dcm');
  assert.equal(w.eval('currentMode'),'static');assert(!$('analysisStatic').hidden);assert($('analysisFrames').hidden);assert.equal($('roiImage').options.length,2);
  $('roiImage').value='0';$('roiImage').dispatchEvent(new w.Event('change'));
- assert.equal($('roiThresholdSlider').min,'0');assert.equal($('roiThresholdSlider').max,'100');
+ assert.equal($('roiThresholdSlider').min,'0');assert.equal($('roiThresholdSlider').max,'1000');
  $('analysisWindowSlider').value='50';$('analysisWindowSlider').dispatchEvent(new w.Event('input'));await tick();assert.equal($('analysisWindow').value,'50');
  $('analysisLevel').value='25.5';$('analysisLevel').dispatchEvent(new w.Event('input'));assert.equal($('analysisLevelSlider').value,'25.5');
  $('roiThreshold').value='1000';$('roiThreshold').dispatchEvent(new w.Event('input'));assert.equal($('roiThresholdSlider').max,'1000');assert.equal($('roiThresholdSlider').value,'1000');
@@ -61,6 +61,9 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  $('roiUndo').click();$('roiThreshold').value='100';
  for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
  $('roiFinish').click();assert.equal(raster.get('analysisSelected')[0],0,'Threshold includes equal counts');
+ $('roiThreshold').value='101';$('roiThreshold').dispatchEvent(new w.Event('input'));assert(raster.get('analysisSelected')[0]>0,'Existing ROI reacts to edited threshold');
+ $('roiThresholdSlider').value='100';$('roiThresholdSlider').dispatchEvent(new w.Event('input'));assert.equal(raster.get('analysisSelected')[0],0,'Existing ROI reacts to slider');
+ assert.equal($('analysisLevelSlider').min,'-1000');
  assert.deepEqual(w.eval('Array.from(pixels)'),staticOriginal);
  const polygonMask={shape:'threshold',mode:'keep',threshold:50,points:[{x:0,y:0},{x:2,y:0},{x:2,y:2},{x:0,y:2}]};
  assert.deepEqual(Array.from(w.GANTRY_ROI.apply([10,50,100,20],2,2,[polygonMask]).counts),[0,50,100,0]);

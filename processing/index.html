@@ -2047,7 +2047,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
    reversible processing keyed by SOP UID. Acquisition buffers stay immutable. */
 (function(){
   'use strict';
-  let polygon=[];
+  let polygon=[],editingThreshold=-1,thresholdImage='';
   let opened=false,timer=null,images=[],chosen=0,drag=null,identity='',galleryKey='',windowKey='';
   const masks=new Map(),maskedDisplays=new Map(),panel=document.createElement('section');panel.id='analysisPanel';panel.hidden=true;
   panel.innerHTML=`<div class="mode-heading">Visualización / Análisis</div>
@@ -2059,11 +2059,12 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
         <strong>Enmascarar imagen</strong>
         <label>ROI <select id="roiShape"><option value="rectangle">Rectangular</option><option value="ellipse">Elíptica</option><option value="polygon">Punto por punto</option><option value="threshold">Punto por punto con umbral</option></select></label>
         <label id="roiThresholdLabel" hidden>Umbral mínimo (cuentas/píxel) <input id="roiThreshold" type="number" min="0" step="1" value="10"></label>
+        <label id="roiThresholdTargetLabel" hidden>Editar ROI <select id="roiThresholdTarget"></select></label>
         <button id="roiFinish" hidden>Cerrar ROI</button><button id="roiCancel" hidden>Cancelar trazado</button>
         <label>Máscara <select id="roiMode"><option value="exclude">Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
         <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar máscaras</button>
         <label><input type="checkbox" id="roiOriginal">Ver original</label>
-        <p>Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI (mínimo 3 puntos). Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
+        <p>Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI (mínimo 3 puntos). El umbral de una ROI terminada se puede ajustar directamente; si hay varias, elige en Editar ROI. Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
       <div class="analysis-toolbar"><label>Ventana <input id="analysisWindow" type="number" min="1" step="any"></label>
         <label>Nivel <input id="analysisLevel" type="number" step="any"></label>
         <label><input id="analysisInvert" type="checkbox">Invertir</label>
@@ -2120,8 +2121,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const s=source();if(!s)return;const [w,h]=dimensions(s);
     let peak=imagePeaks.get(s.pixels);if(peak===undefined){peak=0;for(const n of s.pixels)peak=Math.max(peak,n);imagePeaks.set(s.pixels,peak);}
     for(const [id,{input,slider,low,high}] of numericSliders){
-      const coordinate=id==='analysisX'||id==='analysisY',min=id==='analysisWindow'?1:0;
-      const natural=coordinate?(id==='analysisX'?w:h)-1:id==='analysisWindow'?Math.max(1,peak+1):Math.max(1,peak);
+      const coordinate=id==='analysisX'||id==='analysisY',min=id==='analysisWindow'?1:id==='analysisLevel'?-Math.max(1000,peak*4):0;
+      const natural=coordinate?(id==='analysisX'?w:h)-1:Math.max(1000,Math.ceil((peak+1)*4));
       const max=coordinate?natural:Math.max(natural,Number(input.value)||0,slider.dataset.image===key(s)?Number(slider.max)||0:0);
       slider.dataset.image=key(s);
       slider.min=min;slider.max=max;slider.step=id==='analysisLevel'||id==='analysisWindow'?'0.5':'1';slider.value=input.value||min;
@@ -2227,7 +2228,24 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       b.querySelector('small').textContent='Frame '+(i+1)+' · fase '+step.phase+' · '+(frameDuration(f)/1000).toLocaleString('es-CL')+' s · X '+o.dx+' / Y '+o.dy;
     }
   }
+  function thresholdTargets(){
+    const s=source(),list=rois(s),select=$('roiThresholdTarget');
+    if(thresholdImage!==key(s)){thresholdImage=key(s);editingThreshold=-1;}
+    if(list[editingThreshold]?.shape!=='threshold')editingThreshold=list.findLastIndex(r=>r.shape==='threshold');
+    select.replaceChildren();list.forEach((r,i)=>{if(r.shape!=='threshold')return;const o=document.createElement('option');o.value=i;o.textContent='ROI '+(i+1);select.append(o);});
+    select.value=editingThreshold;$('roiThresholdTargetLabel').hidden=editingThreshold<0;
+    $('roiThresholdLabel').hidden=$('roiShape').value!=='threshold'&&editingThreshold<0;
+    if(editingThreshold>=0&&!polygon.length)$('roiThreshold').value=list[editingThreshold].threshold;
+  }
+  $('roiThresholdTarget').onchange=()=>{editingThreshold=Number($('roiThresholdTarget').value);thresholdTargets();syncSliders();};
+  $('roiThreshold').addEventListener('input',()=>{
+    const s=source(),input=$('roiThreshold');if(!s||polygon.length||input.value===''||!input.checkValidity())return;
+    const roi=rois(s)[editingThreshold];if(roi?.shape!=='threshold')return;
+    roi.threshold=Number(input.value);const saved=persist(s);$('roiOriginal').checked=false;drawStatic();
+    if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';
+  });
   function drawStatic(){
+    thresholdTargets();
     const s=source(),[w,h]=dimensions(s),mask=canMask()&&!$('roiOriginal').checked?rois(s):[];
     const result=window.GANTRY_ROI.apply(raw(s),w,h,mask);
     const nextWindowKey=JSON.stringify([key(s),mask,$('roiOriginal').checked]);
@@ -2249,9 +2267,9 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     Object.assign(node.style,{left:100*Math.min(drag.x,p.x)/w+'%',top:100*Math.min(drag.y,p.y)/h+'%',width:100*Math.abs(p.x-drag.x)/w+'%',height:100*Math.abs(p.y-drag.y)/h+'%',borderRadius:$('roiShape').value==='ellipse'?'50%':'0'});}
   function cancelPolygon(){polygon=[];$('roiPolygon').hidden=true;$('roiFinish').disabled=true;}
   function polygonOutline(){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.hidden=false;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ffda35" stroke-width="1" points="'+polygon.map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ffda35"/>').join('');$('roiFinish').disabled=polygon.length<3;}
-  $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;$('roiThresholdLabel').hidden=$('roiShape').value!=='threshold';};
+  $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;thresholdTargets();syncSliders();};
   $('roiCancel').onclick=cancelPolygon;
-  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}rois(s).push(roi);const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
+  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}rois(s).push(roi);editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
   const draw=$('analysisDraw');
   draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();if(['polygon','threshold'].includes($('roiShape').value)){const p=point(e);if(p){polygon.push(p);polygonOutline();}return;}drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
   draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}};
