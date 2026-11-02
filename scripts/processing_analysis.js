@@ -11,13 +11,14 @@
       <div id="analysisDynamic"></div>
       <label id="analysisImageSelect">Imagen <select id="roiImage"></select></label>
       <div id="analysisStatic" hidden>
-        <strong>Enmascarar imagen</strong>
+        <strong>ROI y mediciones</strong>
         <label>ROI <select id="roiShape"><option value="rectangle">Rectangular</option><option value="ellipse">Elíptica</option><option value="polygon">Punto por punto</option><option value="threshold">Punto por punto con umbral</option></select></label>
         <label id="roiThresholdLabel" hidden>Umbral mínimo (cuentas/píxel) <input id="roiThreshold" type="number" min="0" step="1" value="10"></label>
         <label id="roiThresholdTargetLabel" hidden>Editar ROI <select id="roiThresholdTarget"></select></label>
         <button id="roiFinish" hidden>Cerrar ROI</button><button id="roiCancel" hidden>Cancelar trazado</button>
-        <label>Máscara <select id="roiMode"><option value="exclude">Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
-        <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar máscaras</button>
+        <label>Uso <select id="roiMode"><option value="measure">Medir (sin enmascarar)</option><option value="exclude" selected>Ocultar interior</option><option value="keep">Conservar sólo interior</option></select></label>
+        <label>Nombre de nueva ROI <input id="roiName" type="text" maxlength="80" placeholder="Ej.: Riñón derecho"></label>
+        <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar todas las ROI</button>
         <label><input type="checkbox" id="roiOriginal">Ver original</label>
         <p>Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI (mínimo 3 puntos). El umbral de una ROI terminada se puede ajustar directamente; si hay varias, elige en Editar ROI. Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
       <div class="analysis-toolbar"><label>Ventana <input id="analysisWindow" type="number" min="1" step="any"></label>
@@ -28,9 +29,10 @@
         <label>Vertical X <input id="analysisX" type="number" min="0" step="1" value="128"></label>
         <label>Horizontal Y <input id="analysisY" type="number" min="0" step="1" value="128"></label>
         <span>Coordenadas comunes a todos los frames (píxeles).</span></div>
+      <div id="roiMeasurements" hidden></div>
       <div id="analysisPreviews">
         <figure id="analysisReferenceFigure"><figcaption id="analysisReferenceLabel">Referencia original</figcaption><div class="analysis-image"><canvas id="analysisReference"></canvas><i class="guide-x"></i><i class="guide-y"></i></div></figure>
-        <figure><figcaption id="analysisSelectedLabel"></figcaption><div id="analysisDraw" class="analysis-image"><canvas id="analysisSelected"></canvas><i class="guide-x"></i><i class="guide-y"></i><i id="roiOutline" hidden></i><svg id="roiPolygon" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" hidden></svg></div></figure>
+        <figure><figcaption id="analysisSelectedLabel"></figcaption><div id="analysisDraw" class="analysis-image"><canvas id="analysisSelected"></canvas><i class="guide-x"></i><i class="guide-y"></i><svg id="roiSavedOutlines" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></svg><i id="roiOutline" hidden></i><svg id="roiPolygon" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" hidden></svg></div></figure>
       </div>
       <p id="analysisStatus" role="status"></p>
       <div id="analysisNudge" class="analysis-toolbar">Mover frame seleccionado:
@@ -149,6 +151,7 @@
       $('analysisWindow').value=$('window').value;$('analysisLevel').value=$('level').value;$('analysisInvert').checked=$('invert').checked;
       const [w,h]=dimensions(s0);$('analysisX').value=Math.floor(w/2);$('analysisY').value=Math.floor(h/2);
     }
+    $('roiMeasurements').hidden=dynamic;$('roiSavedOutlines').style.display=dynamic?'none':'';
     $('analysisDynamic').hidden=!dynamic;$('analysisStatic').hidden=!canMask();
     $('analysisImageSelect').hidden=dynamic;
     for(const id of ['analysisGuides','analysisReferenceFigure','analysisNudge','analysisFrames'])$(id).hidden=!dynamic;
@@ -187,7 +190,7 @@
     const s=source(),list=rois(s),select=$('roiThresholdTarget');
     if(thresholdImage!==key(s)){thresholdImage=key(s);editingThreshold=-1;}
     if(list[editingThreshold]?.shape!=='threshold')editingThreshold=list.findLastIndex(r=>r.shape==='threshold');
-    select.replaceChildren();list.forEach((r,i)=>{if(r.shape!=='threshold')return;const o=document.createElement('option');o.value=i;o.textContent='ROI '+(i+1);select.append(o);});
+    select.replaceChildren();list.forEach((r,i)=>{if(r.shape!=='threshold')return;const o=document.createElement('option');o.value=i;o.textContent=r.name||'ROI '+(i+1);select.append(o);});
     select.value=editingThreshold;$('roiThresholdTargetLabel').hidden=editingThreshold<0;
     $('roiThresholdLabel').hidden=$('roiShape').value!=='threshold'&&editingThreshold<0;
     if(editingThreshold>=0&&!polygon.length)$('roiThreshold').value=list[editingThreshold].threshold;
@@ -201,9 +204,9 @@
   });
   function drawStatic(){
     thresholdTargets();
-    const s=source(),[w,h]=dimensions(s),mask=canMask()&&!$('roiOriginal').checked?rois(s):[];
+    const s=source(),[w,h]=dimensions(s),mask=canMask()&&!$('roiOriginal').checked?rois(s).filter(r=>r.mode!=='measure'):[];
     const result=window.GANTRY_ROI.apply(raw(s),w,h,mask);
-    const nextWindowKey=JSON.stringify([key(s),mask,$('roiOriginal').checked]);
+    const nextWindowKey=JSON.stringify([key(s),mask.map(({name,...r})=>r),$('roiOriginal').checked]);
     if(nextWindowKey!==windowKey){
       windowKey=nextWindowKey;
       $('analysisWindow').value=Math.max(1,result.max-result.min+1);
@@ -214,7 +217,31 @@
     paint($('analysisSelected'),s,0,{dx:0,dy:0},mask);
     $('analysisSelectedLabel').textContent=(value(s.dataset,'0008103e')||'Imagen')+(mask.length?' · enmascarada':' · original');
     $('analysisStatus').textContent=rois(s).length+' ROI · '+result.removed.toLocaleString('es-CL')+' cuentas ocultas en esta vista. Original conservado.';
-    $('roiUndo').disabled=$('roiReset').disabled=!rois(s).length;syncSliders();
+    $('roiUndo').disabled=$('roiReset').disabled=!rois(s).length;syncSliders();renderMeasurements();
+  }
+  function renderMeasurements(){
+    const s=source(),[w,h]=dimensions(s),list=rois(s),host=$('roiMeasurements'),svg=$('roiSavedOutlines');
+    host.replaceChildren();host.hidden=!list.length;svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+    if(!list.length)return;
+    const description=document.createElement('p');description.textContent='Mediciones sobre las cuentas originales, independientes de ventana, nivel y otras máscaras. En ROI con umbral se cuentan solo los píxeles que lo cumplen.';host.append(description);
+    const table=document.createElement('table');table.style.cssText='border-collapse:collapse;width:100%;font-size:12px;margin:8px 0';
+    const header=document.createElement('tr');for(const text of ['Nombre','Uso','Cuentas totales','Media / píxel','Máximo / píxel','Área (píxeles)','Área (mm²)']){const th=document.createElement('th');th.textContent=text;header.append(th);}table.append(header);
+    const spacing=(s.dataset.string('x00280030')||'').split('\\').map(Number),format=n=>n.toLocaleString('es-CL',{maximumFractionDigits:2});
+    list.forEach((roi,i)=>{
+      const row=document.createElement('tr'),name=document.createElement('input');name.type='text';name.maxLength=80;name.value=roi.name||'ROI '+(i+1);name.setAttribute('aria-label','Nombre ROI '+(i+1));
+      name.onchange=()=>{roi.name=name.value.trim()||'ROI '+(i+1);persist(s);drawStatic();};
+      const use=document.createElement('select');use.setAttribute('aria-label','Uso ROI '+(i+1));
+      for(const [v,t] of [['measure','Medir'],['exclude','Ocultar interior'],['keep','Conservar interior']]){const o=document.createElement('option');o.value=v;o.textContent=t;use.append(o);}use.value=roi.mode;
+      use.onchange=()=>{roi.mode=use.value;persist(s);drawStatic();};
+      const result=window.GANTRY_ROI.measure(raw(s),w,h,roi,spacing);
+      for(const value of [name,use,format(result.total),format(result.mean),format(result.max),format(result.pixels),result.areaMm2===null?'No disponible':format(result.areaMm2)]){const td=document.createElement('td');td.style.cssText='padding:4px;border:1px solid #888';if(typeof value==='string')td.textContent=value;else td.append(value);row.append(td);}table.append(row);
+      const ns='http://www.w3.org/2000/svg',outline=document.createElementNS(ns,roi.points?'polygon':roi.shape==='ellipse'?'ellipse':'rect');
+      let x,y;
+      if(roi.points){outline.setAttribute('points',roi.points.map(p=>p.x+','+p.y).join(' '));x=Math.min(...roi.points.map(p=>p.x));y=Math.min(...roi.points.map(p=>p.y));}
+      else{x=Math.min(roi.x0,roi.x1);y=Math.min(roi.y0,roi.y1);const width=Math.abs(roi.x1-roi.x0),height=Math.abs(roi.y1-roi.y0);const attrs=roi.shape==='ellipse'?{cx:x+width/2,cy:y+height/2,rx:width/2,ry:height/2}:{x,y,width,height};for(const [k,v] of Object.entries(attrs))outline.setAttribute(k,v);}
+      for(const [k,v] of Object.entries({fill:'none',stroke:'#ff2020','stroke-width':2,'vector-effect':'non-scaling-stroke'}))outline.setAttribute(k,v);svg.append(outline);
+      const label=document.createElementNS(ns,'text');label.textContent=roi.name||'ROI '+(i+1);label.setAttribute('x',x);label.setAttribute('y',Math.max(w/28,y-2));label.setAttribute('font-size',w/32);label.setAttribute('fill','#ff2020');label.setAttribute('stroke','white');label.setAttribute('stroke-width',w/500);label.setAttribute('paint-order','stroke');svg.append(label);
+    });host.append(table);
   }
   function point(e){const c=$('analysisSelected'),r=c.getBoundingClientRect(),[w,h]=dimensions(source());
     if(!r.width||!r.height)return null;return {x:Math.max(0,Math.min(w,(e.clientX-r.left)*w/r.width)),y:Math.max(0,Math.min(h,(e.clientY-r.top)*h/r.height))};}
@@ -224,13 +251,13 @@
   function polygonOutline(){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.hidden=false;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ff2020" stroke-width="3" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 1px white)" points="'+polygon.map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ff2020" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
   $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;thresholdTargets();syncSliders();};
   $('roiCancel').onclick=cancelPolygon;
-  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}rois(s).push(roi);editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
+  $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);rois(s).push(roi);$('roiName').value='';editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
   const draw=$('analysisDraw');
   draw.onpointerdown=e=>{if(!canMask()||!source())return;e.preventDefault();if(['polygon','threshold'].includes($('roiShape').value)){const p=point(e);if(p){polygon.push(p);polygonOutline();}return;}drag=point(e);if(drag){draw.setPointerCapture?.(e.pointerId);outline(drag);}};
   draw.onpointermove=e=>{if(drag){const p=point(e);if(p)outline(p);}};
   draw.onpointerup=e=>{if(!drag)return;const p=point(e),start=drag;drag=null;$('roiOutline').hidden=true;
     if(!p)return;const s=source(),[w,h]=dimensions(s),roi={shape:$('roiShape').value,mode:$('roiMode').value,x0:start.x,y0:start.y,x1:p.x,y1:p.y};
-    if(!window.GANTRY_ROI.valid(roi,w,h))return;rois(s).push(roi);const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
+    if(!window.GANTRY_ROI.valid(roi,w,h))return;roi.name=$('roiName').value.trim()||'ROI '+(rois(s).length+1);rois(s).push(roi);$('roiName').value='';const saved=persist(s);$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar; conserva esta pestaña.';
   };
   draw.onpointercancel=()=>{drag=null;$('roiOutline').hidden=true;};
   $('roiImage').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;chosen=Number($('roiImage').value);$('roiOriginal').checked=false;drawStatic();};
@@ -249,7 +276,7 @@
   const flexiblePrevious=openFlexible;openFlexible=function(...args){show(false);return flexiblePrevious(...args);};
   function prepareFlexible(item,asset){
     if(!['static','whole'].includes(asset.kind)||asset.dynamicFrames)return;
-    const mask=savedMasks(asset.uid,asset.cols,asset.rows);if(!mask.length)return;
+    const mask=savedMasks(asset.uid,asset.cols,asset.rows).filter(r=>r.mode!=='measure');if(!mask.length)return;
     // Copy the processing into this page item; keep its acquired pixels untouched.
     item.roiMasks=JSON.parse(JSON.stringify(mask));
     const result=window.GANTRY_ROI.apply(asset.data,asset.cols,asset.rows,mask);

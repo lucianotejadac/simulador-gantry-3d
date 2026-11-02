@@ -69,6 +69,20 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  assert.deepEqual(Array.from(w.GANTRY_ROI.apply([10,50,100,20],2,2,[polygonMask]).counts),[0,50,100,0]);
  assert(w.GANTRY_ROI.valid(JSON.parse(JSON.stringify(polygonMask)),2,2));
  $('roiUndo').click();$('roiShape').value='rectangle';$('roiShape').dispatchEvent(new w.Event('change'));
+ // Named measurement ROI preserves pixels and supports later renaming / use changes.
+ $('roiMode').value='measure';$('roiName').value='Renal derecha';
+ const beforeMeasure=Array.from(raster.get('analysisSelected'));
+ draw.onpointerdown({clientX:10,clientY:20,pointerId:3,preventDefault(){}});draw.onpointerup({clientX:74,clientY:84});
+ assert.deepEqual(Array.from(raster.get('analysisSelected')),beforeMeasure,'Measuring does not mask image');
+ assert($('roiMeasurements').textContent.includes('102.400'));assert($('roiSavedOutlines').textContent.includes('Renal derecha'));
+ const rename=$('roiMeasurements').querySelector('input');rename.value='Renal editada';rename.dispatchEvent(new w.Event('change'));
+ assert($('roiSavedOutlines').textContent.includes('Renal editada'));assert(Object.values(w.localStorage).some(v=>v.includes('Renal editada')));
+ const metric=w.GANTRY_ROI.measure([1,2,3,4],2,2,{shape:'rectangle',mode:'measure',x0:0,y0:0,x1:2,y1:2},[2,3]);
+ assert.equal(metric.total,10);assert.equal(metric.mean,2.5);assert.equal(metric.max,4);assert.equal(metric.pixels,4);assert.equal(metric.areaMm2,24);
+ const limited=w.GANTRY_ROI.measure([1,2,3,4],2,2,{...polygonMask,mode:'measure',threshold:3},null);
+ assert.equal(limited.total,7);assert.equal(limited.pixels,2);assert.equal(limited.areaMm2,null);
+ const use=$('roiMeasurements').querySelector('select');use.value='exclude';use.dispatchEvent(new w.Event('change'));assert.equal(raster.get('analysisSelected')[0],0);
+ $('roiUndo').click();$('roiMode').value='exclude';
  // Whole-body images use rectangular native coordinates, with independent masks per detector.
  w.eval(`var wholeRecord={...staticRecord,id:'whole-mask-test',kind:'whole',n:128,height:512,mode:'scan',target:160,
  scan:{velocity:10,contours:'auto',travel:160},
