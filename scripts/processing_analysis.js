@@ -77,7 +77,8 @@
     for(const [id,{input,slider,low,high}] of numericSliders){
       const coordinate=id==='analysisX'||id==='analysisY',min=id==='analysisWindow'?1:0;
       const natural=coordinate?(id==='analysisX'?w:h)-1:id==='analysisWindow'?Math.max(1,peak+1):Math.max(1,peak);
-      const max=coordinate?natural:Math.max(natural,Number(input.value)||0);
+      const max=coordinate?natural:Math.max(natural,Number(input.value)||0,slider.dataset.image===key(s)?Number(slider.max)||0:0);
+      slider.dataset.image=key(s);
       slider.min=min;slider.max=max;slider.step=id==='analysisLevel'||id==='analysisWindow'?'0.5':'1';slider.value=input.value||min;
       low.textContent=String(min);high.textContent=String(max);
     }
