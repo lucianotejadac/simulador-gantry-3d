@@ -2047,7 +2047,21 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const areaMm2=Array.isArray(spacing)&&spacing.length===2&&spacing.every(v=>Number.isFinite(v)&&v>0)?pixels*spacing[0]*spacing[1]:null;
     return {total,pixels,mean:pixels?total/pixels:0,max,areaMm2};
   }
-  window.GANTRY_ROI={valid,visible,apply,measure};
+  // Exact boundary of the selected native pixels, including holes and separate islands.
+  function contour(image,w,h,roi){
+    if(image.length!==w*h||!valid(roi,w,h))throw Error('ROI no valida');
+    const selected=new Uint8Array(w*h),edges=[];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)selected[y*w+x]=contains(roi,x+.5,y+.5)&&(roi.shape!=='threshold'||image[y*w+x]>=roi.threshold)?1:0;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;if(!selected[i])continue;
+      if(y===0||!selected[i-w])edges.push(`M${x} ${y}h1`);
+      if(x===w-1||!selected[i+1])edges.push(`M${x+1} ${y}v1`);
+      if(y===h-1||!selected[i+w])edges.push(`M${x} ${y+1}h1`);
+      if(x===0||!selected[i-1])edges.push(`M${x} ${y}v1`);
+    }
+    return edges.join('');
+  }
+  window.GANTRY_ROI={valid,visible,apply,measure,contour};
 })();
 
 /* Analysis workspace for the selected acquisition, with bounded thumbnails and
@@ -2077,7 +2091,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
         <label>Nombre de nueva ROI <input id="roiName" type="text" maxlength="80" placeholder="Ej.: Riñón derecho"></label>
         <button id="roiUndo">Deshacer última ROI</button><button id="roiReset">Quitar todas las ROI</button>
         <label><input type="checkbox" id="roiOriginal">Ver original</label>
-        <p>Elige Agregar ROI para medir o Enmascarar para ocultar o conservar una región. Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI o haz doble clic en el punto final (mínimo 3 puntos); se une al primero con una línea recta. El umbral de una ROI terminada se puede ajustar directamente; si hay varias, elige en Editar ROI. Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
+        <p>Elige Agregar ROI para medir o Enmascarar para ocultar o conservar una región. Arrastra para una ROI rectangular o elíptica. Para punto por punto, haz clic en cada vértice y pulsa Cerrar ROI o haz doble clic en el punto final (mínimo 3 puntos); se une al primero con una línea recta. El contorno de una ROI con umbral sigue los píxeles seleccionados dentro del polígono original. El umbral de una ROI terminada se puede ajustar directamente; si hay varias, elige en Editar ROI. Con umbral, la ROI selecciona sólo los píxeles dentro del polígono con cuentas iguales o superiores al umbral. Cada imagen conserva sus propias máscaras. La ventana y el nivel se ajustan a la zona visible al cambiar la máscara; después puedes ajustarlos manualmente.</p></div>
       <div class="analysis-toolbar"><label>Ventana <input id="analysisWindow" type="number" min="1" step="any"></label>
         <label>Nivel <input id="analysisLevel" type="number" step="any"></label>
         <label><input id="analysisInvert" type="checkbox">Invertir</label>
@@ -2294,9 +2308,9 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       use.onchange=()=>{roi.mode=use.value;persist(s);drawStatic();};
       const result=window.GANTRY_ROI.measure(raw(s),w,h,roi,spacing);
       for(const value of [nameAndColor,use,format(result.total),format(result.mean),format(result.max),format(result.pixels),result.areaMm2===null?'No disponible':format(result.areaMm2)]){const td=document.createElement('td');td.style.cssText='padding:4px;border:1px solid #888';if(typeof value==='string')td.textContent=value;else td.append(value);row.append(td);}table.append(row);
-      const ns='http://www.w3.org/2000/svg',outline=document.createElementNS(ns,roi.points?'polygon':roi.shape==='ellipse'?'ellipse':'rect');
+      const ns='http://www.w3.org/2000/svg',outline=document.createElementNS(ns,roi.shape==='threshold'?'path':roi.points?'polygon':roi.shape==='ellipse'?'ellipse':'rect');
       let x,y;
-      if(roi.points){outline.setAttribute('points',roi.points.map(p=>p.x+','+p.y).join(' '));x=Math.min(...roi.points.map(p=>p.x));y=Math.min(...roi.points.map(p=>p.y));}
+      if(roi.points){if(roi.shape==='threshold')outline.setAttribute('d',window.GANTRY_ROI.contour(raw(s),w,h,roi));else outline.setAttribute('points',roi.points.map(p=>p.x+','+p.y).join(' '));x=Math.min(...roi.points.map(p=>p.x));y=Math.min(...roi.points.map(p=>p.y));}
       else{x=Math.min(roi.x0,roi.x1);y=Math.min(roi.y0,roi.y1);const width=Math.abs(roi.x1-roi.x0),height=Math.abs(roi.y1-roi.y0);const attrs=roi.shape==='ellipse'?{cx:x+width/2,cy:y+height/2,rx:width/2,ry:height/2}:{x,y,width,height};for(const [k,v] of Object.entries(attrs))outline.setAttribute(k,v);}
       for(const [k,v] of Object.entries({fill:'none',stroke:roiColor(roi,i),'stroke-width':2,'vector-effect':'non-scaling-stroke'}))outline.setAttribute(k,v);svg.append(outline);
       const label=document.createElementNS(ns,'text');label.textContent=roi.name||'ROI '+(i+1);label.setAttribute('x',x);label.setAttribute('y',Math.max(w/28,y-2));label.setAttribute('font-size',w/32);label.setAttribute('fill',roiColor(roi,i));label.setAttribute('stroke','white');label.setAttribute('stroke-width',w/500);label.setAttribute('paint-order','stroke');svg.append(label);

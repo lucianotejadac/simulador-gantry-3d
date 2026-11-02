@@ -30,5 +30,19 @@
     const areaMm2=Array.isArray(spacing)&&spacing.length===2&&spacing.every(v=>Number.isFinite(v)&&v>0)?pixels*spacing[0]*spacing[1]:null;
     return {total,pixels,mean:pixels?total/pixels:0,max,areaMm2};
   }
-  window.GANTRY_ROI={valid,visible,apply,measure};
+  // Exact boundary of the selected native pixels, including holes and separate islands.
+  function contour(image,w,h,roi){
+    if(image.length!==w*h||!valid(roi,w,h))throw Error('ROI no valida');
+    const selected=new Uint8Array(w*h),edges=[];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)selected[y*w+x]=contains(roi,x+.5,y+.5)&&(roi.shape!=='threshold'||image[y*w+x]>=roi.threshold)?1:0;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+      const i=y*w+x;if(!selected[i])continue;
+      if(y===0||!selected[i-w])edges.push(`M${x} ${y}h1`);
+      if(x===w-1||!selected[i+1])edges.push(`M${x+1} ${y}v1`);
+      if(y===h-1||!selected[i+w])edges.push(`M${x} ${y+1}h1`);
+      if(x===0||!selected[i-1])edges.push(`M${x} ${y}v1`);
+    }
+    return edges.join('');
+  }
+  window.GANTRY_ROI={valid,visible,apply,measure,contour};
 })();

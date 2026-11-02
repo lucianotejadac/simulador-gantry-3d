@@ -62,8 +62,8 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  $('roiFinish').click();assert(raster.get('analysisSelected')[0]>0,'100 counts below threshold stay visible');
  $('roiUndo').click();$('roiThreshold').value='100';
  for(const [clientX,clientY] of [[10,20],[74,20],[74,84],[10,84]])draw.onpointerdown({clientX,clientY,preventDefault(){}});
- $('roiFinish').click();assert.equal(raster.get('analysisSelected')[0],0,'Threshold includes equal counts');
- $('roiThreshold').value='101';$('roiThreshold').dispatchEvent(new w.Event('input'));assert(raster.get('analysisSelected')[0]>0,'Existing ROI reacts to edited threshold');
+ $('roiFinish').click();assert.equal(raster.get('analysisSelected')[0],0,'Threshold includes equal counts');assert($('roiSavedOutlines').querySelector('path').getAttribute('d').length>0);
+ $('roiThreshold').value='101';$('roiThreshold').dispatchEvent(new w.Event('input'));assert(raster.get('analysisSelected')[0]>0,'Existing ROI reacts to edited threshold');assert.equal($('roiSavedOutlines').querySelector('path').getAttribute('d'),'','No contour when no pixels meet threshold');
  $('roiThresholdSlider').value='100';$('roiThresholdSlider').dispatchEvent(new w.Event('input'));assert.equal(raster.get('analysisSelected')[0],0,'Existing ROI reacts to slider');
  assert.equal($('analysisLevelSlider').min,'-1000');
  assert.deepEqual(w.eval('Array.from(pixels)'),staticOriginal);
@@ -71,6 +71,9 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  assert.deepEqual(Array.from(w.GANTRY_ROI.apply([10,50,100,20],2,2,[polygonMask]).counts),[0,50,100,0]);
  assert(w.GANTRY_ROI.valid(JSON.parse(JSON.stringify(polygonMask)),2,2));
  $('roiUndo').click();$('roiShape').value='rectangle';$('roiShape').dispatchEvent(new w.Event('change'));
+ const contourRoi={shape:'threshold',mode:'measure',threshold:3,points:[{x:0,y:0},{x:2,y:0},{x:2,y:2},{x:0,y:2}]};
+ const shape=w.GANTRY_ROI.contour([1,2,3,4],2,2,contourRoi);assert.equal((shape.match(/M/g)||[]).length,6,'Two adjacent selected pixels have six exterior edges');assert(!shape.includes('M1 1v1'),'No internal edge between selected pixels');
+ assert.equal(w.GANTRY_ROI.contour([1,2,3,4],2,2,{...contourRoi,threshold:5}),'');
  // Named measurement ROI preserves pixels and supports later renaming / use changes.
  $('roiAdd').click();assert.equal($('roiMode').value,'measure');assert($('roiMaskMode').hidden);$('roiName').value='Renal derecha';
  const beforeMeasure=Array.from(raster.get('analysisSelected'));
