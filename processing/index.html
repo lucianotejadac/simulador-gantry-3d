@@ -2099,7 +2099,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     .guide-x,.guide-y{position:absolute;pointer-events:none;background:#00eaff;box-shadow:0 0 1px black}
     .guide-x{width:1px;top:0;bottom:0;left:var(--guide-x,50%)}.guide-y{height:1px;left:0;right:0;top:var(--guide-y,50%)}
     #analysisPanel.no-guides :is(.guide-x,.guide-y){display:none}
-    #roiOutline{position:absolute;pointer-events:none;border:2px dashed #ffda35;box-sizing:border-box}
+    #roiOutline{position:absolute;pointer-events:none;border:3px solid #ff2020;box-shadow:0 0 0 1px #fff,inset 0 0 0 1px #fff;box-sizing:border-box}
     #analysisFrames{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:6px;margin:8px 0}
     #analysisFrames button{padding:4px;min-width:0;text-align:left}#analysisFrames button[data-reference=true]{border:2px solid #008da8}#analysisFrames button[aria-pressed=true]{outline:3px solid #f09a19;outline-offset:-3px}
     #analysisFrames .analysis-image{max-width:160px;margin:auto}#analysisFrames small{display:block;font-size:11px;line-height:1.35;margin-top:4px}
@@ -2266,7 +2266,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   function outline(p){const [w,h]=dimensions(source()),node=$('roiOutline');node.hidden=false;
     Object.assign(node.style,{left:100*Math.min(drag.x,p.x)/w+'%',top:100*Math.min(drag.y,p.y)/h+'%',width:100*Math.abs(p.x-drag.x)/w+'%',height:100*Math.abs(p.y-drag.y)/h+'%',borderRadius:$('roiShape').value==='ellipse'?'50%':'0'});}
   function cancelPolygon(){polygon=[];$('roiPolygon').hidden=true;$('roiFinish').disabled=true;}
-  function polygonOutline(){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.hidden=false;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ffda35" stroke-width="1" points="'+polygon.map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ffda35"/>').join('');$('roiFinish').disabled=polygon.length<3;}
+  function polygonOutline(){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.hidden=false;svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="#ff2020" stroke-width="3" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 1px white)" points="'+polygon.map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="#ff2020" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
   $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;thresholdTargets();syncSliders();};
   $('roiCancel').onclick=cancelPolygon;
   $('roiFinish').onclick=()=>{const s=source();if(!s)return;const roi={shape:$('roiShape').value,mode:$('roiMode').value,points:polygon.map(p=>({...p})),threshold:Number($('roiThreshold').value)};if(!window.GANTRY_ROI.valid(roi,...dimensions(s))){$('analysisStatus').textContent='Revisa el polígono y el umbral (cero o superior).';return;}rois(s).push(roi);editingThreshold=roi.shape==='threshold'?rois(s).length-1:editingThreshold;const saved=persist(s);cancelPolygon();$('roiOriginal').checked=false;drawStatic();if(!saved)$('analysisStatus').textContent+=' No se pudo guardar en este navegador.';};
