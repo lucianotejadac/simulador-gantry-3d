@@ -81,6 +81,10 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  assert.equal(messages.at(-1).config.zoom,1.75,'New static acquisition starts at 1.75x');
  for(const key of ['matrix','collimator','energyCenter','windowWidth'])assert.equal(messages.at(-1).config[key],live.settings[key],'New acquisition inherits the live camera even when switching study: '+key);
  assert.equal(messages.at(-1).config.energyCenter,180,'Do not silently replace an off-peak energy by 140 keV');
+
+ await send({type:'GANTRY_CAMERA_PREVIEW',field:'study',config:{...base,study:'thyroid'}});
+ assert.equal(live.settings.study,'thyroid','Camera program changes the active exam');
+ assert.equal(w.GANTRY_PROCESSING_CONFIG.validate({...base,study:'exploration',minutes:10080}).study,'exploration');
  live.settings.study='bone';
  const positions=[];w.GANTRY_ACQUISITION={decubitus:'supine',headFirst:false};
  w.GANTRY_AUTO={start:()=>{throw Error('Declared position must not move detectors');}};

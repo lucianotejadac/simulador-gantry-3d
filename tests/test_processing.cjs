@@ -42,7 +42,9 @@ function record(n=128,height=n,peak=50){
  const moved=record();moved.processing.varied=true;assert.match(api.label(moved,0),/variable/);
  const incomplete=record();incomplete.finished=false;await assert.rejects(()=>api.files(incomplete,'2.25.1'));
  const corrupt=record();corrupt.heads[0].total++;await assert.rejects(()=>api.files(corrupt,'2.25.1'));
- const wrong=record();wrong.study='mibi';await assert.rejects(()=>api.files(wrong,'2.25.1'));
+ const wrong=record();wrong.study='unknown';await assert.rejects(()=>api.files(wrong,'2.25.1'));
+
+ for(const study of ['thyroid','dmsa','maa','mibi','parathyroid','exploration']){const r=record();r.study=study;delete r.mdp;r.administeredActivity={activityMBq:370,seconds:1200};const files=await api.files(r,'2.25.2');const ds=parser.parseDicom(new Uint8Array(files[0].bytes));assert.equal(JSON.parse(ds.string('x00111010')).study,study);assert.equal(ds.uint16('x00280011'),128);}
  // Independent decoder, and byte-exact restoration through the existing project format.
  const project={format:'nuclear-dicom-project',version:1,files:checks.map(c=>({name:path.basename(c.filename),data:fs.readFileSync(c.filename).toString('base64')})),pages:[]};
  for(let i=0;i<checks.length;i++)assert.deepEqual(Buffer.from(JSON.parse(JSON.stringify(project)).files[i].data,'base64'),fs.readFileSync(checks[i].filename));

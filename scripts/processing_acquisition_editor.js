@@ -15,13 +15,13 @@
     const info=recorded(),id=draft?.id||draft?.listId||info?.processing?.acquisitionId||info?.recordId;
     if(id)acquisitionTabs.set(id,tab.id);
   });
-  const cameraKeys=['matrix','zoom','collimator','energyCenter','windowWidth'];let previewSerial=0;
+  const cameraKeys=['study','matrix','zoom','collimator','energyCenter','windowWidth'];let previewSerial=0;
   function previewCamera(field){
     if(!draft||draft.id||$('acquisition-panel').hidden||lastId&&lastState?.finished!==true)return;
     const config={kind:draft.config.kind};
     for(const key of cameraKeys){
       const node=inputs.get(key);if(!node||!node.checkValidity())return;
-      config[key]=key==='collimator'?node.value:Number(node.value);
+      config[key]=['study','collimator'].includes(key)?node.value:Number(node.value);
     }
     try{window.GANTRY_PROCESSING_CONFIG.camera(config);}catch(_){return;}
     send({type:'GANTRY_CAMERA_PREVIEW',preview:++previewSerial,field,config});
@@ -181,8 +181,8 @@
     document.body.classList.remove('gantry-acquisition-frozen');
     originalPopulate();if(draft)return;
     const info=recorded();if(!info)return;
-    const s=info.processing?.first?.settings||info.settings||{},a=info.acquisition||{},m=info.mdp?.start;
-    const config={kind:a.kind||currentMode,matrix:dataset.uint16('x00280011'),zoom:s.zoom,collimator:s.collimator,
+    const s=info.processing?.first?.settings||info.settings||{},a=info.acquisition||{},m=info.mdp?.start||info.administration;
+    const config={study:info.study||s.study||'bone',kind:a.kind||currentMode,matrix:dataset.uint16('x00280011'),zoom:s.zoom,collimator:s.collimator,
       energyCenter:s.energyCenter,windowWidth:s.windowWidth,activityMci:m?m.activityMBq/37:null,minutes:m?m.seconds/60:null,
       mode:a.mode,target:a.target,velocity:info.scan?.velocity,contours:info.scan?.contours,
       names:a.names||['Detector 1','Detector 2'],phases:info.dynamic?.phases,
@@ -233,12 +233,12 @@
   function renderFields(config,locked=false){
     const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
     if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
-    $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio','Cintigrama óseo · 99mTc-MDP'),field('Serie','Nueva · '+kindLabel));
+    $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio',window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
       input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
       input('zoom','Zoom',config.zoom,[[1,'1×'],[1.5,'1,5×'],[1.75,'1,75×'],[2,'2×']]),
-      field('Programación de cámara','Óseo · MDP'),field('Detectores','1 y 2'),
+      input('study','Programación de cámara',config.study||'bone',Object.entries(window.GANTRY_PROCESSING_CONFIG.programs)),field('Detectores','1 y 2'),
       input('collimator','Colimador',config.collimator,[['LEHR','LEHR'],['MELP','MELP'],['HE','HE'],['NONE','Sin colimador']]),
       input('energyCenter','Centro de energía (keV)',config.energyCenter,null,range(80,450,'1')),
       input('windowWidth','Ancho de ventana (%)',config.windowWidth,[10,15,20,25])]);
@@ -253,10 +253,10 @@
     $('camera').append(useLive);
     positionControl(config,locked);
     help('camera',config.kind==='whole'?'El barrido comienza donde está la camilla y alinea los detectores. Configura el seguimiento del contorno en «Condiciones de paro».':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
-    section('series','Radiofármaco',[field('Isótopo','99mTc'),field('Fármaco','MDP'),
-      input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,2000/37)),
-      input('minutes','Inyección–examen (min)',config.minutes,null,range(0,179.99))]);
-    help('series','El reloj del MDP avanza durante la adquisición hasta el límite de 180 minutos.');
+    section('series','Radiofármaco',[field('Isótopo',config.study==='exploration'?'I-131':'99mTc'),field('Fármaco',window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),
+      input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,config.study==='exploration'?1000:2000/37)),
+      input('minutes','Inyección–examen (min)',config.minutes,null,range(0,43200))]);
+    help('series','La dosis y el tiempo corresponden al radiofármaco seleccionado en la vista 3D.');
     if(config.kind==='dynamic'){
       section('stop','Secuencia dinámica',[input('phaseCount','Número de fases',(config.phases||[]).length||1,[1,2,3])]);
       for(let i=0;i<3;i++){
@@ -323,13 +323,14 @@
       configurations.set(draft.listId,{config});
       for(const key of ['name1','name2'])inputs.get(key).addEventListener('input',()=>window.GANTRY_PROCESSING_LIST?.configuration(read(false),draft.listId));
       for(const key of cameraKeys)inputs.get(key).addEventListener('input',()=>previewCamera(key));
+      inputs.get('study').addEventListener('change',()=>{const config=read(false),id=draft.listId;render(config,false,id);});
       for(const key of ['activityMci','minutes'])inputs.get(key).addEventListener('input',updateAdministration);
     }
     updateModeUI();
   }
   function read(validate=true){
     const c={...draft.config};
-    for(const [key,node] of inputs){if(validate&&!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=['collimator','mode','contours'].includes(key)?node.value:Number(node.value);}
+    for(const [key,node] of inputs){if(validate&&!node.checkValidity()){node.reportValidity();throw Error('Revisa '+node.getAttribute('aria-label')+'.');}if(!key.startsWith('name'))c[key]=['study','collimator','mode','contours'].includes(key)?node.value:Number(node.value);}
     c.names=[inputs.get('name1').value,inputs.get('name2').value];
     if(c.kind==='dynamic')c.phases=Array.from({length:c.phaseCount},(_,i)=>({frames:c['phaseFrames'+i],seconds:c['phaseSeconds'+i]}));
     c.position={...(positionState||c.position)};

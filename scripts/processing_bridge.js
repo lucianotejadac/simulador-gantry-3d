@@ -20,7 +20,7 @@
   }
   const identity=r=>(r.processing?.acquisitionId||r.id)+':'+(r.totals||r.heads.map(h=>h.total)).join(':');
   function remember(record){
-    if(record?.study!=='bone'||!record.finished)return;
+    if(!record||!record.finished)return;
     autoSave(record);
     if(!record.heads.every(h=>h.total>0))return;
     completed.set(identity(record),record);

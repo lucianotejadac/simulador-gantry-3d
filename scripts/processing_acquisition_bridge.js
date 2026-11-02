@@ -29,17 +29,18 @@
         locked:!!preparing||!!otherBusy()||!!window.GANTRY_EXAM?.blocked};
     }
     function defaults(kind){
-      const s=live().settings,mdp=window.GANTRY_MDP.metadata();
-      return {kind,matrix:kind==='whole'?Math.max(128,Math.min(256,s.matrix)):s.matrix,zoom:kind==='static'?1.75:s.zoom,collimator:s.collimator,energyCenter:s.energyCenter,windowWidth:s.windowWidth,
-        activityMci:mdp.activityMBq/37,minutes:Math.min(179.99,mdp.seconds/60),mode:'counts',target:400000,
+      const s=live().settings,mdp=(window.GANTRY_RF?.metadata?.()||window.GANTRY_MDP.metadata());
+      return {study:Object.hasOwn(window.GANTRY_PROCESSING_CONFIG.programs,s.study)?s.study:'bone',kind,matrix:kind==='whole'?Math.max(128,Math.min(256,s.matrix)):s.matrix,zoom:kind==='static'?1.75:s.zoom,collimator:s.collimator,energyCenter:s.energyCenter,windowWidth:s.windowWidth,
+        activityMci:mdp.activityMBq/37,minutes:mdp.seconds/60,mode:'counts',target:400000,
         velocity:10,contours:el('boneAcqContours')?.value||'auto',names:['Detector 1','Detector 2'],phases:[{frames:60,seconds:1}],
         position:positionState(),geometry:el('g3dHud').textContent.trim()};
     }
     const change=(id,value)=>{const node=el(id);node.value=String(value);node.dispatchEvent(new Event('change',{bubbles:true}));};
     function applyCamera(c,field){
       if(cameraSetters.some(([key])=>(!field||key===field)&&live().settings[key]!==c[key]))window.GANTRY_VALUE_FEEDBACK?.changed();
-      if(live().settings.study!=='bone')live().setStudy('bone');
-      if(live().settings.study!=='bone')throw Error('No se pudo seleccionar el estudio óseo.');
+      const study=c.study||'bone';
+      if(live().settings.study!==study){window.GANTRY_VALUE_FEEDBACK?.changed();if(window.GANTRY_RF)window.GANTRY_RF.select(study);else live().setStudy(study);}
+      if(live().settings.study!==study)throw Error('No se pudo seleccionar el examen.');
       if(live().signal.mode!=='live')live().setSignalMode('live');
       for(const [key,setter] of cameraSetters){
         if(field&&key!==field)continue;
@@ -52,13 +53,13 @@
       if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de iniciar otra.');
       if(window.GANTRY_EXAM?.blocked)throw Error('Examen cancelado por colisión. Libera el contacto y reinicia desde el gantry.');
       if(window.GANTRY_AUTO?.busy)throw Error('Espera a que termine el posicionamiento automático.');
-      if(window.GANTRY_RF?.pending('bone'))throw Error('Pulsa Inyectar en la vista 3D antes de adquirir.');
+      if(window.GANTRY_RF?.pending(c.study||'bone'))throw Error('Pulsa Inyectar en la vista 3D antes de adquirir.');
       preparing=true;
       try{
         retainLiveCamera();
         applyCamera(c);
         if(window.GANTRY_RF){
-          const m=window.GANTRY_MDP.metadata();c.activityMci=m.activityMBq/37;c.minutes=Math.min(179.99,m.seconds/60);
+          const m=(window.GANTRY_RF?.metadata?.()||window.GANTRY_MDP.metadata());c.activityMci=m.activityMBq/37;c.minutes=m.seconds/60;
         }else{change('mdpUnit','mCi');change('mdpActivity',c.activityMci);change('mdpMinutes',c.minutes);}
         live().update(window.GANTRY.G);
         const deadline=performance.now()+45000;
@@ -82,20 +83,20 @@
           releasePreview();
         }else if(d.type==='GANTRY_ADMINISTRATION_UPDATE'){
           if(preparing||otherBusy()||window.GANTRY_EXAM?.blocked)throw Error('Finaliza la adquisición antes de cambiar la administración.');
-          if(typeof d.activityMci!=='number'||!Number.isFinite(d.activityMci)||d.activityMci<=0||d.activityMci*37>2000||
-            typeof d.minutes!=='number'||!Number.isFinite(d.minutes)||d.minutes<0||d.minutes>=180)throw Error('Dosis o tiempo no válidos.');
-          const before=window.GANTRY_MDP.metadata();
+          if(typeof d.activityMci!=='number'||!Number.isFinite(d.activityMci)||d.activityMci<=0||d.activityMci>(live().settings.study==='exploration'?1000:2000/37)||
+            typeof d.minutes!=='number'||!Number.isFinite(d.minutes)||d.minutes<0||d.minutes>43200)throw Error('Dosis o tiempo no válidos.');
+          const before=(window.GANTRY_RF?.metadata?.()||window.GANTRY_MDP.metadata());
           if(before.activityMBq!==d.activityMci*37||before.seconds!==d.minutes*60)window.GANTRY_VALUE_FEEDBACK?.changed();
-          if(!window.GANTRY_MDP.configure(d.activityMci*37,d.minutes*60))throw Error('Dosis o tiempo no válidos.');
+          if(window.GANTRY_RF?.configure?(window.GANTRY_RF.configure(d.activityMci,d.minutes,'mCi'),false):!window.GANTRY_MDP.configure(d.activityMci*37,d.minutes*60))throw Error('Dosis o tiempo no válidos.');
           live().clearPersistence();live().update(window.GANTRY.G);
           post({type:'GANTRY_ADMINISTRATION_STATE',activityMci:d.activityMci,minutes:d.minutes});
         }else if(d.type==='GANTRY_CAMERA_PREVIEW'){
           const c=window.GANTRY_PROCESSING_CONFIG.camera(d.config);
           if(preparing||otherBusy()||window.GANTRY_EXAM?.blocked)throw Error('Finaliza la adquisición activa o reinicia el examen antes de cambiar la cámara en vivo.');
-          if(d.field!==undefined&&!cameraSetters.some(([key])=>key===d.field))throw Error('Parámetro de cámara no válido.');
+          if(d.field!==undefined&&d.field!=='study'&&!cameraSetters.some(([key])=>key===d.field))throw Error('Parámetro de cámara no válido.');
           restoreLiveCamera();
           applyCamera(c,d.field);
-          if(window.GANTRY_RF){const m=window.GANTRY_MDP.metadata();post({type:'GANTRY_ADMINISTRATION_STATE',activityMci:m.activityMBq/37,minutes:Math.min(179.99,m.seconds/60)});}
+          if(window.GANTRY_RF){const m=(window.GANTRY_RF?.metadata?.()||window.GANTRY_MDP.metadata());post({type:'GANTRY_ADMINISTRATION_STATE',activityMci:m.activityMBq/37,minutes:m.seconds/60});}
           post({type:'GANTRY_CAMERA_PREVIEW_RESULT',preview:d.preview});
         }else if(d.type==='GANTRY_ACQUIRE_RETAKE'||d.type==='GANTRY_ACQUIRE_DELETE'){
           if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de repetir otra.');
@@ -134,7 +135,7 @@
     setInterval(()=>{
       restoreLiveCamera();
       if(!window.GANTRY_PROCESSING.active||sending)return;
-      const m=window.GANTRY_MDP.metadata(),administration={activityMci:m.activityMBq/37,minutes:Math.min(179.99,m.seconds/60)};
+      const m=(window.GANTRY_RF?.metadata?.()||window.GANTRY_MDP.metadata()),administration={activityMci:m.activityMBq/37,minutes:m.seconds/60};
       const administrationKey=JSON.stringify(administration);
       if(administrationKey!==lastAdministration){lastAdministration=administrationKey;post({type:'GANTRY_ADMINISTRATION_STATE',...administration});}
       const position=positionState(),signature=JSON.stringify(position);

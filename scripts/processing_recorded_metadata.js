@@ -13,11 +13,11 @@
     const h=info.heads?.find(h=>h.detector===detector)||(info.detector===detector?info:null);
     const varied=p.varied?' · al inicio':'';
     const out={
-      'Programación de cámara':'Óseo · MDP',
-      'Órgano':'Sistema óseo',
+      'Programación de cámara':(window.GANTRY_PROCESSING_CONFIG?.programs?.[info.study||s.study||'bone']||info.study),
+      'Órgano':({bone:'Sistema óseo',thyroid:'Tiroides',dmsa:'Riñones',maa:'Pulmones',mibi:'Miocardio',parathyroid:'Paratiroides',exploration:'Cuerpo entero'}[info.study||s.study||'bone']),
       'Detectores':'Ambos detectores (1 y 2)',
       'Configuración basada':'Geometría registrada del simulador'+varied,
-      'Configuración basada en estudio':'Óseo · MDP',
+      'Configuración basada en estudio':(window.GANTRY_PROCESSING_CONFIG?.programs?.[info.study||s.study||'bone']||info.study),
       'Corrección de uniformidad':p.uniformityApplied===false?'No aplicada · sin mapa de corrección':p.uniformityApplied===true?'Aplicada':'No registrada',
       'Orientación':typeof s.headFirst==='boolean'?(s.headFirst?'Cabeza dentro · pies fuera':'Cabeza fuera · pies dentro')+varied:'No registrada',
       'Posición del cuerpo':['supine','prone'].includes(s.decubitus)?(s.decubitus==='supine'?'Supino':'Prono')+varied:'No registrada',

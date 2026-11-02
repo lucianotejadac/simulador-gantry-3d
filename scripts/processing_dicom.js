@@ -23,7 +23,7 @@
   async function uid(text){const bytes=new Uint8Array(await crypto.subtle.digest('SHA-256',encoder.encode(text)));let n=0n;for(const b of bytes.subarray(0,16))n=n*256n+BigInt(b);return '2.25.'+n;}
   function validate(record){
     window.GANTRY_BONE_STORAGE.validate(record);
-    if(record.study!=='bone'||!record.finished||record.heads.some(h=>h.total===0))throw Error('Selecciona una adquisición ósea finalizada con cuentas en ambos detectores.');
+    if(!['bone','thyroid','dmsa','maa','mibi','parathyroid','exploration'].includes(record.study)||!record.finished||record.heads.some(h=>h.total===0))throw Error('Selecciona una adquisición finalizada con cuentas en ambos detectores.');
   }
   function label(record,j){
     const p=record.processing;
@@ -50,17 +50,17 @@
       const bits=max<=65535?16:32,sop=bits===16?NM:PRIVATE32;
       const data=new Uint8Array(head.counts.length*bits/8),view=new DataView(data.buffer);
       head.counts.forEach((n,i)=>bits===16?view.setUint16(i*2,n,true):view.setUint32(i*4,n,true));
-      const info={simulation:true,recordId:record.id,detector:j+1,total:head.total,elapsed:head.elapsed,
+      const info={simulation:true,study:record.study,recordId:record.id,detector:j+1,total:head.total,elapsed:head.elapsed,
         heads:record.heads.map(h=>({detector:h.detector,elapsed:h.elapsed,total:h.total,done:h.done})),
         acquisition:{kind:record.kind||'static',mode:record.mode,target:record.target,names:record.names},
         ...(dynamic?{dynamic:{phases:dynamic.phases,timings:dynamic.frames.flatMap(f=>[1,2].map(detector=>({detector,phase:f.phase,index:f.index,start:f.start,end:f.end,partial:!!f.partial})))}}:{}),
-        mdp:record.mdp||null,settings,processing:record.processing||null,scan:record.scan||null,sampling:record.sampling||null,
+        mdp:record.mdp||null,administration:record.mdp?.start||record.mibi?.start||record.administeredActivity||null,settings,processing:record.processing||null,scan:record.scan||null,sampling:record.sampling||null,
         stoppedEarly:!head.done,encoding:bits===16?'NM16':'PRIVATE_GANTRY_COUNTS32'};
       const description=(dynamic?'Dinámica':record.kind==='whole'?'Cuerpo entero':'Estática')+' · '+record.names[j]+' · SIMULADO';
       const tags=[['00080005','CS','ISO_IR 192'],['00080008','CS','DERIVED\\SECONDARY\\'+(dynamic?'DYNAMIC':record.kind==='whole'?'WHOLE BODY':'STATIC')+'\\SIMULATED'],
         ['00080016','UI',sop],['00080018','UI',sopUID],['00080020','DA',date],['00080030','TM',time],['00080022','DA',date],['00080032','TM',time],['00080201','SH','+0000'],['00080050','SH',''],
         ['00080060','CS','NM'],['00080070','LO','Gantry educativo'],['00080080','LO','Simulación docente'],['00080090','PN',''],
-        ['00081030','LO','Cintigrafía ósea simulada ICRP 145'],['0008103e','LO',description.slice(0,64)],
+        ['00081030','LO',(window.GANTRY_PROCESSING_CONFIG?.programs?.[record.study]||record.study)+' SIMULADO ICRP 145'],['0008103e','LO',description.slice(0,64)],
         ['00100010','PN','FANTOMA^ICRP145^SIMULADO'],['00100020','LO','GANTRY-ICRP145-SIM'],['00100030','DA',''],['00100040','CS',''],
         ['00111010','UT',JSON.stringify(info)],['00110010','LO','GANTRY_SIMULATION'],
         ['00181020','LO','Gantry processing 1'],['00181242','IS',Math.round(head.elapsed*1000)],
@@ -75,8 +75,9 @@
           sequence('00540220',[[['00080100','SH','D'+(j+1)],['00080102','SH','99GANTRY'],['00080104','LO',orientation.slice(0,64)]]])]]),
         ['7fe00010','OW',data]];
       const center=Number(settings.energyCenter),width=Number(settings.windowWidth);
-      if(center>0&&width>0)tags.push(['00540010','US',1],['00540011','US',1],sequence('00540012',[[['00540018','SH','99mTc'],sequence('00540013',[[['00540014','DS',center*(1-width/200)],['00540015','DS',center*(1+width/200)]]])]]));
-      if(mdp)tags.push(sequence('00540016',[[['00180031','LO','99mTc-MDP'],['00181074','DS',mdp.activityMBq],['00181075','DS',mdp.halfLifeMinutes*60]]]));
+      if(center>0&&width>0)tags.push(['00540010','US',1],['00540011','US',1],sequence('00540012',[[['00540018','SH',record.study==='exploration'?'I-131':'99mTc'],sequence('00540013',[[['00540014','DS',center*(1-width/200)],['00540015','DS',center*(1+width/200)]]])]]));
+      const admin=mdp||record.mibi?.start||record.administeredActivity;
+      if(admin){const tracer={bone:'99mTc-MDP',thyroid:'99mTc-pertecnetato',dmsa:'99mTc-DMSA',maa:'99mTc-MAA',mibi:'99mTc-MIBI',parathyroid:'99mTc-MIBI',exploration:'I-131'}[record.study];const radiopharma=[['00180031','LO',tracer],['00181074','DS',admin.activityMBq]];if(admin.halfLifeMinutes)radiopharma.push(['00181075','DS',admin.halfLifeMinutes*60]);tags.push(sequence('00540016',[radiopharma]));}
       if(record.scan)tags.push(['00181300','DS',record.scan.velocity/6],['00181302','DS',record.scan.travel*10]);
       if(dynamic){
         const replace=(tag,vr,v)=>{const i=tags.findIndex(t=>t[0]===tag);if(i>=0)tags.splice(i,1);tags.push([tag,vr,v]);};

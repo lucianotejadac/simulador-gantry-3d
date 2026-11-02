@@ -555,7 +555,7 @@
       refreshSaved().catch(()=>{});window.GANTRY_LIVE?.update(window.GANTRY.G);paint(true);
     },
     startConfigured(config){
-      if(study!=='bone'||busy||saving||loadingSaved||session&&!session.finished)throw Error('Hay una adquisición u operación en curso.');
+      if(!supported(study)||busy||saving||loadingSaved||session&&!session.finished)throw Error('Hay una adquisición u operación en curso.');
       el('boneAcqType').value=config.kind==='dynamic'?'static':config.kind;
       el('boneAcqCriterion').value=config.mode;
       el('boneAcqTarget').value=String(config.target);manualGoal=true;
