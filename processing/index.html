@@ -2126,10 +2126,10 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
         <label>Vertical X <input id="analysisX" type="number" min="0" step="1" value="128"></label>
         <label>Horizontal Y <input id="analysisY" type="number" min="0" step="1" value="128"></label>
         <span>Coordenadas comunes a todos los frames (píxeles).</span></div>
-      <div id="roiMeasurements" hidden></div>
       <div id="analysisPreviews">
         <figure id="analysisReferenceFigure"><figcaption id="analysisReferenceLabel">Referencia original</figcaption><div class="analysis-image"><canvas id="analysisReference"></canvas><i class="guide-x"></i><i class="guide-y"></i></div></figure>
         <figure><figcaption id="analysisSelectedLabel"></figcaption><div id="analysisDraw" class="analysis-image"><canvas id="analysisSelected"></canvas><i class="guide-x"></i><i class="guide-y"></i><svg id="roiSavedOutlines" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></svg><i id="roiOutline" hidden></i><svg id="roiPolygon" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" hidden></svg></div></figure>
+        <aside id="roiMeasurements" aria-label="ROI y mediciones" hidden></aside>
       </div>
       <p id="analysisStatus" role="status"></p>
       <div id="analysisNudge" class="analysis-toolbar">Mover frame seleccionado:
@@ -2147,6 +2147,19 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     #analysisPanel input[type=number]{width:75px;min-height:26px}#analysisPanel button,#analysisPanel select{min-height:28px;white-space:normal}
     .analysis-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:6px 0}
     #analysisPreviews{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}#analysisPreviews figure{margin:0;flex:1;min-width:150px;max-width:380px}
+    #analysisPreviews.roi-side-layout{display:grid;grid-template-columns:minmax(220px,380px) minmax(280px,1fr);min-width:512px;gap:16px;align-items:start}
+    #analysisPreviews.roi-side-layout figure{width:100%;min-width:0}
+    #roiMeasurements{min-width:0;padding:6px;border:2px groove white;box-sizing:border-box}
+    #roiMeasurements p{font-size:11px}
+    #roiMeasurements table{display:block;width:100%!important;margin:0!important}
+    #roiMeasurements tr:first-child{display:none}
+    #roiMeasurements tr:not(:first-child){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px;margin:0 0 10px;border:2px groove white}
+    #roiMeasurements td{display:flex;flex-direction:column;gap:3px;border:0!important;min-width:0;overflow-wrap:normal}
+    #roiMeasurements td:before{content:attr(data-label);font-size:11px;color:#333}
+    #roiMeasurements td:first-child,#roiMeasurements td:nth-child(8){grid-column:1/-1}
+    #roiMeasurements input[type=text],#roiMeasurements select{width:100%;min-width:0;box-sizing:border-box}
+    #roiMeasurements td:first-child>span{flex-wrap:wrap}
+    #roiMeasurements td:first-child input[type=text]{flex:1 1 120px}
     #analysisPreviews figcaption{font-weight:bold;color:navy;padding:6px 0}
     .analysis-image{position:relative;background:#000;max-width:100%;width:100%;overflow:hidden;line-height:0;touch-action:none}
     .analysis-image canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
@@ -2248,7 +2261,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       $('analysisWindow').value=$('window').value;$('analysisLevel').value=$('level').value;$('analysisInvert').checked=$('invert').checked;
       const [w,h]=dimensions(s0);$('analysisX').value=Math.floor(w/2);$('analysisY').value=Math.floor(h/2);
     }
-    $('roiMeasurements').hidden=dynamic;$('roiSavedOutlines').style.display=dynamic?'none':'';
+    $('analysisPreviews').classList.toggle('roi-side-layout',!dynamic);$('roiMeasurements').hidden=dynamic;$('roiSavedOutlines').style.display=dynamic?'none':'';
     $('analysisDynamic').hidden=!dynamic;$('analysisStatic').hidden=!canMask();
     $('analysisImageSelect').hidden=dynamic;
     for(const id of ['analysisGuides','analysisReferenceFigure','analysisNudge','analysisFrames'])$(id).hidden=!dynamic;
@@ -2340,7 +2353,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       const target=roi.mode==='background'?list.find(r=>r.id===roi.targetId&&r!==roi&&r.mode!=='background'):null;
       const correction=target?window.GANTRY_ROI.background(raw(s),w,h,target,roi,spacing):null;
       const result=correction?.background||window.GANTRY_ROI.measure(raw(s),w,h,roi,spacing);
-      for(const value of [nameAndColor,use,format(result.total),format(result.mean),format(result.max),format(result.pixels),result.areaMm2===null?'No disponible':format(result.areaMm2),roi.mode==='background'?reference:'—',correction?.estimated==null?'—':format(correction.estimated),correction?.net==null?'—':format(correction.net)]){const td=document.createElement('td');td.style.cssText='padding:4px;border:1px solid #888';if(typeof value==='string')td.textContent=value;else td.append(value);row.append(td);}table.append(row);
+      for(const value of [nameAndColor,use,format(result.total),format(result.mean),format(result.max),format(result.pixels),result.areaMm2===null?'No disponible':format(result.areaMm2),roi.mode==='background'?reference:'—',correction?.estimated==null?'—':format(correction.estimated),correction?.net==null?'—':format(correction.net)]){const td=document.createElement('td');td.dataset.label=header.children[row.children.length].textContent;td.style.cssText='padding:4px;border:1px solid #888';if(typeof value==='string')td.textContent=value;else td.append(value);row.append(td);}table.append(row);
       const ns='http://www.w3.org/2000/svg',outline=document.createElementNS(ns,['threshold','band'].includes(roi.shape)?'path':roi.points?'polygon':roi.shape==='ellipse'?'ellipse':'rect');
       let x,y;
       if(roi.shape==='band'){outline.setAttribute('d',window.GANTRY_ROI.contour(raw(s),w,h,roi));x=0;y=w/28;for(const cell of roi.cells){x=cell%w+roi.dx;y=Math.floor(cell/w)+roi.dy;break;}}
