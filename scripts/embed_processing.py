@@ -36,7 +36,7 @@ s = s.replace('<input id="project-file" type="file" accept=".dicomproject,applic
 s = re.sub(r"\$\('save-project'\)\.onclick=saveProject;\$\('open-project'\).*?;\n",
            "$('save-project').onclick=saveProject;\n", s)
 for old, new in {
-    'Visualizador DICOM': 'Procesamiento óseo',
+    'Visualizador DICOM': 'Examen',
     'Medicina nuclear · Versión demo con tutorial de uso': 'Adquisiciones del simulador gantry',
     'Archivo DICOM · Solo lectura': 'Adquisiciones del simulador',
     'aria-label="Datos DICOM"': 'aria-label="Datos de adquisición"',
@@ -119,8 +119,8 @@ ui = '''<!-- PROCESSING_UI_BEGIN -->
     #boneGantryTab[aria-selected=true],#boneProcessingTab[aria-selected=true]{font-weight:bold;color:#000080}
     :is(#boneGantryTab,#boneProcessingTab):is(:hover,:focus){color:#fff}
     </style>
-    <section id="boneProcessingPane" hidden aria-label="Procesamiento óseo">
-      <div id="boneProcessingToolbar"><strong>Procesamiento óseo</strong>
+    <section id="boneProcessingPane" hidden aria-label="Examen">
+      <div id="boneProcessingToolbar"><strong>Examen</strong>
         <button id="boneProcessingBack" type="button">Volver a adquisición</button>
         <button id="boneProcessingRefresh" type="button">Actualizar lista</button>
         <button id="boneProcessingRetry" type="button" hidden>Reintentar carga</button>
@@ -142,7 +142,7 @@ assert anchor in html
 html = html.replace(anchor, ui + anchor, 1)
 if 'id="boneProcessingTab"' not in html:
     html = html.replace('      <button class="rights-trigger" id="copyrightOpen"', '''      <button class="rights-trigger" id="boneGantryTab" type="button" aria-selected="true">Gantry</button>
-      <button class="rights-trigger" id="boneProcessingTab" type="button" aria-selected="false">Procesamiento óseo</button>
+      <button class="rights-trigger" id="boneProcessingTab" type="button" aria-selected="false">Examen</button>
       <span id="boneProcessingNotice" role="status"></span>
       <button class="rights-trigger" id="copyrightOpen"''', 1)
 if 'id="boneSendProcessing"' not in html:
