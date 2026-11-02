@@ -2055,16 +2055,23 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const estimated=bg.pixels&&organ.pixels?bg.mean*organ.pixels:null;
     return {organ,background:bg,estimated,net:estimated===null?null:organ.total-estimated};
   }
-  function autoBackground(image,w,h,target,gap=1,width=2){
-    if(!valid(target,w,h)||!Number.isInteger(gap)||gap<0||gap>20||!Number.isInteger(width)||width<1||width>20)throw Error('Banda no valida');
+  function autoBackground(image,w,h,target,gap=1,width=2,coverage=100,angle=0){
+    if(![25,50,75,100].includes(coverage)||!Number.isFinite(angle)||angle<0||angle>359||!valid(target,w,h)||!Number.isInteger(gap)||gap<0||gap>20||!Number.isInteger(width)||width<1||width>20)throw Error('Banda no valida');
+    let sumX=0,sumY=0,count=0;
     const inner=new Uint8Array(w*h),outer=new Uint8Array(w*h),r=gap+width,offsets=[];
     for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)offsets.push([dx,dy,dx*dx+dy*dy<=gap*gap]);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(contains(target,x+.5,y+.5)&&(target.shape!=='threshold'||image[y*w+x]>=target.threshold)){
+      sumX+=x+.5;sumY+=y+.5;count++;
       for(const [dx,dy,near] of offsets){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=w||yy>=h)continue;outer[yy*w+xx]=1;if(near)inner[yy*w+xx]=1;}
     }
-    const cells=[];for(let i=0;i<w*h;i++)if(outer[i]&&!inner[i])cells.push(i);
+    const cells=[],cx=sumX/count,cy=sumY/count;
+    for(let i=0;i<w*h;i++)if(outer[i]&&!inner[i]){
+      const direction=Math.atan2(Math.floor(i/w)+.5-cy,i%w+.5-cx)*180/Math.PI;
+      const delta=((direction-angle+540)%360)-180;
+      if(coverage===100||Math.abs(delta)<=coverage*1.8)cells.push(i);
+    }
     if(!cells.length)throw Error('No hay espacio para generar fondo alrededor de esta ROI.');
-    return {shape:'band',mode:'background',cols:w,rows:h,cells,dx:0,dy:0,gap,width,targetId:target.id};
+    return {shape:'band',mode:'background',cols:w,rows:h,cells,dx:0,dy:0,gap,width,coverage,angle,targetId:target.id};
   }
   // Exact boundary of the selected native pixels, including holes and separate islands.
   function contour(image,w,h,roi){
@@ -2358,7 +2365,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     $('analysisStatus').textContent=mask?'Dibuja una ROI para enmascarar.':'Dibuja una ROI para medir sin ocultar la imagen.';
   }
   $('roiAdd').onclick=()=>chooseRoiTool(false);$('roiMask').onclick=()=>chooseRoiTool(true);
-  const backgroundDialog=document.createElement('dialog');backgroundDialog.innerHTML='<form method="dialog"><h3>Fondo automático</h3><label>ROI de referencia <select id="backgroundReference"></select></label><p><label>Separación (píxeles) <input id="backgroundGap" type="number" min="0" max="20" value="1"></label><label>Grosor (píxeles) <input id="backgroundWidth" type="number" min="1" max="20" value="2"></label></p><p>Revisa que la banda quede dentro del cuerpo y sin otras zonas de captación. Puedes trasladarla después.</p><p id="backgroundError" role="status"></p><button id="backgroundCreate" type="button">Crear fondo</button><button value="cancel">Cancelar</button></form>';panel.append(backgroundDialog);
+  const backgroundDialog=document.createElement('dialog');backgroundDialog.innerHTML='<form method="dialog"><h3>Fondo automático</h3><label>ROI de referencia <select id="backgroundReference"></select></label><p><label>Separación (píxeles) <input id="backgroundGap" type="number" min="0" max="20" value="1"></label><label>Grosor (píxeles) <input id="backgroundWidth" type="number" min="1" max="20" value="2"></label></p><p><label>Forma <select id="backgroundCoverage"><option value="100">Banda completa (360°)</option><option value="50">Media luna (180°)</option><option value="25">Cuarto de banda (90°)</option><option value="75">Tres cuartos (270°)</option></select></label><label>Orientación en la imagen <select id="backgroundAngle"><option value="0">Derecha</option><option value="90">Inferior</option><option value="180">Izquierda</option><option value="270">Superior</option></select></label></p><p>La cobertura se define por un sector angular alrededor del centro de la ROI.</p><p>Revisa que la banda quede dentro del cuerpo y sin otras zonas de captación. Puedes trasladarla después.</p><p id="backgroundError" role="status"></p><button id="backgroundCreate" type="button">Crear fondo</button><button value="cancel">Cancelar</button></form>';panel.append(backgroundDialog);
   $('roiBackground').onclick=()=>{
     const s=source();if(!s)return;const targets=rois(s).filter(r=>r.mode!=='background');
     if(!targets.length){$('analysisStatus').textContent='Primero dibuja una ROI para generar su fondo.';return;}
@@ -2366,8 +2373,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   };
   $('backgroundCreate').onclick=()=>{
     try{const s=source(),target=rois(s).find(r=>r.id===$('backgroundReference').value);if(!target)throw Error('Selecciona una ROI existente.');
-      const roi=window.GANTRY_ROI.autoBackground(raw(s),...dimensions(s),target,Number($('backgroundGap').value),Number($('backgroundWidth').value));
-      roi.id=crypto.randomUUID();roi.name='Fondo - '+(target.name||'ROI');roi.color=roiColors[rois(s).length%roiColors.length];rois(s).push(roi);const saved=persist(s);chooseRoiTool(false);movingBackground=roi.id;backgroundDialog.close();drawStatic();$('analysisStatus').textContent='Fondo creado. Arrastra sobre la imagen para trasladarlo.'+(saved?'':' No se pudo guardar en este navegador.');
+      const roi=window.GANTRY_ROI.autoBackground(raw(s),...dimensions(s),target,Number($('backgroundGap').value),Number($('backgroundWidth').value),Number($('backgroundCoverage').value),Number($('backgroundAngle').value));
+      roi.id=crypto.randomUUID();roi.name=(roi.coverage===50?'Fondo media luna - ':roi.coverage===100?'Fondo - ':'Fondo parcial - ')+(target.name||'ROI');roi.color=roiColors[rois(s).length%roiColors.length];rois(s).push(roi);const saved=persist(s);chooseRoiTool(false);movingBackground=roi.id;backgroundDialog.close();drawStatic();$('analysisStatus').textContent='Fondo creado. Arrastra sobre la imagen para trasladarlo.'+(saved?'':' No se pudo guardar en este navegador.');
     }catch(error){$('backgroundError').textContent=error.message;}
   };
 

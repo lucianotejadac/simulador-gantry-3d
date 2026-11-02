@@ -108,6 +108,11 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  assert(!$('backgroundCreate').closest('dialog').open);assert($('roiMeasurements').querySelector('[aria-label="ROI de referencia del fondo 2"]'));const initialBand=$('roiSavedOutlines').querySelector('path').getAttribute('d');
  draw.onpointerdown({clientX:40,clientY:50,pointerId:10,preventDefault(){}});draw.onpointermove({clientX:50,clientY:50});draw.onpointerup({clientX:50,clientY:50});assert.notEqual($('roiSavedOutlines').querySelector('path').getAttribute('d'),initialBand);assert(Object.values(w.localStorage).some(v=>v.includes('"dx":5')));
  const band=w.GANTRY_ROI.autoBackground(new Uint32Array(225).fill(10),15,15,{...targetROI,id:'organ',x0:5,y0:5,x1:8,y1:8});assert(w.GANTRY_ROI.valid(JSON.parse(JSON.stringify(band)),15,15));assert(band.cells.length>0);assert(!band.cells.includes(6*15+6));assert.equal(band.targetId,'organ');
+ const organ={...targetROI,id:'organ',x0:5,y0:5,x1:8,y1:8},bandImage=new Uint32Array(225).fill(10);
+ const crescent=w.GANTRY_ROI.autoBackground(bandImage,15,15,organ,1,2,50,0);
+ assert(crescent.cells.length>0&&crescent.cells.length<band.cells.length);assert(crescent.cells.every(i=>i%15+.5>=6.5));assert.equal(crescent.coverage,50);
+ const left=w.GANTRY_ROI.autoBackground(bandImage,15,15,organ,1,2,25,180);assert(left.cells.every(i=>i%15+.5<=6.5));assert(left.cells.length<crescent.cells.length);
+ $('roiBackground').click();$('backgroundCoverage').value='50';$('backgroundAngle').value='180';$('backgroundCreate').click();assert($('roiSavedOutlines').textContent.includes('Fondo media luna'));
  $('roiReset').click();$('roiMask').click();
 
  // Whole-body images use rectangular native coordinates, with independent masks per detector.

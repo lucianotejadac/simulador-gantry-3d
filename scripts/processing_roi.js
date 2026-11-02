@@ -38,16 +38,23 @@
     const estimated=bg.pixels&&organ.pixels?bg.mean*organ.pixels:null;
     return {organ,background:bg,estimated,net:estimated===null?null:organ.total-estimated};
   }
-  function autoBackground(image,w,h,target,gap=1,width=2){
-    if(!valid(target,w,h)||!Number.isInteger(gap)||gap<0||gap>20||!Number.isInteger(width)||width<1||width>20)throw Error('Banda no valida');
+  function autoBackground(image,w,h,target,gap=1,width=2,coverage=100,angle=0){
+    if(![25,50,75,100].includes(coverage)||!Number.isFinite(angle)||angle<0||angle>359||!valid(target,w,h)||!Number.isInteger(gap)||gap<0||gap>20||!Number.isInteger(width)||width<1||width>20)throw Error('Banda no valida');
+    let sumX=0,sumY=0,count=0;
     const inner=new Uint8Array(w*h),outer=new Uint8Array(w*h),r=gap+width,offsets=[];
     for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx*dx+dy*dy<=r*r)offsets.push([dx,dy,dx*dx+dy*dy<=gap*gap]);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(contains(target,x+.5,y+.5)&&(target.shape!=='threshold'||image[y*w+x]>=target.threshold)){
+      sumX+=x+.5;sumY+=y+.5;count++;
       for(const [dx,dy,near] of offsets){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=w||yy>=h)continue;outer[yy*w+xx]=1;if(near)inner[yy*w+xx]=1;}
     }
-    const cells=[];for(let i=0;i<w*h;i++)if(outer[i]&&!inner[i])cells.push(i);
+    const cells=[],cx=sumX/count,cy=sumY/count;
+    for(let i=0;i<w*h;i++)if(outer[i]&&!inner[i]){
+      const direction=Math.atan2(Math.floor(i/w)+.5-cy,i%w+.5-cx)*180/Math.PI;
+      const delta=((direction-angle+540)%360)-180;
+      if(coverage===100||Math.abs(delta)<=coverage*1.8)cells.push(i);
+    }
     if(!cells.length)throw Error('No hay espacio para generar fondo alrededor de esta ROI.');
-    return {shape:'band',mode:'background',cols:w,rows:h,cells,dx:0,dy:0,gap,width,targetId:target.id};
+    return {shape:'band',mode:'background',cols:w,rows:h,cells,dx:0,dy:0,gap,width,coverage,angle,targetId:target.id};
   }
   // Exact boundary of the selected native pixels, including holes and separate islands.
   function contour(image,w,h,roi){
