@@ -38,6 +38,10 @@
   const style=document.createElement('style');style.textContent=`
     #processingAcquireMenu{max-width:290px;height:30px;font-size:12px;margin-right:6px}
     body.gantry-acquisition-draft .field :is(input:not([readonly]),select){background:#ffffe1;color:#000;width:100%;min-width:0;border:2px inset #eee;padding:3px;font:inherit;box-sizing:border-box}
+    body.gantry-acquisition-frozen :is(#patient,#camera,#series,#stop,#summary) :is(input[readonly],select:disabled){background:#e5e8e5!important;color:#353b3b!important;opacity:1;-webkit-text-fill-color:#353b3b;cursor:default}
+    body.gantry-acquisition-frozen :is(#patient,#camera,#series,#stop,#summary) select:disabled{appearance:none;-webkit-appearance:none;background-image:none!important}
+    body.gantry-acquisition-frozen :is(#patient,#camera,#series,#stop,#summary) input[readonly]{appearance:textfield;-moz-appearance:textfield}
+    body.gantry-acquisition-frozen input[readonly]::-webkit-inner-spin-button,body.gantry-acquisition-frozen input[readonly]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
     body.gantry-acquisition-draft :is(#static-overview,#acquisition-instance-wrap,.metadata,.viewer>.toolbar){display:none!important}
     body.gantry-acquisition-draft #acquisition-thumbnails{display:none}
     body.gantry-acquisition-draft #consoleSummary{display:none}
@@ -289,6 +293,7 @@
     if(locked)for(const id of ['patient','camera','series','stop','summary']){
       for(const node of $(id).querySelectorAll('input,select')){
         if(node.tagName==='SELECT')node.disabled=true;else node.readOnly=true;
+        node.title='Valor registrado en la adquisición; no se puede modificar.';
       }
     }
   }
