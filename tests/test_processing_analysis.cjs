@@ -255,7 +255,17 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  liveDiff[3].value=liveDiff[3].options[2].value;liveDiff[3].dispatchEvent(new w.Event('change'));
  const selectedRight=liveDiff[1].value;
  $('differential-calculate').click();assert.equal(w.GANTRY_DIFFERENTIAL.lastResult.right,50);
+ assert(w.GANTRY_DIFFERENTIAL.savedResult('roi-test'),'Calculated result is saved for this acquisition');
+ w.openFlexible();$('flex-add-differential').click();assert(!$('flex-differential-insert').disabled);
+ $('flex-differential-insert').click();assert(!$('flex-differential-dialog').open);
+ const renalTable=w.eval('flexPage().texts.at(-1)');assert.equal(renalTable.measurementTable.type,'differential');
+ assert.equal(renalTable.measurementTable.result.right,50);assert.equal(renalTable.measurementTable.acquisitionId,'roi-test');
+ w.eval('drawFlexible(document.createElement("canvas"),true)');assert(renalTable.h>0);
+ assert.equal(w.eval('projectPages().at(-1).texts.at(-1).measurementTable.result.left'),50);
+ const renalSnapshot=JSON.stringify(renalTable);tabs[1].click();
  const liveName=$('roiMeasurements').querySelector('input');liveName.value='Renal actualizada';liveName.dispatchEvent(new w.Event('change'));
+ assert.equal(w.GANTRY_DIFFERENTIAL.savedResult('roi-test'),null,'Changed ROI invalidate import of an old calculation');
+ assert.equal(JSON.stringify(renalTable),renalSnapshot,'Inserted result remains a snapshot');
  assert.equal(liveDiff[1].value,selectedRight,'Editing ROI preserves the renal assignment');
  assert.equal(liveDiff[1].selectedOptions[0].textContent,'Renal actualizada');
  assert.equal($('differential-result').textContent,'','ROI edits invalidate previous results');

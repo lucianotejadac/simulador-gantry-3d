@@ -51,12 +51,25 @@
   const format=n=>n==null?'—':Number(n).toLocaleString('es-CL',{maximumFractionDigits:2});
   const uses={measure:'Medir',background:'Fondo',exclude:'Ocultar',keep:'Conservar'};
   function draw(ctx,t){
+    if(t.measurementTable.type==='differential'){drawDifferential(ctx,t);return;}
     const table=t.measurementTable;const width=columns.reduce((s,c)=>s+c[1],0),rowH=32;
     t.w=width;t.h=70+rowH*table.rows.length;t.x=clamp(t.x,0,PAGE.w-width);t.y=clamp(t.y,PAGE.top,PAGE.bottom-t.h);
     ctx.fillStyle='white';ctx.fillRect(t.x,t.y,t.w,t.h);ctx.fillStyle='#000080';canvasText(ctx,table.title,t.x+6,t.y+20,width-12,'bold 16px Arial');
     const cells=(values,y,header=false)=>{let x=t.x;columns.forEach(([,w],i)=>{ctx.fillStyle=header?'#e1e5ee':'#fff';ctx.fillRect(x,y,w,rowH);ctx.strokeStyle='#888';ctx.lineWidth=.6;ctx.strokeRect(x,y,w,rowH);ctx.fillStyle='#111';headerText(ctx,String(values[i]),x+5,y+20,w-10,(header?'bold ':'')+'12px Arial');x+=w;});};
     cells(columns.map(c=>c[0]),t.y+30,true);
     table.rows.forEach((r,i)=>cells([r.name,'D'+r.detector+' · '+(uses[r.use]||r.use),format(r.total),format(r.mean),format(r.max),format(r.pixels),format(r.areaMm2),r.reference||'—',format(r.estimated),format(r.net)],t.y+62+i*rowH));
+  }
+  function drawDifferential(ctx,t){
+    const data=t.measurementTable,result=data.result,rows=[];
+    result.corrected.forEach((pair,i)=>pair.forEach((r,j)=>rows.push([data.projections[i],(j?'Izquierdo':'Derecho')+' ? '+r.name,format(r.total),r.corrected?format(r.background):'Sin correcci?n',format(r.net)])));
+    const widths=[200,320,200,220,220];t.w=1160;t.h=142+32*rows.length;
+    t.x=clamp(t.x,0,PAGE.w-t.w);t.y=clamp(t.y,PAGE.top,PAGE.bottom-t.h);
+    ctx.fillStyle='white';ctx.fillRect(t.x,t.y,t.w,t.h);ctx.fillStyle='#000080';
+    canvasText(ctx,'Funci?n diferencial renal ? '+data.title,t.x+8,t.y+24,t.w-16,'bold 16px Arial');
+    canvasText(ctx,'Derecho: '+format(result.right)+' %    Izquierdo: '+format(result.left)+' %',t.x+8,t.y+53,t.w-16,'bold 20px Arial');
+    canvasText(ctx,result.method==='geometric'?'Media geom?trica anterior / posterior':'Una proyecci?n',t.x+8,t.y+77,t.w-16,'14px Arial');
+    [['Proyecci?n','Ri??n / ROI','Cuentas','Fondo estimado','Cuentas netas'],...rows].forEach((values,i)=>{let x=t.x;values.forEach((v,j)=>{ctx.fillStyle=i?'#fff':'#e1e5ee';ctx.fillRect(x,t.y+88+i*32,widths[j],32);ctx.strokeStyle='#888';ctx.strokeRect(x,t.y+88+i*32,widths[j],32);ctx.fillStyle='#111';headerText(ctx,String(v),x+5,t.y+109+i*32,widths[j]-10,'12px Arial');x+=widths[j];});});
+    canvasText(ctx,'Captaci?n relativa ? Resultado guardado al agregar la tabla',t.x+8,t.y+t.h-7,t.w-16,'12px Arial');
   }
   const oldEditor=openTextEditor;openTextEditor=function(edit=false){const t=flexPage()?.texts.find(t=>t.id===flex.selectedText);if(edit&&t?.measurementTable){$('flex-message').textContent='Tabla de mediciones guardadas. Para actualizarla, quítala y agrega una nueva.';return;}return oldEditor(edit);};
   const oldTools=syncLayoutTools;syncLayoutTools=function(){oldTools();const table=flexPage()?.texts.find(t=>t.id===flex.selectedText)?.measurementTable;$('flex-text-edit').disabled=!!table||$('flex-text-edit').disabled;$('flex-text-remove').textContent=table?'Quitar tabla':'Quitar texto';};
