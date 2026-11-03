@@ -74,15 +74,16 @@
       return images.every(Boolean)&&signature(images)===saved.signature?saved:null;
     }catch(_){return null;}
   };
-  const importButton=document.createElement('button');importButton.id='flex-add-differential';importButton.textContent='Agregar funci?n diferencial?';
+  const importButton=document.createElement('button');importButton.id='flex-add-differential';importButton.textContent='Agregar función diferencial…';
+  importButton.style.cssText='grid-column:1 / -1;white-space:normal;word-break:normal;overflow-wrap:normal';
   document.querySelector('.flex-actions').append(importButton);
   const picker=document.createElement('dialog');picker.className='layout-dialog';picker.id='flex-differential-dialog';
-  picker.innerHTML='<h2>Agregar funci?n diferencial renal</h2><label>Adquisici?n <select id="flex-differential-source"></select></label><p id="flex-differential-info"></p><div class="layout-dialog-actions"><button id="flex-differential-cancel">Cancelar</button><button id="flex-differential-insert">Agregar resultado</button></div>';
+  picker.innerHTML='<h2>Agregar función diferencial renal</h2><label>Adquisición <select id="flex-differential-source"></select></label><p id="flex-differential-info"></p><div class="layout-dialog-actions"><button id="flex-differential-cancel">Cancelar</button><button id="flex-differential-insert">Agregar resultado</button></div>';
   document.body.append(picker);let available=[];
   importButton.onclick=()=>{
     available=[...new Set(flex.assets.map(a=>a.acquisitionId||a.series))].map(id=>api.savedResult(id)).filter(Boolean);
     options(el('flex-differential-source'),available.map((r,i)=>[i,r.title]));
-    el('flex-differential-info').textContent=available.length?'Se agregar? una copia del resultado calculado.':'No hay c?lculos vigentes. Calcula la funci?n diferencial en Visualizaci?n / An?lisis.';
+    el('flex-differential-info').textContent=available.length?'Se agregará una copia del resultado calculado.':'No hay cálculos vigentes. Calcula la función diferencial en Visualización / Análisis.';
     el('flex-differential-insert').disabled=!available.length;picker.showModal();
   };
   el('flex-differential-cancel').onclick=()=>picker.close();
@@ -90,9 +91,9 @@
     const selected=available[Number(el('flex-differential-source').value)],saved=selected&&api.savedResult(selected.acquisitionId);if(!saved)return;
     const asset=flex.assets.find(a=>a.id===saved.assetIds[0]);let page=flexPage();
     if(!page||(page.study&&page.study!==asset.study)){page=flexNewPage(asset);flex.page=page.id;}
-    const table={id:++flex.serial,x:20,y:PAGE.top+10,w:1160,h:0,size:13,color:'#111111',text:'Funci?n diferencial renal',measurementTable:{type:'differential',...JSON.parse(JSON.stringify(saved))}};
+    const table={id:++flex.serial,x:20,y:PAGE.top+10,w:1160,h:0,size:13,color:'#111111',text:'Función diferencial renal',measurementTable:{type:'differential',...JSON.parse(JSON.stringify(saved))}};
     page.texts.push(table);page.edited=true;flex.selectedText=table.id;flex.selected=null;
-    picker.close();refreshFlexible();el('flex-message').textContent='Funci?n diferencial agregada. Puedes trasladar la tabla y exportarla en PNG.';
+    picker.close();refreshFlexible();el('flex-message').textContent='Función diferencial agregada. Puedes trasladar la tabla y exportarla en PNG.';
   };
   api.syncSelection=()=>{
     const id=dataset?window.GANTRY_FLEX_MEASUREMENTS.acquisition(dataset):null;
@@ -122,7 +123,7 @@
       result.corrected.forEach((pair,i)=>pair.forEach((r,j)=>row([panels[i].asset.projection,(j?'Izquierdo':'Derecho')+' · '+r.name,format(r.total),r.corrected?format(r.background):'Sin corrección',format(r.net)])));
       host.append(table);api.lastResult=JSON.parse(JSON.stringify(result));
       const snapshot={acquisitionId:selectedAcquisition,title:el('differential-acquisition').textContent,assetIds:panels.map(p=>p.asset.id),signature:signature(panels.map(p=>p.asset)),projections:panels.map(p=>p.asset.projection),result:api.lastResult};
-      try{localStorage.setItem(resultKey(selectedAcquisition),JSON.stringify(snapshot));}catch(_){el('differential-error').textContent='No se pudo guardar el resultado para P?gina flexible.';}
+      try{localStorage.setItem(resultKey(selectedAcquisition),JSON.stringify(snapshot));}catch(_){el('differential-error').textContent='No se pudo guardar el resultado para Página flexible.';}
 
     }catch(error){el('differential-error').textContent=error.message;}
   };

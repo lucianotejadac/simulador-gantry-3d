@@ -61,15 +61,15 @@
   }
   function drawDifferential(ctx,t){
     const data=t.measurementTable,result=data.result,rows=[];
-    result.corrected.forEach((pair,i)=>pair.forEach((r,j)=>rows.push([data.projections[i],(j?'Izquierdo':'Derecho')+' ? '+r.name,format(r.total),r.corrected?format(r.background):'Sin correcci?n',format(r.net)])));
+    result.corrected.forEach((pair,i)=>pair.forEach((r,j)=>rows.push([data.projections[i],(j?'Izquierdo':'Derecho')+' · '+r.name,format(r.total),r.corrected?format(r.background):'Sin corrección',format(r.net)])));
     const widths=[200,320,200,220,220];t.w=1160;t.h=142+32*rows.length;
     t.x=clamp(t.x,0,PAGE.w-t.w);t.y=clamp(t.y,PAGE.top,PAGE.bottom-t.h);
     ctx.fillStyle='white';ctx.fillRect(t.x,t.y,t.w,t.h);ctx.fillStyle='#000080';
-    canvasText(ctx,'Funci?n diferencial renal ? '+data.title,t.x+8,t.y+24,t.w-16,'bold 16px Arial');
+    canvasText(ctx,'Función diferencial renal · '+data.title,t.x+8,t.y+24,t.w-16,'bold 16px Arial');
     canvasText(ctx,'Derecho: '+format(result.right)+' %    Izquierdo: '+format(result.left)+' %',t.x+8,t.y+53,t.w-16,'bold 20px Arial');
-    canvasText(ctx,result.method==='geometric'?'Media geom?trica anterior / posterior':'Una proyecci?n',t.x+8,t.y+77,t.w-16,'14px Arial');
-    [['Proyecci?n','Ri??n / ROI','Cuentas','Fondo estimado','Cuentas netas'],...rows].forEach((values,i)=>{let x=t.x;values.forEach((v,j)=>{ctx.fillStyle=i?'#fff':'#e1e5ee';ctx.fillRect(x,t.y+88+i*32,widths[j],32);ctx.strokeStyle='#888';ctx.strokeRect(x,t.y+88+i*32,widths[j],32);ctx.fillStyle='#111';headerText(ctx,String(v),x+5,t.y+109+i*32,widths[j]-10,'12px Arial');x+=widths[j];});});
-    canvasText(ctx,'Captaci?n relativa ? Resultado guardado al agregar la tabla',t.x+8,t.y+t.h-7,t.w-16,'12px Arial');
+    canvasText(ctx,result.method==='geometric'?'Media geométrica anterior / posterior':'Una proyección',t.x+8,t.y+77,t.w-16,'14px Arial');
+    [['Proyección','Riñón / ROI','Cuentas','Fondo estimado','Cuentas netas'],...rows].forEach((values,i)=>{let x=t.x;values.forEach((v,j)=>{ctx.fillStyle=i?'#fff':'#e1e5ee';ctx.fillRect(x,t.y+88+i*32,widths[j],32);ctx.strokeStyle='#888';ctx.strokeRect(x,t.y+88+i*32,widths[j],32);ctx.fillStyle='#111';headerText(ctx,String(v),x+5,t.y+109+i*32,widths[j]-10,'12px Arial');x+=widths[j];});});
+    canvasText(ctx,'Captación relativa · Resultado guardado al agregar la tabla',t.x+8,t.y+t.h-7,t.w-16,'12px Arial');
   }
   const oldEditor=openTextEditor;openTextEditor=function(edit=false){const t=flexPage()?.texts.find(t=>t.id===flex.selectedText);if(edit&&t?.measurementTable){$('flex-message').textContent='Tabla de mediciones guardadas. Para actualizarla, quítala y agrega una nueva.';return;}return oldEditor(edit);};
   const oldTools=syncLayoutTools;syncLayoutTools=function(){oldTools();const table=flexPage()?.texts.find(t=>t.id===flex.selectedText)?.measurementTable;$('flex-text-edit').disabled=!!table||$('flex-text-edit').disabled;$('flex-text-remove').textContent=table?'Quitar tabla':'Quitar texto';};
