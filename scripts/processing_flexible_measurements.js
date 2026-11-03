@@ -6,6 +6,8 @@
   const dialog=document.createElement('dialog');dialog.id='flex-measurements-dialog';dialog.className='layout-dialog';
   dialog.innerHTML='<h2>Tabla resumen de mediciones</h2><label>Adquisición <select id="flex-measurements-source"></select></label><p id="flex-measurements-info"></p><p>Se inserta una copia de las mediciones ROI actuales. Puedes trasladar la tabla sobre la página. Para reflejar cambios posteriores en las ROI, vuelve a agregarla.</p><div class="layout-dialog-actions"><button id="flex-measurements-cancel">Cancelar</button><button id="flex-measurements-insert">Agregar tabla</button></div>';
   document.body.append(dialog);
+  const include=document.createElement('label');include.innerHTML='<input type="checkbox" id="flex-measurements-images" checked> Incluir imágenes con sus ROI';
+  dialog.querySelector('.layout-dialog-actions').before(include);
   let groups=[];
   const rowsFor=group=>group.assets.flatMap(a=>window.GANTRY_PROCESSING_ANALYSIS.measurementRows(a));
   function acquisition(ds){try{const info=JSON.parse(value(ds,'00111010'));return info.processing?.acquisitionId||info.recordId||ds.string('x0020000e');}catch(_){return ds.string('x0020000e');}}
@@ -26,10 +28,20 @@
   $('flex-measurements-insert').onclick=()=>{
     const group=groups[Number($('flex-measurements-source').value)],rows=group?rowsFor(group):[];if(!rows.length)return;
     let p=flexPage();if(!p){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+    let tableY=PAGE.top+10;
+    if($('flex-measurements-images').checked){
+      if(p.study&&p.study!==group.assets[0].study){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+      p.study=group.assets[0].study;p.meta=group.assets[0].meta;
+      const measured=group.assets.filter(a=>window.GANTRY_PROCESSING_ANALYSIS.measurementRows(a).length);
+      measured.forEach((a,n)=>{const item={id:++flex.serial,asset:a.id,x:24+22*n,y:PAGE.top+22*n,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:!a.mono1};window.GANTRY_PROCESSING_ANALYSIS.prepareFlexible(item,a);boundsFlexible(item);p.items.push(item);});
+      p.edited=true;
+      if(measured.some(a=>a.kind==='whole')||rows.length>8){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+      else tableY=PAGE.top+400;
+    }
     // Keep each table inside the printable page, even with many ROI.
     for(let start=0;start<rows.length;start+=16){
       if(start){p=flexNewPage(group.assets[0]);flex.page=p.id;}
-      const t={id:++flex.serial,x:20,y:PAGE.top+10,w:1160,h:0,size:13,color:'#111111',text:'Mediciones · '+group.label,
+      const t={id:++flex.serial,x:20,y:start?PAGE.top+10:tableY,w:1160,h:0,size:13,color:'#111111',text:'Mediciones · '+group.label,
         measurementTable:{acquisitionId:group.id,title:'Mediciones · '+group.label,rows:JSON.parse(JSON.stringify(rows.slice(start,start+16)))}};
       p.texts.push(t);p.edited=true;flex.selectedText=t.id;flex.selected=null;
     }

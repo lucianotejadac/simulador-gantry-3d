@@ -78,6 +78,7 @@ for old, new in {
     assert old in s, old
     s = s.replace(old, new)
 # Header entry can be dismissed without saving in the simulator edition.
+s = s.replace('else ctx.drawImage(rasterFlexible(i),x+w/2-dw/2+i.panX,y+22+innerH/2-dh/2+i.panY,dw,dh);', 'else {const ix=x+w/2-dw/2+i.panX,iy=y+22+innerH/2-dh/2+i.panY;ctx.drawImage(rasterFlexible(i),ix,iy,dw,dh);window.GANTRY_PROCESSING_ANALYSIS.drawFlexibleRois(ctx,i,a,ix,iy,dw,dh);}')
 s = s.replace('flex.headerRequired=required&&!existing;', 'flex.headerRequired=false;')
 s = s.replace('id:uid+\':\'+f,uid,study,series,kind:currentMode', "id:uid+':'+f,uid,study,series,acquisitionId:window.GANTRY_FLEX_MEASUREMENTS?.acquisition(dataset),acquisitionDetector:window.GANTRY_FLEX_MEASUREMENTS?.detector(dataset),kind:currentMode")
 s = s.replace('ctx.fillStyle=t.color;const lines=layoutLines(ctx,t);', 'ctx.fillStyle=t.color;if(t.measurementTable){window.GANTRY_FLEX_MEASUREMENTS.draw(ctx,t);if(!exporting&&t.id===flex.selectedText){ctx.strokeStyle="#0000aa";ctx.strokeRect(t.x,t.y,t.w,t.h);}ctx.restore();continue;}const lines=layoutLines(ctx,t);')

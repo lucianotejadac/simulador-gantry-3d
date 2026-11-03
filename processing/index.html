@@ -654,7 +654,7 @@ function drawFlexible(target=$('flex-canvas'),exporting=false){
   ctx.save();ctx.beginPath();ctx.rect(x,y+22,w,innerH);ctx.clip();ctx.fillStyle=(i.invert!==a.mono1)?'#fff':'#000';ctx.fillRect(x,y+22,w,innerH);
   const ratio=(a.cols*a.spacing[1])/(a.rows*a.spacing[0]),fitW=Math.min(w,innerH*ratio),fitH=fitW/ratio,dw=fitW*i.zoom,dh=fitH*i.zoom;
   if(a.dynamicFrames)drawFlexDynamic(ctx,i,a,x,y+22,w,innerH);
-  else ctx.drawImage(rasterFlexible(i),x+w/2-dw/2+i.panX,y+22+innerH/2-dh/2+i.panY,dw,dh);ctx.restore();ctx.restore();
+  else {const ix=x+w/2-dw/2+i.panX,iy=y+22+innerH/2-dh/2+i.panY;ctx.drawImage(rasterFlexible(i),ix,iy,dw,dh);window.GANTRY_PROCESSING_ANALYSIS.drawFlexibleRois(ctx,i,a,ix,iy,dw,dh);}ctx.restore();ctx.restore();
   if(!exporting&&i.id===flex.selected){ctx.strokeStyle='#d00000';ctx.lineWidth=2;ctx.strokeRect(x+1,y+1,w-2,h-2);ctx.fillStyle='#d00000';ctx.fillRect(x+w-12,y+h-12,12,12);}
  }
  drawLayoutOverlays(ctx,p,exporting);
@@ -2431,7 +2431,10 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   const flexiblePrevious=openFlexible;openFlexible=function(...args){show(false);return flexiblePrevious(...args);};
   function prepareFlexible(item,asset){
     if(!['static','whole'].includes(asset.kind)||asset.dynamicFrames)return;
-    const mask=savedMasks(asset.uid,asset.cols,asset.rows).filter(r=>!['measure','background'].includes(r.mode));if(!mask.length)return;
+    const all=savedMasks(asset.uid,asset.cols,asset.rows);
+    if(all.length)item.roiAnnotations=JSON.parse(JSON.stringify(all.map((r,i)=>({...r,name:r.name||'ROI '+(i+1),color:roiColor(r,i)}))));
+    const mask=all.filter(r=>!['measure','background'].includes(r.mode));
+    if(!mask.length){const current=source();if(current&&key(current)===asset.uid){item.window=Number($('analysisWindow').value);item.level=Number($('analysisLevel').value);item.invert=$('analysisInvert').checked;}return;}
     // Copy the processing into this page item; keep its acquired pixels untouched.
     item.roiMasks=JSON.parse(JSON.stringify(mask));
     const result=window.GANTRY_ROI.apply(asset.data,asset.cols,asset.rows,mask);
@@ -2454,7 +2457,25 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
         reference:target?.name||null,estimated:correction?.estimated??null,net:correction?.net??null};
     });
   }
-  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,prepareFlexible,measurementRows,get opened(){return opened;}};
+  function drawFlexibleRois(ctx,item,asset,x,y,width,height){
+    const list=(item.roiAnnotations||[]).filter(r=>window.GANTRY_ROI.valid(r,asset.cols,asset.rows));if(!list.length)return;
+    ctx.save();ctx.translate(x,y);ctx.scale(width/asset.cols,height/asset.rows);
+    const unit=asset.cols/width;
+    for(const roi of list){
+      ctx.beginPath();let lx,ly;
+      if(['threshold','band'].includes(roi.shape)){
+        const path=window.GANTRY_ROI.contour(asset.data,asset.cols,asset.rows,roi);
+        const edges=[...path.matchAll(/M([\d.]+) ([\d.]+)([hv])1/g)];
+        for(const [,sx,sy,dir] of edges){const px=Number(sx),py=Number(sy);ctx.moveTo(px,py);ctx.lineTo(px+(dir==='h'?1:0),py+(dir==='v'?1:0));}
+        lx=edges.length?Number(edges[0][1]):0;ly=edges.length?Number(edges[0][2]):0;
+      }else if(roi.points){lx=Math.min(...roi.points.map(p=>p.x));ly=Math.min(...roi.points.map(p=>p.y));roi.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();}
+      else{lx=Math.min(roi.x0,roi.x1);ly=Math.min(roi.y0,roi.y1);const rw=Math.abs(roi.x1-roi.x0),rh=Math.abs(roi.y1-roi.y0);if(roi.shape==='ellipse')ctx.ellipse(lx+rw/2,ly+rh/2,rw/2,rh/2,0,0,Math.PI*2);else ctx.rect(lx,ly,rw,rh);}
+      ctx.strokeStyle=roi.color;ctx.lineWidth=2*unit;ctx.stroke();
+      ctx.font='bold '+(12*unit)+'px Arial';ctx.lineWidth=2.5*unit;ctx.strokeStyle='#fff';ctx.fillStyle=roi.color;
+      const labelY=Math.max(13*unit,ly-3*unit);ctx.strokeText(roi.name,lx,labelY);ctx.fillText(roi.name,lx,labelY);
+    }ctx.restore();
+  }
+  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,prepareFlexible,measurementRows,drawFlexibleRois,get opened(){return opened;}};
   show(false);
 })();
 
@@ -2466,6 +2487,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   const dialog=document.createElement('dialog');dialog.id='flex-measurements-dialog';dialog.className='layout-dialog';
   dialog.innerHTML='<h2>Tabla resumen de mediciones</h2><label>Adquisición <select id="flex-measurements-source"></select></label><p id="flex-measurements-info"></p><p>Se inserta una copia de las mediciones ROI actuales. Puedes trasladar la tabla sobre la página. Para reflejar cambios posteriores en las ROI, vuelve a agregarla.</p><div class="layout-dialog-actions"><button id="flex-measurements-cancel">Cancelar</button><button id="flex-measurements-insert">Agregar tabla</button></div>';
   document.body.append(dialog);
+  const include=document.createElement('label');include.innerHTML='<input type="checkbox" id="flex-measurements-images" checked> Incluir imágenes con sus ROI';
+  dialog.querySelector('.layout-dialog-actions').before(include);
   let groups=[];
   const rowsFor=group=>group.assets.flatMap(a=>window.GANTRY_PROCESSING_ANALYSIS.measurementRows(a));
   function acquisition(ds){try{const info=JSON.parse(value(ds,'00111010'));return info.processing?.acquisitionId||info.recordId||ds.string('x0020000e');}catch(_){return ds.string('x0020000e');}}
@@ -2486,10 +2509,20 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   $('flex-measurements-insert').onclick=()=>{
     const group=groups[Number($('flex-measurements-source').value)],rows=group?rowsFor(group):[];if(!rows.length)return;
     let p=flexPage();if(!p){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+    let tableY=PAGE.top+10;
+    if($('flex-measurements-images').checked){
+      if(p.study&&p.study!==group.assets[0].study){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+      p.study=group.assets[0].study;p.meta=group.assets[0].meta;
+      const measured=group.assets.filter(a=>window.GANTRY_PROCESSING_ANALYSIS.measurementRows(a).length);
+      measured.forEach((a,n)=>{const item={id:++flex.serial,asset:a.id,x:24+22*n,y:PAGE.top+22*n,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:!a.mono1};window.GANTRY_PROCESSING_ANALYSIS.prepareFlexible(item,a);boundsFlexible(item);p.items.push(item);});
+      p.edited=true;
+      if(measured.some(a=>a.kind==='whole')||rows.length>8){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+      else tableY=PAGE.top+400;
+    }
     // Keep each table inside the printable page, even with many ROI.
     for(let start=0;start<rows.length;start+=16){
       if(start){p=flexNewPage(group.assets[0]);flex.page=p.id;}
-      const t={id:++flex.serial,x:20,y:PAGE.top+10,w:1160,h:0,size:13,color:'#111111',text:'Mediciones · '+group.label,
+      const t={id:++flex.serial,x:20,y:start?PAGE.top+10:tableY,w:1160,h:0,size:13,color:'#111111',text:'Mediciones · '+group.label,
         measurementTable:{acquisitionId:group.id,title:'Mediciones · '+group.label,rows:JSON.parse(JSON.stringify(rows.slice(start,start+16)))}};
       p.texts.push(t);p.edited=true;flex.selectedText=t.id;flex.selected=null;
     }

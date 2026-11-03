@@ -334,7 +334,10 @@
   const flexiblePrevious=openFlexible;openFlexible=function(...args){show(false);return flexiblePrevious(...args);};
   function prepareFlexible(item,asset){
     if(!['static','whole'].includes(asset.kind)||asset.dynamicFrames)return;
-    const mask=savedMasks(asset.uid,asset.cols,asset.rows).filter(r=>!['measure','background'].includes(r.mode));if(!mask.length)return;
+    const all=savedMasks(asset.uid,asset.cols,asset.rows);
+    if(all.length)item.roiAnnotations=JSON.parse(JSON.stringify(all.map((r,i)=>({...r,name:r.name||'ROI '+(i+1),color:roiColor(r,i)}))));
+    const mask=all.filter(r=>!['measure','background'].includes(r.mode));
+    if(!mask.length){const current=source();if(current&&key(current)===asset.uid){item.window=Number($('analysisWindow').value);item.level=Number($('analysisLevel').value);item.invert=$('analysisInvert').checked;}return;}
     // Copy the processing into this page item; keep its acquired pixels untouched.
     item.roiMasks=JSON.parse(JSON.stringify(mask));
     const result=window.GANTRY_ROI.apply(asset.data,asset.cols,asset.rows,mask);
@@ -357,6 +360,24 @@
         reference:target?.name||null,estimated:correction?.estimated??null,net:correction?.net??null};
     });
   }
-  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,prepareFlexible,measurementRows,get opened(){return opened;}};
+  function drawFlexibleRois(ctx,item,asset,x,y,width,height){
+    const list=(item.roiAnnotations||[]).filter(r=>window.GANTRY_ROI.valid(r,asset.cols,asset.rows));if(!list.length)return;
+    ctx.save();ctx.translate(x,y);ctx.scale(width/asset.cols,height/asset.rows);
+    const unit=asset.cols/width;
+    for(const roi of list){
+      ctx.beginPath();let lx,ly;
+      if(['threshold','band'].includes(roi.shape)){
+        const path=window.GANTRY_ROI.contour(asset.data,asset.cols,asset.rows,roi);
+        const edges=[...path.matchAll(/M([\d.]+) ([\d.]+)([hv])1/g)];
+        for(const [,sx,sy,dir] of edges){const px=Number(sx),py=Number(sy);ctx.moveTo(px,py);ctx.lineTo(px+(dir==='h'?1:0),py+(dir==='v'?1:0));}
+        lx=edges.length?Number(edges[0][1]):0;ly=edges.length?Number(edges[0][2]):0;
+      }else if(roi.points){lx=Math.min(...roi.points.map(p=>p.x));ly=Math.min(...roi.points.map(p=>p.y));roi.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();}
+      else{lx=Math.min(roi.x0,roi.x1);ly=Math.min(roi.y0,roi.y1);const rw=Math.abs(roi.x1-roi.x0),rh=Math.abs(roi.y1-roi.y0);if(roi.shape==='ellipse')ctx.ellipse(lx+rw/2,ly+rh/2,rw/2,rh/2,0,0,Math.PI*2);else ctx.rect(lx,ly,rw,rh);}
+      ctx.strokeStyle=roi.color;ctx.lineWidth=2*unit;ctx.stroke();
+      ctx.font='bold '+(12*unit)+'px Arial';ctx.lineWidth=2.5*unit;ctx.strokeStyle='#fff';ctx.fillStyle=roi.color;
+      const labelY=Math.max(13*unit,ly-3*unit);ctx.strokeText(roi.name,lx,labelY);ctx.fillText(roi.name,lx,labelY);
+    }ctx.restore();
+  }
+  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,prepareFlexible,measurementRows,drawFlexibleRois,get opened(){return opened;}};
   show(false);
 })();
