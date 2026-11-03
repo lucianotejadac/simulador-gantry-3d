@@ -243,6 +243,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  diffSelects[3].value=diffSelects[3].options[2].value;diffSelects[3].dispatchEvent(new w.Event('change'));
  $('differential-calculate').click();assert.equal($('differential-error').textContent,'');assert.equal(w.GANTRY_DIFFERENTIAL.lastResult.right,50);
  assert($('differential-result').textContent.includes('Izquierdo: 50 %'));$('differential-close').click();assert(!$('differential-dialog').open);
+ $('roiDifferential').click();assert($('differential-dialog').open);assert(!$('analysisPanel').hidden,'ROI shortcut keeps the analysis workspace open');$('differential-close').click();
  const R=w.GANTRY_ROI,image=new w.Float64Array(16).fill(1),ellipse={shape:'ellipse',mode:'keep',x0:0,y0:0,x1:4,y1:4};
  const kept=R.apply(image,4,4,[ellipse]);assert.equal(kept.removed,4);assert.equal(kept.counts[0],0);assert.equal(kept.counts[5],1);assert.equal(image[0],1);
  assert.equal(kept.min,1,'Artificial zeros outside a keep mask are excluded from window statistics');assert.equal(kept.max,1);assert.equal(kept.visiblePixels,12);

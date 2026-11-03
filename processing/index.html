@@ -2116,6 +2116,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       <div id="analysisStatic" hidden>
         <strong>ROI y mediciones</strong>
         <button id="roiAdd" aria-pressed="true">Agregar ROI</button><button id="roiMask" aria-pressed="false">Enmascarar</button><button id="roiBackground" aria-pressed="false">Fondo</button>
+        <button id="roiDifferential" type="button">Calcular función diferencial</button>
         <label>ROI <select id="roiShape"><option value="rectangle">Rectangular</option><option value="ellipse">Elíptica</option><option value="polygon">Punto por punto</option><option value="threshold">Punto por punto con umbral</option></select></label>
         <label id="roiThresholdLabel" hidden>Umbral mínimo (cuentas/píxel) <input id="roiThreshold" type="number" min="0" step="1" value="10"></label>
         <label id="roiThresholdTargetLabel" hidden>Editar ROI <select id="roiThresholdTarget"></select></label>
@@ -2378,6 +2379,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   function polygonOutline(cursor){const [w,h]=dimensions(source()),svg=$('roiPolygon');svg.removeAttribute('hidden');svg.setAttribute('viewBox',`0 0 ${w} ${h}`);svg.innerHTML='<polyline fill="none" stroke="'+nextRoiColor()+'" stroke-width="3" vector-effect="non-scaling-stroke" points="'+(cursor?[...polygon,cursor]:polygon).map(p=>p.x+','+p.y).join(' ')+'"/>'+polygon.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="1.5" fill="'+nextRoiColor()+'" stroke="white" stroke-width="1" vector-effect="non-scaling-stroke"/>').join('');$('roiFinish').disabled=polygon.length<3;}
   $('roiShape').onchange=()=>{cancelPolygon();drag=null;$('roiOutline').hidden=true;const poly=['polygon','threshold'].includes($('roiShape').value);$('roiFinish').hidden=$('roiCancel').hidden=!poly;thresholdTargets();syncSliders();};
   $('roiCancel').onclick=cancelPolygon;
+  $('roiDifferential').onclick=()=>window.GANTRY_DIFFERENTIAL.open();
   function chooseRoiTool(mask){
     cancelPolygon();movingBackground=null;moveDrag=null;drag=null;$('roiOutline').hidden=true;
     $('roiMode').value=mask?'exclude':'measure';$('roiMaskMode').hidden=!mask;
