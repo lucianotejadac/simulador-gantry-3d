@@ -25,6 +25,6 @@ for name in ['thyroid','exploration','parathyroid']:
     assert f"atlasKey:'{atlas_key}'" in descriptor
     assert legacy[name]['source'] not in html
     print(name, 'ICRP volume active, no legacy image fallback or obsolete angles')
-assert "const fixedArms=['mibi','parathyroid'].includes(acquisition.study);" in html
-assert "if(['mibi','parathyroid'].includes(acquisition.study) && window.GANTRY)" in html
+assert 'const fixedArms=' not in html
+assert 'const fixedDown=' not in html
 assert '  setStudy(acquisition.study);\n})();' in html

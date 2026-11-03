@@ -27,7 +27,7 @@ with serve_site() as site_url, sync_playwright() as pw:
     page.goto(site_url+'?demo=mibi-brazos-arriba')
     page.wait_for_function("window.GANTRY_LIVE && GANTRY_LIVE.ready && GANTRY_LIVE.settings.study==='mibi'")
     assert page.evaluate("GANTRY.G.arms==='up' && GANTRY_LIVE.state.d1.arms==='up'")
-    assert page.locator('[data-arms="down"]').is_disabled()
+    assert page.locator('[data-arms="down"]').is_enabled()
     assert page.locator('#boneSignalControls').is_visible()
     assert page.evaluate('GANTRY_LIVE.angles.length===72')
     page.wait_for_timeout(1200)
@@ -61,8 +61,8 @@ with serve_site() as site_url, sync_playwright() as pw:
     assert page.locator('[data-arms="down"]').is_enabled()
     assert mibi!=page.locator('#liveD1').evaluate('(c)=>c.toDataURL()'),'Stale cached MIBI field in bone mode'
     page.click('[data-arms="down"]');page.select_option('#liveStudy','mibi')
-    assert page.evaluate("GANTRY.G.arms==='up'")
-    assert mibi==page.locator('#liveD1').evaluate('(c)=>c.toDataURL()'),'Pose or field not restored'
+    page.wait_for_function('GANTRY_LIVE.ready')
+    assert page.evaluate("GANTRY.G.arms==='down'")
     page.select_option('#liveStudy','thyroid')
     assert page.locator('#boneSignalControls').is_visible()
     page.select_option('#liveStudy','mibi')

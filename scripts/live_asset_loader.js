@@ -10,9 +10,9 @@
     }else if(acquisition.study==='bone'&&window.GANTRY_MDP){
       task=window.GANTRY_MDP.load(lastState?.arms==='up'?'up':'down');
     }else if(acquisition.study==='mibi'&&window.GANTRY_MIBI){
-      task=window.GANTRY_MIBI.load();
+      task=window.GANTRY_MIBI.load(armPose());
     }else if(atlas.linear){
-      const name=activeStudy().atlasKey||(lastState?.arms==='up'?'up':'down');
+      const name=atlasName();
       if(window.GANTRY_ICRP.poses[name]){atlas.ready=true;return;}
       task=window.GANTRY_ICRP.load(name);
     }else{

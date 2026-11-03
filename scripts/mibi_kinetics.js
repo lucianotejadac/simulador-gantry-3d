@@ -40,26 +40,30 @@
       phase:t<p.minimum?'early':t<=120?'usual':t<=240?'delayed':'prolonged',
       message:t<p.minimum?'Temprana: comprobar fondo sanguíneo y actividad hepática.':t<=120?'Intervalo habitual: comprobar actividad subdiafragmática antes de adquirir.':t<=240?'Adquisición demorada: menos cuentas miocárdicas; el intestino puede seguir interfiriendo.':'Demora prolongada: pérdida de cuentas por decaimiento y aclaramiento; mayor ruido para igual duración.'};
   }
-  let poses=null,pending=null;
-  function load(){
-    if(poses)return Promise.resolve(poses);
-    if(!pending)pending=(async()=>{
+  const loaded={},pending={};
+  const armPose=()=>window.GANTRY?.G?.arms==='down'?'down':'up';
+  const descriptor=name=>name==='down'?data.poses.down:data;
+  function load(name=armPose()){
+    if(loaded[name])return Promise.resolve(loaded[name]);
+    const data=descriptor(name);
+    if(!pending[name])pending[name]=(async()=>{
       const response=await (window.GANTRY_ASSETS?.fetch||fetch)(data.url);if(!response.ok)throw Error('No se pudo cargar MIBI ('+response.status+')');
       const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
       const v=new Uint16Array(buffer),n=data.width*data.height;
       if(v.length!==data.components.length*data.angles.length*n)throw Error('Atlas MIBI incompleto');
-      poses=data.scales.map((scale,c)=>({width:data.width,height:data.height,pixelMm:data.pixelMm,scale,window:1,frames:data.angles.map((_,a)=>v.subarray((c*data.angles.length+a)*n,(c*data.angles.length+a+1)*n))}));
-      return poses;
-    })().catch(e=>{pending=null;throw e;});
-    return pending;
+      loaded[name]=data.scales.map((scale,c)=>({width:data.width,height:data.height,pixelMm:data.pixelMm,scale,window:1,frames:data.angles.map((_,a)=>v.subarray((c*data.angles.length+a)*n,(c*data.angles.length+a+1)*n))}));
+      return loaded[name];
+    })().catch(e=>{delete pending[name];throw e;});
+    return pending[name];
   }
-  const geometry=()=>window.GANTRY_ICRP_DATA.mibi_up;
+  const geometry=(name=armPose())=>window.GANTRY_ICRP_DATA['mibi_'+name];
   function field(pose,pair,crop,w,h,flipX,flipY,metrics,sigma,cache,seconds=state.seconds){
+    const name=pose===window.GANTRY_ICRP_DATA.mibi_down?'down':'up',data=descriptor(name),poses=loaded[name];
     const angle=(pose.angles[pair.lo]+((pose.angles[pair.hi]-pose.angles[pair.lo]+360)%360)*pair.mix)%360;
     const a=angle/10,lo=Math.floor(a),angular={lo,hi:(lo+1)%36,mix:a-lo};
     const r=(pose.pixelMm||3)/data.pixelMm;
     const mapped={x:data.width/2+(crop.x-pose.width/2)*r,y:data.headRow+(crop.y-pose.headRow)*r,w:crop.w*r,h:crop.h*r};
-    const key=JSON.stringify([angular,mapped,w,h,flipX,flipY,metrics,sigma]);
+    const key=JSON.stringify([name,angular,mapped,w,h,flipX,flipY,metrics,sigma]);
     if(cache.key!==key){cache.key=key;cache.bases=poses.map(p=>window.GANTRY_ICRP.field(p,angular,mapped,w,h,flipX,flipY,metrics,sigma).values);cache.result=null;}
     const temporal=[seconds,state.protocol,state.voidEvery120].join('|');
     if(!cache.result||cache.temporal!==temporal){cache.result=mix(cache.bases,seconds);cache.temporal=temporal;}
