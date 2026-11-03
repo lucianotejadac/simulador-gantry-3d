@@ -144,3 +144,6 @@
   #gantryWorkspace #gantryLive{grid-column:1;grid-row:4}
   #gantryWorkspace #boneProcessingPane{grid-column:1;grid-row:4}
 }
+
+#liveCenterControls{display:flex;flex-wrap:wrap;gap:6px;padding:6px 8px;flex:none}
+#liveCenterControls .live-setting{flex:1;white-space:normal;min-height:30px}

@@ -32,6 +32,16 @@ if 'const liveCameraSettings=' not in html:
       (acquisition.collimator==='NONE'?'Sin colimador':acquisition.collimator)+' · '+acquisition.energyCenter+' keV / '+acquisition.windowWidth+'%'+
       (boneSignal.mode==='live'?' · Últimos '+String(boneSignal.duration).replace('.',',')+' s':'');
 ''',1)
+# Centering belongs to the live monitors, alongside the images it changes.
+if 'id="liveCenterControls"' not in html:
+    buttons=[]
+    for control in ('liveRecenter','liveResetCenter'):
+        match=re.search(r'<button\b[^>]*id="'+control+r'"[^>]*>.*?</button>',html,re.S)
+        assert match, control
+        buttons.append(match.group())
+        html=html[:match.start()]+html[match.end():]
+    anchor='<div class="live-monitor-grid">'
+    html=html.replace(anchor,'<div id="liveCenterControls">'+''.join(buttons)+'</div>\n'+anchor,1)
 html=re.sub(r'(<div class="gantry-live-grid">)\s+(<div class="live-card bone-acq-card">)',r'\1\n            \2',html)
 url = asset((ROOT / 'scripts/gantry_workspace.css').read_bytes(), 'gantry-workspace', 'css')
 block = '<!-- WORKSPACE_LAYOUT_BEGIN -->\n<link rel="stylesheet" href="' + url + '">\n<!-- WORKSPACE_LAYOUT_END -->'

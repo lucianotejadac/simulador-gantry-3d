@@ -5,7 +5,6 @@
   const groups=[
     ['Zoom',['liveZoom1','liveZoom15','liveZoom175','liveZoom2'],'choice'],
     ['Matriz',['liveMatrix64','liveMatrix128','liveMatrix256','liveMatrix512'],'choice'],
-    ['Centrado',['liveRecenter','liveResetCenter']],
     ['Imagen en vivo',['bonePause','boneClear']],
     ['MAG3',['injectMAG3','startMAG3','injectMAG3Instant']],
     ['Evolución MDP',['mdpPlay']],
