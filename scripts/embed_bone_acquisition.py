@@ -133,7 +133,7 @@ if 'window.GANTRY_BONE_ACQ?.advance();' not in s:
     s=s.replace(a,a+"\n    if(acquisition.study==='bone' && window.GANTRY_BONE_ACQ?.active)acquisition.matrix=window.GANTRY_BONE_ACQ.matrix;",1)
     a='    return meta;\n  }'
     assert a in s
-    s=s.replace(a,"""    if(acquisition.study==='bone')target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
+    s=s.replace(a,"""    if(acquisition.study==='bone')target.info.innerHTML=meta.segment+'<br>'+(boneSignal.mode==='live'?meta.windowCounts.toLocaleString('es-CL')+' c / '+boneSignal.duration+' s':'Referencia sin ruido')+' · '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' c/s';
     return meta;
   }""",1)
 

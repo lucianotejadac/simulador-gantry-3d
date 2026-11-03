@@ -2412,7 +2412,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       windowCounts:target.persistence.total,expectedRate:target.linearField.sum/2000000*effectiveCountRate(),
       acquisitionSeconds:boneSignal.time});
     if(!preview)target.info.innerHTML='<b>DETECTOR '+target.n+'</b>'+
-      '<span class="accent">'+meta.view+'</span><br>'+
+      '<br>'+
       segment+'<br>'+
       'D-isocentro: '+distance.toFixed(0)+' cm · '+
         (gap && gap.cm!=null ? 'a '+gap.surface+': '+effectiveDistance.toFixed(0)+' cm' : 'campo libre')+'<br>'+
@@ -2426,7 +2426,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       const live=boneSignal.mode==='live',pixels=target.linearField.values.length;
       const total=live?meta.windowCounts:meta.expectedRate;
       const mean=(total/pixels).toLocaleString('es-CL',{maximumSignificantDigits:3});
-      target.info.innerHTML='<b>'+meta.view+'</b> '+meta.segment+'<br>'+
+      target.info.innerHTML=meta.segment+'<br>'+
         (live?'Total en ventana: '+total.toLocaleString('es-CL')+' cuentas / '+boneSignal.duration+' s':'Tasa total esperada: '+Math.round(total).toLocaleString('es-CL')+' cuentas/s')+
         '<br>Media: '+mean+(live?' cuentas/píxel':' cuentas/píxel/s')+' · matriz '+acquisition.matrix+'×'+acquisition.matrix+' completa'+
         (live?'<br>Tasa total esperada: '+Math.round(meta.expectedRate).toLocaleString('es-CL')+' cuentas/s':'')+
