@@ -1,0 +1,14 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const context={window:{}};vm.runInNewContext(fs.readFileSync('scripts/processing_differential.js','utf8'),context);
+const calculate=context.window.GANTRY_DIFFERENTIAL.calculate;
+const right={id:'r',name:'Derecho',total:1200,pixels:100},left={id:'l',name:'Izquierdo',total:800,pixels:200};
+let result=calculate([{right,left}]);assert.equal(result.right,60);assert.equal(result.left,40);
+const rb={targetId:'r',mean:2,pixels:20},lb={targetId:'l',mean:1,pixels:50};
+result=calculate([{right,left,rightBackground:rb,leftBackground:lb}]);
+assert.equal(result.corrected[0][0].net,1000);assert.equal(result.corrected[0][1].net,600);assert.equal(result.right,62.5);
+result=calculate([{seconds:10,right:{...right,total:100},left:{...left,total:400}},{seconds:20,right:{...right,total:800},left:{...left,total:200}}]);
+assert.equal(result.right,50);assert.equal(result.left,50);assert(Math.abs(result.weights[0]-20)<1e-10);
+assert.equal(calculate([{right:{...right,total:0},left}]).right,0);
+for(const views of [[],[{right,left:right}],[{right:{...right,total:0},left:{...left,total:0}}],[{right,left,rightBackground:{...rb,mean:100}}],[{right,left,rightBackground:{...rb,targetId:'l'}}],[{right,left,rightBackground:{...rb,pixels:0}}],[{right,left},{right,left}]])assert.throws(()=>calculate(views));
+assert.equal(right.total,1200,'Original measurement unchanged');
+console.log('OK: differential uptake, area-normalized background, exposure-normalized geometric mean and invalid-result rejection.');

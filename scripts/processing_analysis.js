@@ -356,7 +356,7 @@
       const target=roi.mode==='background'?list.find(r=>r.id===roi.targetId&&r.mode!=='background'):null;
       const correction=target?window.GANTRY_ROI.background(asset.data,asset.cols,asset.rows,target,roi,asset.spacing):null;
       const result=correction?.background||window.GANTRY_ROI.measure(asset.data,asset.cols,asset.rows,roi,asset.spacing);
-      return {image:asset.seriesName,detector:asset.acquisitionDetector||asset.detector,name:roi.name||'ROI '+(i+1),use:roi.mode,color:roiColor(roi,i),...result,
+      return {id:roi.id,targetId:roi.targetId,image:asset.seriesName,detector:asset.acquisitionDetector||asset.detector,name:roi.name||'ROI '+(i+1),use:roi.mode,color:roiColor(roi,i),...result,
         reference:target?.name||null,estimated:correction?.estimated??null,net:correction?.net??null};
     });
   }

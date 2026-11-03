@@ -345,6 +345,7 @@
     if(waiting)return;
     if(!actionModel?.actions.find(a=>a.id===action)?.enabled)return;
     try{
+      if(action==='differential'){window.GANTRY_DIFFERENTIAL.open();return;}
       if(action==='static'||action==='whole'||action==='dynamic'){
         request('GANTRY_ACQUIRE_CONFIG',{kind:action});
       }

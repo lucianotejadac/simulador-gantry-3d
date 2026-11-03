@@ -20,6 +20,7 @@
       action('fast','Avance rápido · '+(state?.speed||1)+'×',running,'Adquisición'),
       action('stop','Finalizar adquisición',running,'Adquisición'),
       action('current','Ver adquisición actual',!!lastId&&!hasDraft,'Resultados'),
+      action('differential','Calcular función diferencial',!!selectedId&&!running&&!hasDraft&&kind!=='dynamic','Resultados'),
       action('retake','Adquirir de nuevo',!!selectedId&&!running&&!hasDraft,'Resultados'),
       action('delete','Eliminar adquisición',(ready||!!selectedId)&&!running,'Resultados')
     ]};
