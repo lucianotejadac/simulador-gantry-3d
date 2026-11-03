@@ -136,7 +136,7 @@
       masks.set(id,Array.isArray(saved)?saved.filter(r=>window.GANTRY_ROI.valid(r,w,h)):[]);
     }return masks.get(id);
   }
-  function persist(s){try{localStorage.setItem('gantry.roi.'+key(s),JSON.stringify(rois(s)));return true;}catch(_){return false;}}
+  function persist(s){let saved=true;try{localStorage.setItem('gantry.roi.'+key(s),JSON.stringify(rois(s)));}catch(_){saved=false;}window.GANTRY_DIFFERENTIAL?.refreshRois(key(s));return saved;}
   function offset(f){
     const o=window.GANTRY_DYNAMIC_CORRECTION.offset(f),[w,h]=dimensions(source());
     return $('corrView').value==='original'||!Number.isInteger(o.dx)||!Number.isInteger(o.dy)||Math.abs(o.dx)>=w||Math.abs(o.dy)>=h?{dx:0,dy:0}:o;

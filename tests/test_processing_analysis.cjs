@@ -245,6 +245,22 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  $('differential-calculate').click();assert.equal($('differential-error').textContent,'');assert.equal(w.GANTRY_DIFFERENTIAL.lastResult.right,50);
  assert($('differential-result').textContent.includes('Izquierdo: 50 %'));$('differential-close').click();assert($('differential-dialog').hidden);
  $('roiDifferential').click();assert(!$('differential-dialog').hidden);assert(!$('analysisPanel').hidden,'ROI shortcut keeps the analysis workspace open');$('differential-close').click();
+ // ROI created after opening the calculation appears without reopening it.
+ $('roiReset').click();$('roiDifferential').click();assert.equal($('differential-rois'),null);
+ const liveDiff=$('differential-views').querySelectorAll('select');liveDiff[0].value='0';liveDiff[0].dispatchEvent(new w.Event('change'));
+ assert.equal(liveDiff[1].options.length,1);
+ for(const x of [2,34]){draw.onpointerdown({clientX:x,clientY:2,pointerId:8,preventDefault(){}});draw.onpointerup({clientX:x+20,clientY:22});}
+ assert.equal(liveDiff[1].options.length,3,'New ROI immediately populate the open calculation');
+ liveDiff[1].value=liveDiff[1].options[1].value;liveDiff[1].dispatchEvent(new w.Event('change'));
+ liveDiff[3].value=liveDiff[3].options[2].value;liveDiff[3].dispatchEvent(new w.Event('change'));
+ const selectedRight=liveDiff[1].value;
+ $('differential-calculate').click();assert.equal(w.GANTRY_DIFFERENTIAL.lastResult.right,50);
+ const liveName=$('roiMeasurements').querySelector('input');liveName.value='Renal actualizada';liveName.dispatchEvent(new w.Event('change'));
+ assert.equal(liveDiff[1].value,selectedRight,'Editing ROI preserves the renal assignment');
+ assert.equal(liveDiff[1].selectedOptions[0].textContent,'Renal actualizada');
+ assert.equal($('differential-result').textContent,'','ROI edits invalidate previous results');
+ $('roiUndo').click();assert.equal(liveDiff[3].value,'','Deleting an assigned ROI clears its selection');
+ assert.equal(liveDiff[1].value,selectedRight);$('differential-close').click();
  const R=w.GANTRY_ROI,image=new w.Float64Array(16).fill(1),ellipse={shape:'ellipse',mode:'keep',x0:0,y0:0,x1:4,y1:4};
  const kept=R.apply(image,4,4,[ellipse]);assert.equal(kept.removed,4);assert.equal(kept.counts[0],0);assert.equal(kept.counts[5],1);assert.equal(image[0],1);
  assert.equal(kept.min,1,'Artificial zeros outside a keep mask are excluded from window statistics');assert.equal(kept.max,1);assert.equal(kept.visiblePixels,12);
