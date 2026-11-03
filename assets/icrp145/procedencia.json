@@ -633,7 +633,7 @@
       350,
       355
     ],
-    "ventana_comun_cuentas": 215.846435546875,
+    "ventana_comun_cuentas": 212.99038696289062,
     "gamma_visualizacion": 0.72,
     "cuentas_esperadas_vista_0": 2000000,
     "origen_lps_mm": [
@@ -653,14 +653,14 @@
           570.0
         ],
         "codo_mm": [
-          -356.6447219002075,
-          19.999999999999986,
-          800.1929625336101
+          -241.54824063415083,
+          20.00000000000001,
+          851.9276502933224
         ],
         "muneca_mm": [
-          -199.01249169331092,
-          19.999999999999986,
-          1010.3692694761386
+          -189.00416389783538,
+          20.00000000000001,
+          1109.3400043090692
         ],
         "codo_original_mm": [
           -211.0,
@@ -676,14 +676,14 @@
           574.0
         ],
         "codo_mm": [
-          364.0403401513569,
-          19.999999999999996,
-          806.0537868684758
+          248.01344671787336,
+          20.000000000000057,
+          858.2066853540086
         ],
         "muneca_mm": [
-          206.59434941167498,
-          19.999999999999996,
-          1015.981774521385
+          195.53144980396365,
+          20.000000000000057,
+          1115.3149115933268
         ],
         "codo_original_mm": [
           199.0,
@@ -697,25 +697,25 @@
         "lado": -1,
         "segmento": "humero",
         "voxeles_oseos_antes": 7143,
-        "despues": 7146
+        "despues": 7148
       },
       {
         "lado": -1,
         "segmento": "antebrazo_mano",
         "voxeles_oseos_antes": 9303,
-        "despues": 9318
+        "despues": 9300
       },
       {
         "lado": 1,
         "segmento": "humero",
         "voxeles_oseos_antes": 6807,
-        "despues": 6806
+        "despues": 6805
       },
       {
         "lado": 1,
         "segmento": "antebrazo_mano",
         "voxeles_oseos_antes": 9429,
-        "despues": 9423
+        "despues": 9422
       }
     ],
     "metodo_postura": "Rotación rígida 3D por húmero y antebrazo/mano; codos compartidos. Tejido blando asignado al hueso más cercano. Clavículas y escápulas quedan en posición original.",
@@ -725,8 +725,8 @@
       "No son datos de pacientes ni una postura validada/certificada por ICRP."
     ],
     "referencia": "https://www.icrp.org/publication.asp?id=ICRP+Publication+145",
-    "sha256_proyecciones_lineales": "1d7275db47e8d87d0736d47e637481327506be64b26c2d3528cc7422f7dee497",
-    "error_maximo_cuantizacion": 0.003732915883971232
+    "sha256_proyecciones_lineales": "86da05c41f78502c12dbd90fc0c781d642c64e9722811d534e72af0e1c35ae12",
+    "error_maximo_cuantizacion": 0.0037224371809612706
   },
   "mibi_up": {
     "trazador": "99mTc-MIBI",
@@ -744,14 +744,14 @@
             570.0
           ],
           "codo_mm": [
-            -356.6447219002075,
-            19.999999999999986,
-            800.1929625336101
+            -241.54824063415083,
+            20.00000000000001,
+            851.9276502933224
           ],
           "muneca_mm": [
-            -199.01249169331092,
-            19.999999999999986,
-            1010.3692694761386
+            -189.00416389783538,
+            20.00000000000001,
+            1109.3400043090692
           ]
         },
         {
@@ -762,14 +762,14 @@
             574.0
           ],
           "codo_mm": [
-            364.0403401513569,
-            19.999999999999996,
-            806.0537868684758
+            248.01344671787336,
+            20.000000000000057,
+            858.2066853540086
           ],
           "muneca_mm": [
-            206.59434941167498,
-            19.999999999999996,
-            1015.981774521385
+            195.53144980396365,
+            20.000000000000057,
+            1115.3149115933268
           ]
         }
       ],
@@ -778,42 +778,42 @@
           "lado": -1,
           "segmento": "humero",
           "actividad_antes": 1569.506928354269,
-          "actividad_depositada": 1569.506844899559,
-          "correccion_remuestreo": 1.0430140859175814,
+          "actividad_depositada": 1569.506956032652,
+          "correccion_remuestreo": 1.0544559636118067,
           "voxeles_antes": 70955,
-          "voxeles_depositados": 69726
+          "voxeles_depositados": 69221
         },
         {
           "lado": -1,
           "segmento": "antebrazo_mano",
           "actividad_antes": 1415.851327661192,
-          "actividad_depositada": 1415.851277747075,
-          "correccion_remuestreo": 1.0437786946358931,
+          "actividad_depositada": 1415.8513491998892,
+          "correccion_remuestreo": 1.0295790157686584,
           "voxeles_antes": 67737,
-          "voxeles_depositados": 66452
+          "voxeles_depositados": 67344
         },
         {
           "lado": 1,
           "segmento": "humero",
           "actividad_antes": 1545.2400880584028,
-          "actividad_depositada": 1545.2401011865586,
-          "correccion_remuestreo": 1.037707468288494,
+          "actividad_depositada": 1545.2400377258891,
+          "correccion_remuestreo": 1.051417025514643,
           "voxeles_antes": 67627,
-          "voxeles_depositados": 66560
+          "voxeles_depositados": 66017
         },
         {
           "lado": 1,
           "segmento": "antebrazo_mano",
           "actividad_antes": 1337.0127672732342,
-          "actividad_depositada": 1337.012759789999,
-          "correccion_remuestreo": 1.0460175424089297,
+          "actividad_depositada": 1337.012701631058,
+          "correccion_remuestreo": 1.0280095682982018,
           "voxeles_antes": 64935,
-          "voxeles_depositados": 63696
+          "voxeles_depositados": 64747
         }
       ],
-      "correccion_final_solapamiento_solo_brazos": 1.0048464073675243,
-      "actividad_total_antes": 162438.4005937,
-      "actividad_total_despues": 162438.4008970086,
+      "correccion_final_solapamiento_solo_brazos": 1.0047645574168687,
+      "actividad_total_antes": 162438.11374915473,
+      "actividad_total_despues": 162438.11375865486,
       "organos_centrales_captacion_atenuacion_identicas": true,
       "origen_lps_mm": [
         -485.95757000000003,
@@ -910,7 +910,7 @@
     "numero_proyecciones_unicas": 72,
     "cierre_360": "Copia exacta de 0 grados",
     "convencion": "0 anterior, 90 lateral derecha del paciente, 180 posterior, 270 lateral izquierda; giro hacia la derecha del paciente desde anterior",
-    "ventana": 44.01988220214844,
+    "ventana": 43.923709869384766,
     "scale": 0.0009058646081813987,
     "roi_corazon": [
       [
@@ -1348,78 +1348,78 @@
     ],
     "exposicion": "250000 cuentas esperadas en anterior; un único factor para toda la serie, sin normalizar cada ángulo",
     "cuentas_por_proyeccion": [
-      249999.96875,
-      252593.484375,
-      254548.625,
-      255872.28125,
-      256359.4375,
-      255774.75,
-      254315.65625,
-      251929.859375,
-      248507.0625,
-      243895.984375,
-      238302.21875,
-      231845.578125,
-      224654.0,
-      217311.3125,
-      210100.1875,
-      202843.40625,
-      195789.90625,
-      189194.6875,
-      180090.296875,
-      177313.90625,
-      179226.21875,
-      183021.46875,
-      188141.8125,
-      193539.34375,
-      197787.421875,
-      200344.78125,
-      202166.984375,
-      203755.421875,
-      205151.140625,
-      206369.5625,
-      207464.171875,
-      208528.34375,
-      209694.796875,
-      210822.75,
-      211620.125,
-      211785.515625,
-      211016.96875,
-      209559.5,
-      207175.734375,
-      204196.21875,
-      200910.046875,
-      197275.515625,
-      193197.234375,
-      188609.8125,
-      183456.75,
-      177774.28125,
-      171674.25,
-      165307.953125,
-      158240.421875,
-      150887.890625,
-      143021.34375,
-      135014.25,
-      129165.625,
-      126064.7734375,
-      127749.640625,
-      136327.109375,
-      143163.59375,
-      151205.9375,
-      160535.484375,
-      170408.40625,
-      180515.328125,
-      190339.96875,
-      199450.921875,
-      207808.546875,
-      215389.96875,
-      221956.4375,
-      227630.015625,
-      232757.125,
-      237131.671875,
-      240883.0,
-      244280.453125,
-      247406.234375
+      250000.0,
+      252595.578125,
+      254570.84375,
+      255923.53125,
+      256444.25,
+      255909.21875,
+      254513.78125,
+      252196.078125,
+      248845.25,
+      244267.015625,
+      238527.03125,
+      231761.03125,
+      224271.203125,
+      216624.09375,
+      209508.9375,
+      202883.125,
+      195931.5,
+      187654.546875,
+      180231.953125,
+      178444.34375,
+      179937.59375,
+      182613.609375,
+      186355.4375,
+      191721.84375,
+      196919.0625,
+      200491.0,
+      202617.4375,
+      204264.5,
+      205599.609375,
+      206751.3125,
+      207792.21875,
+      208797.03125,
+      209903.09375,
+      210974.515625,
+      211721.578125,
+      211842.4375,
+      211031.5,
+      209565.125,
+      207188.1875,
+      204226.96875,
+      200968.8125,
+      197380.0,
+      193360.75,
+      188833.625,
+      183741.78125,
+      178074.96875,
+      171904.484375,
+      165153.625,
+      157188.171875,
+      148434.0,
+      140329.03125,
+      134211.953125,
+      129722.21875,
+      127413.1328125,
+      128662.375,
+      135433.21875,
+      143292.328125,
+      151459.21875,
+      160277.953125,
+      170085.921875,
+      180435.453125,
+      190541.53125,
+      199953.5,
+      208407.5625,
+      215922.609375,
+      222404.25,
+      228003.125,
+      233050.921875,
+      237347.390625,
+      241025.09375,
+      244361.328125,
+      247441.21875
     ],
     "ruido_png": {
       "modelo": "Poisson por píxel del detector",
@@ -1566,9 +1566,9 @@
       }
     },
     "sha256_organos": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
-    "sha256_proyecciones_lineales": "8ed2acdb0c746bb58225b47e10176056d8fa9139b89d5d49d2b77883e4d976e7",
-    "factor_referencia_motor": 8.000000534188343,
-    "error_maximo_cuantizacion": 0.003623458898393988,
+    "sha256_proyecciones_lineales": "169f7f29127849d693ecac26e15b160c70b0fa729d193f40c5accd1930a0ad00",
+    "factor_referencia_motor": 8.000000044758236,
+    "error_maximo_cuantizacion": 0.00361907765731992,
     "ruido_motor": "Eventos de Poisson nuevos a partir de cuentas esperadas; no se importan PNG ruidosos"
   }
 }

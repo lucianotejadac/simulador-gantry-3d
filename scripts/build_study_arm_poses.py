@@ -29,7 +29,8 @@ def main():
             # Keep exactly the approved LV emitter and central organ activity.
             original=np.load(SRC/'mibi-360-brazos-arriba/volumen_mibi_brazos_arriba.npz')['actividad']
             arm=np.load(source.BASE/'brazos-arriba/mascara_brazos_original.npz')['brazos']
-            activity[~arm]=original[:reg.shape[0],:,63:63+reg.shape[2]][~arm]
+            central_tissue=(~arm)&(reg>0)
+            activity[central_tissue]=original[:reg.shape[0],:,63:63+reg.shape[2]][central_tissue]
             case['fwhm']=15
         if name=='mibi':
             volume=np.load(SRC/'mibi-360-brazos-arriba/volumen_mibi_brazos_arriba.npz')

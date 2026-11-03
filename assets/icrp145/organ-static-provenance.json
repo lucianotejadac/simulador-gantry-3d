@@ -1173,7 +1173,7 @@
     "anatomy": "Same ICRP-based body and modified synthetic left ventricle as cardiac MIBI",
     "scenario": "Same MIBI uptake and projection weights; no added parathyroid adenoma",
     "limitation": "No separately segmented parathyroid glands; educational simulation",
-    "asset_sha256": "1011b494f9753c3d169a010c86189b5a9dcbef4f1b4344f5559f25a9e487d45a",
+    "asset_sha256": "93716192a23f36ee1472b1c27bf53825466406369b3178f760c5cf417fd7766d",
     "descriptor": {
       "angles": [
         0,
@@ -1251,11 +1251,11 @@
       ],
       "width": 320,
       "height": 768,
-      "scale": 0.007246917796787976,
-      "window": 352.1590811320954,
+      "scale": 0.00723815531463984,
+      "window": 351.3896809210259,
       "headRow": 168.98430999999997,
       "footRow": 755.6666666666666,
-      "url": "assets/runtime/icrp-mibi_up.1011b494f9753c3d.deflate"
+      "url": "assets/runtime/icrp-mibi_up.93716192a23f36ee.deflate"
     }
   }
 }

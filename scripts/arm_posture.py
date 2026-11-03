@@ -32,8 +32,8 @@ def elevate(activity,reg,mu,org,origin):
     for side,S,E,W in [(-1,[-184,20,570],[-211,85,291],[-241,84,30]),
                        (1,[190,20,574],[199,83,291],[226,80,30])]:
         S,E,W=map(lambda p:np.array(p,dtype=float),(S,E,W))
-        upper=rotation_between(E-S,np.array([.60*side,0,.80]))
-        lower=rotation_between(W-E,np.array([-.60*side,0,.80]))
+        upper=rotation_between(E-S,np.array([.20*side,0,.9797958971]))
+        lower=rotation_between(W-E,np.array([-.20*side,0,.9797958971]))
         elbow=S+upper@(E-S);wrist=elbow+lower@(W-E)
         joints.append({'lado':side,'hombro_mm':S.tolist(),'codo_mm':elbow.tolist(),'muneca_mm':wrist.tolist()})
         for name,R,pivot,dest,is_upper in [('humero',upper,S,S,True),('antebrazo_mano',lower,E,elbow,False)]:
@@ -68,7 +68,7 @@ def elevate(activity,reg,mu,org,origin):
     retained=float(activity_out[~moved].sum(dtype=np.float64))
     moved_total=float(activity_out[moved].sum(dtype=np.float64))
     overlap_factor=(total_before-retained)/moved_total if moved_total else 1.
-    assert .99<overlap_factor<1.01
+    assert .99<overlap_factor<1.01, overlap_factor
     activity_out[moved]*=overlap_factor
     assert np.array_equal(activity_out[central][protected],activity[protected])
     assert np.array_equal(mu_out[central][protected],mu[protected])

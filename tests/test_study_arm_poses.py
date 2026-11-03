@@ -25,7 +25,7 @@ with serve_site() as url,sync_playwright() as pw:
     page=browser.new_page(viewport={'width':1600,'height':1000})
     errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
     page.goto(url)
-    page.wait_for_function('window.GANTRY_LIVE?.ready',timeout=120000)
+    page.wait_for_function('window.GANTRY_LIVE?.ready && !document.getElementById("gantryWin").inert',timeout=120000)
     page.evaluate('()=>{Object.assign(GANTRY.G,{tableZ:176,tableH:85,rot:0});GANTRY.render()}')
     for study in ['thyroid','exploration','dmsa','maa','parathyroid','mibi','bone','mag3']:
         position={'thyroid':190,'parathyroid':180,'dmsa':110}.get(study,150)
@@ -33,7 +33,7 @@ with serve_site() as url,sync_playwright() as pw:
         rates=[]
         for arms in ['up','down']:
             page.evaluate('(arms)=>{GANTRY.G.arms=arms;GANTRY.render()}',arms)
-            page.evaluate('(study)=>GANTRY_LIVE.setStudy(study)',study)
+            page.evaluate('''(study)=>{GANTRY_RF.select(study);GANTRY_LIVE.setCollimator(study==='exploration'?'HE':'LEHR');GANTRY_LIVE.setEnergyCenter(study==='exploration'?364:140);GANTRY_LIVE.setWindowWidth(20);GANTRY_LIVE.setZoom(1);if(study!=='mag3')GANTRY_RF.configure(study==='exploration'?100:20,study==='exploration'?10080:study==='maa'?5:120,'mCi');}''',study)
             page.wait_for_function('(s)=>GANTRY_LIVE.ready&&GANTRY_LIVE.state?.d1?.study===s',arg=study,timeout=120000)
             assert page.evaluate('GANTRY.G.arms')==arms,(study,arms)
             assert page.locator('[data-arms="up"]').is_enabled()
@@ -41,7 +41,7 @@ with serve_site() as url,sync_playwright() as pw:
             if study!='mag3':
                 assert page.evaluate('GANTRY_LIVE.state.d1.arms')==arms
                 rates.append(page.evaluate('GANTRY_LIVE.state.d1.expectedRate'))
-                assert rates[-1]>0,(study,arms,'positioned live field is empty')
+                assert rates[-1]>0,(study,arms,'positioned live field is empty',page.evaluate('({state:GANTRY_LIVE.state.d1,settings:GANTRY_LIVE.settings,G:GANTRY.G})'))
         print('Runtime',study,rates)
         if study in ['dmsa','mibi']:
             lateral=[]

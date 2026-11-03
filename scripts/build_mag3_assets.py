@@ -37,7 +37,7 @@ def rotate(a,b):
 coords=np.argwhere(arm);xyz=origin+(coords[:,::-1]+.5)*3
 posemap=[]
 for side,S,E,W in [(-1,[-184,20,570],[-211,85,291],[-241,84,30]),(1,[190,20,574],[199,83,291],[226,80,30])]:
-    S,E,W=map(lambda p:np.array(p,float),(S,E,W));R1=rotate(E-S,np.array([.6*side,0,.8]));R2=rotate(W-E,np.array([-.6*side,0,.8]));elbow=S+R1@(E-S)
+    S,E,W=map(lambda p:np.array(p,float),(S,E,W));R1=rotate(E-S,np.array([.2*side,0,.9797958971]));R2=rotate(W-E,np.array([-.2*side,0,.9797958971]));elbow=S+R1@(E-S)
     for R,pivot,dest,upper in [(R1,S,S,True),(R2,E,elbow,False)]:
         mask=(xyz[:,0]*side>0)&((xyz[:,2]>=E[2]) if upper else (xyz[:,2]<E[2]))
         transformed=(xyz[mask]-pivot)@R.T+dest

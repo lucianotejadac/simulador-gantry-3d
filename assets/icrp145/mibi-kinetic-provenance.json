@@ -56,7 +56,7 @@
   ],
   "scales": [
     6.463119461841416e-08,
-    9.601552442006778e-09,
+    9.601555106542037e-09,
     8.006708629437753e-10,
     1.1674387678795028e-08,
     1.863084406750204e-07,
@@ -66,7 +66,7 @@
     6.899700366602701e-08,
     1.1436726055080726e-07
   ],
-  "url": "assets/runtime/mibi-kinetic-up.f4ee84c4f3c1348f.bin",
+  "url": "assets/runtime/mibi-kinetic-up.be2a5e14ae026e5a.bin",
   "posture": "Arms up; derived ICRP 145 anatomy, same enlarged asymmetric LV as existing cardiac MIBI",
   "sensitivityCpsPerMBq": 100,
   "halfLifeMinutes": 360.402,
@@ -78,9 +78,9 @@
   ],
   "sourceHashes": {
     "icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\miocardio_3d.npz": "fdbc5ab65630c22758248b3947cfd879328f52e1f070d9b2f955ef01a9ef4a04",
-    "icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\volumen_mibi_brazos_arriba.npz": "a88cfbc5082614939d636ca877e85c6263629009047c5316bf5330b2cf382834",
+    "icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\volumen_mibi_brazos_arriba.npz": "303ef63a0f8de373606ff315ccdb71425a480b07e68a0d0c374901be5eaf1aa1",
     "icrp145-multitrazador-ap-pa\\organos_3mm.npz": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
-    "simulador-gantry-3d\\assets\\runtime\\mag3-up.d22362c762fc09e0.deflate": "d22362c762fc09e04c89aea126400893e31f284cad225ca80d45160f2c4d69c5"
+    "simulador-gantry-3d\\assets\\runtime\\mag3-up.b8f994b13b6b67a9.deflate": "b8f994b13b6b67a96415b28c28873aa32bb3fb8e9c20bddefd5dc1b140e8acb9"
   },
   "poses": {
     "down": {
@@ -141,7 +141,7 @@
       ],
       "scales": [
         6.463119461841416e-08,
-        9.601552442006778e-09,
+        9.601555106542037e-09,
         8.006708629437753e-10,
         1.1674387678795028e-08,
         1.863084406750204e-07,
@@ -151,7 +151,7 @@
         6.899700366602701e-08,
         1.1436726055080726e-07
       ],
-      "url": "assets/runtime/mibi-kinetic-down.02d064264eae18dc.bin",
+      "url": "assets/runtime/mibi-kinetic-down.78ae3cc0c6460bef.bin",
       "posture": "Arms down; derived ICRP 145 anatomy, same enlarged asymmetric LV as existing cardiac MIBI",
       "sensitivityCpsPerMBq": 100,
       "halfLifeMinutes": 360.402,
@@ -163,9 +163,9 @@
       ],
       "sourceHashes": {
         "icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\miocardio_3d.npz": "fdbc5ab65630c22758248b3947cfd879328f52e1f070d9b2f955ef01a9ef4a04",
-        "icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\volumen_mibi_brazos_arriba.npz": "a88cfbc5082614939d636ca877e85c6263629009047c5316bf5330b2cf382834",
+        "icrp145-multitrazador-ap-pa\\mibi-360-brazos-arriba\\volumen_mibi_brazos_arriba.npz": "303ef63a0f8de373606ff315ccdb71425a480b07e68a0d0c374901be5eaf1aa1",
         "icrp145-multitrazador-ap-pa\\organos_3mm.npz": "c4650bcb2462cc5d400b782c545462f9936814d15138ba955ea2b790607fcc4b",
-        "simulador-gantry-3d\\assets\\runtime\\mag3-down.ec5cc8b444b45139.deflate": "ec5cc8b444b451391c1320b7e831424f07c1d1fe44c0476f40625ba1ad2c3fb8"
+        "simulador-gantry-3d\\assets\\runtime\\mag3-down.f5bad81b42010f11.deflate": "f5bad81b42010f115c1d9542db076236f06e446c2ffae7fe0b71467f826a491a"
       }
     }
   }

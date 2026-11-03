@@ -57,8 +57,8 @@ def make_volume():
     for side,S,E,W in [(-1,[-184,20,570],[-211,85,291],[-241,84,30]),
                         (1,[190,20,574],[199,83,291],[226,80,30])]:
         S,E,W=map(lambda a:np.array(a,dtype=float),(S,E,W))
-        upper=rotation_between(E-S,np.array([.60*side,0,.80]))
-        lower=rotation_between(W-E,np.array([-.60*side,0,.80]))
+        upper=rotation_between(E-S,np.array([.20*side,0,.9797958971]))
+        lower=rotation_between(W-E,np.array([-.20*side,0,.9797958971]))
         new_elbow=S+upper@(E-S);new_wrist=new_elbow+lower@(W-E)
         joints.append({'lado':side,'hombro_mm':S.tolist(),'codo_mm':new_elbow.tolist(),
                        'muneca_mm':new_wrist.tolist(),'codo_original_mm':E.tolist()})
