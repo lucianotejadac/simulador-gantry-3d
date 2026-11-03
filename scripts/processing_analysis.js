@@ -163,6 +163,7 @@
   }
   function refresh(){
     if(!opened)return;
+    window.GANTRY_DIFFERENTIAL?.syncSelection();
     panel.hidden=false;$('acquisition-panel').hidden=true;
     images=sourceImages();const empty=!images.length;$('analysisEmpty').hidden=!empty;$('analysisContent').hidden=empty;if(empty)return;
     const dynamic=currentMode==='dynamic',s0=images[0],id=s0.dataset.string('x0020000e')+':'+currentMode;

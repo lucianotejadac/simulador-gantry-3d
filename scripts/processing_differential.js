@@ -21,10 +21,11 @@
   }
   const api={calculate};window.GANTRY_DIFFERENTIAL=api;
   if(typeof document==='undefined'||!document.querySelector('.application-bar'))return;
-  const dialog=document.createElement('dialog');dialog.id='differential-dialog';dialog.className='layout-dialog';dialog.style.width='min(850px,94vw)';
+  const dialog=document.createElement('section');dialog.id='differential-dialog';dialog.hidden=true;dialog.setAttribute('aria-label','Función diferencial renal');
+  dialog.style.cssText='margin:14px 0;padding:12px;border:2px groove white;background:#c0c0c0;min-width:0';
   dialog.innerHTML='<h2>Calcular función diferencial renal</h2><p id="differential-acquisition"></p><label>Método <select id="differential-method"><option value="single">Una proyección (habitualmente posterior)</option><option value="geometric">Media geométrica anterior / posterior</option></select></label><p>Selecciona ROI que incluyan cada riñón completo. Asigna derecha e izquierda según el paciente, no según el lado de la pantalla. Los fondos deben estar vinculados a sus ROI renales.</p><div id="differential-views"></div><p id="differential-error" role="alert" style="color:#900"></p><div id="differential-result" aria-live="polite"></div><p style="font-size:11px">Porcentaje = cuentas netas del riñón / suma de ambos × 100. Fondo = media del fondo × área de la ROI renal. La media geométrica usa √(tasa anterior × tasa posterior) por riñón. Las cuentas proceden de las imágenes originales, independientemente de las máscaras y del contraste. Es captación relativa, no filtrado glomerular absoluto.</p><p style="font-size:11px"><a href="https://snmmi.org/common/Uploaded%20files/Web/Clinical%20Practice/Procedure%20Standards/2021/SNMMI%20EANM%20DMSA%20guideline_final.pdf" target="_blank" rel="noopener">Método: guía SNMMI/EANM de DMSA</a></p><div class="layout-dialog-actions"><button id="differential-rois">Dibujar / revisar ROI</button><button id="differential-close">Cerrar</button><button id="differential-calculate">Calcular</button></div>';
-  document.body.append(dialog);
-  let assets=[],panels=[];
+  document.getElementById('analysisPreviews').after(dialog);
+  let assets=[],panels=[],selectedAcquisition=null;
   const el=id=>document.getElementById(id),format=n=>n.toLocaleString('es-CL',{maximumFractionDigits:2});
   function clear(){el('differential-error').textContent='';el('differential-result').replaceChildren();}
   function select(label,host){const row=document.createElement('label');row.style.cssText='display:block;margin:8px 0';row.append(document.createTextNode(label+' '));const node=document.createElement('select');node.style.maxWidth='100%';node.setAttribute('aria-label',label);row.append(node);host.append(row);return node;}
@@ -57,17 +58,25 @@
       panel.image.onchange=()=>populate(panel);panels.push(panel);populate(panel);
     }
   }
+  api.syncSelection=()=>{
+    const id=dataset?window.GANTRY_FLEX_MEASUREMENTS.acquisition(dataset):null;
+    if(id!==selectedAcquisition){dialog.hidden=true;clear();api.lastResult=null;}
+  };
   api.open=()=>{
+    window.GANTRY_PROCESSING_ANALYSIS.show(true);
     const id=window.GANTRY_FLEX_MEASUREMENTS.acquisition(dataset);
+    selectedAcquisition=id;
     assets=flex.assets.filter(a=>(a.acquisitionId||a.series)===id&&!a.dynamicFrames&&['static','whole'].includes(a.kind));
     el('differential-acquisition').textContent=assets[0]?.seriesName||'Selecciona una adquisición finalizada con imágenes estáticas.';
-    el('differential-method').value='single';render();dialog.showModal();
+    el('differential-method').value='single';render();dialog.hidden=false;dialog.scrollIntoView?.({behavior:'smooth',block:'start'});
   };
   el('differential-method').onchange=render;
-  el('differential-close').onclick=()=>dialog.close();
-  el('differential-rois').onclick=()=>{dialog.close();window.GANTRY_PROCESSING_ANALYSIS.show(true);};
+  el('differential-close').textContent='Ocultar cálculo';
+  el('differential-close').onclick=()=>{dialog.hidden=true;};
+  el('differential-rois').onclick=()=>document.getElementById('analysisStatic').scrollIntoView?.({behavior:'smooth',block:'start'});
   el('differential-calculate').onclick=()=>{
     clear();try{
+      for(const p of panels)p.rows=p.asset?window.GANTRY_PROCESSING_ANALYSIS.measurementRows(p.asset):[];
       if(panels.length===2&&panels[0].asset?.id===panels[1].asset?.id)throw Error('Selecciona imágenes anterior y posterior diferentes.');
       const views=panels.map(p=>({seconds:p.asset?.duration/1000,...Object.fromEntries(['right','left','rightBackground','leftBackground'].map(k=>[k,p.rows.find(r=>r.id===p[k].value)]))}));
       const result=calculate(views),host=el('differential-result');

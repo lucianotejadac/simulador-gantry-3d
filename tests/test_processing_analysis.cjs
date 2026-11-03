@@ -236,14 +236,15 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  tabs[1].click();$('roiAdd').click();$('roiShape').value='rectangle';$('roiShape').onchange();
  for(const x of [2,34]){draw.onpointerdown({clientX:x,clientY:2,pointerId:7,preventDefault(){}});draw.onpointerup({clientX:x+20,clientY:22});}
  const differentialOption=[...$('processingAcquireMenu').options].find(o=>o.value==='differential');assert(differentialOption&&!differentialOption.disabled);
- $('processingAcquireMenu').value='differential';$('processingAcquireMenu').dispatchEvent(new w.Event('change'));assert($('differential-dialog').open);
+ $('processingAcquireMenu').value='differential';$('processingAcquireMenu').dispatchEvent(new w.Event('change'));assert(!$('differential-dialog').hidden);
+ assert.equal($('differential-dialog').tagName,'SECTION');assert.equal($('analysisPreviews').nextElementSibling,$('differential-dialog'),'Calculation is inline below the image and ROI measurements');
  const diffSelects=$('differential-views').querySelectorAll('select');
  diffSelects[0].value='0';diffSelects[0].dispatchEvent(new w.Event('change'));
  diffSelects[1].value=diffSelects[1].options[1].value;diffSelects[1].dispatchEvent(new w.Event('change'));
  diffSelects[3].value=diffSelects[3].options[2].value;diffSelects[3].dispatchEvent(new w.Event('change'));
  $('differential-calculate').click();assert.equal($('differential-error').textContent,'');assert.equal(w.GANTRY_DIFFERENTIAL.lastResult.right,50);
- assert($('differential-result').textContent.includes('Izquierdo: 50 %'));$('differential-close').click();assert(!$('differential-dialog').open);
- $('roiDifferential').click();assert($('differential-dialog').open);assert(!$('analysisPanel').hidden,'ROI shortcut keeps the analysis workspace open');$('differential-close').click();
+ assert($('differential-result').textContent.includes('Izquierdo: 50 %'));$('differential-close').click();assert($('differential-dialog').hidden);
+ $('roiDifferential').click();assert(!$('differential-dialog').hidden);assert(!$('analysisPanel').hidden,'ROI shortcut keeps the analysis workspace open');$('differential-close').click();
  const R=w.GANTRY_ROI,image=new w.Float64Array(16).fill(1),ellipse={shape:'ellipse',mode:'keep',x0:0,y0:0,x1:4,y1:4};
  const kept=R.apply(image,4,4,[ellipse]);assert.equal(kept.removed,4);assert.equal(kept.counts[0],0);assert.equal(kept.counts[5],1);assert.equal(image[0],1);
  assert.equal(kept.min,1,'Artificial zeros outside a keep mask are excluded from window statistics');assert.equal(kept.max,1);assert.equal(kept.visiblePixels,12);
