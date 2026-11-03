@@ -79,6 +79,8 @@ for old, new in {
     s = s.replace(old, new)
 # Header entry can be dismissed without saving in the simulator edition.
 s = s.replace('flex.headerRequired=required&&!existing;', 'flex.headerRequired=false;')
+s = s.replace('id:uid+\':\'+f,uid,study,series,kind:currentMode', "id:uid+':'+f,uid,study,series,acquisitionId:window.GANTRY_FLEX_MEASUREMENTS?.acquisition(dataset),acquisitionDetector:window.GANTRY_FLEX_MEASUREMENTS?.detector(dataset),kind:currentMode")
+s = s.replace('ctx.fillStyle=t.color;const lines=layoutLines(ctx,t);', 'ctx.fillStyle=t.color;if(t.measurementTable){window.GANTRY_FLEX_MEASUREMENTS.draw(ctx,t);if(!exporting&&t.id===flex.selectedText){ctx.strokeStyle="#0000aa";ctx.strokeRect(t.x,t.y,t.w,t.h);}ctx.restore();continue;}const lines=layoutLines(ctx,t);')
 s = s.replace("flex.headerRequired?'Establecer encabezado obligatorio':'Editar encabezado común'", "existing?'Editar encabezado común':'Establecer encabezado'")
 s = s.replace("flex.headerRequired?'Para usar Página flexible, establece primero un encabezado. Se aplicará a todas las páginas.':'Este encabezado es común: los cambios se aplicarán a todas las páginas actuales y nuevas.'", "'Puedes cerrar este cuadro sin completar el encabezado. Si lo aplicas, se usará en todas las páginas.'")
 s = re.sub(r"status\('Versión demo\..*?;", "status('Usa Adquirir para configurar una nueva adquisición en los campos de este visor.');", s)
@@ -95,7 +97,8 @@ s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important
               (ROOT / 'scripts/dynamic_correction.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_dynamic_correction.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_roi.js').read_text(encoding='utf-8') + '\n' +
-              (ROOT / 'scripts/processing_analysis.js').read_text(encoding='utf-8') + '\n</script>\n</body>')
+              (ROOT / 'scripts/processing_analysis.js').read_text(encoding='utf-8') + '\n' +
+              (ROOT / 'scripts/processing_flexible_measurements.js').read_text(encoding='utf-8') + '\n</script>\n</body>')
 # The private 32-bit teaching SOP carries administered activity in MBq, like NM.
 s = s.replace("sop==='1.2.840.10008.5.1.4.1.1.20'?'MBq'", "(sop==='1.2.840.10008.5.1.4.1.1.20'||sop==='2.25.216145721041023267506752105223475669900')?'MBq'")
 (DEST / 'index.html').write_text(s, encoding='utf-8', newline='\n')

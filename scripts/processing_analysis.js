@@ -346,6 +346,17 @@
     item.level=display&&Number.isFinite(display.level)?display.level:result.max===0?.5:(result.min+result.max)/2;
     if(display)item.invert=display.invert;
   }
-  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,prepareFlexible,get opened(){return opened;}};
+  function measurementRows(asset){
+    if(!['static','whole'].includes(asset.kind)||asset.dynamicFrames)return [];
+    const list=savedMasks(asset.uid,asset.cols,asset.rows);
+    return list.map((roi,i)=>{
+      const target=roi.mode==='background'?list.find(r=>r.id===roi.targetId&&r.mode!=='background'):null;
+      const correction=target?window.GANTRY_ROI.background(asset.data,asset.cols,asset.rows,target,roi,asset.spacing):null;
+      const result=correction?.background||window.GANTRY_ROI.measure(asset.data,asset.cols,asset.rows,roi,asset.spacing);
+      return {image:asset.seriesName,detector:asset.acquisitionDetector||asset.detector,name:roi.name||'ROI '+(i+1),use:roi.mode,color:roiColor(roi,i),...result,
+        reference:target?.name||null,estimated:correction?.estimated??null,net:correction?.net??null};
+    });
+  }
+  window.GANTRY_PROCESSING_ANALYSIS={show,refresh,prepareFlexible,measurementRows,get opened(){return opened;}};
   show(false);
 })();

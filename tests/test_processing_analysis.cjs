@@ -208,6 +208,22 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  const staticUID=w.eval('flex.assets.find(a=>a.kind==="static"&&a.detector===1).uid');
  w.openFlexible();addUID(staticUID);
  assert.equal(w.eval('flexItem().roiMasks.length'),1);assert.equal(w.eval('rasterFlexible(flexItem()).testRaster')[0],0);
+ // Insert the selected acquisition's quantitative snapshot, including both detectors.
+ $('flex-add-measurements').click();assert($('flex-measurements-dialog').open);
+ assert(!$('flex-measurements-insert').disabled);
+ const assets=w.eval('flex.assets.filter(a=>a.acquisitionId==="roi-test")');
+ assert.equal(new Set(assets.map(a=>a.acquisitionDetector)).size,2,'Acquisition identity groups the two detector instances');
+ const expected=w.GANTRY_PROCESSING_ANALYSIS.measurementRows(assets.find(a=>a.acquisitionDetector===1));
+ $('flex-measurements-insert').click();assert(!$('flex-measurements-dialog').open);
+ const table=w.eval('flexPage().texts.at(-1)');assert.equal(table.measurementTable.acquisitionId,'roi-test');
+ assert.equal(table.measurementTable.rows.find(r=>r.detector===1).total,expected[0].total);
+ assert(table.w<=1200&&table.h>0,'Table fits the printable page');
+ assert.equal($('flex-text-remove').textContent,'Quitar tabla');assert($('flex-text-edit').disabled);
+ assert(w.eval('projectPages().at(-1).texts.at(-1).measurementTable'),'Project contains the serializable table');
+ w.eval('drawFlexible(document.createElement("canvas"),true)');
+ const snapshot=JSON.stringify(table.measurementTable);
+ tabs[1].click();$('roiReset').click();assert.equal(JSON.stringify(table.measurementTable),snapshot,'Later ROI edits preserve inserted measurements');
+ w.openFlexible();$('flex-add-measurements').click();$('flex-measurements-cancel').click();assert(!$('flex-measurements-dialog').open);
  const R=w.GANTRY_ROI,image=new w.Float64Array(16).fill(1),ellipse={shape:'ellipse',mode:'keep',x0:0,y0:0,x1:4,y1:4};
  const kept=R.apply(image,4,4,[ellipse]);assert.equal(kept.removed,4);assert.equal(kept.counts[0],0);assert.equal(kept.counts[5],1);assert.equal(image[0],1);
  assert.equal(kept.min,1,'Artificial zeros outside a keep mask are excluded from window statistics');assert.equal(kept.max,1);assert.equal(kept.visiblePixels,12);
