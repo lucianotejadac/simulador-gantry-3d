@@ -109,7 +109,13 @@
           if(!['static','whole','dynamic'].includes(d.kind))throw Error('Tipo de adquisición no válido.');
           if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de preparar otra.');
           if(d.kind==='dynamic'&&window.GANTRY_RF?.selected!=='bone3')window.GANTRY_RF?.select('bone3');
-          post({type:'GANTRY_ACQUIRE_CONFIG',request:d.request,config:defaults(d.kind)});
+          // A new static acquisition intentionally selects its default zoom.
+          // Commit it to live too, after releasing any finished acquisition override.
+          // Merely revisiting a saved or pending tile never enters this branch.
+          if(d.kind==='static')restoreLiveCamera();
+          const config=defaults(d.kind);
+          if(d.kind==='static')applyCamera(config,'zoom');
+          post({type:'GANTRY_ACQUIRE_CONFIG',request:d.request,config});
         }else if(d.type==='GANTRY_ACQUIRE_POSITION'){
           const p=positionState();
           if(p.locked)throw Error('Finaliza la adquisición o reinicia el examen antes de cambiar la posición declarada.');

@@ -79,8 +79,12 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  w.GANTRY_EXAM.blocked=true;await send({type:'GANTRY_ACQUIRE_START',config:base});assert.equal(calls.length,0);assert.match(messages.at(-1).error,/colisión/);w.GANTRY_EXAM.blocked=false;
  await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'whole'});assert.equal(messages.at(-1).config.kind,'whole');assert.equal(messages.at(-1).config.activityMci,20);
  live.settings.study='exploration';
+ const beforeStatic={...live.settings};
  await send({type:'GANTRY_ACQUIRE_CONFIG',kind:'static'});
  assert.equal(messages.at(-1).config.zoom,1.75,'New static acquisition starts at 1.75x');
+ assert.equal(live.settings.zoom,1.75,'The default static zoom must immediately appear in the live image');
+ assert.deepEqual(live.settings,{...beforeStatic,zoom:1.75},'Preparing static changes only zoom');
+ manual.zoom=1.75;
  for(const key of ['matrix','collimator','energyCenter','windowWidth'])assert.equal(messages.at(-1).config[key],live.settings[key],'New acquisition inherits the live camera even when switching study: '+key);
  assert.equal(messages.at(-1).config.energyCenter,180,'Do not silently replace an off-peak energy by 140 keV');
 
