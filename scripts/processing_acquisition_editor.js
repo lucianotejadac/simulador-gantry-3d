@@ -187,6 +187,7 @@
     const info=recorded();if(!info)return;
     const s=info.processing?.first?.settings||info.settings||{},a=info.acquisition||{},m=info.mdp?.start||info.administration;
     const config={study:info.study||s.study||'bone',kind:a.kind||currentMode,matrix:dataset.uint16('x00280011'),zoom:s.zoom,collimator:s.collimator,
+      patient:info.patient,
       energyCenter:s.energyCenter,windowWidth:s.windowWidth,activityMci:m?m.activityMBq/37:null,minutes:m?m.seconds/60:null,
       mode:a.mode,target:a.target,velocity:info.scan?.velocity,contours:info.scan?.contours,
       names:a.names||['Detector 1','Detector 2'],phases:info.dynamic?.phases,
@@ -237,7 +238,7 @@
   function renderFields(config,locked=false){
     const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
     if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
-    $('patient').append(field('Paciente','Fantoma ICRP 145 · SIMULADO'),field('Estudio',window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
+    $('patient').append(field('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO'),field('Estudio',window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
       input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
@@ -376,6 +377,7 @@
     const d=event.data;
     if(d.type==='GANTRY_ADMINISTRATION_ERROR')status(d.error,'error');
     if(d.type==='GANTRY_ADMINISTRATION_STATE'&&draft&&!draft.id){
+      if(d.patient){draft.config.patient=d.patient;const patient=$('patient').querySelector('input');if(patient)patient.value=d.patient.name;}
       for(const key of ['activityMci','minutes']){
         const node=inputs.get(key);
         if(node&&document.activeElement!==node&&Number.isFinite(d[key])){node.value=String(d[key]);draft.config[key]=d[key];}

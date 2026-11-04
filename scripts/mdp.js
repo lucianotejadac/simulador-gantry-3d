@@ -15,6 +15,21 @@
     reference:'assets/physics/mdp-temporal-calibration.json'});
   const smooth=(s,a,b)=>{const u=Math.max(0,Math.min(1,(s-a)/(b-a)));return u*u*(3-2*u);};
   const backgroundEligible=new WeakSet(),backgroundBones=new WeakMap();
+  let caseAtlas=null,caseLoading=null;
+  async function loadCase(){
+    if(caseAtlas)return caseAtlas;
+    if(!caseLoading)caseLoading=(async()=>{
+      const d=window.GANTRY_BONE_CASE_DATA;
+      const response=await (window.GANTRY_ASSETS?.fetch||fetch)(d.url);
+      if(!response.ok)throw Error('No se pudo cargar Caso óseo');
+      const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
+      const values=new Uint16Array(buffer),n=d.width*d.height;
+      if(values.length!==3*d.angles.length*n)throw Error('Caso óseo incompleto');
+      caseAtlas=d.scales.map((scale,c)=>({...d,scale,window:1,frames:d.angles.map((_,a)=>values.subarray((c*d.angles.length+a)*n,(c*d.angles.length+a+1)*n))}));
+      return caseAtlas;
+    })().catch(error=>{caseLoading=null;throw error;});
+    return caseLoading;
+  }
   function neededChunks(name,angles){
     const d=data.poses[name].nativeBone;if(!d)return [];
     return [...new Set(angles.flatMap(a=>[Math.floor(wrap(a)),(Math.floor(wrap(a))+1)%360]).map(a=>Math.floor(a/d.chunkSize)))];
@@ -130,7 +145,8 @@
     const oldAngles=pose.angles,angle=(oldAngles[pair.lo]+(((oldAngles[pair.hi]-oldAngles[pair.lo])+360)%360)*pair.mix)%360;
     const ratio=(pose.pixelMm||3)/data.pixelMm;
     const mapped={x:data.width/2+(crop.x-pose.width/2)*ratio,y:data.headRow+(crop.y-pose.headRow)*ratio,w:crop.w*ratio,h:crop.h*ratio};
-    const key=JSON.stringify([name,angle,mapped,w,h,flipX,flipY,metrics,sigma]);
+    const patientCase=window.GANTRY_PATIENT?.id==='caso-oseo';
+    const key=JSON.stringify([patientCase,name,angle,mapped,w,h,flipX,flipY,metrics,sigma]);
     if(cache.key!==key){
       // Late MDP has no focal vascular activity. Project only the components
       // requested by the kinetics, retaining lazy access for clock rewinds,
@@ -159,7 +175,15 @@
         const response=p.nativeSampling?depthResponse(p,angular,local,spatialMetrics):spatialMetrics;
         if(c===0)cache.projectionResponse=response;
         Object.defineProperty(bases,c,{enumerable:true,configurable:true,get(){
-        const value=window.GANTRY_ICRP.field(source,pair,local,w,h,flipX,flipY,response,sigma).values;
+        let value=window.GANTRY_ICRP.field(source,pair,local,w,h,flipX,flipY,response,sigma).values;
+        const fraction=patientCase?window.GANTRY_BONE_CASE_DATA.redistribution[c]:0;
+        if(fraction){
+          if(!caseAtlas)throw Error('Preparando Caso óseo');
+          const lesion=caseAtlas[c===0?0:c===7?2:1],pos=angle*lesion.angles.length/360,lo=Math.floor(pos);
+          const focus=window.GANTRY_ICRP.field(lesion,{lo,hi:(lo+1)%lesion.angles.length,mix:pos-lo},mapped,w,h,flipX,flipY,spatialMetrics,sigma).values;
+          // Redistribute before detector response; never normalize a cropped view.
+          value=Float32Array.from(value,(v,i)=>v*(1-fraction)+focus[i]*fraction);
+        }
         Object.defineProperty(bases,c,{value,enumerable:true,configurable:true});
         return value;
       }});});
@@ -222,7 +246,7 @@
     if(state.seconds>=LIMIT&&!session.finished){session.finished=true;session.mdpLimit=true;}
   }
   const el=id=>document.getElementById(id);
-  function metadata(){return {...state,scatterAppearance:{...scatterAppearance},backgroundAppearance:{...backgroundAppearance,transitionMinutes:[...backgroundAppearance.transitionMinutes]},vascularAppearance:{...vascularAppearance},vascularPhantom:data.vascularModel?.model||null,model:'mdp-v3-triphase',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
+  function metadata(){return {...state,patient:window.GANTRY_PATIENT?.metadata?.()||null,scatterAppearance:{...scatterAppearance},backgroundAppearance:{...backgroundAppearance,transitionMinutes:[...backgroundAppearance.transitionMinutes]},vascularAppearance:{...vascularAppearance},vascularPhantom:data.vascularModel?.model||null,model:'mdp-v3-triphase',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
   function render(){
     if(!el('mdpControls'))return;
     const active=window.GANTRY_LIVE?.settings.study==='bone',locked=active&&window.GANTRY_BONE_ACQ?.active;
@@ -264,7 +288,7 @@
     if(el('mdpActivity'))el('mdpActivity').value=+(activityMBq/(el('mdpUnit').value==='mCi'?37:1)).toFixed(3);
     refresh();return true;
   }
-  window.GANTRY_MDP={load,geometry,field,mix,fractions,advance,step,render,metadata,configure,ensureAngles,hasAngles,hasPose:name=>!!poses[name],
+  window.GANTRY_MDP={load,loadCase,geometry,field,mix,fractions,advance,step,render,metadata,configure,ensureAngles,hasAngles,hasPose:name=>!!poses[name],
     get rate(){return state.activityMBq*SENSITIVITY;},get seconds(){return state.seconds;},
     begin(){state.playing=false;return metadata();},get remaining(){return LIMIT-state.seconds;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

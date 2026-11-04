@@ -51,6 +51,7 @@
       const data=new Uint8Array(head.counts.length*bits/8),view=new DataView(data.buffer);
       head.counts.forEach((n,i)=>bits===16?view.setUint16(i*2,n,true):view.setUint32(i*4,n,true));
       const info={simulation:true,study:record.study,recordId:record.id,detector:j+1,total:head.total,elapsed:head.elapsed,
+        patient:record.patient||null,
         heads:record.heads.map(h=>({detector:h.detector,elapsed:h.elapsed,total:h.total,done:h.done})),
         acquisition:{kind:record.kind||'static',mode:record.mode,target:record.target,names:record.names},
         ...(dynamic?{dynamic:{phases:dynamic.phases,timings:dynamic.frames.flatMap(f=>[1,2].map(detector=>({detector,phase:f.phase,index:f.index,start:f.start,end:f.end,partial:!!f.partial})))}}:{}),
@@ -61,8 +62,8 @@
         ['00080016','UI',sop],['00080018','UI',sopUID],['00080020','DA',date],['00080030','TM',time],['00080022','DA',date],['00080032','TM',time],['00080201','SH','+0000'],['00080050','SH',''],
         ['00080060','CS','NM'],['00080070','LO','Gantry educativo'],['00080080','LO','Simulación docente'],['00080090','PN',''],
         ['00081030','LO',(window.GANTRY_PROCESSING_CONFIG?.programs?.[record.study]||record.study)+' SIMULADO ICRP 145'],['0008103e','LO',description.slice(0,64)],
-        ['00100010','PN','FANTOMA^ICRP145^SIMULADO'],['00100020','LO','GANTRY-ICRP145-SIM'],['00100030','DA',''],['00100040','CS',''],
-        ['00111010','UT',JSON.stringify(info)],['00110010','LO','GANTRY_SIMULATION'],
+        ['00100010','PN',record.patient?.name||'FANTOMA^ICRP145^SIMULADO'],['00100020','LO',record.patient?.id||'GANTRY-ICRP145-SIM'],['00100030','DA',''],['00100040','CS',''],
+        ['00111010','UT',JSON.stringify(info).replace(/[^\x00-\x7f]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'))],['00110010','LO','GANTRY_SIMULATION'],
         ['00181020','LO','Gantry processing 1'],['00181242','IS',Math.round(head.elapsed*1000)],
         ['0020000d','UI',studyUID],['0020000e','UI',seriesUID],['00200010','SH','SIMULATED'],['00200011','IS','1'],['00200013','IS',j+1],
         ['00204000','LT','SIMULADO; '+orientation+'; '+head.total+' cuentas; '+(mdp?(mdp.activityMBq/37).toFixed(2)+' mCi; inyección-examen '+(mdp.seconds/60).toFixed(2)+' min; ':'')+(record.processing?.varied?'Parámetros variables durante la adquisición. ':'')+(!head.done?'Adquisición detenida antes de la meta. ':'')+(bits===32?'SOP privado docente de 32 bits; no es NM estándar.':'')],

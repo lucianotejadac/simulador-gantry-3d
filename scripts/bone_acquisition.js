@@ -417,6 +417,7 @@
     }else try{session=new Acquisition(window.GANTRY_LIVE.settings.matrix,mode,target);}
     catch(error){el('boneAcqSetupError').textContent=mode==='counts'?'Introduce entre 1 y 160.000.000 cuentas enteras.':'Introduce entre 1 y 57.600 segundos enteros.';return;}
     session.study=study;
+    session.patient=window.GANTRY_PATIENT?.metadata();
     clearScanDebt();lastScanRender=-Infinity;
     session.id=window.crypto?.randomUUID?.()||'acq-'+Date.now()+'-'+Math.random().toString(36).slice(2);session.createdAt=Date.now();
     session.administeredActivity=window.GANTRY_ACTIVITY?.metadata(study)||null;

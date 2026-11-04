@@ -3,6 +3,7 @@
   'use strict';
   function snapshot(session,names,settings,now=Date.now(),id=crypto.randomUUID()){
     return {version:1,id,createdAt:now,n:session.n,height:session.height||session.n,kind:session.kind||'static',mode:session.mode,target:session.target,
+      ...(session.patient?{patient:structuredClone(session.patient)}:{}),
       study:session.study||settings.study||'bone',finished:session.finished,names:names.slice(),settings:structuredClone({...settings,...(session.administeredActivity?{administeredActivity:session.administeredActivity}:{})}),
       ...(session.administeredActivity?{administeredActivity:structuredClone(session.administeredActivity)}:{}),
       ...(session.processing?{processing:structuredClone(session.processing)}:{}),

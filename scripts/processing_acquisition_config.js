@@ -38,12 +38,13 @@
     if(!['auto','fixed'].includes(c.contours))throw Error('Modo de contornos no válido.');
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());
+    if(value.patient&&['phantom','caso-oseo'].includes(value.patient.id))c.patient={id:value.patient.id,name:value.patient.id==='caso-oseo'?'Caso óseo':'Fantoma ICRP 145 · SIMULADO'};
     return c;
   }
   function fromRecord(r){
     const s=r.processing?.first?.settings||r.settings||{},m=r.mdp?.start||r.mibi?.start||r.administeredActivity;
     return validate({study:r.study||s.study||'bone',kind:r.kind||'static',matrix:r.n,zoom:s.zoom,collimator:s.collimator,energyCenter:s.energyCenter,windowWidth:s.windowWidth,
-      activityMci:m?.activityMBq/37,minutes:m?.seconds/60,mode:r.mode,target:r.target,
+      patient:r.patient,activityMci:m?.activityMBq/37,minutes:m?.seconds/60,mode:r.mode,target:r.target,
       velocity:r.scan?.velocity||10,contours:r.scan?.contours||'auto',names:r.names,phases:r.dynamic?.phases});
   }
   function phases(list,n){

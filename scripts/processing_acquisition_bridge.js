@@ -31,7 +31,7 @@
     function defaults(kind){
       const s=live().settings,mdp=(window.GANTRY_RF?.metadata?.()||window.GANTRY_MDP.metadata());
       return {study:Object.hasOwn(window.GANTRY_PROCESSING_CONFIG.programs,s.study)?s.study:'bone',kind,matrix:kind==='whole'?Math.max(128,Math.min(256,s.matrix)):s.matrix,zoom:kind==='static'?1.75:s.zoom,collimator:s.collimator,energyCenter:s.energyCenter,windowWidth:s.windowWidth,
-        activityMci:mdp.activityMBq/37,minutes:mdp.seconds/60,mode:'counts',target:400000,
+        patient:window.GANTRY_PATIENT?.metadata(),activityMci:mdp.activityMBq/37,minutes:mdp.seconds/60,mode:'counts',target:400000,
         velocity:10,contours:el('boneAcqContours')?.value||'auto',names:['Detector 1','Detector 2'],phases:[{frames:60,seconds:1}],
         position:positionState(),geometry:el('g3dHud').textContent.trim()};
     }
@@ -50,6 +50,7 @@
     }
     async function start(raw,instant){
       const c=window.GANTRY_PROCESSING_CONFIG.validate(raw);
+      c.patient=window.GANTRY_PATIENT?.metadata();
       if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de iniciar otra.');
       if(window.GANTRY_EXAM?.blocked)throw Error('Examen cancelado por colisión. Libera el contacto y reinicia desde el gantry.');
       if(window.GANTRY_AUTO?.busy)throw Error('Espera a que termine el posicionamiento automático.');
@@ -135,7 +136,7 @@
     setInterval(()=>{
       restoreLiveCamera();
       if(!window.GANTRY_PROCESSING.active||sending)return;
-      const m=(window.GANTRY_RF?.metadata?.()||window.GANTRY_MDP.metadata()),administration={activityMci:m.activityMBq/37,minutes:m.seconds/60};
+      const m=(window.GANTRY_RF?.metadata?.()||window.GANTRY_MDP.metadata()),administration={patient:window.GANTRY_PATIENT?.metadata(),activityMci:m.activityMBq/37,minutes:m.seconds/60};
       const administrationKey=JSON.stringify(administration);
       if(administrationKey!==lastAdministration){lastAdministration=administrationKey;post({type:'GANTRY_ADMINISTRATION_STATE',...administration});}
       const position=positionState(),signature=JSON.stringify(position);
