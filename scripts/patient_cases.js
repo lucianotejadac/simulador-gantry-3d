@@ -32,6 +32,7 @@
     panel.innerHTML='<label>Paciente <select id="gantryPatient" aria-label="Paciente"><option value="phantom">Fantoma ICRP 145</option><option value="caso-oseo">Caso óseo</option><option value="caso-oseo-2">Caso óseo 2</option><option value="caso-oseo-3">Caso óseo 3 · Oncológico</option></select></label><span id="gantryPatientStatus" role="status" style="display:block;margin-top:4px"></span>';
     const administration=document.getElementById('rfPanel');
     if(administration)administration.prepend(panel);else host.before(panel);
+    window.GANTRY_PATIENT_RECORDS?.mountControls(panel);
     document.getElementById('gantryPatient').onchange=async event=>{try{await select(event.target.value);}catch(error){render();document.getElementById('gantryPatientStatus').textContent=error.message;}};
     setInterval(render,500);
   }
