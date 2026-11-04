@@ -18,6 +18,7 @@ vm.runInContext(fs.readFileSync('scripts/processing_acquisition_config.js','utf8
 const validate=w.GANTRY_PROCESSING_CONFIG.validate;
 assert.equal(validate(base).target,5);
 assert.equal(validate({...base,patient:{id:'caso-oseo-2'}}).patient.name,'Caso óseo 2');
+assert.equal(validate({...base,patient:{id:'caso-oseo-3'}}).patient.name,'Caso óseo 3');
 assert.equal(validate({...base,contours:'fixed'}).contours,'fixed');
 assert.equal(validate(base).contours,'auto');
 assert.throws(()=>validate({...base,contours:'invalid'}),/contornos/);

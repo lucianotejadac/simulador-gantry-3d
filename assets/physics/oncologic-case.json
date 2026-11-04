@@ -1,0 +1,264 @@
+{
+  "id": "caso-oseo-3",
+  "name": "Caso óseo 3",
+  "model": "osteoblastic-metastases-v1",
+  "diagnosis": "Synthetic prostate cancer with multifocal osteoblastic skeletal metastases",
+  "sources": [
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/",
+    "https://sites.snmmi.org/Web/Clinical-Practice/Procedure-Standards/Standards/Bone-Scintigraphy-4-0"
+  ],
+  "limitations": "Teaching distribution, not reconstructed patient data. Lesion sizes, sites and weights are illustrative. MDP uptake represents bone formation and is not specific to malignancy.",
+  "suggestedProtocol": {
+    "tracer": "99mTc-MDP",
+    "phase": "delayed",
+    "minutesAfterInjection": [
+      120,
+      240
+    ],
+    "acquisition": "whole-body with optional static/oblique views",
+    "requiresTriphasic": false
+  },
+  "width": 320,
+  "height": 768,
+  "pixelMm": 3,
+  "headRow": 168.98430999999997,
+  "angles": [
+    0,
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100,
+    110,
+    120,
+    130,
+    140,
+    150,
+    160,
+    170,
+    180,
+    190,
+    200,
+    210,
+    220,
+    230,
+    240,
+    250,
+    260,
+    270,
+    280,
+    290,
+    300,
+    310,
+    320,
+    330,
+    340,
+    350
+  ],
+  "poses": {
+    "down": {
+      "url": "assets/runtime/oncologic-case-down.1274ba5f9e535c5f.bin",
+      "scales": [
+        7.715025190367728e-08
+      ]
+    },
+    "up": {
+      "url": "assets/runtime/oncologic-case-up.4d7f15cb19eb4dc8.bin",
+      "scales": [
+        7.715025190367728e-08
+      ]
+    }
+  },
+  "components": [
+    "bone"
+  ],
+  "redistribution": [
+    0.065,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "lesions": [
+    {
+      "label": "Columna dorsal",
+      "organIds": [
+        4900,
+        5000
+      ],
+      "centerLpsMm": [
+        -5,
+        40,
+        465
+      ],
+      "sigmaMm": [
+        13,
+        12,
+        16
+      ],
+      "relativeWeight": 1.2,
+      "voxels": 631,
+      "centroidLpsMm": [
+        -3.999859999654731,
+        51.33342432362909,
+        464.5111363983267
+      ]
+    },
+    {
+      "label": "Columna lumbar",
+      "organIds": [
+        5100,
+        5200
+      ],
+      "centerLpsMm": [
+        0,
+        30,
+        240
+      ],
+      "sigmaMm": [
+        14,
+        13,
+        12
+      ],
+      "relativeWeight": 1.0,
+      "voxels": 1722,
+      "centroidLpsMm": [
+        -0.8866605314289684,
+        28.951956927716086,
+        240.37843774759594
+      ]
+    },
+    {
+      "label": "Sacro",
+      "organIds": [
+        5300,
+        5400
+      ],
+      "centerLpsMm": [
+        -15,
+        75,
+        100
+      ],
+      "sigmaMm": [
+        15,
+        12,
+        15
+      ],
+      "relativeWeight": 0.85,
+      "voxels": 1496,
+      "centroidLpsMm": [
+        -14.613400464803547,
+        79.52614824967915,
+        107.09195481671223
+      ]
+    },
+    {
+      "label": "Ilíaco izquierdo",
+      "organIds": [
+        4100,
+        4200
+      ],
+      "centerLpsMm": [
+        110,
+        35,
+        80
+      ],
+      "sigmaMm": [
+        17,
+        14,
+        19
+      ],
+      "relativeWeight": 1.4,
+      "voxels": 360,
+      "centroidLpsMm": [
+        88.0727622699589,
+        24.11958892667823,
+        73.15251250020543
+      ]
+    },
+    {
+      "label": "Fémur proximal derecho",
+      "organIds": [
+        2800,
+        2900,
+        3000
+      ],
+      "centerLpsMm": [
+        -105,
+        20,
+        -30
+      ],
+      "sigmaMm": [
+        12,
+        12,
+        20
+      ],
+      "relativeWeight": 0.75,
+      "voxels": 1087,
+      "centroidLpsMm": [
+        -115.62743120506437,
+        22.001892621358152,
+        -25.567093393445198
+      ]
+    },
+    {
+      "label": "Costilla derecha posterior",
+      "organIds": [
+        4300,
+        4400
+      ],
+      "centerLpsMm": [
+        -110,
+        60,
+        490
+      ],
+      "sigmaMm": [
+        15,
+        12,
+        8
+      ],
+      "relativeWeight": 0.55,
+      "voxels": 278,
+      "centroidLpsMm": [
+        -117.58855509580378,
+        63.03059951737884,
+        491.08560717827856
+      ]
+    },
+    {
+      "label": "Costilla izquierda lateral",
+      "organIds": [
+        4300,
+        4400
+      ],
+      "centerLpsMm": [
+        110,
+        -15,
+        365
+      ],
+      "sigmaMm": [
+        14,
+        14,
+        8
+      ],
+      "relativeWeight": 0.65,
+      "voxels": 98,
+      "centroidLpsMm": [
+        130.59447335440996,
+        -19.748884335324323,
+        365.6516041867166
+      ]
+    }
+  ],
+  "kinetics": "Same continuous bone-binding and physical decay as normal skeletal MDP; no added perfusion or blood-pool lesion component.",
+  "attenuation": "Same source distribution projected through the corresponding arms-down or arms-up attenuation volume.",
+  "nativeSampling": true
+}

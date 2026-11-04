@@ -19,6 +19,8 @@ with serve_site() as url,sync_playwright() as pw:
       Object.assign(GANTRY.G,{arms:'down',rot:0,tableZ:25,tableH:85,detDist1:45,detDist2:45});GANTRY.render();
       GANTRY_LIVE.setMatrix(128);GANTRY_LIVE.setZoom(1);GANTRY_LIVE.setEnergyCenter(140);GANTRY_LIVE.setWindowWidth(20);GANTRY_LIVE.setCollimator('LEHR');
     }""")
+    if CASE=='caso-oseo-3':
+        page.evaluate("()=>{GANTRY.G.tableZ=128;GANTRY.render();}")
     page.wait_for_function('GANTRY_BONE_ACQ.readyForProcessing',timeout=120000)
     page.evaluate("""()=>GANTRY_BONE_ACQ.startConfigured({kind:'static',mode:'time',target:10,velocity:10,names:['Detector 1','Detector 2']})""")
     blocked=page.evaluate("async()=>{try{await GANTRY_PATIENT.select('phantom');return false;}catch(e){return true;}}")
@@ -43,6 +45,14 @@ with serve_site() as url,sync_playwright() as pw:
     page.evaluate("()=>GANTRY_BONE_ACQ.controlFromProcessing('instant')")
     whole=page.evaluate("()=>{const r=GANTRY_BONE_ACQ.processingCurrent();return {patient:r.patient,kind:r.kind,finished:r.finished,total:r.heads[0].total}}")
     assert whole['kind']=='whole' and whole['finished'] and whole['total']>0 and whole['patient']['id']==CASE,whole
+    if CASE=='caso-oseo-3':
+        # A targeted oblique acquisition must work with raised arms as well.
+        page.evaluate("()=>{Object.assign(GANTRY.G,{arms:'up',rot:45,tableZ:128});GANTRY.render();}")
+        page.wait_for_function('GANTRY_BONE_ACQ.readyForProcessing',timeout=120000)
+        page.evaluate("()=>GANTRY_BONE_ACQ.startConfigured({kind:'static',mode:'time',target:10,velocity:10,names:['D1','D2']})")
+        page.evaluate("()=>GANTRY_BONE_ACQ.controlFromProcessing('instant')")
+        oblique=page.evaluate("()=>{const r=GANTRY_BONE_ACQ.processingCurrent();return {patient:r.patient,total:r.heads[0].total}}")
+        assert oblique['total']>0 and oblique['patient']['id']==CASE,oblique
     page.screenshot(path=str(ROOT.parent/('gantry-'+CASE+'.png')))
     assert not errors,errors
     print('OK: selector, acquired counts, immutable patient identity, blocked mid-acquisition switch.',record)

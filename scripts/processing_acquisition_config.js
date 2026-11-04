@@ -38,7 +38,7 @@
     if(!['auto','fixed'].includes(c.contours))throw Error('Modo de contornos no válido.');
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());
-    const patientNames={phantom:'Fantoma ICRP 145 · SIMULADO','caso-oseo':'Caso óseo','caso-oseo-2':'Caso óseo 2'};
+    const patientNames={phantom:'Fantoma ICRP 145 · SIMULADO','caso-oseo':'Caso óseo','caso-oseo-2':'Caso óseo 2','caso-oseo-3':'Caso óseo 3'};
     if(value.patient&&Object.hasOwn(patientNames,value.patient.id))c.patient={id:value.patient.id,name:patientNames[value.patient.id]};
     return c;
   }

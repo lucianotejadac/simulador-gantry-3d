@@ -17,7 +17,7 @@ function record(n=128,height=n,peak=50){
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'gantry-processing-')),checks=[];
  const wholeBody=[64,128,256,512].map(n=>({...record(n,4*n),sampling:{
    pixelMm:2.3975999355316*256/n,widthMm:2.3975999355316*256,heightMm:2.3975999355316*1024}}));
- for(const recordData of [{...record(64),patient:{id:'caso-oseo-2',name:'Caso óseo 2',model:'cellulitis-right-foot-v1'}},{...record(64),patient:{id:'caso-oseo',name:'Caso óseo',model:'case3-right-hindfoot-v1'}},record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000),...wholeBody]){
+ for(const recordData of [{...record(64),patient:{id:'caso-oseo-3',name:'Caso ?seo 3',model:'osteoblastic-metastases-v1'}},{...record(64),patient:{id:'caso-oseo-2',name:'Caso óseo 2',model:'cellulitis-right-foot-v1'}},{...record(64),patient:{id:'caso-oseo',name:'Caso óseo',model:'case3-right-hindfoot-v1'}},record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000),...wholeBody]){
   const before=recordData.heads.map(h=>h.counts.slice()),files=await api.files(recordData,await api.uid('study'));
   const repeat=await api.files(recordData,await api.uid('study'));assert.equal(repeat[0].uid,files[0].uid);
   files.forEach((file,j)=>{

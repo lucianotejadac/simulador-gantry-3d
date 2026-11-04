@@ -16,18 +16,22 @@
   const smooth=(s,a,b)=>{const u=Math.max(0,Math.min(1,(s-a)/(b-a)));return u*u*(3-2*u);};
   const backgroundEligible=new WeakSet(),backgroundBones=new WeakMap();
   const caseAtlases=new Map(),caseLoads=new Map(),caseForBases=new WeakMap();
-  const caseData=id=>id==='caso-oseo'?window.GANTRY_BONE_CASE_DATA:id==='caso-oseo-2'?window.GANTRY_CELLULITIS_CASE_DATA:null;
+  const caseData=id=>id==='caso-oseo'?window.GANTRY_BONE_CASE_DATA:id==='caso-oseo-2'?window.GANTRY_CELLULITIS_CASE_DATA:id==='caso-oseo-3'?window.GANTRY_ONCOLOGIC_CASE_DATA:null;
+  const caseAtlasFor=(id,pose)=>{const atlas=caseAtlases.get(id);return Array.isArray(atlas)?atlas:atlas?.[pose];};
   async function loadCase(id='caso-oseo'){
     if(caseAtlases.has(id))return caseAtlases.get(id);
     if(!caseLoads.has(id))caseLoads.set(id,(async()=>{
       const d=caseData(id);
       if(!d)throw Error('Caso no disponible');
-      const response=await (window.GANTRY_ASSETS?.fetch||fetch)(d.url);
-      if(!response.ok)throw Error('No se pudo cargar Caso óseo');
-      const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
-      const values=new Uint16Array(buffer),n=d.width*d.height;
-      if(values.length!==d.components.length*d.angles.length*n)throw Error('Caso óseo incompleto');
-      const atlas=d.scales.map((scale,c)=>({...d,scale,window:1,frames:d.angles.map((_,a)=>values.subarray((c*d.angles.length+a)*n,(c*d.angles.length+a+1)*n))}));
+      async function decode(payload){
+        const response=await (window.GANTRY_ASSETS?.fetch||fetch)(payload.url);
+        if(!response.ok)throw Error('No se pudo cargar Caso óseo');
+        const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
+        const values=new Uint16Array(buffer),n=d.width*d.height;
+        if(values.length!==d.components.length*d.angles.length*n)throw Error('Caso óseo incompleto');
+        return payload.scales.map((scale,c)=>({...d,scale,window:1,frames:d.angles.map((_,a)=>values.subarray((c*d.angles.length+a)*n,(c*d.angles.length+a+1)*n))}));
+      }
+      const atlas=d.poses?Object.fromEntries(await Promise.all(Object.entries(d.poses).map(async([pose,payload])=>[pose,await decode(payload)]))):await decode(d);
       caseAtlases.set(id,atlas);return atlas;
     })().catch(error=>{caseLoads.delete(id);throw error;}));
     return caseLoads.get(id);
@@ -180,10 +184,13 @@
         let value=window.GANTRY_ICRP.field(source,pair,local,w,h,flipX,flipY,response,sigma).values;
         const fraction=patientData?.redistribution?.[c]||0;
         if(fraction){
-          const caseAtlas=caseAtlases.get(patientCase);
+          const caseAtlas=caseAtlasFor(patientCase,name);
           if(!caseAtlas)throw Error('Preparando Caso óseo');
           const lesion=caseAtlas[c===0?0:c===7?2:1],pos=angle*lesion.angles.length/360,lo=Math.floor(pos);
-          const focus=window.GANTRY_ICRP.field(lesion,{lo,hi:(lo+1)%lesion.angles.length,mix:pos-lo},mapped,w,h,flipX,flipY,spatialMetrics,sigma).values;
+          const ratio=(pose.pixelMm||3)/lesion.pixelMm;
+          const lesionCrop=Number.isFinite(lesion.headRow)?{x:lesion.width/2+(crop.x-pose.width/2)*ratio,
+            y:lesion.headRow+(crop.y-pose.headRow)*ratio,w:crop.w*ratio,h:crop.h*ratio}:mapped;
+          const focus=window.GANTRY_ICRP.field(lesion,{lo,hi:(lo+1)%lesion.angles.length,mix:pos-lo},lesionCrop,w,h,flipX,flipY,patientData.poses?response:spatialMetrics,sigma).values;
           // Redistribute before detector response; never normalize a cropped view.
           value=Float32Array.from(value,(v,i)=>v*(1-fraction)+focus[i]*fraction);
         }
