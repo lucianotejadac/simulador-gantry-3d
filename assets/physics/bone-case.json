@@ -45,11 +45,11 @@
     340,
     350
   ],
-  "url": "assets/runtime/bone-case.480df6cfa8f19c17.bin",
+  "url": "assets/runtime/bone-case.93e6cb4811f45a8e.bin",
   "scales": [
-    3.055290846987191e-07,
-    1.18062246201589e-07,
-    9.575312276410841e-08
+    2.983349531859858e-07,
+    1.1841477487450902e-07,
+    9.608517359538382e-08
   ],
   "components": [
     "bone",
@@ -73,5 +73,24 @@
   ],
   "voxelMm": 3,
   "side": "right",
-  "region": "ankle/hindfoot"
+  "region": "ankle/hindfoot",
+  "footPosture": {
+    "model": "supine-external-feet-v1",
+    "externalRotationDegrees": 35,
+    "fullRotationBelowMm": 120,
+    "transitionEndMm": 336,
+    "ankleCentersYX": [
+      [
+        70,
+        136
+      ],
+      [
+        70,
+        182
+      ]
+    ],
+    "voxelMm": 3,
+    "reference": "Case 3, pages 7–9, Mesa_Redonda_1_Musculoesqueletico_2026.pptx.pdf",
+    "limitation": "Illustrative resting posture; angle inferred visually, not measured patient geometry."
+  }
 }

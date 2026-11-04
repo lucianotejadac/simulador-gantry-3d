@@ -225,6 +225,25 @@
   "source": "ICRP 145 · MAG3 basal · 20 min",
   "reference": "https://radiopaedia.org/cases/normal-captopril-renal-mag3-nuclear-study",
   "sha256_basal": "3f6ea052722c563d2c134da30952168c94f87d74bfd63535d4c20377b3d4e888",
+  "footPosture": {
+    "model": "supine-external-feet-v1",
+    "externalRotationDegrees": 35,
+    "fullRotationBelowMm": 120,
+    "transitionEndMm": 336,
+    "ankleCentersYX": [
+      [
+        70,
+        136
+      ],
+      [
+        70,
+        182
+      ]
+    ],
+    "voxelMm": 3,
+    "reference": "Case 3, pages 7–9, Mesa_Redonda_1_Musculoesqueletico_2026.pptx.pdf",
+    "limitation": "Illustrative resting posture; angle inferred visually, not measured patient geometry."
+  },
   "method": "Organ projections at 10 degrees, interpolated linearly, 6 mm grid and 9 mm PSF; two arm poses. Basal cumulative kinetics integrated at 0.25 s. Full detector counts; no renal mask.",
   "arterial_anatomy": {
     "labels": [

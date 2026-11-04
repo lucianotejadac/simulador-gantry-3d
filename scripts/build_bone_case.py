@@ -8,6 +8,7 @@ from pathlib import Path
 import sys, json, zlib, hashlib
 import numpy as np
 from numba import set_num_threads
+from resting_feet import relax, MODEL as FOOT_MODEL
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT.parent/'icrp145-multitrazador-ap-pa'))
@@ -28,9 +29,11 @@ def main():
     arterial = focus((38,70,73),(24,13,10))
     mu = np.zeros((80,104,320),np.float32)
     mu[:,:,63:256] = v['mu'][:80]
+    mu=relax(mu)
     groups=[]
     for label,raw in zip(['bone','pool','perfusion'],[bone,pool,arterial]):
         a=np.zeros_like(mu); a[:,:,63:256]=raw/raw.sum()
+        a=relax(a,conserve=True)
         frames=[]
         for angle in range(0,360,10):
             # Project only the lower 24 cm: no other z slice contributes to
@@ -50,7 +53,7 @@ def main():
         limitations='Illustrative ICRP lesion, not reconstructed patient anatomy. Dimensions, uptake fractions and timing are assumptions; PDF has no quantitative calibration.',
         width=160,height=384,pixelMm=6,angles=list(range(0,360,10)),url=url,scales=scales.tolist(),
         components=['bone','pool','perfusion'],redistribution=[.04,.006,.012,0,0,0,0,.025],
-        voxelCenterZYX=[25,70,73],voxelMm=3,side='right',region='ankle/hindfoot')
+        voxelCenterZYX=[25,70,73],voxelMm=3,side='right',region='ankle/hindfoot',footPosture=FOOT_MODEL)
     (ROOT/'assets/physics/bone-case.json').write_text(json.dumps(meta,ensure_ascii=False,indent=2),encoding='utf-8')
 
 if __name__=='__main__': main()

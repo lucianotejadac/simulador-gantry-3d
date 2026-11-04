@@ -9,6 +9,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from numba import set_num_threads
 from bone_emission import bone_emission, PARAMETERS
+from resting_feet import relax, MODEL as FOOT_MODEL
 from build_mdp_vascular import main as rebuild_vascular
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,14 +41,14 @@ def main():
             r, m = vol['reg'], vol['mu']
             v = np.zeros((750,104,320),np.float32)
             v[:,:,:319] = bone_emission(r)
-            a = coarse(v)
+            a = coarse(relax(v,conserve=True))
             v.fill(0); v[:,:,:319] = m
         else:
             v = np.zeros((750,104,320),np.float32)
             v[:594,:,63:256] = bone_emission(reg)
-            a = coarse(v)
+            a = coarse(relax(v,conserve=True))
             v.fill(0); v[:594,:,63:256] = mu
-        attenuation = coarse(v)/8*2  # projector's 3 mm step, volume now 6 mm
+        attenuation = coarse(relax(v))/8*2  # projector's 3 mm step, volume now 6 mm
         bone = []
         for angle in meta['angles']:
             bone.append(gaussian_filter(project(a,attenuation,np.deg2rad(angle),160,384)/.3,6/2.35482/6))
@@ -68,6 +69,7 @@ def main():
             meta['poses'][pose][group] = {'url':name,'scales':scales.tolist()}
             print(pose, group, len(raw), 'bytes', flush=True)
     meta['sensitivityCpsPerMBq'] = 100
+    meta['footPosture']=FOOT_MODEL
     meta['halfLifeMinutes'] = 6.0067*60
     meta['sources'] = [
         'https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3c91d0d8-6cc5-834c-bda0-aa83a873b9fb',

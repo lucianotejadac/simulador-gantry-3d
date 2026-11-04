@@ -7,6 +7,7 @@ import sys,json,zlib,hashlib,time,argparse
 import numpy as np
 from numba import set_num_threads
 from bone_emission import bone_emission, PARAMETERS
+from resting_feet import relax, MODEL as FOOT_MODEL
 ROOT=Path(__file__).resolve().parents[1];WORK=ROOT.parent
 sys.path.insert(0,str(WORK/'icrp145-multitrazador-ap-pa'))
 from generar_mibi_360 import project
@@ -27,7 +28,7 @@ def volume(pose):
         reg[cortical]=2;reg[marrow]=4;m[cortical]=.2732992;m[marrow]=.1537*.981
         activity=np.zeros((750,104,320),np.float32);mu=np.zeros_like(activity)
         activity[:594,:,63:256]=bone_emission(reg);mu[:594,:,63:256]=m
-    return activity,mu
+    return relax(activity,conserve=True),relax(mu)
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--pose',choices=['down','up','both'],default='both')
@@ -54,6 +55,7 @@ def main():
             'cameraPsfBakedMm':0,'emissionModel':PARAMETERS,'anatomicalVoxelMm':3}
         print(pose,'complete',sum(c['bytes'] for c in chunks),'compressed bytes',flush=True)
     meta['nativeBoneModel']='native-volume-3mm-no-camera-psf-v1'
+    meta['footPosture']=FOOT_MODEL
     meta['limitations']+=' Native skeletal projections regenerated directly at 3 mm without the previous 6 mm downsampling or baked 6 mm camera PSF. Organ backgrounds remain 6 mm. Camera response applied at runtime; no submillimetre anatomy is claimed.'
     meta['nativeGeneratorHash']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     (ROOT/'assets/icrp145/mdp-provenance.json').write_text(json.dumps(meta,indent=2)+'\n',encoding='utf-8')

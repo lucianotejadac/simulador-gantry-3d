@@ -5,6 +5,7 @@ import numpy as np
 from scipy.ndimage import affine_transform, gaussian_filter
 from scipy.spatial.transform import Rotation
 from mag3_arterial import COMPONENTS, first_pass, vascular_labels
+from resting_feet import relax, MODEL as FOOT_MODEL
 
 ROOT=Path(__file__).resolve().parents[1];WORK=ROOT.parent
 sys.path.insert(0,str(WORK/'icrp145-multitrazador-ap-pa'))
@@ -56,10 +57,10 @@ def volume(weights,pose):
                         assert (idx>=0).all() and (idx<np.array(shape)).all()
                         np.add.at(v,tuple(idx.T),values*w)
     assert abs(v.sum(dtype=float)-1)<1e-5
-    return coarse(v)
+    return coarse(relax(v,conserve=True))
 mus={}
-v=np.zeros(shape,np.float32);v[central]=mu_down;mus['down']=coarse(v)/8*2
-v=np.zeros(shape,np.float32);v[:,:,:319]=mu_up;mus['up']=coarse(v)/8*2
+v=np.zeros(shape,np.float32);v[central]=mu_down;mus['down']=coarse(relax(v))/8*2
+v=np.zeros(shape,np.float32);v[:,:,:319]=mu_up;mus['up']=coarse(relax(v))/8*2
 ids=[[8900,9000],[9100],[9200,9300],[9400],[13500],[13600],[13800],None,None,[9500],None,None,None,None,None]
 angles=list(range(0,360,10));packed={};scales={}
 for pose in ['down','up']:
@@ -102,6 +103,7 @@ payload={'width':160,'height':384,'pixelMm':6,'angles':angles,'scales':scales,'p
     'source':'ICRP 145 · MAG3 basal · 20 min','reference':'https://radiopaedia.org/cases/normal-captopril-renal-mag3-nuclear-study'}
 meta={k:v for k,v in payload.items() if k not in ['packed','integral']}
 meta['sha256_basal']=hashlib.sha256((SOURCE/'basal/dinamica.npz').read_bytes()).hexdigest()
+meta['footPosture']=FOOT_MODEL
 meta['method']='Organ projections at 10 degrees, interpolated linearly, 6 mm grid and 9 mm PSF; two arm poses. Basal cumulative kinetics integrated at 0.25 s. Full detector counts; no renal mask.'
 meta['arterial_anatomy']={'labels':[900,1000,1010,1100,1200,8800,9700,9900],'trunk_split_z_mm':arterial_split_z,
     'sha256_vascular_cache':hashlib.sha256((SOURCE/'vasos_3mm.npz').read_bytes()).hexdigest(),
