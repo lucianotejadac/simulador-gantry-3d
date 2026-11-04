@@ -5,7 +5,9 @@
   function predict(fields,{mode,target,rate,model=null,start=0,limit=Infinity,weights=null}){
     if(!['time','counts'].includes(mode)||!Number.isFinite(target)||(mode==='counts'&&!Number.isInteger(target))||target<=0||target>(mode==='time'?57600:160000000)||!Number.isFinite(rate)||rate<0)throw Error('Objetivo no válido');
     return fields.map(field=>{
-      const bases=model?field[model==='bone'?'mdpBases':'mibiBases']:[field.values];
+      const mdp=model==='bone'?window.GANTRY_MDP?.integration?.(field.mdpBases):null;
+      const bases=mdp?.bases||(model?field[model==='bone'?'mdpBases':'mibiBases']:[field.values]);
+      const temporalWeights=mdp?.weights||weights;
       if(!bases?.length)throw Error('Preparando bases del estudio');
       // Do not materialize absent late-MDP components merely to sum them.
       const sums=new Array(bases.length),sumAt=c=>sums[c]??(sums[c]=bases[c].reduce((a,v)=>a+v,0));
@@ -21,7 +23,7 @@
           const current=start+elapsed,quantum=current<60?1:5;
           const next=(Math.floor((current+1e-7)/quantum)+1)*quantum;
           let dt=Math.min(next-current,horizon-elapsed,mode==='time'?target-elapsed:Infinity);
-          const w=weights(current+dt/2),cps=rate*w.reduce((a,v,c)=>v?a+v*sumAt(c):a,0);
+          const w=temporalWeights(current+dt/2),cps=rate*w.reduce((a,v,c)=>v?a+v*sumAt(c):a,0);
           if(mode==='counts'&&cps>0)dt=Math.min(dt,(target-total)/cps);
           for(let c=0;c<coeff.length;c++)coeff[c]+=w[c]*rate*dt;
           total+=cps*dt;elapsed+=dt;
@@ -145,7 +147,7 @@
       el('finalPreviewStatus').textContent='Calculando imagen final…'+(display?' Se mantiene la última imagen.':'');
       timer=setTimeout(async()=>{
         try{
-          const options={mode,target,rate,model:model?study:null,start:m?.seconds||0,limit:model?(study==='bone'?10800:43200):Infinity,
+          const options={mode,target,rate,model:model?study:null,start:m?.seconds||0,limit:model?(study==='bone'?Infinity:43200):Infinity,
             weights:model?(s=>study==='bone'?model.fractions(s,m.voidAt120).weights:model.fractions(s,m.protocol,m.voidEvery120).weights):null};
           const expected=predict(fields,options),images=[];
           for(let j=0;j<expected.length;j++){const image=await sample(expected[j],noise*104729+j*7919,()=>current!==token||window.GANTRY_EXAM?.blocked);if(!image||current!==token||window.GANTRY_EXAM?.blocked)return;images.push(image);}

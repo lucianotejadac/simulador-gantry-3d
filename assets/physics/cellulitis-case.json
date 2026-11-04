@@ -1,0 +1,74 @@
+{
+  "id": "caso-oseo-2",
+  "name": "Caso óseo 2",
+  "model": "cellulitis-right-foot-v1",
+  "diagnosis": "Isolated cellulitis without added pathological bone uptake",
+  "sources": [
+    "https://epos.myesr.org/poster/esr/ecr2003/C-0773/imaging%20findings%20or%20procedure%20",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC4932135/"
+  ],
+  "limitations": "Illustrative ICRP soft-tissue lesion. Extent, fractions and clearance are teaching assumptions, not quantitative patient measurements.",
+  "width": 160,
+  "height": 384,
+  "pixelMm": 6,
+  "angles": [
+    0,
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100,
+    110,
+    120,
+    130,
+    140,
+    150,
+    160,
+    170,
+    180,
+    190,
+    200,
+    210,
+    220,
+    230,
+    240,
+    250,
+    260,
+    270,
+    280,
+    290,
+    300,
+    310,
+    320,
+    330,
+    340,
+    350
+  ],
+  "url": "assets/runtime/cellulitis-case.91e1ec2e83ea7fb0.bin",
+  "scales": [
+    1.2522519909907714e-07,
+    1.0965934649220799e-07
+  ],
+  "components": [
+    "pool",
+    "perfusion"
+  ],
+  "side": "right",
+  "region": "superficial foot/ankle",
+  "kinetics": {
+    "bloodFraction": 0.008,
+    "softFraction": 0.012,
+    "arterialFraction": 0.025,
+    "poolRiseSeconds": [
+      3,
+      40
+    ],
+    "washoutStartSeconds": 180,
+    "washoutTauSeconds": 900
+  }
+}

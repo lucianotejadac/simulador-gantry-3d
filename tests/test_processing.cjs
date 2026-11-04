@@ -17,7 +17,7 @@ function record(n=128,height=n,peak=50){
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'gantry-processing-')),checks=[];
  const wholeBody=[64,128,256,512].map(n=>({...record(n,4*n),sampling:{
    pixelMm:2.3975999355316*256/n,widthMm:2.3975999355316*256,heightMm:2.3975999355316*1024}}));
- for(const recordData of [{...record(64),patient:{id:'caso-oseo',name:'Caso óseo',model:'case3-right-hindfoot-v1'}},record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000),...wholeBody]){
+ for(const recordData of [{...record(64),patient:{id:'caso-oseo-2',name:'Caso óseo 2',model:'cellulitis-right-foot-v1'}},{...record(64),patient:{id:'caso-oseo',name:'Caso óseo',model:'case3-right-hindfoot-v1'}},record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000),...wholeBody]){
   const before=recordData.heads.map(h=>h.counts.slice()),files=await api.files(recordData,await api.uid('study'));
   const repeat=await api.files(recordData,await api.uid('study'));assert.equal(repeat[0].uid,files[0].uid);
   files.forEach((file,j)=>{
@@ -28,7 +28,7 @@ function record(n=128,height=n,peak=50){
    assert.equal(Number(ds.string('x00181242')),Math.round(recordData.heads[j].elapsed*1000));
    assert.equal(ds.string('x00080018'),file.uid);
    const metadata=JSON.parse(ds.string('x00111010'));
-   if(recordData.patient){assert.deepEqual(metadata.patient,recordData.patient);assert.equal(ds.string('x00100020'),'caso-oseo');}
+   if(recordData.patient){assert.deepEqual(metadata.patient,recordData.patient);assert.equal(ds.string('x00100020'),recordData.patient.id);}
    assert.equal(metadata.acquisition.mode,recordData.mode);assert.equal(metadata.acquisition.target,recordData.target);
    assert.deepEqual(metadata.heads,recordData.heads.map(h=>({detector:h.detector,elapsed:h.elapsed,total:h.total,done:h.done})));
    const v=new DataView(ds.byteArray.buffer,ds.byteArray.byteOffset+pixel.dataOffset,pixel.length);

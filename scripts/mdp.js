@@ -15,20 +15,22 @@
     reference:'assets/physics/mdp-temporal-calibration.json'});
   const smooth=(s,a,b)=>{const u=Math.max(0,Math.min(1,(s-a)/(b-a)));return u*u*(3-2*u);};
   const backgroundEligible=new WeakSet(),backgroundBones=new WeakMap();
-  let caseAtlas=null,caseLoading=null;
-  async function loadCase(){
-    if(caseAtlas)return caseAtlas;
-    if(!caseLoading)caseLoading=(async()=>{
-      const d=window.GANTRY_BONE_CASE_DATA;
+  const caseAtlases=new Map(),caseLoads=new Map(),caseForBases=new WeakMap();
+  const caseData=id=>id==='caso-oseo'?window.GANTRY_BONE_CASE_DATA:id==='caso-oseo-2'?window.GANTRY_CELLULITIS_CASE_DATA:null;
+  async function loadCase(id='caso-oseo'){
+    if(caseAtlases.has(id))return caseAtlases.get(id);
+    if(!caseLoads.has(id))caseLoads.set(id,(async()=>{
+      const d=caseData(id);
+      if(!d)throw Error('Caso no disponible');
       const response=await (window.GANTRY_ASSETS?.fetch||fetch)(d.url);
       if(!response.ok)throw Error('No se pudo cargar Caso óseo');
       const buffer=await new Response(response.body.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer();
       const values=new Uint16Array(buffer),n=d.width*d.height;
-      if(values.length!==3*d.angles.length*n)throw Error('Caso óseo incompleto');
-      caseAtlas=d.scales.map((scale,c)=>({...d,scale,window:1,frames:d.angles.map((_,a)=>values.subarray((c*d.angles.length+a)*n,(c*d.angles.length+a+1)*n))}));
-      return caseAtlas;
-    })().catch(error=>{caseLoading=null;throw error;});
-    return caseLoading;
+      if(values.length!==d.components.length*d.angles.length*n)throw Error('Caso óseo incompleto');
+      const atlas=d.scales.map((scale,c)=>({...d,scale,window:1,frames:d.angles.map((_,a)=>values.subarray((c*d.angles.length+a)*n,(c*d.angles.length+a+1)*n))}));
+      caseAtlases.set(id,atlas);return atlas;
+    })().catch(error=>{caseLoads.delete(id);throw error;}));
+    return caseLoads.get(id);
   }
   function neededChunks(name,angles){
     const d=data.poses[name].nativeBone;if(!d)return [];
@@ -145,7 +147,7 @@
     const oldAngles=pose.angles,angle=(oldAngles[pair.lo]+(((oldAngles[pair.hi]-oldAngles[pair.lo])+360)%360)*pair.mix)%360;
     const ratio=(pose.pixelMm||3)/data.pixelMm;
     const mapped={x:data.width/2+(crop.x-pose.width/2)*ratio,y:data.headRow+(crop.y-pose.headRow)*ratio,w:crop.w*ratio,h:crop.h*ratio};
-    const patientCase=window.GANTRY_PATIENT?.id==='caso-oseo';
+    const patientCase=window.GANTRY_PATIENT?.id||'phantom',patientData=caseData(patientCase);
     const key=JSON.stringify([patientCase,name,angle,mapped,w,h,flipX,flipY,metrics,sigma]);
     if(cache.key!==key){
       // Late MDP has no focal vascular activity. Project only the components
@@ -176,8 +178,9 @@
         if(c===0)cache.projectionResponse=response;
         Object.defineProperty(bases,c,{enumerable:true,configurable:true,get(){
         let value=window.GANTRY_ICRP.field(source,pair,local,w,h,flipX,flipY,response,sigma).values;
-        const fraction=patientCase?window.GANTRY_BONE_CASE_DATA.redistribution[c]:0;
+        const fraction=patientData?.redistribution?.[c]||0;
         if(fraction){
+          const caseAtlas=caseAtlases.get(patientCase);
           if(!caseAtlas)throw Error('Preparando Caso óseo');
           const lesion=caseAtlas[c===0?0:c===7?2:1],pos=angle*lesion.angles.length/360,lo=Math.floor(pos);
           const focus=window.GANTRY_ICRP.field(lesion,{lo,hi:(lo+1)%lesion.angles.length,mix:pos-lo},mapped,w,h,flipX,flipY,spatialMetrics,sigma).values;
@@ -187,6 +190,18 @@
         Object.defineProperty(bases,c,{value,enumerable:true,configurable:true});
         return value;
       }});});
+      if(patientCase==='caso-oseo-2'){
+        const atlas=caseAtlases.get(patientCase);
+        if(!atlas)throw Error('Preparando Caso óseo 2');
+        // Keep normal organ bases intact: late bone-to-background appearance
+        // must not reuse an inflamed soft-tissue field as a persistent bone focus.
+        atlas.forEach((lesion,c)=>Object.defineProperty(bases,8+c,{enumerable:true,configurable:true,get(){
+          const pos=angle*lesion.angles.length/360,lo=Math.floor(pos);
+          const value=window.GANTRY_ICRP.field(lesion,{lo,hi:(lo+1)%lesion.angles.length,mix:pos-lo},mapped,w,h,flipX,flipY,spatialMetrics,sigma).values;
+          Object.defineProperty(bases,8+c,{value,enumerable:true,configurable:true});return value;
+        }}));
+        caseForBases.set(bases,patientData);
+      }
       cache.key=key;cache.bases=bases;
       if(!metrics.uncollimated&&Number.isFinite(metrics.psfSigmaMm))backgroundEligible.add(bases);
       cache.result=null;
@@ -197,8 +212,50 @@
     cache.result.projectionResponse=cache.projectionResponse;
     return cache.result;
   }
+  function weightsFor(bases,seconds,voidAt120=state.voidAt120){
+    const weights=fractions(seconds,voidAt120).weights,d=caseForBases.get(bases);
+    if(d){
+      const k=d.kinetics;
+      const clearance=Math.exp(-Math.max(0,seconds-k.washoutStartSeconds)/k.washoutTauSeconds);
+      const pool=smooth(seconds,...k.poolRiseSeconds)*clearance;
+      const blood=weights[1]*k.bloodFraction*pool,soft=weights[2]*k.softFraction*pool;
+      const arterial=weights[7]*k.arterialFraction;
+      weights[1]-=blood;weights[2]-=soft;weights[7]-=arterial;
+      weights.push(blood+soft,arterial);
+    }
+    return weights;
+  }
+  function adjustedBoneFor(bases){
+    if(!backgroundBones.has(bases)){
+      const bone=bases[0],soft=bases[2];let boneSum=0,softSum=0;
+      for(let i=0;i<bone.length;i++){boneSum+=bone[i];softSum+=soft[i];}
+      if(softSum>0&&boneSum>0){
+        const alpha=backgroundAppearance.boneRedistributionFraction;
+        const adjusted=new Float32Array(bone.length),scale=alpha*boneSum/softSum;
+        for(let i=0;i<bone.length;i++)adjusted[i]=bone[i]*(1-alpha)+soft[i]*scale;
+        backgroundBones.set(bases,adjusted);
+      }else backgroundBones.set(bases,bone);
+    }
+    return backgroundBones.get(bases);
+  }
+  // Fixed spatial bases with time-dependent coefficients, shared with the
+  // analytical/instant acquisition path. Capture the case and voiding state.
+  function integration(bases,voidAt120=state.voidAt120){
+    if(!backgroundEligible.has(bases)&&!caseForBases.has(bases))return null;
+    const spatial=new Array(bases.length),background=backgroundEligible.has(bases);
+    for(let c=0;c<bases.length;c++)Object.defineProperty(spatial,c,{get:()=>bases[c]});
+    if(background)Object.defineProperty(spatial,bases.length,{get:()=>adjustedBoneFor(bases)});
+    return {bases:spatial,weights(seconds){
+      const weights=weightsFor(bases,seconds,voidAt120);
+      if(background){
+        const blend=smooth(seconds/60,...backgroundAppearance.transitionMinutes);
+        const late=weights[0]*blend;weights[0]-=late;weights.push(late);
+      }
+      return weights;
+    }};
+  }
   function mix(bases,seconds=state.seconds){
-    const weights=fractions(seconds,state.voidAt120).weights;
+    const weights=weightsFor(bases,seconds);
     const values=new Float32Array(bases[0].length),cdf=new Float64Array(values.length);
     // Visual tissue balance fitted at 120 min, not a change to organ activity.
     // Keep the first pass unchanged; introduce the late appearance smoothly.
@@ -207,19 +264,9 @@
     const blend=backgroundEligible.has(bases)?u*u*(3-2*u):0;
     let adjustedBone=null;
     if(blend>0&&weights[0]>0){
-      if(!backgroundBones.has(bases)){
-        const bone=bases[0],soft=bases[2];let boneSum=0,softSum=0;
-        for(let i=0;i<bone.length;i++){boneSum+=bone[i];softSum+=soft[i];}
-        if(softSum>0&&boneSum>0){
-          const alpha=backgroundAppearance.boneRedistributionFraction;
-          const adjusted=new Float32Array(bone.length),scale=alpha*boneSum/softSum;
-          for(let i=0;i<bone.length;i++)adjusted[i]=bone[i]*(1-alpha)+soft[i]*scale;
-          backgroundBones.set(bases,adjusted);
-        }else backgroundBones.set(bases,bone);
-      }
-      adjustedBone=backgroundBones.get(bases);
+      adjustedBone=adjustedBoneFor(bases);
     }
-    for(let c=0;c<8;c++)if(weights[c]>0){
+    for(let c=0;c<bases.length;c++)if(weights[c]>0){
       const base=c===0&&adjustedBone&&blend===1?adjustedBone:bases[c];
       if(c===0&&adjustedBone&&blend<1){
         for(let i=0;i<values.length;i++)values[i]+=(base[i]*(1-blend)+adjustedBone[i]*blend)*weights[c]*2000000;
@@ -288,7 +335,7 @@
     if(el('mdpActivity'))el('mdpActivity').value=+(activityMBq/(el('mdpUnit').value==='mCi'?37:1)).toFixed(3);
     refresh();return true;
   }
-  window.GANTRY_MDP={load,loadCase,geometry,field,mix,fractions,advance,step,render,metadata,configure,ensureAngles,hasAngles,hasPose:name=>!!poses[name],
+  window.GANTRY_MDP={load,loadCase,geometry,field,mix,integration,fractions,advance,step,render,metadata,configure,ensureAngles,hasAngles,hasPose:name=>!!poses[name],
     get rate(){return state.activityMBq*SENSITIVITY;},get seconds(){return state.seconds;},
     begin(){state.playing=false;return metadata();},get remaining(){return Infinity;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

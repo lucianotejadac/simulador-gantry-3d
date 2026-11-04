@@ -277,7 +277,7 @@
     });
     const flipX=physicalProne!==(settings.decubitus==='prone');
     const mdp=window.GANTRY_MDP;
-    const nextKey=JSON.stringify([G.arms,sizes,pairs,metrics,flipX,seconds,mdp?.metadata().voidAt120]);
+    const nextKey=JSON.stringify([G.arms,sizes,pairs,metrics,flipX,seconds,mdp?.metadata().voidAt120,window.GANTRY_PATIENT?.id]);
     if(nextKey!==key){
       cached={...size,fields:pairs.map((pair,i)=>{
         const size=sizes[i];
