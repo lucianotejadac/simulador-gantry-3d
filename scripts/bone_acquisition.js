@@ -462,7 +462,7 @@
           const head=session.heads[j];if(head.done){results.push(null);continue;}
           const target=session.target-(session.mode==='counts'?head.total:head.elapsed);
           const options={mode:session.mode,target,rate:currentRate,model:model?study:null,start:m?.seconds||0,
-            limit:model?(study==='bone'?10800:43200):Infinity,weights:model?(t=>study==='bone'?model.fractions(t,m.voidAt120).weights:model.fractions(t,m.protocol,m.voidEvery120).weights):null};
+            limit:model?(study==='bone'?Infinity:43200):Infinity,weights:model?(t=>study==='bone'?model.fractions(t,m.voidAt120).weights:model.fractions(t,m.protocol,m.voidEvery120).weights):null};
           const predicted=window.GANTRY_FINAL_PREVIEW.predict([snapshot[j]],options)[0];
           const result=await window.GANTRY_FINAL_PREVIEW.sample(predicted,Math.floor(Math.random()*2147483647),()=>!!window.GANTRY_EXAM?.blocked);
           if(!result||window.GANTRY_EXAM?.blocked)return;results.push(result);

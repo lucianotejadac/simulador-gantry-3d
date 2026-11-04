@@ -19,13 +19,13 @@ ui='''<!-- MDP_UI_BEGIN -->
           <style>.bone-signal-controls label[hidden],#mdpControls[hidden]{display:none!important}#mdpControls input[type=number]{background:#0e1820;color:#d6e6ef;border:1px solid #42586b;font:inherit;padding:3px}#mdpControls input[type=checkbox]{width:auto}</style>
           <div id="mdpControls" class="bone-signal-controls" hidden aria-label="Actividad y biodistribución del MDP">
             <label>ACTIVIDAD INYECTADA <input id="mdpActivity" type="number" min="0.1" max="54.054054" step="any" value="20" style="width:65px" aria-label="Actividad inyectada MDP"><select id="mdpUnit" class="live-study" aria-label="Unidad de actividad"><option>mCi</option><option>MBq</option></select></label>
-            <label>INYECCIÓN–EXAMEN <input id="mdpMinutes" type="number" min="0" max="180" step="any" value="120" style="width:65px" aria-label="Minutos desde inyección"> min</label>
-            <input id="mdpTimeline" type="range" min="0" max="10800" step="1" value="7200" aria-label="Tiempo MDP de 0 a 180 minutos" style="width:150px">
-            <button id="mdpPlay" class="live-setting" type="button">Reproducir 0–3 h</button>
+            <label>INYECCIÓN–EXAMEN <input id="mdpMinutes" type="number" min="0" step="any" value="120" style="width:65px" aria-label="Minutos desde inyección"> min</label>
+            <input id="mdpTimeline" type="range" min="0" max="10800" step="1" value="7200" aria-label="Tiempo MDP" style="width:150px">
+            <button id="mdpPlay" class="live-setting" type="button">Reproducir evolución</button>
             <select id="mdpSpeed" class="live-study" aria-label="Velocidad de evolución MDP"><option value="1">1×</option><option value="10">10×</option><option value="60" selected>60×</option><option value="300">300×</option></select>
             <label><input id="mdpVoid" type="checkbox" checked> Micción a 120 min</label>
             <span id="mdpDose"></span><span id="mdpStats" style="flex-basis:100%"></span>
-            <span style="font-size:9px;color:#a9bdce">Cinética docente · sensibilidad LEHR supuesta: 100 c/s/MBq antes de atenuación · porcentajes de actividad inicial, con decaimiento. Al adquirir, el reloj avanza con la adquisición hasta 180 min.</span>
+            <span style="font-size:9px;color:#a9bdce">Cinética docente · sensibilidad LEHR supuesta: 100 c/s/MBq antes de atenuación · porcentajes de actividad inicial, con decaimiento. Al adquirir, el reloj avanza con la adquisición.</span>
           </div>
 <!-- MDP_UI_END -->
 '''

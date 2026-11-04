@@ -22,7 +22,7 @@
       c[key]=n;
     };
     Object.assign(c,camera(value));
-    number('activityMci',.1,c.study==='exploration'?1000:2000/37,'Actividad (mCi)');number('minutes',0,c.study==='bone'?179.99:c.study==='mibi'?720:c.study==='exploration'?43200:1440,'Tiempo inyección–examen (min)');
+    number('activityMci',.1,c.study==='exploration'?1000:2000/37,'Actividad (mCi)');number('minutes',0,c.study==='bone'?Infinity:c.study==='mibi'?720:c.study==='exploration'?43200:1440,'Tiempo inyección–examen (min)');
     if(c.kind==='whole'){
       // Compatibility defaults for the static controls; the scan engine stops
       // at the end of the table travel, never on a static count/time target.

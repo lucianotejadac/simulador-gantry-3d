@@ -53,9 +53,9 @@
     if(busy()||injecting||window.GANTRY_EXAM?.blocked)throw Error('No se puede cambiar la administración durante una adquisición.');
     if(selected==='mag3'&&window.GANTRY_MAG3?.injected)throw Error('La dosis ya fue inyectada; pulsa Reiniciar inyección para cambiar la administración.');
     const mbq=Number(dose)*(doseUnit==='mCi'?37:1),seconds=Number(minutes)*60;
-    const id=profiles[selected]?.study,max=id==='bone'?180:id==='mibi'?720:id==='mag3'?19.99:id==='exploration'?43200:1440;
+    const id=profiles[selected]?.study,max=id==='bone'?Infinity:id==='mibi'?720:id==='mag3'?19.99:id==='exploration'?43200:1440;
     if(dose===''||minutes===''||!Number.isFinite(mbq)||mbq<=0||!Number.isFinite(seconds)||seconds<0||seconds>max*60||id!=='exploration'&&mbq>2000)
-      throw Error('Indica una dosis positiva y un tiempo entre 0 y '+max+' minutos.');
+      throw Error(id==='bone'?'Indica una dosis válida y un tiempo igual o mayor que cero.':'Indica una dosis positiva y un tiempo entre 0 y '+max+' minutos.');
     if(model(selected)){
       if(!model(selected).configure(mbq,seconds))throw Error('No se pudo aplicar la administración.');
     }else{

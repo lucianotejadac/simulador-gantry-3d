@@ -64,11 +64,11 @@
     }
   }
   const state={activityMBq:740,seconds:7200,playing:false,speed:60,voidAt120:true};
-  const LIMIT=10800,HALF=360.402,SENSITIVITY=100;
+  const HALF=360.402,SENSITIVITY=100;
   // Blood anchors ~9.4% at 1 h and 5.1% at 2 h (before physical decay).
   // Remaining activity is partitioned conservatively; timing is illustrative.
   function fractions(seconds,voidAt120=true){
-    const t=Math.max(0,Math.min(180,seconds/60));
+    const t=Math.max(0,seconds/60);
     function biological(t){
       const blood=.78*Math.exp(-t/2)+.14*Math.exp(-t/45)+.08*Math.exp(-t/180);
       const bone=(1-blood)*.5*(1-Math.exp(-t/12));
@@ -228,9 +228,9 @@
     let sum=0,peak=0;for(let i=0;i<values.length;i++){cdf[i]=sum+=values[i];peak=Math.max(peak,values[i]);}
     return {values,cdf,sum,window:Math.max(1,peak*.8),mdpBases:bases};
   }
-  function advance(seconds,display=true){state.seconds=Math.min(LIMIT,state.seconds+Math.max(0,seconds));if(state.seconds===LIMIT)state.playing=false;if(display)render();}
+  function advance(seconds,display=true){state.seconds+=Math.max(0,seconds);if(display)render();}
   function step(session,fields,seconds){
-    let remaining=Math.min(seconds,LIMIT-state.seconds);
+    let remaining=seconds;
     while(remaining>1e-8&&!session.finished){
       const frameRemaining=session.dynamic?session.dynamic.schedule[session.dynamic.frames.length].end-session.heads[0].elapsed:Infinity;
       const previous=Math.max(...session.heads.map(h=>h.elapsed));
@@ -243,7 +243,6 @@
       advance(Math.max(0,used));remaining-=dt;
       if(!(used>0))break;
     }
-    if(state.seconds>=LIMIT&&!session.finished){session.finished=true;session.mdpLimit=true;}
   }
   const el=id=>document.getElementById(id);
   function metadata(){return {...state,patient:window.GANTRY_PATIENT?.metadata?.()||null,scatterAppearance:{...scatterAppearance},backgroundAppearance:{...backgroundAppearance,transitionMinutes:[...backgroundAppearance.transitionMinutes]},vascularAppearance:{...vascularAppearance},vascularPhantom:data.vascularModel?.model||null,model:'mdp-v3-triphase',projectionModel:data.nativeBoneModel||'coarse-6mm',boneDepthModel:data.poses.up.nativeBone?.depth?.model||null,vascularFadeMinutes:[5,30],sensitivityCpsPerMBq:SENSITIVITY,halfLifeMinutes:HALF};}
@@ -256,11 +255,12 @@
     if(window.GANTRY_LIVE?.signal?.mode==='final')el('mdpPlay').disabled=true;
     if(window.GANTRY_RF?.pending('bone'))el('mdpPlay').disabled=true;
     if(document.activeElement!==el('mdpMinutes'))el('mdpMinutes').value=(state.seconds/60).toFixed(2);
+    el('mdpTimeline').max=Math.max(10800,Math.ceil((state.seconds+3600)/3600)*3600);
     el('mdpTimeline').value=state.seconds;
     el('mdpSpeed').value=String(state.speed);
-    el('mdpPlay').textContent=state.playing?'Pausar evolución':state.seconds>=LIMIT?'Reiniciar desde 0':'Reproducir evolución';
+    el('mdpPlay').textContent=state.playing?'Pausar evolución':'Reproducir evolución';
     const f=fractions(state.seconds,state.voidAt120),p=x=>(100*x).toFixed(1)+'%',clock=Math.floor(state.seconds+1e-6);
-    el('mdpStats').textContent=(state.seconds<60?'Vascular':state.seconds<600?'Pool / captación':'Captación ósea')+' · '+Math.floor(clock/60)+':'+String(clock%60).padStart(2,'0')+' / 180:00 · Sangre '+p(f.blood)+' · Hueso '+p(f.bone)+' · Tejidos '+p(f.soft)+' · Riñones '+p(f.renal)+' · Vejiga '+p(f.bladder)+' · Eliminado '+p(f.excreted);
+    el('mdpStats').textContent=(state.seconds<60?'Vascular':state.seconds<600?'Pool / captación':'Captación ósea')+' · '+Math.floor(clock/60)+':'+String(clock%60).padStart(2,'0')+' · Sangre '+p(f.blood)+' · Hueso '+p(f.bone)+' · Tejidos '+p(f.soft)+' · Riñones '+p(f.renal)+' · Vejiga '+p(f.bladder)+' · Eliminado '+p(f.excreted);
     el('mdpDose').textContent=state.activityMBq.toFixed(0)+' MBq / '+(state.activityMBq/37).toFixed(1)+' mCi · actividad corporal '+(f.weights.reduce((a,b)=>a+b,0)*state.activityMBq).toFixed(0)+' MBq · '+data.angles.length+' proyecciones óseas (1°)';
   }
   function refresh(){window.GANTRY_LIVE?.clearPersistence();render();}
@@ -269,11 +269,11 @@
     el('mdpActivity').onchange=()=>{const a=Number(el('mdpActivity').value)*(el('mdpUnit').value==='mCi'?37:1);if(Number.isFinite(a)&&a>0&&a<=2000)state.activityMBq=a;else el('mdpActivity').value=state.activityMBq/(el('mdpUnit').value==='mCi'?37:1);refresh();};
     el('mdpActivity').oninput=()=>{if(el('mdpActivity').value&&el('mdpActivity').validity.valid)el('mdpActivity').onchange();};
     el('mdpUnit').onchange=()=>{el('mdpActivity').value=+(state.activityMBq/(el('mdpUnit').value==='mCi'?37:1)).toFixed(2);el('mdpActivity').max=el('mdpUnit').value==='mCi'?2000/37:2000;};
-    const setTime=s=>{if(Number.isFinite(s))state.seconds=Math.max(0,Math.min(LIMIT,s));state.playing=false;refresh();};
+    const setTime=s=>{if(Number.isFinite(s))state.seconds=Math.max(0,s);state.playing=false;refresh();};
     el('mdpMinutes').onchange=()=>setTime(Number(el('mdpMinutes').value)*60);
     el('mdpMinutes').oninput=()=>{if(el('mdpMinutes').value&&el('mdpMinutes').validity.valid)setTime(Number(el('mdpMinutes').value)*60);};
     el('mdpTimeline').oninput=()=>setTime(Number(el('mdpTimeline').value));
-    el('mdpPlay').onclick=()=>{if(state.seconds>=LIMIT)state.seconds=0;state.playing=!state.playing;render();};
+    el('mdpPlay').onclick=()=>{state.playing=!state.playing;render();};
     el('mdpSpeed').onchange=()=>state.speed=Number(el('mdpSpeed').value);
     el('mdpVoid').onchange=()=>{state.voidAt120=el('mdpVoid').checked;refresh();};
     let last=performance.now();setInterval(()=>{
@@ -283,13 +283,13 @@
     render();
   }
   function configure(activityMBq,seconds,playing=false){
-    if(window.GANTRY_BONE_ACQ?.active||!Number.isFinite(activityMBq)||activityMBq<=0||activityMBq>2000||!Number.isFinite(seconds)||seconds<0||seconds>LIMIT)return false;
+    if(window.GANTRY_BONE_ACQ?.active||!Number.isFinite(activityMBq)||activityMBq<=0||activityMBq>2000||!Number.isFinite(seconds)||seconds<0)return false;
     Object.assign(state,{activityMBq,seconds,playing,speed:playing?1:state.speed});
     if(el('mdpActivity'))el('mdpActivity').value=+(activityMBq/(el('mdpUnit').value==='mCi'?37:1)).toFixed(3);
     refresh();return true;
   }
   window.GANTRY_MDP={load,loadCase,geometry,field,mix,fractions,advance,step,render,metadata,configure,ensureAngles,hasAngles,hasPose:name=>!!poses[name],
     get rate(){return state.activityMBq*SENSITIVITY;},get seconds(){return state.seconds;},
-    begin(){state.playing=false;return metadata();},get remaining(){return LIMIT-state.seconds;}};
+    begin(){state.playing=false;return metadata();},get remaining(){return Infinity;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

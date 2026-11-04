@@ -24,7 +24,7 @@ for(const matrix of [64,512]){
  assert.equal(validate({...base,matrix}).matrix,matrix);
  assert.throws(()=>validate({...base,kind:'whole',matrix}),/Matriz/);
 }
-for(const [key,v] of [['matrix',1024],['matrix',32],['zoom',0],['windowWidth',1],['energyCenter',NaN],['activityMci',0],['minutes',180],['velocity',61],['target',5.5],['names',['','D2']],['kind','dynamic']])assert.throws(()=>validate({...base,[key]:v}),key);
+for(const [key,v] of [['matrix',1024],['matrix',32],['zoom',0],['windowWidth',1],['energyCenter',NaN],['activityMci',0],['minutes',-1],['velocity',61],['target',5.5],['names',['','D2']],['kind','dynamic']])assert.throws(()=>validate({...base,[key]:v}),key);
 assert.equal(validate({...base,kind:'whole',velocity:.1}).velocity,.1);
 const whole=validate({...base,kind:'whole',mode:undefined,target:NaN});
 assert.equal(whole.kind,'whole');
@@ -154,3 +154,5 @@ const send=async data=>listeners.message({origin:'http://local',source:frame.con
  const engineCode=fs.readFileSync('scripts/bone_acquisition.js','utf8');assert(!engineCode.includes('if(window.GANTRY_PROCESSING?.active){clock='),'Processing must not freeze acquisition');
  console.log('OK: native acquisition configuration, matrix/energy/activity/time mapping, exact goal, source/origin, collision lock, duplicate start and stale command rejection.');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+for(const minutes of [180,240,1440,100000])assert.equal(validate({...base,minutes}).minutes,minutes);

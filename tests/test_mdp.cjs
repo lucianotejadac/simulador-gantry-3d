@@ -10,7 +10,7 @@ vm.runInContext(fs.readFileSync('scripts/mdp.js','utf8'),ctx);
 vm.runInContext(fs.readFileSync('scripts/bone_acquisition.js','utf8'),ctx);
 const M=ctx.window.GANTRY_MDP;
 assert(M.configure(370,0,true));assert.equal(M.metadata().playing,true);assert.equal(M.rate,37000);
-assert(!M.configure(0,0));assert(!M.configure(370,-1));assert(!M.configure(370,10801));
+assert(!M.configure(0,0));assert(!M.configure(370,-1));assert(M.configure(370,10801));
 assert(M.configure(740,7200));
 assert.deepEqual(data.angles,Array.from({length:360},(_,i)=>i),'one skeletal projection per degree');
 for(let t=0;t<=10800;t+=.25){
@@ -95,13 +95,15 @@ const metrics={contrast:1,countFactor:1,haloAlpha:0,haloBlur:0};
  assert(session.heads.every(h=>h.total>0&&h.counts[0]>h.counts[1]));
  M.advance(10800-M.seconds-2);
  const limited=new ctx.window.GANTRY_BONE_CORE.Acquisition(n,'time',60);
- M.step(limited,[field,field],60);assert(limited.finished&&limited.mdpLimit);
- assert.equal(M.seconds,10800);assert(limited.heads.every(h=>h.elapsed===2));
+ M.step(limited,[field,field],60);assert(limited.finished&&!limited.mdpLimit);
+ assert.equal(M.seconds,10858);assert(limited.heads.every(h=>h.elapsed===60));
  const saveCtx=vm.createContext({window:{},structuredClone,crypto:{randomUUID:()=> 'mdp-test'}});
  vm.runInContext(fs.readFileSync('scripts/bone_acquisition_store.js','utf8'),saveCtx);
  limited.mdpStart={activityMBq:740,seconds:10798};limited.mdpEnd=M.metadata();
  const saved=saveCtx.window.GANTRY_BONE_STORAGE.snapshot(limited,['AP','PA'],{study:'bone'});
- assert.equal(saved.mdp.end.seconds,10800);assert(saved.mdp.limit);
+ assert.equal(saved.mdp.end.seconds,10858);assert(!saved.mdp.limit);
+ assert(M.configure(740,86400));assert.equal(M.seconds,86400);
+ assert(M.fractions(86400).decay<M.fractions(10800).decay);
  limited.mdpStart.activityMBq=1;assert.equal(saved.mdp.start.activityMBq,740);
  // Production acquisition controller, including the live view's advance-on-render
  // contract. Catch re-entrant acquisition updates and double simulation clocks.

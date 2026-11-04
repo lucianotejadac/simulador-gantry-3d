@@ -260,7 +260,7 @@
     help('camera',config.kind==='whole'?'El barrido comienza donde está la camilla y alinea los detectores. Configura el seguimiento del contorno en «Condiciones de paro».':'La posición y distancia de los detectores se toman del gantry visible a la izquierda.');
     section('series','Radiofármaco',[field('Isótopo',config.study==='exploration'?'I-131':'99mTc'),field('Fármaco',window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),
       input('activityMci','Actividad inyectada (mCi)',config.activityMci,null,range(.1,config.study==='exploration'?1000:2000/37)),
-      input('minutes','Inyección–examen (min)',config.minutes,null,range(0,43200))]);
+      input('minutes','Inyección–examen (min)',config.minutes,null,config.study==='bone'?{min:'0',step:'any'}:range(0,43200))]);
     help('series','La dosis y el tiempo corresponden al radiofármaco seleccionado en la vista 3D.');
     if(config.kind==='dynamic'){
       section('stop','Secuencia dinámica',[input('phaseCount','Número de fases',(config.phases||[]).length||1,[1,2,3])]);
