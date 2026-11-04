@@ -9,7 +9,6 @@ import json,re,zlib,hashlib,sys
 import numpy as np
 from scipy.ndimage import gaussian_filter
 from mdp_vascular_geometry import pelvic_perfusion, MODEL
-from resting_feet import relax
 ROOT=Path(__file__).resolve().parents[1]
 WORK=ROOT.parent
 VASCULAR_MODEL={'model':'icrp-continuous-lower-perfusion-v3','sourceComponents':[12,13,14],
@@ -32,7 +31,7 @@ def lower_tree():
     weights,_=pelvic_perfusion(raw,full['origen']);weights/=weights.sum(dtype=float)
     shape=(750,104,320);central=(slice(0,594),slice(None),slice(63,256))
     def coarse(a):return a.reshape(375,2,52,2,160,2).sum((1,3,5))
-    v=np.zeros(shape,np.float32);v[central]=weights;activity=coarse(relax(v,conserve=True))
+    v=np.zeros(shape,np.float32);v[central]=weights;activity=coarse(v)
     assert abs(activity.sum(dtype=float)-1)<1e-6
     results={}
     for pose in ['down','up']:
@@ -42,7 +41,7 @@ def lower_tree():
             mu[np.isin(correction,[1600,3100])]=.2732992;mu[np.isin(correction,[1800,3300])]=.1537*.981
             v[central]=mu
         else:v[:,:,:319]=np.load(WORK/'icrp145-multitrazador-ap-pa/mibi-360-brazos-arriba/volumen_mibi_brazos_arriba.npz')['mu']
-        mu=coarse(relax(v))/8*2
+        mu=coarse(v)/8*2
         results[pose]=np.stack([gaussian_filter(project(activity,mu,np.deg2rad(a),160,384)/.3,9/2.35482/6) for a in range(0,360,10)])
         print(pose,'continuous lower tree projected',flush=True)
     return results
