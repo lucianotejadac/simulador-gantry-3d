@@ -80,9 +80,11 @@
   style.textContent+='#retakeConfirmation{max-width:440px;background:#c0c0c0;border:3px outset #eee;padding:16px;font:14px Arial;color:#000}#retakeConfirmation::backdrop{background:#0008}#retakeConfirmation h2{font-size:18px;color:#000080}#retakeConfirmation p{line-height:1.4}#retakeConfirmation button{padding:8px;margin-top:8px}';
   $('retakeCancel').onclick=()=>retakeDialog.close();
   const retakeDescription=retakeDialog.querySelectorAll('p');
-  function confirmAction(action,id){
+  function canDeleteConfiguration(id){return configurations.has(id)&&!waiting&&!(lastId&&lastState?.finished!==true);}
+  function confirmAction(action,id,pendingOnly=false){
     const deleting=action==='delete',pending=configurations.has(id);
     retakeDialog.dataset.acquisitionId=id;retakeDialog.dataset.action=action;
+    retakeDialog.dataset.pendingOnly=String(pendingOnly);
     $('retakeTitle').textContent=deleting?'¿Eliminar adquisición?':'¿Adquirir de nuevo?';
     retakeDescription[0].textContent=deleting&&pending?'Se eliminará la configuración seleccionada de la lista. Todavía no tiene imágenes adquiridas.':'Se borrarán las imágenes de ambos detectores de la adquisición seleccionada y su copia guardada en este navegador. Las demás adquisiciones se conservarán.';
     retakeDescription[1].textContent=deleting?'Las demás adquisiciones y configuraciones pendientes se conservarán.':'Se mantendrán el tipo de adquisición y sus parámetros para preparar la nueva toma.';
@@ -91,10 +93,12 @@
   }
   $('retakeConfirm').onclick=()=>{
     const id=retakeDialog.dataset.acquisitionId,action=retakeDialog.dataset.action;retakeDialog.close();
+    if(retakeDialog.dataset.pendingOnly==='true'&&!canDeleteConfiguration(id)){status('Solo se pueden eliminar configuraciones pendientes cuando no hay una adquisición en curso.');return;}
     if(action==='delete'&&configurations.has(id)){
-      if(draft?.listId===id)finish(false);
+      const selected=draft?.listId===id;if(selected)finish(false);
       configurations.delete(id);window.GANTRY_PROCESSING_LIST.cancelConfiguration(id);
-      window.GANTRY_PROCESSING_LIST.selectLast();status('Adquisición eliminada.');
+      acquisitionTabs.delete(id);
+      if(selected)window.GANTRY_PROCESSING_LIST.selectLast();else updateModeUI();status('Adquisición eliminada.');
     }else request(action==='delete'?'GANTRY_ACQUIRE_DELETE':'GANTRY_ACQUIRE_RETAKE',{id});
     setMenu();
   };
@@ -436,7 +440,9 @@
       status(d.message+' · '+d.state.speed+'×'+(d.state.finished&&!d.state.heads.every(h=>h.total>0)?' · Sin señal en uno de los detectores; no se importa al procesador.':''));
     }
   });
-  window.GANTRY_PROCESSING_EDITOR={finish,setPreviewVisible(visible){
+  window.GANTRY_PROCESSING_EDITOR={finish,isConfiguration:id=>configurations.has(id),canDeleteConfiguration,deleteConfiguration(id){
+    if(canDeleteConfiguration(id))confirmAction('delete',id,true);
+  },setPreviewVisible(visible){
     if(!visible)send({type:'GANTRY_CAMERA_PREVIEW_END'});
   },get currentId(){return draft?.id||draft?.listId;},showCurrent(id){
     if(waiting||draft?.listId===id||draft?.id===id)return;

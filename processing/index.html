@@ -1311,9 +1311,11 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   style.textContent+='#retakeConfirmation{max-width:440px;background:#c0c0c0;border:3px outset #eee;padding:16px;font:14px Arial;color:#000}#retakeConfirmation::backdrop{background:#0008}#retakeConfirmation h2{font-size:18px;color:#000080}#retakeConfirmation p{line-height:1.4}#retakeConfirmation button{padding:8px;margin-top:8px}';
   $('retakeCancel').onclick=()=>retakeDialog.close();
   const retakeDescription=retakeDialog.querySelectorAll('p');
-  function confirmAction(action,id){
+  function canDeleteConfiguration(id){return configurations.has(id)&&!waiting&&!(lastId&&lastState?.finished!==true);}
+  function confirmAction(action,id,pendingOnly=false){
     const deleting=action==='delete',pending=configurations.has(id);
     retakeDialog.dataset.acquisitionId=id;retakeDialog.dataset.action=action;
+    retakeDialog.dataset.pendingOnly=String(pendingOnly);
     $('retakeTitle').textContent=deleting?'¿Eliminar adquisición?':'¿Adquirir de nuevo?';
     retakeDescription[0].textContent=deleting&&pending?'Se eliminará la configuración seleccionada de la lista. Todavía no tiene imágenes adquiridas.':'Se borrarán las imágenes de ambos detectores de la adquisición seleccionada y su copia guardada en este navegador. Las demás adquisiciones se conservarán.';
     retakeDescription[1].textContent=deleting?'Las demás adquisiciones y configuraciones pendientes se conservarán.':'Se mantendrán el tipo de adquisición y sus parámetros para preparar la nueva toma.';
@@ -1322,10 +1324,12 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   }
   $('retakeConfirm').onclick=()=>{
     const id=retakeDialog.dataset.acquisitionId,action=retakeDialog.dataset.action;retakeDialog.close();
+    if(retakeDialog.dataset.pendingOnly==='true'&&!canDeleteConfiguration(id)){status('Solo se pueden eliminar configuraciones pendientes cuando no hay una adquisición en curso.');return;}
     if(action==='delete'&&configurations.has(id)){
-      if(draft?.listId===id)finish(false);
+      const selected=draft?.listId===id;if(selected)finish(false);
       configurations.delete(id);window.GANTRY_PROCESSING_LIST.cancelConfiguration(id);
-      window.GANTRY_PROCESSING_LIST.selectLast();status('Adquisición eliminada.');
+      acquisitionTabs.delete(id);
+      if(selected)window.GANTRY_PROCESSING_LIST.selectLast();else updateModeUI();status('Adquisición eliminada.');
     }else request(action==='delete'?'GANTRY_ACQUIRE_DELETE':'GANTRY_ACQUIRE_RETAKE',{id});
     setMenu();
   };
@@ -1667,7 +1671,9 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       status(d.message+' · '+d.state.speed+'×'+(d.state.finished&&!d.state.heads.every(h=>h.total>0)?' · Sin señal en uno de los detectores; no se importa al procesador.':''));
     }
   });
-  window.GANTRY_PROCESSING_EDITOR={finish,setPreviewVisible(visible){
+  window.GANTRY_PROCESSING_EDITOR={finish,isConfiguration:id=>configurations.has(id),canDeleteConfiguration,deleteConfiguration(id){
+    if(canDeleteConfiguration(id))confirmAction('delete',id,true);
+  },setPreviewVisible(visible){
     if(!visible)send({type:'GANTRY_CAMERA_PREVIEW_END'});
   },get currentId(){return draft?.id||draft?.listId;},showCurrent(id){
     if(waiting||draft?.listId===id||draft?.id===id)return;
@@ -1761,6 +1767,26 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   style.textContent='.acquisition-tabs [hidden]{display:none!important}#processingEmptyAcquisitions{padding:10px 6px;font-size:13px;line-height:1.4;color:#fff;opacity:1}#processingEmptyAcquisitions:not([hidden]){display:block!important}';
   document.head.append(style);
   const order=new Map(),original=updateModeUI;
+  const contextMenu=document.createElement('div'),deletePending=document.createElement('button');
+  contextMenu.id='pendingAcquisitionMenu';contextMenu.hidden=true;contextMenu.setAttribute('role','menu');contextMenu.setAttribute('aria-label','Opciones de adquisición pendiente');
+  deletePending.type='button';deletePending.textContent='Eliminar adquisición';deletePending.setAttribute('role','menuitem');contextMenu.append(deletePending);document.body.append(contextMenu);
+  style.textContent+='#pendingAcquisitionMenu{position:fixed;z-index:10000;padding:3px;background:#c0c0c0;border:2px outset #eee;box-shadow:3px 3px 6px #0006;max-width:calc(100vw - 12px);box-sizing:border-box}#pendingAcquisitionMenu[hidden]{display:none}#pendingAcquisitionMenu button{display:block;width:100%;padding:8px 14px;text-align:left;font:14px Arial;border:0;background:transparent;color:#000;cursor:pointer}#pendingAcquisitionMenu button:is(:hover,:focus-visible):not(:disabled){background:#000080;color:#fff;outline:0}#pendingAcquisitionMenu button:disabled{color:#666;cursor:default}';
+  let contextId=null,contextTarget=null;
+  function closeContext(restoreFocus=false){const target=contextTarget;contextMenu.hidden=true;contextId=null;contextTarget=null;if(restoreFocus&&target?.isConnected)target.focus();}
+  function openContext(event,entry,keyboard=false){
+    const editor=window.GANTRY_PROCESSING_EDITOR;
+    closeContext();if(!editor?.isConfiguration(entry.id))return;
+    event.preventDefault();contextId=entry.id;contextTarget=entry.button;
+    deletePending.disabled=!editor.canDeleteConfiguration(entry.id);contextMenu.hidden=false;
+    const r=entry.button.getBoundingClientRect(),x=keyboard?r.right:event.clientX,y=keyboard?r.top:event.clientY;
+    contextMenu.style.left=Math.max(6,Math.min(x,document.documentElement.clientWidth-contextMenu.offsetWidth-6))+'px';
+    contextMenu.style.top=Math.max(6,Math.min(y,document.documentElement.clientHeight-contextMenu.offsetHeight-6))+'px';
+    if(!deletePending.disabled)deletePending.focus();
+  }
+  deletePending.onclick=()=>{const id=contextId;closeContext(true);window.GANTRY_PROCESSING_EDITOR?.deleteConfiguration(id);};
+  document.addEventListener('pointerdown',event=>{if(!contextMenu.hidden&&!contextMenu.contains(event.target))closeContext();},true);
+  document.addEventListener('keydown',event=>{if(contextMenu.hidden)return;if(event.key==='Escape'){event.preventDefault();closeContext(true);}else if(event.key==='Tab')closeContext();});
+  document.addEventListener('scroll',()=>closeContext(),true);window.addEventListener('resize',()=>closeContext());window.addEventListener('blur',()=>closeContext());
   function identity(key){
     const ds=modeStates[key]?.dataset||(key===currentAcquisition?dataset:null)||Object.values(acquisitionInstances[key]||{}).find(s=>s.dataset)?.dataset;
     try{const info=JSON.parse(value(ds,'00111010'));return info.processing?.acquisitionId||info.recordId||key;}catch(_){return key;}
@@ -1794,6 +1820,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   }
   function cancelConfiguration(configurationId){
     const entry=order.get(configurationId);if(!entry)return;
+    if(contextId===configurationId)closeContext();
     entry.button.remove();order.delete(configurationId);arrange();
   }
   function createEntry(id,config){
@@ -1805,10 +1832,13 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const names=config.names.join(' / ');detail.textContent=names+' · Adquiriendo';
     const entry={id,button,symbol,label,detail,names};
     button.onclick=()=>window.GANTRY_PROCESSING_EDITOR?.showCurrent(entry.id);
+    button.addEventListener('contextmenu',event=>openContext(event,entry));
+    button.addEventListener('keydown',event=>{if(event.key==='ContextMenu'||event.key==='F10'&&event.shiftKey)openContext(event,entry,true);});
     return entry;
   }
   function started(id,config,configurationId){
     if(order.has(id))return;
+    closeContext();
     const entry=order.get(configurationId)||createEntry(id,config);
     entry.id=id;entry.names=config.names.join(' / ');entry.detail.textContent=entry.names+' · Adquiriendo';
     // Promote the configuration tile in place instead of adding a second one.

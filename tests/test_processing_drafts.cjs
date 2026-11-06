@@ -29,6 +29,7 @@ const menu=action=>{$('processingAcquireMenu').value=action;$('processingAcquire
 const prepare=kind=>{menu(kind);const request=messages.at(-1);assert.equal(request.type,'GANTRY_ACQUIRE_CONFIG');receive({type:request.type,request:request.request,config:{...config,kind}});};
 const edit=(id,val)=>{$('gantryDraft-'+id).value=String(val);$('gantryDraft-'+id).dispatchEvent(new w.Event('input'));};
 const previewCount=()=>messages.filter(m=>m.type==='GANTRY_CAMERA_PREVIEW').length;
+const context=button=>button.dispatchEvent(new w.MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:15,clientY:80}));
 prepare('static');assert.equal(list().length,1);const first=list()[0];
 assert.equal(previewCount(),0,'Opening a draft leaves the live camera unchanged');
 assert.deepEqual([...$('gantryDraft-matrix').options].map(o=>o.value),['64','128','256','512']);
@@ -78,11 +79,25 @@ menu('delete');$('retakeConfirm').click();assert.equal(list().length,1);assert.e
 assert.equal($('gantryDraft-target').value,'7','Deleting the second draft restores the first with its settings');
 assert(!messages.some(m=>m.type==='GANTRY_ACQUIRE_DELETE'),'Unacquired configurations are removed locally');
 // Starting promotes exactly the selected pending tile.
-prepare('whole');const third=list()[1];first.click();menu('start');const start=messages.at(-1);
+prepare('whole');const third=list()[1];
+prepare('dynamic');const disposable=list()[2];first.click();
+context(disposable);assert(!$('pendingAcquisitionMenu').hidden);
+assert.equal($('gantryDraft-target').value,'7','Right click must not switch or overwrite the viewed configuration');
+$('pendingAcquisitionMenu').querySelector('button').click();assert($('retakeConfirmation').open);
+$('retakeCancel').click();assert.equal(list().length,3,'Cancel keeps the right-clicked draft');
+context(disposable);$('pendingAcquisitionMenu').querySelector('button').click();$('retakeConfirm').click();
+assert.equal(list().length,2);assert.equal(list()[0],first);assert.equal(list()[1],third);
+assert.equal($('gantryDraft-target').value,'7','Removing another draft keeps the current parameters and selection');
+assert.equal(first.getAttribute('aria-selected'),'true');
+context(first);w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert($('pendingAcquisitionMenu').hidden);
+menu('start');const start=messages.at(-1);
 assert.equal(start.type,'GANTRY_ACQUIRE_START');assert.equal(start.config.target,7);
 receive({type:'GANTRY_ACQUIRE_STARTED',request:start.request,id:'acquired-first'});
 assert.equal(list().length,2);assert.equal(list()[0],first);assert.equal(list()[1],third);
 assert(!list()[0].textContent.includes('Configuración'));
+context(first);assert($('pendingAcquisitionMenu').hidden,'A started acquisition must not offer draft deletion');
+context(third);assert($('pendingAcquisitionMenu').querySelector('button').disabled,'Pending deletion respects an acquisition in progress');
+w.document.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
 w.GANTRY_PROCESSING_EDITOR.finish();assert.equal(list().length,2);
 third.click();assert.equal($('gantryDraft-velocity').value,'10');
 assert(w.document.querySelector('[data-acquire="delete"]').disabled,'Deletion blocked while another acquisition runs');
@@ -93,6 +108,8 @@ const ds={info,uint16:()=>128,string:tag=>tag==='x00110010'?'GANTRY_SIMULATION':
 w.GANTRY_RECORDED_METADATA={fields:()=>({})};
 w.modeStates.static={dataset:ds};w.acquisitionInstances.static={D1:{dataset:ds}};
 w.selectMode('static');assert.equal(list().length,2);
+context(list()[0]);assert($('pendingAcquisitionMenu').hidden,'Acquired images must not offer right-click deletion');
+w.GANTRY_PROCESSING_EDITOR.deleteConfiguration('acquired-first');assert(!$('retakeConfirmation').open);
 menu('delete');$('retakeConfirm').click();const deletion=messages.at(-1);
 assert.equal(deletion.type,'GANTRY_ACQUIRE_DELETE');assert.equal(deletion.id,'acquired-first');
 receive({type:'GANTRY_ACQUIRE_ERROR',request:deletion.request,error:'Cache unavailable'});

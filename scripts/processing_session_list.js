@@ -11,6 +11,26 @@
   style.textContent='.acquisition-tabs [hidden]{display:none!important}#processingEmptyAcquisitions{padding:10px 6px;font-size:13px;line-height:1.4;color:#fff;opacity:1}#processingEmptyAcquisitions:not([hidden]){display:block!important}';
   document.head.append(style);
   const order=new Map(),original=updateModeUI;
+  const contextMenu=document.createElement('div'),deletePending=document.createElement('button');
+  contextMenu.id='pendingAcquisitionMenu';contextMenu.hidden=true;contextMenu.setAttribute('role','menu');contextMenu.setAttribute('aria-label','Opciones de adquisición pendiente');
+  deletePending.type='button';deletePending.textContent='Eliminar adquisición';deletePending.setAttribute('role','menuitem');contextMenu.append(deletePending);document.body.append(contextMenu);
+  style.textContent+='#pendingAcquisitionMenu{position:fixed;z-index:10000;padding:3px;background:#c0c0c0;border:2px outset #eee;box-shadow:3px 3px 6px #0006;max-width:calc(100vw - 12px);box-sizing:border-box}#pendingAcquisitionMenu[hidden]{display:none}#pendingAcquisitionMenu button{display:block;width:100%;padding:8px 14px;text-align:left;font:14px Arial;border:0;background:transparent;color:#000;cursor:pointer}#pendingAcquisitionMenu button:is(:hover,:focus-visible):not(:disabled){background:#000080;color:#fff;outline:0}#pendingAcquisitionMenu button:disabled{color:#666;cursor:default}';
+  let contextId=null,contextTarget=null;
+  function closeContext(restoreFocus=false){const target=contextTarget;contextMenu.hidden=true;contextId=null;contextTarget=null;if(restoreFocus&&target?.isConnected)target.focus();}
+  function openContext(event,entry,keyboard=false){
+    const editor=window.GANTRY_PROCESSING_EDITOR;
+    closeContext();if(!editor?.isConfiguration(entry.id))return;
+    event.preventDefault();contextId=entry.id;contextTarget=entry.button;
+    deletePending.disabled=!editor.canDeleteConfiguration(entry.id);contextMenu.hidden=false;
+    const r=entry.button.getBoundingClientRect(),x=keyboard?r.right:event.clientX,y=keyboard?r.top:event.clientY;
+    contextMenu.style.left=Math.max(6,Math.min(x,document.documentElement.clientWidth-contextMenu.offsetWidth-6))+'px';
+    contextMenu.style.top=Math.max(6,Math.min(y,document.documentElement.clientHeight-contextMenu.offsetHeight-6))+'px';
+    if(!deletePending.disabled)deletePending.focus();
+  }
+  deletePending.onclick=()=>{const id=contextId;closeContext(true);window.GANTRY_PROCESSING_EDITOR?.deleteConfiguration(id);};
+  document.addEventListener('pointerdown',event=>{if(!contextMenu.hidden&&!contextMenu.contains(event.target))closeContext();},true);
+  document.addEventListener('keydown',event=>{if(contextMenu.hidden)return;if(event.key==='Escape'){event.preventDefault();closeContext(true);}else if(event.key==='Tab')closeContext();});
+  document.addEventListener('scroll',()=>closeContext(),true);window.addEventListener('resize',()=>closeContext());window.addEventListener('blur',()=>closeContext());
   function identity(key){
     const ds=modeStates[key]?.dataset||(key===currentAcquisition?dataset:null)||Object.values(acquisitionInstances[key]||{}).find(s=>s.dataset)?.dataset;
     try{const info=JSON.parse(value(ds,'00111010'));return info.processing?.acquisitionId||info.recordId||key;}catch(_){return key;}
@@ -44,6 +64,7 @@
   }
   function cancelConfiguration(configurationId){
     const entry=order.get(configurationId);if(!entry)return;
+    if(contextId===configurationId)closeContext();
     entry.button.remove();order.delete(configurationId);arrange();
   }
   function createEntry(id,config){
@@ -55,10 +76,13 @@
     const names=config.names.join(' / ');detail.textContent=names+' · Adquiriendo';
     const entry={id,button,symbol,label,detail,names};
     button.onclick=()=>window.GANTRY_PROCESSING_EDITOR?.showCurrent(entry.id);
+    button.addEventListener('contextmenu',event=>openContext(event,entry));
+    button.addEventListener('keydown',event=>{if(event.key==='ContextMenu'||event.key==='F10'&&event.shiftKey)openContext(event,entry,true);});
     return entry;
   }
   function started(id,config,configurationId){
     if(order.has(id))return;
+    closeContext();
     const entry=order.get(configurationId)||createEntry(id,config);
     entry.id=id;entry.names=config.names.join(' / ');entry.detail.textContent=entry.names+' · Adquiriendo';
     // Promote the configuration tile in place instead of adding a second one.
