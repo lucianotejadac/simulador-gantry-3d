@@ -5,6 +5,8 @@ const dom=new JSDOM(`<section id="gantryLive"><input id="liveEnergyCenter" type=
     <div id="liveInfoD1">100 cuentas</div><div id="liveInfoD2">200 cuentas</div></section>
   <section id="rfPanel"><input id="rfDose" type="number" min="0.001" step="any" required value="20"></section>`,{runScripts:'outside-only'});
 const w=dom.window,$=id=>w.document.getElementById(id);let now=0,tick;
+const computedStyle=w.getComputedStyle.bind(w);
+w.getComputedStyle=(node,pseudo)=>pseudo?{width:'120px'}:computedStyle(node);
 w.GANTRY_LIVE={settings:{study:'bone'},signal:{mode:'live',duration:.75},ready:true};
 Object.defineProperty(w.performance,'now',{value:()=>now});
 w.setTimeout=fn=>{tick=fn;return 1;};w.clearTimeout=()=>{};
@@ -24,13 +26,19 @@ const mark=(id,direction)=>$(id).querySelector('.value-change-'+direction);
   now=1700;tick();await flush();
   assert(mark('liveInfoD1','decrease'),'Lower settled count displays downward hollow arrow class');
   assert(mark('liveCameraSettings','increase'),'Higher energy displays upward filled arrow class');
+  assert.equal(mark('liveInfoD1','decrease').dataset.previousLabel,'cifra anterior: 102','Keep the pre-adjustment count, not the cleared zero');
+  assert.equal(mark('liveCameraSettings','increase').dataset.previousLabel,'cifra anterior: 140');
+  assert.equal($('liveInfoD1').textContent,'20 cuentas','The explanatory value must not enter the observed numeric readout');
   assert(!$('liveInfoD2').querySelector('.value-change-flash'),'Unchanged detector readout is not highlighted');
+  now=1900;$('liveInfoD1').textContent='21 cuentas';await flush();
+  assert.equal(mark('liveInfoD1','decrease').dataset.previousLabel,'cifra anterior: 102','Ordinary noise must not change the previous figure');
   now=4300;$('liveInfoD1').textContent='21 cuentas';await flush();
   assert(!$('liveInfoD1').querySelector('.value-change-flash'),'Arrow expires without being retriggered by noise');
   change('rfDose','40');$('liveInfoD1').textContent='42 cuentas';await flush();
   assert(mark('liveInfoD1','pending'),'New RF panel triggers live feedback');
   now=5400;tick();now=6000;tick();await flush();
   assert(mark('liveInfoD1','increase'));
+  assert.equal(mark('liveInfoD1','increase').dataset.previousLabel,'cifra anterior: 21','The next manual adjustment uses a new baseline');
   now=8700;$('liveInfoD1').textContent='43 cuentas';await flush();
   change('rfDose','');$('liveInfoD1').textContent='44 cuentas';await flush();
   assert(!$('liveInfoD1').querySelector('.value-change-flash'),'Incomplete manual input must not highlight unrelated noise');

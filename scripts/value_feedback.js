@@ -88,9 +88,9 @@
     const list=tokens(host),values=list.map(t=>t.value),old=states.get(host),now=performance.now();
     const state={values,marks:old?.marks||new Map()};
     if(old&&old.values.length!==values.length)state.marks=new Map();
-    const deltas=settledChanges(host,values,now);
+    const baseline=pending.get(host)?.baseline,deltas=settledChanges(host,values,now);
     deltas?.forEach((delta,i)=>{
-      if(delta)state.marks.set(i,{started:now,direction:delta>0?'increase':'decrease'});
+      if(delta)state.marks.set(i,{started:now,direction:delta>0?'increase':'decrease',previous:baseline[i]});
     });
     const waiting=pendingMarks(host,values);
     states.set(host,state);
@@ -109,7 +109,24 @@
       const span=document.createElement('span');span.className='value-change-flash value-change-'+mark.direction;
       span.style.animationDelay=-(now-mark.started)+'ms';
       span.title=mark.direction==='pending'?'Calculando valor final…':mark.direction==='increase'?'Aumentó':'Disminuyó';
+      if(mark.direction!=='pending'){
+        span.dataset.previousLabel='cifra anterior: '+mark.previous;
+        span.title+=' · '+span.dataset.previousLabel;
+      }
       span.textContent=number.data;number.replaceWith(span);
+      if(mark.direction!=='pending'){
+        // Generated content keeps the old number out of the observed readout.
+        // Fit the caption beside the arrow, inside its panel even near an edge.
+        const bounds=(host.closest('.live-info,#liveCameraSettings,.pixel-panel')||host).getBoundingClientRect();
+        if(!mark.caption||mark.caption.panelWidth!==bounds.width){
+          const rect=span.getBoundingClientRect(),gap=(parseFloat(getComputedStyle(span).fontSize)||13)*.85,center=(rect.left+rect.right)/2;
+          const left=center-gap-bounds.left-3,right=bounds.right-center-gap-3,width=parseFloat(getComputedStyle(span,'::before').width);
+          const onLeft=right<width&&left>right;
+          mark.caption={panelWidth:bounds.width,onLeft,room:Math.max(40,onLeft?left:right)};
+        }
+        span.classList.toggle('value-change-label-left',mark.caption.onLeft);
+        span.style.setProperty('--value-label-max-width',mark.caption.room+'px');
+      }
     }
   }
   function observe(){for(const root of roots)observer.observe(root,{childList:true,subtree:true,characterData:true});}
