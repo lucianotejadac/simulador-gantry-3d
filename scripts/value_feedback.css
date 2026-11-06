@@ -39,6 +39,8 @@
 #gantryLive .pixel-panel td { height:46px;overflow:visible; }
 #gantryWorkspace #gantryLive .live-info,#gantryLive .pixel-total,
 #gantryLiveMonitors .live-info,#liveCameraSettings { line-height:2.4; }
+/* The average can include decimals and wrap beside the arrow. */
+#gantryWorkspace #gantryLive .live-info,#gantryLiveMonitors .live-info { line-height:3.4; }
 .value-change-pending {
   color: #16232e;
   animation: gantry-value-pending 1000ms ease-in-out infinite;
