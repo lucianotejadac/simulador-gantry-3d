@@ -745,7 +745,7 @@ function drawLayoutOverlays(ctx,p,exporting){
 function openHeaderEditor(required=false){
  $('flex-context').hidden=true;const p=flexPage(),meta=p?.meta||flex.assets[0]?.meta||{},existing=flex.header||p?.header;
  flex.headerRequired=false;
- const defaults={patient:meta.patient==='Paciente: sin dato'?'':meta.patient||'',rut:'',date:meta.date||'',exam:meta.exam==='Examen: sin dato'?'':meta.exam||'',institution:meta.institution||''};
+ const defaults={patient:meta.patient==='Paciente: sin dato'?'':meta.patient||'',rut:/^\d{1,2}\.\d{3}\.\d{3}-[0-9K]$/.test(meta.patientId||'')?meta.patientId:'',date:meta.date||'',exam:meta.exam==='Examen: sin dato'?'':meta.exam||'',institution:meta.institution||''};
  for(const key of Object.keys(defaults)){$('header-'+key).value=existing?.[key].value??defaults[key];$('header-show-'+key).checked=existing?.[key].show??true;}
  $('header-origin').textContent=meta.patientId?'Identificación DICOM: '+meta.patientId+'. Completa el RUT si corresponde.':'Los campos disponibles se toman de las imágenes cargadas; puedes completar los que faltan.';
  $('header-dialog-title').textContent=existing?'Editar encabezado común':'Establecer encabezado';
@@ -1067,6 +1067,20 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
 (function(){
   'use strict';
   const programs={bone:'Óseo · MDP',thyroid:'Tiroides · Pertecnetato',dmsa:'Renal · DMSA',maa:'Perfusión pulmonar · MAA',mibi:'Miocardio · MIBI',parathyroid:'Paratiroides · MIBI',exploration:'I-131 postratamiento'};
+  const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  function registration(value){
+    const fail=(field,message)=>{const error=new Error(message);error.field=field;throw error;};
+    const text=(key,label)=>{const v=typeof value?.[key]==='string'?value[key].trim().replace(/\s+/g,' '):'';if(!v||v.length>64||/[\x00-\x1f\\^]/.test(v))fail(key,'Indica '+label+' (máximo 64 caracteres).');return v;};
+    const fullName=text('fullName','el nombre completo'),examName=text('examName','el nombre del examen');
+    const raw=typeof value.rut==='string'?value.rut.replace(/[.\s-]/g,'').toUpperCase():'';
+    if(!/^[1-9]\d{0,7}[0-9K]$/.test(raw))fail('rut','Escribe un RUT válido, incluido su dígito verificador.');
+    const number=raw.slice(0,-1);let sum=0;[...number].reverse().forEach((n,i)=>sum+=Number(n)*(2+i%6));
+    const check=11-sum%11,digit=check===11?'0':check===10?'K':String(check);
+    if(raw.at(-1)!==digit)fail('rut','El dígito verificador del RUT no coincide.');
+    const birthDate=value.birthDate,date=new Date(birthDate+'T12:00:00Z');
+    if(typeof birthDate!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||!Number.isFinite(date.getTime())||date.toISOString().slice(0,10)!==birthDate||birthDate<'0001-01-01'||birthDate>today())fail('birthDate','Indica una fecha de nacimiento válida que no sea futura.');
+    return {fullName,rut:number.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'-'+digit,birthDate,examName};
+  }
   function camera(value){
     if(!value||typeof value!=='object')throw Error('Parámetros de cámara incompletos.');
     const c={study:value.study||'bone'};
@@ -1104,7 +1118,10 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());
     const patientNames={phantom:'Fantoma ICRP 145 · SIMULADO','caso-oseo':'Caso óseo','caso-oseo-2':'Caso óseo 2','caso-oseo-3':'Caso óseo 3'};
-    if(value.patient&&Object.hasOwn(patientNames,value.patient.id))c.patient={id:value.patient.id,name:patientNames[value.patient.id]};
+    if(value.patient&&Object.hasOwn(patientNames,value.patient.id)){
+      c.patient={id:value.patient.id,name:patientNames[value.patient.id]};
+      if(value.patient.fullName){const p=registration(value.patient);Object.assign(c.patient,p,{name:p.fullName,caseName:patientNames[value.patient.id]});if(typeof value.patient.registrationId==='string')c.patient.registrationId=value.patient.registrationId;}
+    }
     return c;
   }
   function fromRecord(r){
@@ -1123,7 +1140,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     if(result.reduce((s,p)=>s+p.frames,0)*n*n*8>64*1024*1024)throw Error('La secuencia supera 64 MB de cuentas. Reduce la matriz o el número de imágenes.');
     return result;
   }
-  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord,camera,phases,programs};
+  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord,camera,phases,programs,registration,today};
 })();
 
 /* One action model for the acquisition menu and its transport controls. */
@@ -1452,7 +1469,9 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   function renderFields(config,locked=false){
     const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
     if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
-    $('patient').append(field('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO'),field('Estudio',window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
+    $('patient').append(field('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO'),field('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
+    if(config.patient?.fullName)section('series','Datos del paciente y del examen',[
+      field('Nombre completo',config.patient.fullName),field('RUT',config.patient.rut),field('Fecha de nacimiento',config.patient.birthDate?.replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3/$2/$1')),field('Nombre del examen',config.patient.examName)]);
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
       input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
@@ -1591,7 +1610,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const d=event.data;
     if(d.type==='GANTRY_ADMINISTRATION_ERROR')status(d.error,'error');
     if(d.type==='GANTRY_ADMINISTRATION_STATE'&&draft&&!draft.id){
-      if(d.patient){draft.config.patient=d.patient;const patient=$('patient').querySelector('input');if(patient)patient.value=d.patient.name;}
+      if(d.patient&&(d.patient.id!==draft.config.patient?.id||d.patient.registrationId!==draft.config.patient?.registrationId)){draft.config.patient=d.patient;const config=read(false),id=draft.listId;render(config,false,id);}
       for(const key of ['activityMci','minutes']){
         const node=inputs.get(key);
         if(node&&document.activeElement!==node&&Number.isFinite(d[key])){node.value=String(d[key]);draft.config[key]=d[key];}
@@ -1604,6 +1623,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     if(d.type==='GANTRY_POSITION_STATE')syncPosition(d.position);
     if(d.type==='GANTRY_ACQUIRE_POSITION'&&d.request===waiting){waiting=null;setMenu();syncPosition(d.position);}
     if(d.type==='GANTRY_ACQUIRE_CONFIG'&&d.request===waiting){waiting=null;render(d.config);}
+    if(d.type==='GANTRY_ACQUIRE_CANCELLED'&&d.request===waiting){waiting=null;if(draft&&!draft.id)for(const node of inputs.values())node.disabled=false;setMenu();syncPosition();status('Registro cancelado. No se agregó ni inició una adquisición.');}
     if(d.type==='GANTRY_ACQUIRE_RETAKE'&&d.request===waiting){
       waiting=null;finish();window.GANTRY_PROCESSING_LIST.remove(d.id);saved.delete(d.id);
       if(lastId===d.id){lastId=null;lastState=null;}render(d.config);
@@ -1906,7 +1926,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       const batch=data.files.map(check);
       window.GANTRY_PROCESSING_EDITOR?.finish();
       for(const entry of batch){await loadFile(new File([entry.file.bytes],entry.file.name),entry.ds);if(!flex.assets.some(a=>a.uid===entry.file.uid))throw Error('Error al cargar '+entry.file.name);}
-      if(!flex.header)flex.header=Object.fromEntries(Object.entries({patient:'Fantoma ICRP 145 · SIMULADO',rut:'',date:'',exam:'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));
+      if(!flex.header){const ds=batch[0].ds;flex.header=Object.fromEntries(Object.entries({patient:value(ds,'00100010')||'Fantoma ICRP 145 · SIMULADO',rut:value(ds,'00100020')||'',date:'',exam:value(ds,'00081030')||'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));}
       // Receiving acquisitions only fills the image library. Compose a page
       // exclusively for the explicit "Componer seleccionadas" command.
       if(data.view==='flex'){

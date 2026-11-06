@@ -238,7 +238,9 @@
   function renderFields(config,locked=false){
     const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
     if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
-    $('patient').append(field('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO'),field('Estudio',window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
+    $('patient').append(field('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO'),field('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
+    if(config.patient?.fullName)section('series','Datos del paciente y del examen',[
+      field('Nombre completo',config.patient.fullName),field('RUT',config.patient.rut),field('Fecha de nacimiento',config.patient.birthDate?.replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3/$2/$1')),field('Nombre del examen',config.patient.examName)]);
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
       input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
@@ -377,7 +379,7 @@
     const d=event.data;
     if(d.type==='GANTRY_ADMINISTRATION_ERROR')status(d.error,'error');
     if(d.type==='GANTRY_ADMINISTRATION_STATE'&&draft&&!draft.id){
-      if(d.patient){draft.config.patient=d.patient;const patient=$('patient').querySelector('input');if(patient)patient.value=d.patient.name;}
+      if(d.patient&&(d.patient.id!==draft.config.patient?.id||d.patient.registrationId!==draft.config.patient?.registrationId)){draft.config.patient=d.patient;const config=read(false),id=draft.listId;render(config,false,id);}
       for(const key of ['activityMci','minutes']){
         const node=inputs.get(key);
         if(node&&document.activeElement!==node&&Number.isFinite(d[key])){node.value=String(d[key]);draft.config[key]=d[key];}
@@ -390,6 +392,7 @@
     if(d.type==='GANTRY_POSITION_STATE')syncPosition(d.position);
     if(d.type==='GANTRY_ACQUIRE_POSITION'&&d.request===waiting){waiting=null;setMenu();syncPosition(d.position);}
     if(d.type==='GANTRY_ACQUIRE_CONFIG'&&d.request===waiting){waiting=null;render(d.config);}
+    if(d.type==='GANTRY_ACQUIRE_CANCELLED'&&d.request===waiting){waiting=null;if(draft&&!draft.id)for(const node of inputs.values())node.disabled=false;setMenu();syncPosition();status('Registro cancelado. No se agregó ni inició una adquisición.');}
     if(d.type==='GANTRY_ACQUIRE_RETAKE'&&d.request===waiting){
       waiting=null;finish();window.GANTRY_PROCESSING_LIST.remove(d.id);saved.delete(d.id);
       if(lastId===d.id){lastId=null;lastState=null;}render(d.config);

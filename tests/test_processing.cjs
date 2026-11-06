@@ -7,6 +7,8 @@ vm.runInContext(parserCode,parserEnv);const parser=parserEnv.module.exports;
 const env=vm.createContext({window:{},crypto:webcrypto,TextEncoder,Uint8Array,Uint32Array,DataView,structuredClone});
 for(const file of ['bone_acquisition_store.js','processing_dicom.js'])vm.runInContext(fs.readFileSync('scripts/'+file,'utf8'),env);
 const api=env.window.GANTRY_PROCESSING_DICOM;
+const registeredPatient={id:'phantom',name:'Daniel Andrés Rojas Medina',fullName:'Daniel Andrés Rojas Medina',rut:'91.000.001-2',birthDate:'1988-03-14',examName:'Cintigrafía ósea de control',registrationId:'registered-exam'};
+const textValue=(ds,t)=>{const e=ds.elements['x'+t];return e?new TextDecoder().decode(ds.byteArray.subarray(e.dataOffset,e.dataOffset+e.length)).replace(/\0/g,'').trim():'';};
 function record(n=128,height=n,peak=50){
  const heads=[1,2].map(detector=>{const counts=Uint32Array.from({length:n*height},(_,i)=>i%137===0?peak:i%5);return {detector,counts,total:counts.reduce((a,b)=>a+b,0),elapsed:detector*61.23,done:true};});
  const first={settings:{collimator:'LEHR',energyCenter:140,windowWidth:20,zoom:1.5},detectors:[{view:'OAD 45 grados',angle:45,orientationMatched:true},{view:'PA',angle:180,orientationMatched:true}]};
@@ -17,7 +19,7 @@ function record(n=128,height=n,peak=50){
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'gantry-processing-')),checks=[];
  const wholeBody=[64,128,256,512].map(n=>({...record(n,4*n),sampling:{
    pixelMm:2.3975999355316*256/n,widthMm:2.3975999355316*256,heightMm:2.3975999355316*1024}}));
- for(const recordData of [{...record(64),patient:{id:'caso-oseo-3',name:'Caso ?seo 3',model:'osteoblastic-metastases-v1'}},{...record(64),patient:{id:'caso-oseo-2',name:'Caso óseo 2',model:'cellulitis-right-foot-v1'}},{...record(64),patient:{id:'caso-oseo',name:'Caso óseo',model:'case3-right-hindfoot-v1'}},record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000),...wholeBody]){
+ for(const recordData of [{...record(64),id:'registered-patient',patient:registeredPatient},{...record(64),patient:{id:'caso-oseo-3',name:'Caso ?seo 3',model:'osteoblastic-metastases-v1'}},{...record(64),patient:{id:'caso-oseo-2',name:'Caso óseo 2',model:'cellulitis-right-foot-v1'}},{...record(64),patient:{id:'caso-oseo',name:'Caso óseo',model:'case3-right-hindfoot-v1'}},record(64),record(64,160),record(),record(256),record(512),record(1024),record(128,320),record(128,128,100000),...wholeBody]){
   const before=recordData.heads.map(h=>h.counts.slice()),files=await api.files(recordData,await api.uid('study'));
   const repeat=await api.files(recordData,await api.uid('study'));assert.equal(repeat[0].uid,files[0].uid);
   files.forEach((file,j)=>{
@@ -28,7 +30,8 @@ function record(n=128,height=n,peak=50){
    assert.equal(Number(ds.string('x00181242')),Math.round(recordData.heads[j].elapsed*1000));
    assert.equal(ds.string('x00080018'),file.uid);
    const metadata=JSON.parse(ds.string('x00111010'));
-   if(recordData.patient){assert.deepEqual(metadata.patient,recordData.patient);assert.equal(ds.string('x00100020'),recordData.patient.id);}
+   if(recordData.patient){assert.deepEqual(metadata.patient,recordData.patient);assert.equal(ds.string('x00100020'),recordData.patient.rut||recordData.patient.id);}
+   if(recordData.patient?.fullName){assert.equal(textValue(ds,'00100010'),registeredPatient.fullName);assert.equal(textValue(ds,'00081030'),registeredPatient.examName);assert.equal(ds.string('x00100030'),'19880314');}
    assert.equal(metadata.acquisition.mode,recordData.mode);assert.equal(metadata.acquisition.target,recordData.target);
    assert.deepEqual(metadata.heads,recordData.heads.map(h=>({detector:h.detector,elapsed:h.elapsed,total:h.total,done:h.done})));
    const v=new DataView(ds.byteArray.buffer,ds.byteArray.byteOffset+pixel.dataOffset,pixel.length);
@@ -36,7 +39,7 @@ function record(n=128,height=n,peak=50){
    assert.equal(bits,recordData.id.endsWith('100000')?32:16);
    if(bits===32)assert.equal(ds.string('x00080016'),api.PRIVATE32);
    const filename=path.join(tmp,recordData.id+'-'+j+'.dcm');fs.writeFileSync(filename,new Uint8Array(file.bytes));
-   checks.push({filename,total:file.total,rows:file.rows,cols:file.cols,bits,elapsed:recordData.heads[j].elapsed,pixelMm:recordData.sampling?.pixelMm});
+   checks.push({filename,total:file.total,rows:file.rows,cols:file.cols,bits,elapsed:recordData.heads[j].elapsed,pixelMm:recordData.sampling?.pixelMm,patient:recordData.patient?.fullName?recordData.patient:null});
   });
  }
  const legacy=record();delete legacy.processing;assert.match(api.label(legacy,0),/no registrada/);
@@ -73,22 +76,29 @@ for item in json.loads(sys.stdin.read()):
   assert all(abs(float(p)-item['pixelMm'])<1e-8 for p in d.PixelSpacing)
  assert int(d.ActualFrameDuration)==round(item['elapsed']*1000)
  assert float(d.RadiopharmaceuticalInformationSequence[0].RadionuclideTotalDose)==740
- assert 'SIMULADO' in str(d.PatientName)
-print('pydicom: pixel totals, dimensions, duration and dose verified')`],{input:JSON.stringify(checks),encoding:'utf8'});
+ if item.get('patient'):
+  assert str(d.PatientName)==item['patient']['fullName']
+  assert d.PatientID==item['patient']['rut']
+  assert d.PatientBirthDate==item['patient']['birthDate'].replace('-','')
+  assert d.StudyDescription==item['patient']['examName']
+ else:
+  assert 'SIMULADO' in str(d.PatientName)
+print('pydicom: pixel totals, dimensions, duration, dose and registered patient verified')`],{input:JSON.stringify(checks),encoding:'utf8',env:{...process.env,PYTHONUTF8:'1'}});
  assert.equal(result.status,0,result.stderr);console.log(result.stdout.trim());
  // Run the actual receiver against the actual parser with a minimal viewer shell.
  const imports=[],listeners={},replies=[],parent={postMessage:m=>replies.push(m)};
  const selectedModes=[];
  const globals={window:{addEventListener:(n,fn)=>listeners[n]=fn},parent,location:{origin:'http://local'},dicomParser:parser,ArrayBuffer,Uint8Array,DataView,File,
-   acquisitionInstances:{static:{}},selectMode:(...args)=>selectedModes.push(args),
+   acquisitionInstances:{static:{}},selectMode:(...args)=>selectedModes.push(args),value:textValue,
    flex:{assets:[],pages:[],serial:0,header:null},PAGE:{top:100},$:()=>({textContent:''}),stopDynamic(){},openFlexible(){},refreshFlexible(){},boundsFlexible(){},arrangeFlexible(){throw Error('Images must not be automatically arranged');},
    async loadFile(file,ds){imports.push(file);globals.acquisitionInstances.static[ds.string('x00080018')]={};globals.flex.assets.push({uid:ds.string('x00080018'),id:ds.string('x00080018')+':0',rows:ds.uint16('x00280010'),cols:ds.uint16('x00280011'),window:50,level:25});},
    flexNewPage(){const p={id:globals.flex.pages.length+1,items:[]};globals.flex.pages.push(p);return p;}};
  vm.runInContext(fs.readFileSync('scripts/processing_receiver.js','utf8'),vm.createContext(globals));
- const files=await api.files(record(1024),await api.uid('study')),event={source:parent,origin:'http://local',data:{type:'GANTRY_PROCESSING_IMPORT',version:1,id:1,files}};
+ const files=await api.files({...record(1024),patient:registeredPatient},await api.uid('study')),event={source:parent,origin:'http://local',data:{type:'GANTRY_PROCESSING_IMPORT',version:1,id:1,files}};
  await listeners.message({...event,origin:'http://foreign'});assert.equal(imports.length,0);
  await listeners.message({...event,source:{}});assert.equal(imports.length,0);
  await listeners.message(event);assert.equal(replies.at(-1).images,2);assert.equal(globals.flex.pages.length,0,'Import alone must not compose images');
+ assert.equal(globals.flex.header.patient.value,registeredPatient.fullName);assert.equal(globals.flex.header.rut.value,registeredPatient.rut);assert.equal(globals.flex.header.exam.value,registeredPatient.examName);
  await listeners.message({...event,data:{...event.data,view:'acquisition'}});
  assert.deepEqual(selectedModes.at(-1),['static',files[0].uid],'Automatic imports open the acquisition menu, not the flexible page');
  assert.equal(globals.flex.pages.length,0,'Completed acquisitions stay available without filling the flexible page');

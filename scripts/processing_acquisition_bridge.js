@@ -57,6 +57,8 @@
       if(window.GANTRY_RF?.pending(c.study||'bone'))throw Error('Pulsa Inyectar en la vista 3D antes de adquirir.');
       preparing=true;
       try{
+        if(window.GANTRY_PATIENT_REGISTRATION&&!(await window.GANTRY_PATIENT_REGISTRATION.ensure()))return null;
+        c.patient=window.GANTRY_PATIENT?.metadata();
         retainLiveCamera();
         applyCamera(c);
         if(window.GANTRY_RF){
@@ -108,6 +110,12 @@
         }else if(d.type==='GANTRY_ACQUIRE_CONFIG'){
           if(!['static','whole','dynamic'].includes(d.kind))throw Error('Tipo de adquisición no válido.');
           if(preparing||otherBusy())throw Error('Finaliza la adquisición activa antes de preparar otra.');
+          preparing=true;
+          let registered;
+          try{registered=window.GANTRY_PATIENT_REGISTRATION?await window.GANTRY_PATIENT_REGISTRATION.ensure():true;}finally{preparing=false;}
+          if(!registered){post({type:'GANTRY_ACQUIRE_CANCELLED',request:d.request});return;}
+          if(!window.GANTRY_PROCESSING.active){post({type:'GANTRY_ACQUIRE_CANCELLED',request:d.request});return;}
+          if(otherBusy())throw Error('Finaliza la adquisición activa antes de preparar otra.');
           if(d.kind==='dynamic'&&window.GANTRY_RF?.selected!=='bone3')window.GANTRY_RF?.select('bone3');
           // A new static acquisition intentionally selects its default zoom.
           // Commit it to live too, after releasing any finished acquisition override.
@@ -128,7 +136,7 @@
           post({type:'GANTRY_ACQUIRE_POSITION',request:d.request,position:positionState()});
         }else if(d.type==='GANTRY_ACQUIRE_START'){
           const id=await start(d.config,d.instant===true);
-          post({type:'GANTRY_ACQUIRE_STARTED',request:d.request,id});
+          post(id?{type:'GANTRY_ACQUIRE_STARTED',request:d.request,id}:{type:'GANTRY_ACQUIRE_CANCELLED',request:d.request});
         }else{
           if(!owned||engine().state?.id!==owned||d.id!==owned)throw Error('Esta adquisición ya no es la actual.');
           if(!['pause','stop','fast','instant','save'].includes(d.action))throw Error('Acción no válida.');

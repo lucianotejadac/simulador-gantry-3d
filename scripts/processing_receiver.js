@@ -57,7 +57,7 @@
       const batch=data.files.map(check);
       window.GANTRY_PROCESSING_EDITOR?.finish();
       for(const entry of batch){await loadFile(new File([entry.file.bytes],entry.file.name),entry.ds);if(!flex.assets.some(a=>a.uid===entry.file.uid))throw Error('Error al cargar '+entry.file.name);}
-      if(!flex.header)flex.header=Object.fromEntries(Object.entries({patient:'Fantoma ICRP 145 · SIMULADO',rut:'',date:'',exam:'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));
+      if(!flex.header){const ds=batch[0].ds;flex.header=Object.fromEntries(Object.entries({patient:value(ds,'00100010')||'Fantoma ICRP 145 · SIMULADO',rut:value(ds,'00100020')||'',date:'',exam:value(ds,'00081030')||'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));}
       // Receiving acquisitions only fills the image library. Compose a page
       // exclusively for the explicit "Componer seleccionadas" command.
       if(data.view==='flex'){

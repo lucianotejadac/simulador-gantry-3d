@@ -19,7 +19,7 @@
       window.dispatchEvent(new CustomEvent('gantry-patient-change',{detail:metadata()}));
     }finally{loading=false;render();}
   }
-  function metadata(){return {...patients[id]};}
+  function metadata(){const registration=window.GANTRY_PATIENT_REGISTRATION?.current(id);return {...patients[id],...(registration?{...registration,caseName:patients[id].name,name:registration.fullName}:{})};}
   function render(){
     const node=document.getElementById('gantryPatient');if(!node)return;
     node.value=id;node.disabled=loading||busy();

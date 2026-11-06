@@ -80,6 +80,7 @@ for old, new in {
 # Header entry can be dismissed without saving in the simulator edition.
 s = s.replace('else ctx.drawImage(rasterFlexible(i),x+w/2-dw/2+i.panX,y+22+innerH/2-dh/2+i.panY,dw,dh);', 'else {const ix=x+w/2-dw/2+i.panX,iy=y+22+innerH/2-dh/2+i.panY;ctx.drawImage(rasterFlexible(i),ix,iy,dw,dh);window.GANTRY_PROCESSING_ANALYSIS.drawFlexibleRois(ctx,i,a,ix,iy,dw,dh);}')
 s = s.replace('flex.headerRequired=required&&!existing;', 'flex.headerRequired=false;')
+s = s.replace("rut:'',date:meta.date||''", "rut:/^\\d{1,2}\\.\\d{3}\\.\\d{3}-[0-9K]$/.test(meta.patientId||'')?meta.patientId:'',date:meta.date||''")
 s = s.replace('id:uid+\':\'+f,uid,study,series,kind:currentMode', "id:uid+':'+f,uid,study,series,acquisitionId:window.GANTRY_FLEX_MEASUREMENTS?.acquisition(dataset),acquisitionDetector:window.GANTRY_FLEX_MEASUREMENTS?.detector(dataset),kind:currentMode")
 s = s.replace('ctx.fillStyle=t.color;const lines=layoutLines(ctx,t);', 'ctx.fillStyle=t.color;if(t.measurementTable){window.GANTRY_FLEX_MEASUREMENTS.draw(ctx,t);if(!exporting&&t.id===flex.selectedText){ctx.strokeStyle="#0000aa";ctx.strokeRect(t.x,t.y,t.w,t.h);}ctx.restore();continue;}const lines=layoutLines(ctx,t);')
 s = s.replace("flex.headerRequired?'Establecer encabezado obligatorio':'Editar encabezado común'", "existing?'Editar encabezado común':'Establecer encabezado'")
@@ -153,7 +154,7 @@ if 'id="boneProcessingTab"' not in html:
 if 'id="boneSendProcessing"' not in html:
     html = html.replace('<button id="boneAcqSave"', '<button id="boneSendProcessing" class="live-setting" type="button">Enviar a procesamiento</button>\n            <button id="boneAcqSave"', 1)
 html = html.replace("if(window.GANTRY_PROCESSING?.active || document.hidden || !activeStudy().linear", "if(document.hidden || !activeStudy().linear")
-engine = '\n'.join((ROOT / 'scripts' / name).read_text(encoding='utf-8') for name in ['processing_dicom.js', 'processing_acquisition_config.js', 'processing_acquisition_bridge.js', 'processing_bridge.js'])
+engine = '\n'.join((ROOT / 'scripts' / name).read_text(encoding='utf-8') for name in ['processing_dicom.js', 'processing_acquisition_config.js', 'patient_registration.js', 'processing_acquisition_bridge.js', 'processing_bridge.js'])
 # Cache the controller separately; the large viewer/parser stays lazy-loaded.
 engine_url = asset(engine.encode('utf-8'), 'processing-controller', 'js')
 block = '<!-- PROCESSING_ENGINE_BEGIN -->\n<script src="' + engine_url + '"></script>\n<!-- PROCESSING_ENGINE_END -->'

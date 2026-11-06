@@ -2,6 +2,20 @@
 (function(){
   'use strict';
   const programs={bone:'Óseo · MDP',thyroid:'Tiroides · Pertecnetato',dmsa:'Renal · DMSA',maa:'Perfusión pulmonar · MAA',mibi:'Miocardio · MIBI',parathyroid:'Paratiroides · MIBI',exploration:'I-131 postratamiento'};
+  const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  function registration(value){
+    const fail=(field,message)=>{const error=new Error(message);error.field=field;throw error;};
+    const text=(key,label)=>{const v=typeof value?.[key]==='string'?value[key].trim().replace(/\s+/g,' '):'';if(!v||v.length>64||/[\x00-\x1f\\^]/.test(v))fail(key,'Indica '+label+' (máximo 64 caracteres).');return v;};
+    const fullName=text('fullName','el nombre completo'),examName=text('examName','el nombre del examen');
+    const raw=typeof value.rut==='string'?value.rut.replace(/[.\s-]/g,'').toUpperCase():'';
+    if(!/^[1-9]\d{0,7}[0-9K]$/.test(raw))fail('rut','Escribe un RUT válido, incluido su dígito verificador.');
+    const number=raw.slice(0,-1);let sum=0;[...number].reverse().forEach((n,i)=>sum+=Number(n)*(2+i%6));
+    const check=11-sum%11,digit=check===11?'0':check===10?'K':String(check);
+    if(raw.at(-1)!==digit)fail('rut','El dígito verificador del RUT no coincide.');
+    const birthDate=value.birthDate,date=new Date(birthDate+'T12:00:00Z');
+    if(typeof birthDate!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||!Number.isFinite(date.getTime())||date.toISOString().slice(0,10)!==birthDate||birthDate<'0001-01-01'||birthDate>today())fail('birthDate','Indica una fecha de nacimiento válida que no sea futura.');
+    return {fullName,rut:number.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'-'+digit,birthDate,examName};
+  }
   function camera(value){
     if(!value||typeof value!=='object')throw Error('Parámetros de cámara incompletos.');
     const c={study:value.study||'bone'};
@@ -39,7 +53,10 @@
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());
     const patientNames={phantom:'Fantoma ICRP 145 · SIMULADO','caso-oseo':'Caso óseo','caso-oseo-2':'Caso óseo 2','caso-oseo-3':'Caso óseo 3'};
-    if(value.patient&&Object.hasOwn(patientNames,value.patient.id))c.patient={id:value.patient.id,name:patientNames[value.patient.id]};
+    if(value.patient&&Object.hasOwn(patientNames,value.patient.id)){
+      c.patient={id:value.patient.id,name:patientNames[value.patient.id]};
+      if(value.patient.fullName){const p=registration(value.patient);Object.assign(c.patient,p,{name:p.fullName,caseName:patientNames[value.patient.id]});if(typeof value.patient.registrationId==='string')c.patient.registrationId=value.patient.registrationId;}
+    }
     return c;
   }
   function fromRecord(r){
@@ -58,5 +75,5 @@
     if(result.reduce((s,p)=>s+p.frames,0)*n*n*8>64*1024*1024)throw Error('La secuencia supera 64 MB de cuentas. Reduce la matriz o el número de imágenes.');
     return result;
   }
-  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord,camera,phases,programs};
+  window.GANTRY_PROCESSING_CONFIG={validate,fromRecord,camera,phases,programs,registration,today};
 })();

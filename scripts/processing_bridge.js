@@ -94,7 +94,7 @@
       const files=[];
       for(const key of keys){
         const record=catalog.get(key);
-        const studyUID=await window.GANTRY_PROCESSING_DICOM.uid('gantry-bone-phantom:'+new Date(record.processing?.startedAt||record.createdAt).toISOString().slice(0,10));
+        const studyUID=await window.GANTRY_PROCESSING_DICOM.uid('gantry-exam:'+(record.patient?.registrationId||record.patient?.id||'phantom')+':'+new Date(record.processing?.startedAt||record.createdAt).toISOString().slice(0,10));
         files.push(...await window.GANTRY_PROCESSING_DICOM.files(record,studyUID));
       }
       pending.timer=setTimeout(()=>{if(pending?.id===id){pending=null;el('boneProcessingSend').disabled=false;status.textContent='El procesador no confirmó la recepción. Pulsa Actualizar lista para reintentar.';}},30000);
