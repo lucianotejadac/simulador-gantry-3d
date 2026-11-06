@@ -1,5 +1,5 @@
 /* Highlight changed readouts after an operator adjustment, never on clock ticks.
-   Only text readouts are observed; no canvas pixels or acquisition data are read. */
+   Live counting statistics are handled separately using independent event intervals. */
 (function(){
   'use strict';
   const duration=2500,resultPause=600,averageWindow=5000,states=new WeakMap(),histories=new WeakMap(),pending=new Map();
@@ -73,9 +73,11 @@
   }
   function changed(){
     const now=performance.now();
+    window.GANTRY_COUNT_FEEDBACK?.changed(now);
     // Freeze the time-weighted mean before the adjustment clears persistence.
     // Repaints do not add weight; rapid adjustments retain the same prior mean.
     document.querySelectorAll(selector).forEach(host=>{
+      if(/^liveInfoD[12]$/.test(host.id)&&window.GANTRY_COUNT_FEEDBACK?.active()){pending.delete(host);histories.delete(host);return;}
       const values=states.get(host)?.values,average=previousAverage(host,now);
       if(values?.length&&!pending.has(host))pending.set(host,{
         baseline:average?.values||values.map(numericValue),averageMs:average?.elapsed||0,
@@ -140,6 +142,9 @@
     return p;
   }
   function paint(host){
+    if(/^liveInfoD[12]$/.test(host.id)&&window.GANTRY_COUNT_FEEDBACK?.render(host,performance.now())){
+      pending.delete(host);states.delete(host);histories.delete(host);return;
+    }
     const list=tokens(host),values=list.map(t=>t.value),old=states.get(host),now=performance.now();
     const state={values,marks:old?.marks||new Map()};
     if(old&&old.values.length!==values.length)state.marks=new Map();

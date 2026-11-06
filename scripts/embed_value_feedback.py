@@ -8,7 +8,8 @@ page = ROOT / 'index.html'
 html = page.read_text(encoding='utf-8')
 js = asset((ROOT / 'scripts/value_feedback.js').read_bytes(), 'value-feedback', 'js')
 css = asset((ROOT / 'scripts/value_feedback.css').read_bytes(), 'value-feedback', 'css')
-block = f'<!-- VALUE_FEEDBACK_BEGIN -->\n<link rel="stylesheet" href="{css}">\n<script src="{js}"></script>\n<!-- VALUE_FEEDBACK_END -->'
+stats = asset((ROOT / 'scripts/live_count_feedback.js').read_bytes(), 'live-count-feedback', 'js')
+block = f'<!-- VALUE_FEEDBACK_BEGIN -->\n<link rel="stylesheet" href="{css}">\n<script src="{stats}"></script>\n<script src="{js}"></script>\n<!-- VALUE_FEEDBACK_END -->'
 if '<!-- VALUE_FEEDBACK_BEGIN -->' in html:
     html = re.sub(r'<!-- VALUE_FEEDBACK_BEGIN -->.*?<!-- VALUE_FEEDBACK_END -->', lambda _: block, html, flags=re.S)
 else:

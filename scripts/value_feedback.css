@@ -39,8 +39,14 @@
 #gantryLive .pixel-panel td { height:46px;overflow:visible; }
 #gantryWorkspace #gantryLive .live-info,#gantryLive .pixel-total,
 #gantryLiveMonitors .live-info,#liveCameraSettings { line-height:2.4; }
-/* The average can include decimals and wrap beside the arrow. */
-#gantryWorkspace #gantryLive .live-info,#gantryLiveMonitors .live-info { line-height:3.4; }
+/* Statistical feedback has its own compared values and stays in normal flow. */
+#gantryWorkspace #gantryLive .live-info,#gantryLiveMonitors .live-info { line-height:1.65; }
+#gantryLiveMonitors .live-info:has(.live-count-comparison) { max-height:190px; }
+.live-count-comparison { margin:6px 0;padding:6px 8px;border-left:3px solid #ffe36e;
+  background:#0b1823;color:#ffe36e;font:normal .9em/1.5 var(--mono,monospace);overflow-wrap:anywhere; }
+.live-count-comparison > div:first-child { font-weight:bold; }
+.live-count-comparison[data-kind="noise"] { color:#b8d9e9;border-color:#b8d9e9; }
+.live-count-comparison[data-kind="baseline"],.live-count-comparison[data-kind="insufficient"] { color:#bdc4cb;border-color:#bdc4cb; }
 .value-change-pending {
   color: #16232e;
   animation: gantry-value-pending 1000ms ease-in-out infinite;

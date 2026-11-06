@@ -227,9 +227,13 @@
     }
     return {values:sharp,cdf,sum,window:pose.window*area};
   }
+  let persistenceSequence=0;
   class Persistence {
     constructor(w,h,random=Math.random){this.w=w;this.h=h;this.random=random;this.counts=new Uint32Array(w*h);this.reset();}
-    reset(){this.counts.fill(0);this.frames=[];this.total=0;this.lastStepTime=-Infinity;}
+    reset(){this.counts.fill(0);this.frames=[];this.total=0;this.lastStepTime=-Infinity;
+      this.sampleId=++persistenceSequence;this.eventCount=0;this.exposureSeconds=0;}
+    // Cumulative independent events, unaffected by expiration of the display window.
+    get eventSample(){return {id:this.sampleId,counts:this.eventCount,seconds:this.exposureSeconds};}
     expire(now,duration){
       while(this.frames.length&&this.frames[0].time<=now-duration){
         const frame=this.frames.shift();for(const i of frame.events)this.counts[i]--;
@@ -249,6 +253,7 @@
         this.counts[lo]++;events.push(lo);
       }
       this.frames.push({time:now,events:Uint32Array.from(events)});this.total+=events.length;
+      this.eventCount+=events.length;this.exposureSeconds+=dt;
     }
     draw(ctx,field,rate,duration,live,gain){
       const image=ctx.createImageData(this.w,this.h),pixels=image.data;
