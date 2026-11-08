@@ -20,7 +20,6 @@
       <form novalidate><p id="patientRegistrationContext"></p><p>Completa los datos antes de agregar la primera adquisición. Se conservarán para las siguientes adquisiciones de este paciente en la sesión.</p>
       <label>Nombre completo<input id="registration-fullName" name="fullName" type="text" required maxlength="64" autocomplete="off"></label>
       <label>RUT<input id="registration-rut" name="rut" type="text" required maxlength="12" placeholder="12.345.678-5" autocomplete="off"></label>
-      <label>Fecha de nacimiento<input id="registration-birthDate" name="birthDate" type="date" required min="0001-01-01" autocomplete="off"></label>
       <label>Nombre del examen<input id="registration-examName" name="examName" type="text" required maxlength="64" autocomplete="off"></label>
       <p id="patientRegistrationError" role="alert"></p><div class="registration-actions"><button type="button" id="patientRegistrationCancel">Cancelar</button><button type="submit" id="patientRegistrationSave">Guardar y continuar</button></div></form>`;
     document.body.append(dialog);form=dialog.querySelector('form');
@@ -45,7 +44,6 @@
     if(pending)return pending;
     build();form.reset();dialog.returnValue='';owner=id();previousFocus=document.activeElement;
     document.getElementById('patientRegistrationContext').textContent='Paciente seleccionado: '+(window.GANTRY_PATIENT?.metadata()?.name||'Fantoma ICRP 145');
-    document.getElementById('registration-birthDate').max=window.GANTRY_PROCESSING_CONFIG.today();
     document.getElementById('patientRegistrationError').textContent='';
     pending=new Promise(resolve=>{resolvePending=resolve;});dialog.showModal();document.getElementById('registration-fullName').focus();return pending;
   }

@@ -122,13 +122,14 @@
       const percent=result.percent!==undefined&&result.percent!==null?
         (result.percent>0?'+':'')+format(result.percent)+' %':null;
       compact=result.kind==='noise'?'≈':result.kind==='increase'?'⬆':result.kind==='decrease'?'⇩':'—';
-      if((result.kind==='increase'||result.kind==='decrease')&&percent!==null)compact+=' '+percent;
+      if(result.kind==='increase'||result.kind==='decrease')compact+=' '+(percent??'— %');
       line(result.kind==='noise'?'≈ Compatible con fluctuación estadística':result.kind==='increase'?
         '⬆ Aumento estadísticamente detectable':result.kind==='decrease'?'⇩ Descenso estadísticamente detectable':'Sin cuentas suficientes para comparar');
       line('Tasas medias · cuentas/s');
       line('Promedio anterior: '+format(result.before.counts/result.before.seconds));
       line('Promedio posterior: '+format(result.after.counts/result.after.seconds));
       if(percent!==null)line('Cambio: '+percent);
+      else if(result.rateBefore===0)line('Cambio porcentual no calculable: el promedio anterior es cero.');
       box.title='Último ajuste · intervalos independientes: '+format(result.before.seconds)+' s antes y '+format(result.after.seconds)+
         ' s después. Prueba bilateral de tasas Poisson (binomial condicional), p='+
         (Number.isFinite(result.p)?result.p.toPrecision(3):'no calculable')+'. Umbral p < 0,025 por detector (dos detectores, error conjunto ≤ 5% por ajuste). '+

@@ -12,9 +12,13 @@
     const number=raw.slice(0,-1);let sum=0;[...number].reverse().forEach((n,i)=>sum+=Number(n)*(2+i%6));
     const check=11-sum%11,digit=check===11?'0':check===10?'K':String(check);
     if(raw.at(-1)!==digit)fail('rut','El dígito verificador del RUT no coincide.');
-    const birthDate=value.birthDate,date=new Date(birthDate+'T12:00:00Z');
-    if(typeof birthDate!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||!Number.isFinite(date.getTime())||date.toISOString().slice(0,10)!==birthDate||birthDate<'0001-01-01'||birthDate>today())fail('birthDate','Indica una fecha de nacimiento válida que no sea futura.');
-    return {fullName,rut:number.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'-'+digit,birthDate,examName};
+    // Older acquisitions may carry a birth date; new registration does not ask for one.
+    const birthDate=value.birthDate,hasBirthDate=birthDate!==undefined&&birthDate!==null&&birthDate!=='';
+    if(hasBirthDate){
+      const date=new Date(birthDate+'T12:00:00Z');
+      if(typeof birthDate!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)||!Number.isFinite(date.getTime())||date.toISOString().slice(0,10)!==birthDate||birthDate<'0001-01-01'||birthDate>today())fail('birthDate','Indica una fecha de nacimiento válida que no sea futura.');
+    }
+    return {fullName,rut:number.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'-'+digit,...(hasBirthDate?{birthDate}:{}),examName};
   }
   function camera(value){
     if(!value||typeof value!=='object')throw Error('Parámetros de cámara incompletos.');

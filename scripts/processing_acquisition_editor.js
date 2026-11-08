@@ -244,7 +244,8 @@
     if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
     $('patient').append(field('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO'),field('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
     if(config.patient?.fullName)section('series','Datos del paciente y del examen',[
-      field('Nombre completo',config.patient.fullName),field('RUT',config.patient.rut),field('Fecha de nacimiento',config.patient.birthDate?.replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3/$2/$1')),field('Nombre del examen',config.patient.examName)]);
+      field('Nombre completo',config.patient.fullName),field('RUT',config.patient.rut),
+      ...(config.patient.birthDate?[field('Fecha de nacimiento',config.patient.birthDate.replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3/$2/$1'))]:[]),field('Nombre del examen',config.patient.examName)]);
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
       input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),

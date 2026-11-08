@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 from serve_site import serve_site
 
 ROOT=Path(__file__).resolve().parents[1]
-person={'fullName':'Daniel Andrés Rojas Medina','rut':'91.000.001-2','birthDate':'1988-03-14','examName':'Cintigrafía ósea de control'}
+person={'fullName':'Daniel Andrés Rojas Medina','rut':'91.000.001-2','examName':'Cintigrafía ósea de control'}
 
 with serve_site() as url,sync_playwright() as pw:
     browser=pw.chromium.launch(channel='chrome',headless=True)
@@ -20,6 +20,8 @@ with serve_site() as url,sync_playwright() as pw:
         menu=frame.locator('#processingAcquireMenu');menu.wait_for()
         menu.select_option(kind)
         dialog=page.locator('#patientRegistration');dialog.wait_for()
+        assert dialog.locator('input').count()==3
+        assert not page.locator('#registration-birthDate').count()
         assert not frame.locator('[id^="gantryDraft-"]').count()
         page.locator('#patientRegistrationSave').click()
         assert 'nombre completo' in page.locator('#patientRegistrationError').inner_text()
@@ -35,9 +37,6 @@ with serve_site() as url,sync_playwright() as pw:
         page.locator('#registration-rut').fill('91.000.001-0');page.locator('#patientRegistrationSave').click()
         assert 'verificador' in page.locator('#patientRegistrationError').inner_text()
         page.locator('#registration-rut').fill(person['rut'])
-        page.locator('#registration-birthDate').fill('2099-01-01');page.locator('#patientRegistrationSave').click()
-        assert 'futura' in page.locator('#patientRegistrationError').inner_text()
-        page.locator('#registration-birthDate').fill(person['birthDate'])
         if kind=='static':page.screenshot(path=str(ROOT.parent/'gantry-patient-registration.png'))
         page.locator('#patientRegistrationSave').click();dialog.wait_for(state='hidden')
         frame.locator('#gantryDraft-matrix').wait_for()
@@ -45,9 +44,10 @@ with serve_site() as url,sync_playwright() as pw:
         assert frame.locator('#patient input').nth(1).input_value()==person['examName']
         initial=page.evaluate('GANTRY_PATIENT_REGISTRATION.current()')
         assert all(initial[k]==v for k,v in person.items())
+        assert 'birthDate' not in initial
         frame.locator('#tab-series').click()
         assert frame.locator('#series input[data-label="RUT"]').input_value()==person['rut']
-        assert frame.locator('#series input[data-label="Fecha de nacimiento"]').input_value()=='14/03/1988'
+        assert not frame.locator('#series input[data-label="Fecha de nacimiento"]').count()
         # Adding another type reuses the same registration, even before taking images.
         menu.select_option('whole' if kind!='whole' else 'static')
         page.wait_for_function("!document.getElementById('boneProcessingFrame').contentDocument.getElementById('processingAcquireMenu').disabled")
@@ -67,7 +67,7 @@ with serve_site() as url,sync_playwright() as pw:
             child=page.locator('#boneProcessingFrame').element_handle().content_frame()
             child.wait_for_function("document.body.classList.contains('gantry-acquisition-frozen')",timeout=30000)
             tags=child.evaluate("()=>({name:value(dataset,'00100010'),rut:value(dataset,'00100020'),birth:value(dataset,'00100030'),exam:value(dataset,'00081030')})")
-            assert tags==dict(name=person['fullName'],rut=person['rut'],birth='19880314',exam=person['examName']),tags
+            assert tags==dict(name=person['fullName'],rut=person['rut'],birth='',exam=person['examName']),tags
             assert frame.locator('#patient input').nth(1).input_value()==person['examName']
             page.select_option('#gantryPatient','caso-oseo-2')
             page.wait_for_function("GANTRY_PATIENT.id==='caso-oseo-2'",timeout=60000)

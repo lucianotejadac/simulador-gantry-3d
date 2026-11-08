@@ -151,7 +151,8 @@
     const comparison=pending.get(host),deltas=settledChanges(host,values,now);
     deltas?.forEach((delta,i)=>{
       if(delta)state.marks.set(i,{started:now,direction:delta>0?'increase':'decrease',
-        previous:comparison.previousLabels[i],averageMs:comparison.averageMs});
+        previous:comparison.previousLabels[i],averageMs:comparison.averageMs,
+        percent:comparison.baseline[i]!==0?100*delta/Math.abs(comparison.baseline[i]):null});
     });
     recordHistory(host,values,now);
     const waiting=pendingMarks(host,values);
@@ -173,7 +174,9 @@
       span.title=mark.direction==='pending'?'Calculando valor final…':mark.direction==='increase'?'Aumentó':'Disminuyó';
       if(mark.direction!=='pending'){
         span.dataset.previousLabel='promedio anterior: '+mark.previous;
-        span.title+=' · '+span.dataset.previousLabel+' · Media temporal de los '+
+        const percent=Number.isFinite(mark.percent)?(mark.percent>0?'+':'')+mark.percent.toLocaleString('es-CL',{maximumFractionDigits:2})+' %':'% no calculable (promedio anterior = 0)';
+        span.dataset.changeLabel=percent+' · '+span.dataset.previousLabel;
+        span.title+=' · '+span.dataset.changeLabel+' · Media temporal de los '+
           (mark.averageMs/1000).toLocaleString('es-CL',{maximumFractionDigits:2})+' s previos al cambio';
       }
       span.textContent=number.data;number.replaceWith(span);
