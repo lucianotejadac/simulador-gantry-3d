@@ -87,6 +87,8 @@
   }
   function changed(now){observe(now);if(active())trackers.forEach(t=>t.changed(now));}
   const format=n=>n.toLocaleString('es-CL',{maximumFractionDigits:2});
+  // Reuse each detector's disclosure so live repaints preserve its open state.
+  const disclosures=new WeakMap();
   function render(host,now){
     observe(now);
     host.querySelector('.live-count-comparison')?.remove();
@@ -95,27 +97,47 @@
     // Do not attach random arrows to the continuously changing live count.
     host.querySelectorAll('.value-change-flash').forEach(span=>span.replaceWith(document.createTextNode(span.textContent)));
     if(!result&&!pending)return true;
-    const box=document.createElement('div');box.className='live-count-comparison';
-    const line=text=>{const el=document.createElement('div');el.textContent=text;box.append(el);};
+    let box=disclosures.get(host);
+    if(!box){
+      box=document.createElement('details');box.className='live-count-comparison';
+      box.append(document.createElement('summary'),document.createElement('div'));
+      disclosures.set(host,box);
+    }
+    const summary=box.firstElementChild,body=box.lastElementChild,lines=[];
+    const line=text=>lines.push(text);
+    let compact,label;box.removeAttribute('title');
     if(pending){
+      compact='…';label='Comparando tasa de cuentas';
       box.dataset.kind='pending';line('Comparando tasa de cuentas…');
       line('Promedio anterior: '+format(pending.before.counts/pending.before.seconds)+' cuentas/s');
       line('Intervalo posterior: '+format(pending.after.seconds)+' / '+format(pending.before.seconds)+' s');
     }else if(result.kind==='baseline'){
+      compact='—';label='Sin promedio anterior suficiente';
       box.dataset.kind='baseline';line('Sin promedio anterior suficiente');line('Deja estabilizar la vista antes del próximo ajuste.');
     }else{
       box.dataset.kind=result.kind;
+      label=result.kind==='noise'?'Sin diferencia estadísticamente detectable':result.kind==='increase'?
+        'Aumento estadísticamente detectable':result.kind==='decrease'?'Descenso estadísticamente detectable':'Sin cuentas suficientes para comparar';
+      const percent=result.percent!==undefined&&result.percent!==null?
+        (result.percent>0?'+':'')+format(result.percent)+' %':null;
+      compact=result.kind==='noise'?'≈':result.kind==='increase'?'⬆':result.kind==='decrease'?'⇩':'—';
+      if((result.kind==='increase'||result.kind==='decrease')&&percent!==null)compact+=' '+percent;
       line(result.kind==='noise'?'≈ Compatible con fluctuación estadística':result.kind==='increase'?
         '⬆ Aumento estadísticamente detectable':result.kind==='decrease'?'⇩ Descenso estadísticamente detectable':'Sin cuentas suficientes para comparar');
       line('Tasas medias · cuentas/s');
       line('Promedio anterior: '+format(result.before.counts/result.before.seconds));
       line('Promedio posterior: '+format(result.after.counts/result.after.seconds));
-      if(result.percent!==undefined&&result.percent!==null)line('Cambio: '+(result.percent>0?'+':'')+format(result.percent)+' %');
+      if(percent!==null)line('Cambio: '+percent);
       box.title='Último ajuste · intervalos independientes: '+format(result.before.seconds)+' s antes y '+format(result.after.seconds)+
         ' s después. Prueba bilateral de tasas Poisson (binomial condicional), p='+
         (Number.isFinite(result.p)?result.p.toPrecision(3):'no calculable')+'. Umbral p < 0,025 por detector (dos detectores, error conjunto ≤ 5% por ajuste). '+
         'Se compara la tasa total; no la media por píxel. Un cambio detectable no demuestra relevancia clínica ni su causa.';
     }
+    if(summary.textContent!==compact)summary.textContent=compact;
+    summary.title=label+' · Mostrar u ocultar detalles';
+    summary.setAttribute('aria-label',label+(compact.includes('%')?' · '+compact:'')+' · Detalles');
+    const content=lines.join('\n');
+    if(body.textContent!==content)body.textContent=content;
     // Immediately below the current total; in normal flow, never over its digits.
     const br=host.querySelectorAll('br')[1];if(br)br.after(box);else host.append(box);
     return true;

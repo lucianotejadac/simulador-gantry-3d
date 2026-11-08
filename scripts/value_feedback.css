@@ -44,7 +44,11 @@
 #gantryLiveMonitors .live-info:has(.live-count-comparison) { max-height:190px; }
 .live-count-comparison { margin:6px 0;padding:6px 8px;border-left:3px solid #ffe36e;
   background:#0b1823;color:#ffe36e;font:normal .9em/1.5 var(--mono,monospace);overflow-wrap:anywhere; }
-.live-count-comparison > div:first-child { font-weight:bold; }
+.live-count-comparison > summary { cursor:pointer;list-style:none;font-weight:bold;width:fit-content; }
+.live-count-comparison > summary::-webkit-details-marker { display:none; }
+.live-count-comparison > summary:hover { text-decoration:underline; }
+.live-count-comparison > summary:focus-visible { outline:2px solid currentColor;outline-offset:3px; }
+.live-count-comparison > div { white-space:pre-line;margin-top:4px; }
 .live-count-comparison[data-kind="noise"] { color:#b8d9e9;border-color:#b8d9e9; }
 .live-count-comparison[data-kind="baseline"],.live-count-comparison[data-kind="insufficient"] { color:#bdc4cb;border-color:#bdc4cb; }
 .value-change-pending {

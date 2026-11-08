@@ -27,17 +27,35 @@ with serve_site() as url, sync_playwright() as pw:
     page.wait_for_function("[...document.querySelectorAll('.live-count-comparison')].length===2 && [...document.querySelectorAll('.live-count-comparison')].every(n=>['noise','increase','decrease'].includes(n.dataset.kind))", timeout=30000)
     after_matrix = page.evaluate('GANTRY_LIVE.state.d1.expectedRate')
     assert abs(after_matrix / initial - 1) < .015, (initial, after_matrix)
-    matrix = page.locator('#liveInfoD1 .live-count-comparison').inner_text()
+    card = page.locator('#liveInfoD1 .live-count-comparison')
+    matrix = card.text_content()
     assert 'Promedio anterior:' in matrix and 'Promedio posterior:' in matrix, matrix
+    assert card.evaluate('(el) => el.tagName === "DETAILS" && !el.open')
+    assert 'Promedio anterior:' not in card.inner_text()
+    compact = card.locator('summary').inner_text()
+    if card.get_attribute('data-kind') == 'noise':
+        assert compact == '≈', compact
+    else:
+        assert '%' in compact and compact[0] in ('⬆', '⇩'), compact
+    card.locator('summary').click()
+    assert card.evaluate('(el) => el.open')
+    assert 'Promedio anterior:' in card.inner_text()
+    assert not page.locator('#liveInfoD2 .live-count-comparison').evaluate('(el) => el.open')
     assert page.locator('#liveInfoD1 .value-change-flash').count() == 0
-    frozen = page.locator('#liveInfoD1 .live-count-comparison').inner_text()
+    frozen = card.inner_text()
     page.wait_for_timeout(1500)
-    assert page.locator('#liveInfoD1 .live-count-comparison').inner_text() == frozen
+    assert card.inner_text() == frozen
+    assert card.evaluate('(el) => el.open'), 'Live repaints must preserve expansion'
+    card.locator('summary').click()
+    page.wait_for_timeout(500)
+    assert not card.evaluate('(el) => el.open')
     page.select_option('#liveWindowWidth', '10')
     page.wait_for_selector('#liveInfoD1 .live-count-comparison[data-kind="pending"]')
     page.wait_for_selector('#liveInfoD1 .live-count-comparison[data-kind="decrease"]', timeout=30000)
-    energy = page.locator('#liveInfoD1 .live-count-comparison').inner_text()
+    energy = card.text_content()
     assert 'Descenso estadísticamente detectable' in energy
+    assert not card.evaluate('(el) => el.open')
+    assert card.inner_text().startswith('⇩ -') and '%' in card.inner_text()
     assert 'intervalos independientes' in page.locator('#liveInfoD1 .live-count-comparison').get_attribute('title')
     result = page.evaluate("""() => {
       const card=document.querySelector('#liveInfoD1 .live-count-comparison');
@@ -53,7 +71,7 @@ with serve_site() as url, sync_playwright() as pw:
       input.value='3';input.dispatchEvent(new Event('input',{bubbles:true}));}""")
     page.wait_for_selector('#liveInfoD1 .live-count-comparison[data-kind="pending"]')
     page.wait_for_function("document.querySelector('#liveInfoD1 .live-count-comparison')?.dataset.kind!=='pending'", timeout=30000)
-    persistence = page.locator('#liveInfoD1 .live-count-comparison').inner_text()
+    persistence = card.text_content()
     assert 'cuentas/s' in persistence
     assert not errors, errors
     print(json.dumps({'matrix': matrix, 'energy': energy, 'persistence': persistence, 'layout': result}, ensure_ascii=True))
