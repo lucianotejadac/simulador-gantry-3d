@@ -14,23 +14,45 @@
 #gantryViewControls .btn{font-size:11px;padding:3px 5px!important}
 #gantryViewControls .hint{font-size:10px}
 #gantryAdministration{
-  flex-basis:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 148px;
-  gap:8px;align-items:start;container-type:inline-size;
+  flex-basis:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 140px;
+  gap:6px;padding:6px;box-sizing:border-box;align-items:start;
+  background:#16232d;border:1px solid #42586b;
 }
-#gantryAdministration #rfPanel{min-width:0;box-sizing:border-box}
+#gantryAdministration #rfPanel{min-width:0;box-sizing:border-box;padding:0;border:0;gap:5px;align-content:start;container-type:inline-size}
+#gantryAdministration #gantryPatientPanel{padding:0!important;min-width:0}
+#gantryAdministration #gantryPatientPanel>label{flex-wrap:wrap}
+#gantryAdministration #gantryPatient{flex:1;min-width:0}
+#gantryAdministration .patient-record-actions{margin:4px 0 0;gap:4px}
+#gantryAdministration .patient-record-actions button{padding:3px 6px}
+#gantryAdministration #gantryPatientStatus:empty{display:none}
+#gantryAdministration #rfPanel label{min-width:0;max-width:100%;gap:3px}
+#gantryAdministration #rfPanel :is(input,select,button){min-height:26px}
+#gantryAdministration #rfPanel input{width:60px}
+#gantryAdministration #rfPanel .rf-footer{gap:4px}
+#gantryAdministration #rfStatus{flex-basis:100%}
+#gantryAdministration #rfPanel .patient-position-button{margin:0;width:100%;min-height:30px}
+@container (max-width:220px){
+  #rfPanel>label{width:100%;display:grid!important;grid-template-columns:minmax(0,1fr) auto}
+  #rfPanel>label>span{grid-column:1/-1}
+  #rfPanel>.rf-study select{grid-column:1/-1;width:100%}
+  #rfPanel>label :is(#rfDose,#rfTime){width:100%;min-width:0;box-sizing:border-box}
+}
 #gantryWorkspace #gantryRemote{
-  align-self:start;min-width:0;width:148px!important;margin:0;
+  align-self:start;min-width:0;width:100%!important;margin:0;
   overflow:visible!important;gap:0!important;
 }
 #gantryRemote>div:first-child{display:none}
-#gantryWorkspace #gantryRemote #mando{width:100%;max-width:100%;max-height:none;filter:drop-shadow(0 3px 6px #0009)}
-@container (max-width:480px){
-  #gantryAdministration #rfPanel,#gantryAdministration #gantryRemote{grid-column:1/-1}
-  #gantryWorkspace #gantryAdministration #gantryRemote{width:100%!important}
-  #gantryAdministration #mando{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:end}
-  #gantryAdministration #mando .remote-title,#gantryAdministration #mando .remote-help{grid-column:1/-1;margin:0}
-  #gantryAdministration #mando fieldset,#gantryAdministration #mando #mbRapido{margin:0}
-}
+#gantryWorkspace #gantryRemote #mando{width:100%;max-width:100%;max-height:none;padding:6px;box-shadow:none}
+#gantryAdministration #mando .remote-title{margin-bottom:4px}
+#gantryAdministration #mando fieldset{margin-top:4px}
+#gantryAdministration #mando legend{padding-bottom:2px}
+#gantryAdministration #mando .remote-pair{gap:4px}
+#gantryAdministration #mando .mb{min-height:25px}
+#gantryAdministration #mando #mbRapido{margin-top:5px}
+#gantryAdministration #mando .remote-help{margin-top:4px}
+#gantryViewControls>#gantryAutomaticPositions{gap:4px;padding:2px 0!important;font-size:11px!important}
+#gantryAutomaticPositions #gantryPositionMenu{min-width:0;max-width:100%;flex:1;font-size:11px}
+#gantryAutomaticPositions #gantryPositionStatus{flex-basis:100%;font-size:10px}
 #gantryWorkspace #g3dHud{right:8px!important;top:104px!important;font-size:10px!important;max-width:55%}
 #gantryWorkspace #collisionFeedback{font-size:9px!important}
 #gantryWorkspace #roomPerformance{max-width:calc(100% - 125px)!important;font-size:10px!important}
@@ -144,7 +166,6 @@
   #gantryWorkspace{grid-template-columns:minmax(280px,1fr) minmax(240px,1fr);grid-template-rows:440px auto minmax(740px,auto);overflow:auto}
   #gantryWorkspace #gantryLive{grid-column:1/3;grid-row:3;min-height:740px;overflow:visible}
   #gantryWorkspace #boneProcessingPane{grid-column:1/3;grid-row:3;min-height:740px}
-  #gantryWorkspace #gantryRemote{width:148px!important}
   #gantryWorkspace #gantryRemote #mando{max-height:none}
   #gantryLive .gantry-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:minmax(400px,1fr)}
   #gantryLive.bone-whole-body .gantry-live-grid{grid-template-rows:minmax(500px,1fr)}
