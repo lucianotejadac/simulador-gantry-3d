@@ -13,13 +13,24 @@
 }
 #gantryViewControls .btn{font-size:11px;padding:3px 5px!important}
 #gantryViewControls .hint{font-size:10px}
+#gantryAdministration{
+  flex-basis:100%;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) 148px;
+  gap:8px;align-items:start;container-type:inline-size;
+}
+#gantryAdministration #rfPanel{min-width:0;box-sizing:border-box}
 #gantryWorkspace #gantryRemote{
-  grid-column:1;grid-row:1;align-self:end;justify-self:end;z-index:4;
-  width:148px!important;margin:10px;
+  align-self:start;min-width:0;width:148px!important;margin:0;
   overflow:visible!important;gap:0!important;
 }
 #gantryRemote>div:first-child{display:none}
 #gantryWorkspace #gantryRemote #mando{width:100%;max-width:100%;max-height:none;filter:drop-shadow(0 3px 6px #0009)}
+@container (max-width:480px){
+  #gantryAdministration #rfPanel,#gantryAdministration #gantryRemote{grid-column:1/-1}
+  #gantryWorkspace #gantryAdministration #gantryRemote{width:100%!important}
+  #gantryAdministration #mando{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;align-items:end}
+  #gantryAdministration #mando .remote-title,#gantryAdministration #mando .remote-help{grid-column:1/-1;margin:0}
+  #gantryAdministration #mando fieldset,#gantryAdministration #mando #mbRapido{margin:0}
+}
 #gantryWorkspace #g3dHud{right:8px!important;top:104px!important;font-size:10px!important;max-width:55%}
 #gantryWorkspace #collisionFeedback{font-size:9px!important}
 #gantryWorkspace #roomPerformance{max-width:calc(100% - 125px)!important;font-size:10px!important}
@@ -156,9 +167,11 @@
 #liveCameraDetails #liveCameraSettings{border:0}
 #gantryLiveMonitors.compact-live-monitors canvas{filter:brightness(var(--live-brightness,1))}
 #gantryLiveMonitors .live-monitor-readout{position:relative;min-width:0;padding:7px 8px;border-top:1px solid #273745;background:#0f1820;color:#cce9f1;font:12px/1.5 var(--mono)}
-#gantryLiveMonitors .live-rate-row{position:relative}
+#gantryLiveMonitors .live-rate-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 6px}
 #gantryLiveMonitors .live-more>summary{cursor:pointer;color:#a4d9c8;font-size:11px;margin-top:3px}
 #gantryLiveMonitors .live-more .live-info{padding:6px 0;border:0;max-height:130px;overflow:auto}
 #gantryLiveMonitors.compact-live-monitors .pixel-panel{display:none}
-#gantryLiveMonitors .live-rate-row>.live-count-comparison{position:absolute;right:0;bottom:calc(100% + 10px);z-index:5;margin:0;padding:2px 5px;border:0;max-width:100%;box-shadow:0 1px 5px #0007}
+#gantryLiveMonitors .live-rate-row>.live-count-comparison{margin:0;padding:2px 5px;border:0;min-width:0;max-width:100%;box-shadow:0 1px 5px #0007}
+#gantryLiveMonitors .live-rate-row>.live-count-comparison[open]{grid-column:1/-1}
+#gantryLiveMonitors .live-rate-row>.live-count-comparison>summary{white-space:nowrap}
 #gantryLiveMonitors .live-rate-row>.live-count-comparison>div{max-height:150px;overflow:auto}

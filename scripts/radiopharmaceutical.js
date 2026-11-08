@@ -135,7 +135,11 @@
       <label><span id="rfTimeLabel">Inyección–examen</span> <input id="rfTime" type="number" min="0" step="any" required aria-label="Tiempo inyección examen">
       <select id="rfTimeUnit" aria-label="Unidad de tiempo"><option value="min">min</option><option value="h">h</option><option value="d">días</option></select></label>
       <button id="rfInject" type="button" hidden>Inyectar</button><button id="rfResetInjection" type="button" hidden>Reiniciar inyección</button><div class="rf-footer"><span id="rfStatus" role="status"></span></div><span id="rfError" role="alert"></span>`;
-    host.prepend(panel);
+    const controls=document.createElement('div');controls.id='gantryAdministration';
+    controls.append(panel);
+    const remote=el('gantryRemote');
+    if(remote)controls.append(remote);
+    host.prepend(controls);
     // Move the original control to preserve its position handler and pressed state.
     const positionButton=el('changePatientPosition');
     if(positionButton)panel.querySelector('.rf-footer').append(positionButton);
