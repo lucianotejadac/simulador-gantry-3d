@@ -1,0 +1,125 @@
+"""Real tutorial path: registration, camera, three phases, pages and PNG exports."""
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+from serve_site import serve_site
+
+ROOT=Path(__file__).resolve().parents[1]
+with serve_site() as url,sync_playwright() as pw:
+    browser=pw.chromium.launch(channel='chrome',headless=True)
+    page=browser.new_page(viewport={'width':1600,'height':1050},accept_downloads=True)
+    errors=[]
+    page.on('pageerror',lambda e:errors.append(str(e)))
+    page.goto(url)
+    page.wait_for_function("window.GANTRY_LIVE?.ready && !document.getElementById('gantryWin').inert",timeout=120000)
+    before=page.evaluate('JSON.stringify(GANTRY_LIVE.settings)')
+    page.locator('#acquisitionTutorialOpen').click()
+    page.locator('#acquisitionTutorialNext').click()
+    assert page.evaluate('JSON.stringify(GANTRY_LIVE.settings)')==before
+    assert not page.evaluate('GANTRY_BONE_ACQ.active')
+    page.select_option('#acquisitionTutorialStep','0')
+    page.locator('#acquisitionTutorialPanel').screenshot(path=str(ROOT.parent/'gantry-tutorial-panel.png'))
+    page.get_by_role('button',name='Señalar Paciente',exact=True).click()
+    page.locator('#gantryPatient.acquisition-tutorial-highlight').wait_for()
+    assert page.locator('#acquisitionTutorialPanel').is_hidden()
+    page.select_option('#gantryPatient','caso-oseo')
+    page.wait_for_function("GANTRY_PATIENT.id==='caso-oseo'",timeout=60000)
+    page.get_by_role('button',name='Ver pulsera del paciente',exact=True).click()
+    page.get_by_role('button',name='Cerrar ventana del paciente',exact=True).click()
+    page.get_by_role('button',name='Abrir carpeta del paciente',exact=True).click()
+    page.get_by_role('button',name='Cerrar ventana del paciente',exact=True).click()
+    page.locator('#boneProcessingTab').click()
+    frame=page.frame_locator('#boneProcessingFrame')
+    frame.locator('#processingAcquireMenu').select_option('dynamic')
+    page.locator('#patientRegistration').wait_for()
+    for key,value in {'fullName':'Matías Ignacio Fuentes Araya','rut':'91.000.002-0','examName':'Cintigrafía ósea trifásica'}.items():
+        page.locator('#registration-'+key).fill(value)
+    page.locator('#patientRegistrationSave').click()
+    frame.locator('#gantryDraft-matrix').wait_for()
+    child=page.locator('#boneProcessingFrame').element_handle().content_frame()
+    child.wait_for_function('!!window.GANTRY_TUTORIAL_VIEW')
+    page.wait_for_function("GANTRY_RF.selected==='bone3' && GANTRY_RF.pending()")
+    page.select_option('#rfUnit','mCi');page.locator('#rfDose').fill('20');page.locator('#rfDose').press('Tab')
+    page.locator('#rfTime').fill('0');page.locator('#rfTime').press('Tab')
+    # Known clear physical placement, identical to the established case browser test.
+    page.evaluate("""()=>{GANTRY_PATIENT3D.headFirst=false;GANTRY_ACQUISITION.headFirst=false;GANTRY_ACQUISITION.decubitus='supine';Object.assign(GANTRY.G,{arms:'down',rot:0,tableZ:25,tableH:85,detDist1:45,detDist2:45});GANTRY.render();}""")
+    page.locator('#acquisitionTutorialOpen').click();page.select_option('#acquisitionTutorialStep','2')
+    page.locator('.tutorial-visual-check input').check()
+    page.locator('#acquisitionTutorialMinimize').click()
+    frame.locator('#gantryDraft-matrix').select_option('64');frame.locator('#gantryDraft-matrix').select_option('128')
+    frame.locator('#gantryDraft-zoom').select_option('1.5');frame.locator('#gantryDraft-zoom').select_option('1')
+    frame.locator('#gantryDraft-collimator').select_option('LEHR')
+    frame.locator('#gantryDraft-energyCenter').fill('140');frame.locator('#gantryDraft-energyCenter').press('Tab')
+    frame.locator('#gantryDraft-windowWidth').select_option('20')
+    page.locator('#acquisitionTutorialOpen').click();page.select_option('#acquisitionTutorialStep','3')
+    page.get_by_role('button',name='Señalar Cámara en vivo',exact=True).click()
+    page.locator('#liveCameraSettings.acquisition-tutorial-highlight').wait_for()
+    assert page.locator('#liveCameraDetails').get_attribute('open') is not None
+    page.locator('#acquisitionTutorialOpen').click()
+    page.get_by_role('button',name='Señalar Condiciones de paro',exact=True).click()
+    frame.locator('#gantryDraft-phaseFrames0.acquisition-tutorial-highlight').wait_for()
+    frame.locator('#tab-stop').click()
+    frame.locator('#gantryDraft-name1').fill('Flujo · D1');frame.locator('#gantryDraft-name2').fill('Flujo · D2')
+    page.wait_for_function('GANTRY_ACQUISITION_TUTORIAL.snapshot().seen.protocol')
+    page.locator('#rfInject').click()
+    assert not page.evaluate('GANTRY_BONE_ACQ.active')
+    frame.locator('[data-acquire="start"]').click()
+    page.wait_for_function('GANTRY_BONE_ACQ.active',timeout=30000)
+    # Exercise real frames, then finish through the existing instantaneous path.
+    frame.locator('[data-acquire="instant"]').click()
+    page.wait_for_function('GANTRY_BONE_ACQ.state?.finished',timeout=120000)
+    child.wait_for_function('GANTRY_TUTORIAL_VIEW.snapshot().records.length===1',timeout=60000)
+    frame.locator('#dyn-next').click()
+    print('OK: dynamic registered and acquired.',flush=True)
+    for phase,minutes,mode,target in [('Pool',3,'time','180'),('Tardía',180,'counts','200000')]:
+        frame.locator('#processingAcquireMenu').select_option('static')
+        frame.locator('#gantryDraft-matrix').wait_for()
+        frame.locator('#gantryDraft-matrix').select_option('256')
+        page.locator('#rfTime').fill(str(minutes));page.locator('#rfTime').press('Tab')
+        frame.locator('#tab-stop').click()
+        frame.locator('#gantryDraft-mode').select_option(mode);frame.locator('#gantryDraft-target').fill(target)
+        frame.locator('#gantryDraft-name1').fill(phase+' · D1');frame.locator('#gantryDraft-name2').fill(phase+' · D2')
+        page.wait_for_function('GANTRY_BONE_ACQ.readyForProcessing',timeout=60000)
+        count=child.evaluate('GANTRY_TUTORIAL_VIEW.snapshot().records.length')
+        frame.locator('[data-acquire="instant"]').click()
+        child.wait_for_function('n=>GANTRY_TUTORIAL_VIEW.snapshot().records.length===n',arg=count+1,timeout=120000)
+        print('OK:',phase,'acquired.',flush=True)
+    frame.locator('[aria-controls="analysisPanel"]').click()
+    frame.locator('#analysisWindow').fill('200');frame.locator('#analysisWindow').press('Tab')
+    frame.locator('#analysisInvert').check()
+    state=page.evaluate('GANTRY_ACQUISITION_TUTORIAL.snapshot()')
+    checks=page.evaluate('GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot())')
+    assert all(c['done'] for group in checks[:8] for c in group),checks[:8]
+    assert not checks[8][1]['done'],'No images are added by the tutorial'
+    frame.locator('#mode-flex').click()
+    child.wait_for_function("document.body.classList.contains('flex-mode')")
+    assert child.evaluate('flex.pages.every(p=>p.items.length===0)')
+    # The real image picker is used; one dynamic detector per page, four static views on page 3.
+    groups=child.evaluate("[flex.assets.filter(a=>a.kind==='dynamic').slice(0,1).map(a=>a.id),flex.assets.filter(a=>a.kind==='dynamic').slice(1,2).map(a=>a.id),flex.assets.filter(a=>a.kind==='static').map(a=>a.id)]")
+    assert list(map(len,groups))==[1,1,4],groups
+    for i,ids in enumerate(groups):
+        if i:frame.locator('#flex-add').click()
+        frame.locator('#flex-add-images').click()
+        for id in ids:frame.locator('#flex-picker-list input').evaluate_all('(nodes,id)=>{const n=nodes.find(n=>n.value===id);if(!n)throw Error("Image not in picker");n.click();}',id)
+        frame.locator('#flex-pick-submit').click()
+        frame.locator('#flex-arrange').click()
+        with page.expect_download() as download:frame.locator('#flex-export').click()
+        assert download.value.suggested_filename.endswith('.png')
+    checks=page.evaluate('GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot())')
+    assert all(c['done'] for group in checks for c in group),checks
+    # A layout change invalidates that page's export check.
+    child.evaluate('flexPage().items[0].x+=1')
+    assert not page.evaluate('GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot())[9][0].done')
+    frame.locator('#processingFileMenu').select_option('acquisition-tutorial')
+    page.locator('#acquisitionTutorialPanel').wait_for()
+    page.select_option('#acquisitionTutorialStep','8')
+    page.screenshot(path=str(ROOT.parent/'gantry-tutorial-flexible.png'))
+    page.locator('#acquisitionTutorialMinimize').click()
+    for width,height in [(1600,1000),(1280,900),(700,900)]:
+        page.set_viewport_size({'width':width,'height':height})
+        page.locator('#acquisitionTutorialOpen').click()
+        box=page.locator('#acquisitionTutorialPanel').bounding_box()
+        assert box['x']>=0 and box['x']+box['width']<=width and box['y']>=0 and box['y']+box['height']<=height,box
+        page.locator('#acquisitionTutorialMinimize').click()
+    assert not errors,errors
+    print('OK: three phases, live checks, manual composition, PNGs, export invalidation and responsive guide.',flush=True)
+    browser.close()

@@ -441,7 +441,7 @@
       status(d.message+' · '+d.state.speed+'×'+(d.state.finished&&!d.state.heads.every(h=>h.total>0)?' · Sin señal en uno de los detectores; no se importa al procesador.':''));
     }
   });
-  window.GANTRY_PROCESSING_EDITOR={finish,isConfiguration:id=>configurations.has(id),canDeleteConfiguration,deleteConfiguration(id){
+  window.GANTRY_PROCESSING_EDITOR={finish,tutorialConfig:()=>draft?structuredClone(read(false)):null,isConfiguration:id=>configurations.has(id),canDeleteConfiguration,deleteConfiguration(id){
     if(canDeleteConfiguration(id))confirmAction('delete',id,true);
   },setPreviewVisible(visible){
     if(!visible)send({type:'GANTRY_CAMERA_PREVIEW_END'});

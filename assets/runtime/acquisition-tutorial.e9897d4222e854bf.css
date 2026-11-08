@@ -1,0 +1,41 @@
+/* Floating guide leaves the three simulator columns and their sizing intact. */
+#acquisitionTutorialOpen{margin-left:6px!important;color:#000080;font-weight:bold}
+#acquisitionTutorialPanel,#acquisitionTutorialCompact{position:fixed;z-index:600;right:14px;bottom:14px;box-sizing:border-box;color:#161616;background:#eeeeda;border:3px outset #eee;box-shadow:0 4px 18px #0005;font:14px/1.45 Arial,sans-serif}
+#acquisitionTutorialPanel{width:min(365px,calc(100vw - 20px));max-height:calc(100dvh - 70px);height:740px;display:flex;flex-direction:column}
+#acquisitionTutorialPanel[hidden],#acquisitionTutorialCompact[hidden]{display:none!important}
+#acquisitionTutorialPanel header{display:flex;gap:6px;align-items:center;padding:7px;background:#000080;color:white}
+#acquisitionTutorialPanel header strong{flex:1;min-width:0}
+#acquisitionTutorialPanel button,#acquisitionTutorialCompact button{font:13px Arial;padding:5px 8px;cursor:pointer;color:#111;background:#c0c0c0;border:2px outset #fff}
+#acquisitionTutorialPanel button:disabled{cursor:default;color:#777}
+#acquisitionTutorialPanel :is(button,select):focus-visible,#acquisitionTutorialCompact button:focus-visible{outline:3px solid #185fa5;outline-offset:1px}
+#acquisitionTutorialPanel .tutorial-navigation{padding:8px;border-bottom:1px solid #aaa}
+#acquisitionTutorialPanel .tutorial-navigation label{display:flex;align-items:center;gap:6px}
+#acquisitionTutorialStep{width:100%;min-width:0;font:14px Arial;background:#ffffe1;padding:5px}
+#acquisitionTutorialProgress{width:100%;height:9px;margin-top:8px;accent-color:#145e4d}
+#acquisitionTutorialProgressText{font-size:12px}
+#acquisitionTutorialCaseNotice,#acquisitionTutorialRuntime{color:#7e2c00;font-size:13px;margin:6px 0 0}
+#acquisitionTutorialCaseNotice[hidden],#acquisitionTutorialRuntime:empty{display:none}
+#acquisitionTutorialBody{min-height:0;overflow:auto;overscroll-behavior:contain;padding:10px 13px;scrollbar-gutter:stable}
+#acquisitionTutorialBody h2{font-size:18px;color:#000080;margin:0 0 10px}
+#acquisitionTutorialBody h3{font-size:14px;margin:14px 0 6px}
+#acquisitionTutorialBody p{margin:8px 0}
+#acquisitionTutorialBody ol{padding-left:22px}
+#acquisitionTutorialBody li{margin:8px 0}
+#acquisitionTutorialBody .tutorial-locate-buttons{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+#acquisitionTutorialBody .tutorial-expected{background:#fff;border-left:4px solid #164f8c;padding:9px;margin:12px 0}
+#acquisitionTutorialBody details{border-top:1px solid #c5c5ad;padding:8px 0;margin-top:8px}
+#acquisitionTutorialBody summary{cursor:pointer;color:#000080;font-weight:bold}
+#acquisitionTutorialChecks{padding:0;list-style:none;font-size:13px}
+#acquisitionTutorialChecks [data-done=true]{color:#1b653e}
+#acquisitionTutorialChecks [data-done=false]{color:#5d5d50}
+.tutorial-visual-check{display:flex;align-items:flex-start;gap:6px;font-size:13px;margin:12px 0}
+#acquisitionTutorialPanel footer{padding:8px;border-top:1px solid #aaa;background:#deded0}
+#acquisitionTutorialPanel footer>div{display:flex;justify-content:space-between;gap:8px}
+#acquisitionTutorialPanel footer small{display:block;margin-top:7px;line-height:1.3}
+#acquisitionTutorialMessage{font-size:12px;margin:0 0 6px;color:#7e2c00}
+#acquisitionTutorialMessage:empty{display:none}
+#acquisitionTutorialCompact{display:flex;gap:8px;align-items:center;padding:6px;max-width:calc(100vw - 20px);font-size:12px}
+#acquisitionTutorialCompactText{min-width:0}
+.acquisition-tutorial-highlight{outline:3px solid #ffbf00!important;outline-offset:2px;box-shadow:0 0 0 5px #17499b!important}
+@media(max-width:700px){#acquisitionTutorialPanel{right:8px;bottom:8px}#acquisitionTutorialCompact{right:8px;bottom:8px;flex-wrap:wrap}}
+@media print{#acquisitionTutorialPanel,#acquisitionTutorialCompact,#acquisitionTutorialOpen{display:none!important}}

@@ -101,7 +101,12 @@ s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important
               (ROOT / 'scripts/processing_roi.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_analysis.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_flexible_measurements.js').read_text(encoding='utf-8') + '\n' +
-              (ROOT / 'scripts/processing_differential.js').read_text(encoding='utf-8') + '\n</script>\n</body>')
+              (ROOT / 'scripts/processing_differential.js').read_text(encoding='utf-8') + '\n' +
+              (ROOT / 'scripts/processing_tutorial_bridge.js').read_text(encoding='utf-8') + '\n</script>\n</body>')
+# Report a completed PNG preparation to the read-only tutorial checks.
+export_anchor = "$('flex-message').textContent='PNG exportado a 2400 × 1800 píxeles, sin marcas de selección.';"
+assert export_anchor in s
+s = s.replace(export_anchor, export_anchor + "window.dispatchEvent(new Event('gantry-flex-exported'));")
 # The private 32-bit teaching SOP carries administered activity in MBq, like NM.
 s = s.replace("sop==='1.2.840.10008.5.1.4.1.1.20'?'MBq'", "(sop==='1.2.840.10008.5.1.4.1.1.20'||sop==='2.25.216145721041023267506752105223475669900')?'MBq'")
 (DEST / 'index.html').write_text(s, encoding='utf-8', newline='\n')

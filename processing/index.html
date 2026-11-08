@@ -709,7 +709,7 @@ function initFlexible(){
  $('flex-reset').onclick=()=>{const i=flexItem(),a=flexAsset(i);if(!i)return;Object.assign(i,{window:a.window,level:a.level,invert:!a.mono1,zoom:1,panX:0,panY:0});if(i.dynamic)configureFlexDynamic(i,i.dynamic.mode,i.dynamic.amount,i.dynamic.start);refreshFlexControls();drawFlexible();};
  $('flex-delete').onclick=()=>{const p=flexPage(),i=flexItem();if(!p||!i)return;p.items=p.items.filter(item=>item!==i);p.edited=true;flex.selected=null;refreshFlexible();};
  $('flex-front').onclick=()=>{const p=flexPage(),i=flexItem();if(!i)return;p.items=p.items.filter(j=>j!==i);p.items.push(i);p.edited=true;drawFlexible();};
- $('flex-export').onclick=()=>{if(!flexPage())return;const c=document.createElement('canvas');c.width=2400;c.height=1800;drawFlexible(c,true);c.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pagina-flexible-'+(flex.pages.indexOf(flexPage())+1)+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);$('flex-message').textContent='PNG exportado a 2400 × 1800 píxeles, sin marcas de selección.';},'image/png');};
+ $('flex-export').onclick=()=>{if(!flexPage())return;const c=document.createElement('canvas');c.width=2400;c.height=1800;drawFlexible(c,true);c.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pagina-flexible-'+(flex.pages.indexOf(flexPage())+1)+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);$('flex-message').textContent='PNG exportado a 2400 × 1800 píxeles, sin marcas de selección.';window.dispatchEvent(new Event('gantry-flex-exported'));},'image/png');};
  const canvas=$('flex-canvas');
  canvas.oncontextmenu=e=>{e.preventDefault();menu.hidden=false;menu.style.left=clamp(e.clientX,0,Math.max(0,innerWidth-220))+'px';menu.style.top=clamp(e.clientY,0,Math.max(0,innerHeight-42))+'px';$('flex-context-add').focus({preventScroll:true});};
  canvas.onpointerdown=e=>{if(e.button!==0)return;const p=flexPoint(e),i=[...(flexPage()?.items||[])].reverse().find(i=>p.x>=i.x&&p.x<=i.x+i.w&&p.y>=i.y&&p.y<=i.y+i.h);if(!i){flexSelect(null);return;}flexSelect(i.id);canvas.focus();const action=p.x>i.x+i.w-18&&p.y>i.y+i.h-18?'resize':p.y<i.y+22||p.y>i.y+i.h-22?'move':'pan';flexDrag={id:i.id,p,start:{...i},action};canvas.setPointerCapture(e.pointerId);e.preventDefault();};
@@ -1676,7 +1676,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       status(d.message+' · '+d.state.speed+'×'+(d.state.finished&&!d.state.heads.every(h=>h.total>0)?' · Sin señal en uno de los detectores; no se importa al procesador.':''));
     }
   });
-  window.GANTRY_PROCESSING_EDITOR={finish,isConfiguration:id=>configurations.has(id),canDeleteConfiguration,deleteConfiguration(id){
+  window.GANTRY_PROCESSING_EDITOR={finish,tutorialConfig:()=>draft?structuredClone(read(false)):null,isConfiguration:id=>configurations.has(id),canDeleteConfiguration,deleteConfiguration(id){
     if(canDeleteConfiguration(id))confirmAction('delete',id,true);
   },setPreviewVisible(visible){
     if(!visible)send({type:'GANTRY_CAMERA_PREVIEW_END'});
@@ -2749,6 +2749,69 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       try{localStorage.setItem(resultKey(selectedAcquisition),JSON.stringify(snapshot));}catch(_){el('differential-error').textContent='No se pudo guardar el resultado para Página flexible.';}
 
     }catch(error){el('differential-error').textContent=error.message;}
+  };
+})();
+
+/* Same-origin read-only tutorial snapshot. Pixel arrays never leave the viewer. */
+(function(){
+  'use strict';
+  const cache=new WeakMap(),seen={},exported=new Map();
+  const info=ds=>{
+    if(!ds)return null;
+    if(!cache.has(ds)){
+      try{const r=JSON.parse(value(ds,'00111010'));cache.set(ds,{...r,id:r.processing?.acquisitionId||r.recordId});}
+      catch(_){cache.set(ds,null);}
+    }
+    return cache.get(ds);
+  };
+  const isCase=()=>info(dataset)?.patient?.id==='caso-oseo';
+  // Dynamic tiles contain pixel buffers. Compare their composition, not the buffers.
+  const signature=page=>JSON.stringify([flex.header,page.header,page.items,page.texts],(key,value)=>
+    key==='tiles'?value.map(t=>({id:t.id,label:t.label,sourceFrames:t.sourceFrames})):value);
+  let exporting=null;
+  document.addEventListener('click',event=>{
+    const node=event.target.closest?.('button,input');if(!node)return;
+    if(node.id==='flex-export'&&flexPage())exporting={id:flexPage().id,signature:signature(flexPage())};
+    if(!isCase())return;
+    if(['dyn-play','dyn-next','dyn-prev'].includes(node.id))seen.playback=true;
+    if(node.getAttribute('aria-controls')==='analysisPanel')seen.analysis=true;
+  },true);
+  document.addEventListener('input',event=>{
+    if(!isCase())return;
+    if(event.target.id==='dyn-slider')seen.playback=true;
+    if(['analysisWindow','analysisLevel','analysisInvert'].includes(event.target.id))seen.display=true;
+  });
+  document.addEventListener('change',event=>{
+    if(isCase()&&['analysisWindow','analysisLevel','analysisInvert'].includes(event.target.id))seen.display=true;
+  });
+  window.addEventListener('gantry-flex-exported',()=>{if(exporting){exported.set(exporting.id,exporting.signature);exporting=null;}});
+  const menu=$('processingFileMenu'),option=document.createElement('option');
+  option.value='acquisition-tutorial';option.textContent='Tutorial de adquisición · Caso óseo';menu.append(option);
+  menu.addEventListener('change',()=>{
+    if(menu.value!=='acquisition-tutorial')return;
+    menu.value='';parent.postMessage({type:'GANTRY_TUTORIAL_OPEN',version:1},location.origin);
+  },true);
+  window.GANTRY_TUTORIAL_VIEW={
+    reset(){for(const key of Object.keys(seen))delete seen[key];exported.clear();},
+    snapshot(){
+      const records=new Map();
+      for(const states of Object.values(acquisitionInstances))for(const state of Object.values(states||{})){
+        const r=info(state.dataset);if(r)records.set(r.id,r);
+      }
+      for(const state of [...Object.values(modeStates),{dataset}]){const r=info(state?.dataset);if(r)records.set(r.id,r);}
+      if(isCase()&&window.GANTRY_PROCESSING_ANALYSIS?.opened)seen.analysis=true;
+      const assets=flex.assets.map(a=>({id:a.id,acquisitionId:a.acquisitionId,kind:a.kind,frames:a.dynamicFrames?.length||0}));
+      const pages=flex.pages.map(page=>{
+        let overlaps=0,incomplete=0;
+        for(let i=0;i<page.items.length;i++){
+          const a=page.items[i],asset=flex.assets.find(x=>x.id===a.asset);
+          if(asset?.dynamicFrames){const included=new Set((a.dynamic?.tiles||[]).flatMap(t=>t.sourceFrames));if(asset.dynamicFrames.some(f=>!included.has(f.frame)))incomplete++;}
+          for(const b of page.items.slice(i+1))if(Math.min(a.x+a.w,b.x+b.w)>Math.max(a.x,b.x)+1&&Math.min(a.y+a.h,b.y+b.h)>Math.max(a.y,b.y)+1)overlaps++;
+        }
+        return {id:page.id,items:page.items.map(i=>({asset:i.asset,acquisitionId:assets.find(a=>a.id===i.asset)?.acquisitionId})),overlaps,incomplete,exported:exported.get(page.id)===signature(page)};
+      });
+      return {records:[...records.values()],assets,pages,header:!!flex.header,seen:{...seen},config:window.GANTRY_PROCESSING_EDITOR.tutorialConfig()};
+    }
   };
 })();
 
