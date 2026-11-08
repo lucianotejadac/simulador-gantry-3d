@@ -11,7 +11,10 @@ block=f'''<!-- RADIOPHARMACEUTICAL_BEGIN -->
 #rfPanel label{{display:flex;align-items:center;flex-wrap:wrap;gap:4px}}#rfPanel .rf-study{{flex-basis:100%}}
 #rfPanel select,#rfPanel input,#rfPanel button{{font:inherit;min-height:28px;max-width:100%}}#rfPanel input{{width:68px}}
 #rfPanel .rf-study select{{flex:1;min-width:0}}#rfPanel [hidden]{{display:none!important}}
-#rfStatus,#rfError{{flex-basis:100%}}#rfError{{color:#ffb99f}}#rfError:empty{{display:none}}
+#rfPanel .rf-footer{{flex-basis:100%;display:flex;align-items:center;flex-wrap:wrap;gap:8px}}
+#rfStatus{{flex:1 1 150px;min-width:0}}
+#rfPanel .patient-position-button{{position:static;flex:0 0 auto;margin-left:auto;width:145px;height:auto;min-height:42px}}
+#rfError{{flex-basis:100%;color:#ffb99f}}#rfError:empty{{display:none}}
 </style><script src="{url}"></script>
 <!-- RADIOPHARMACEUTICAL_END -->'''
 if '<!-- RADIOPHARMACEUTICAL_BEGIN -->' in s:

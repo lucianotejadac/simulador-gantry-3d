@@ -134,8 +134,11 @@
       <select id="rfUnit" aria-label="Unidad de dosis"><option>mCi</option><option>MBq</option></select></label>
       <label><span id="rfTimeLabel">Inyección–examen</span> <input id="rfTime" type="number" min="0" step="any" required aria-label="Tiempo inyección examen">
       <select id="rfTimeUnit" aria-label="Unidad de tiempo"><option value="min">min</option><option value="h">h</option><option value="d">días</option></select></label>
-      <button id="rfInject" type="button" hidden>Inyectar</button><button id="rfResetInjection" type="button" hidden>Reiniciar inyección</button><span id="rfStatus" role="status"></span><span id="rfError" role="alert"></span>`;
+      <button id="rfInject" type="button" hidden>Inyectar</button><button id="rfResetInjection" type="button" hidden>Reiniciar inyección</button><div class="rf-footer"><span id="rfStatus" role="status"></span></div><span id="rfError" role="alert"></span>`;
     host.prepend(panel);
+    // Move the original control to preserve its position handler and pressed state.
+    const positionButton=el('changePatientPosition');
+    if(positionButton)panel.querySelector('.rf-footer').append(positionButton);
     for(const [id,p] of Object.entries(profiles)){const o=document.createElement('option');o.value=id;o.textContent=p.label;el('rfSelect').append(o);}
     const action=fn=>async()=>{try{el('rfError').textContent='';await fn();}catch(e){el('rfError').textContent=e.message;render();}};
     el('rfSelect').onchange=action(()=>select(el('rfSelect').value));
