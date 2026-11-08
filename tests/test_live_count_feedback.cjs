@@ -52,8 +52,10 @@ tracker=new Tracker();tracker.changed(now);assert.equal(tracker.result.kind,'bas
 vm.runInNewContext(fs.readFileSync('scripts/icrp_live.js','utf8'),{window});
 const p=new window.GANTRY_ICRP.Persistence(1,1,()=>.5),field={sum:2000000,cdf:[2000000]};
 p.step(field,10,1,1,.75);const initial=p.eventSample;
+assert.equal(p.windowSeconds,1);
 p.step(field,10,1,1,.75);assert.equal(p.eventSample.counts,initial.counts);
 p.expire(2,.75);assert.equal(p.total,0);assert.equal(p.eventSample.counts,initial.counts);
+assert.equal(p.windowSeconds,0);
 assert.equal(p.eventSample.seconds,1);p.reset();assert.notEqual(p.eventSample.id,initial.id);
 assert.equal(p.eventSample.counts,0);assert.equal(p.eventSample.seconds,0);
 console.log('OK: conditional Poisson comparison, unequal exposure, low counts, independent samples, resets, noise and frozen result.');

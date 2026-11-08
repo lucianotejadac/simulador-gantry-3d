@@ -234,6 +234,7 @@
       this.sampleId=++persistenceSequence;this.eventCount=0;this.exposureSeconds=0;}
     // Cumulative independent events, unaffected by expiration of the display window.
     get eventSample(){return {id:this.sampleId,counts:this.eventCount,seconds:this.exposureSeconds};}
+    get windowSeconds(){return this.frames.reduce((seconds,frame)=>seconds+frame.seconds,0);}
     expire(now,duration){
       while(this.frames.length&&this.frames[0].time<=now-duration){
         const frame=this.frames.shift();for(const i of frame.events)this.counts[i]--;
@@ -252,7 +253,7 @@
         while(lo<hi){const mid=(lo+hi)>>>1;if(field.cdf[mid]>target)hi=mid;else lo=mid+1;}
         this.counts[lo]++;events.push(lo);
       }
-      this.frames.push({time:now,events:Uint32Array.from(events)});this.total+=events.length;
+      this.frames.push({time:now,seconds:dt,events:Uint32Array.from(events)});this.total+=events.length;
       this.eventCount+=events.length;this.exposureSeconds+=dt;
     }
     draw(ctx,field,rate,duration,live,gain){

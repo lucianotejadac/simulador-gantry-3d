@@ -536,7 +536,8 @@
 /* STARTUP_LOADING_CSS_END */
 </style>
 <!-- WORKSPACE_LAYOUT_BEGIN -->
-<link rel="stylesheet" href="assets/runtime/gantry-workspace.fbf013139e8c74b3.css">
+<link rel="stylesheet" href="assets/runtime/gantry-workspace.ef6503bcb35ec646.css">
+<script src="assets/runtime/live-monitor-controls.c7592e50cf1b5a68.js"></script>
 <!-- WORKSPACE_LAYOUT_END -->
 <!-- FAST_LOAD_BEGIN -->
 <link rel="preload" href="assets/runtime/camera-response.6725edf4ddbe9366.js" as="script">
@@ -545,7 +546,8 @@
 <link rel="preload" href="assets/runtime/final-preview.547c3960e32b449f.js" as="script">
 <link rel="preload" href="assets/runtime/gantry-positions.b1ea2d559482b07d.js" as="script">
 <link rel="preload" href="assets/runtime/gantry-setups.85ca7f8a091ad28d.js" as="script">
-<link rel="preload" href="assets/runtime/live-count-feedback.2b9c616f2ac4ffbe.js" as="script">
+<link rel="preload" href="assets/runtime/live-count-feedback.89c0314268690122.js" as="script">
+<link rel="preload" href="assets/runtime/live-monitor-controls.c7592e50cf1b5a68.js" as="script">
 <link rel="preload" href="assets/runtime/mdp-engine.b914e2c3e5f2cba5.js" as="script">
 <link rel="preload" href="assets/runtime/mibi-kinetics-engine.d19e16e02b5f02da.js" as="script">
 <link rel="preload" href="assets/runtime/patient-cases.cd430f8e18b44b8b.js" as="script">
@@ -1071,7 +1073,7 @@
 
 <!-- VALUE_FEEDBACK_BEGIN -->
 <link rel="stylesheet" href="assets/runtime/value-feedback.150a3099db7b7dbb.css">
-<script src="assets/runtime/live-count-feedback.2b9c616f2ac4ffbe.js"></script>
+<script src="assets/runtime/live-count-feedback.89c0314268690122.js"></script>
 <script src="assets/runtime/value-feedback.682a665b9ca81c96.js"></script>
 <!-- VALUE_FEEDBACK_END -->
 <!-- EXAM_SAFETY_BEGIN -->
@@ -1722,6 +1724,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       this.sampleId=++persistenceSequence;this.eventCount=0;this.exposureSeconds=0;}
     // Cumulative independent events, unaffected by expiration of the display window.
     get eventSample(){return {id:this.sampleId,counts:this.eventCount,seconds:this.exposureSeconds};}
+    get windowSeconds(){return this.frames.reduce((seconds,frame)=>seconds+frame.seconds,0);}
     expire(now,duration){
       while(this.frames.length&&this.frames[0].time<=now-duration){
         const frame=this.frames.shift();for(const i of frame.events)this.counts[i]--;
@@ -1740,7 +1743,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
         while(lo<hi){const mid=(lo+hi)>>>1;if(field.cdf[mid]>target)hi=mid;else lo=mid+1;}
         this.counts[lo]++;events.push(lo);
       }
-      this.frames.push({time:now,events:Uint32Array.from(events)});this.total+=events.length;
+      this.frames.push({time:now,seconds:dt,events:Uint32Array.from(events)});this.total+=events.length;
       this.eventCount+=events.length;this.exposureSeconds+=dt;
     }
     draw(ctx,field,rate,duration,live,gain){
@@ -2419,7 +2422,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
       crop:{x:crop.x,y:crop.y,w:crop.w,h:crop.h}};
     if(icrpPose)Object.assign(meta,{source:icrpPose.source||('ICRP 145 · postura '+(G.arms==='up'?'articulada':'original')),
       signalMode:boneSignal.mode,persistenceSeconds:boneSignal.duration,
-      windowCounts:target.persistence.total,eventSample:target.persistence.eventSample,
+      windowCounts:target.persistence.total,windowSeconds:target.persistence.windowSeconds,eventSample:target.persistence.eventSample,
       expectedRate:target.linearField.sum/2000000*effectiveCountRate(),
       acquisitionSeconds:boneSignal.time});
     if(!preview)target.info.innerHTML='<b>DETECTOR '+target.n+'</b>'+
@@ -2652,7 +2655,7 @@ window.GANTRY_ICRP_DATA={"down":{"angles":[0.0,5.0,10.0,15.0,20.0,22.5,25.0,30.0
   // LAZY_STUDY_END
   setInterval(()=>{
     const now=performance.now(),dt=Math.min(.25,(now-boneLastClock)/1000);boneLastClock=now;
-    if(document.hidden || !activeStudy().linear || acquisition.study==='mag3' || !ready || boneSignal.paused || boneSignal.mode!=='live')return;
+    if(document.hidden || !activeStudy().linear || !ready || boneSignal.paused || boneSignal.mode!=='live')return;
     boneSignal.time+=dt;boneSignal.step=dt;
     try{update(lastState || window.GANTRY.G);}finally{boneSignal.step=0;}
   },100);
@@ -4043,10 +4046,26 @@ if(['oseo-brazos-arriba','mibi-brazos-arriba'].includes(gantryDemo)){
       return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate:0};
     }
     const factor=administration.factor;
-    const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time).map(v=>v*factor));draw(target.canvas,values,n);
+    const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time).map(v=>v*factor));
     const expectedRate=values.reduce((a,b)=>a+b,0);
+    const signal=window.GANTRY_LIVE.signal;
+    if(!target.persistence||target.persistence.w!==n||target.persistence.h!==n||target.mag3Administration!==administration){
+      target.persistence=new window.GANTRY_ICRP.Persistence(n,n);target.mag3LiveTime=signal.time;
+      target.mag3Administration=administration;
+    }
+    const dt=Math.min(.25,Math.max(0,signal.time-(target.mag3LiveTime??signal.time)));
+    target.mag3LiveTime=signal.time;
+    target.persistence.expire(signal.time,signal.duration);
+    if(dt>0){
+      const cdf=new Float64Array(values.length);let sum=0;
+      for(let i=0;i<values.length;i++)cdf[i]=sum+=values[i];
+      // Values are counts/s, so this scale gives sum * dt independent events.
+      target.persistence.step({sum,cdf},2000000,dt,signal.time,signal.duration);
+    }
+    draw(target.canvas,signal.mode==='live'?target.persistence.counts:values,n);
     target.info.textContent='DETECTOR '+target.n+' · MAG3 basal · '+Math.round(g.rawAngle)+'° · '+labelTime(time)+' · '+Math.round(expectedRate).toLocaleString('es-CL')+' cuentas/s esperadas';
-    return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate};
+    return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate,
+      windowCounts:target.persistence.total,windowSeconds:target.persistence.windowSeconds,eventSample:target.persistence.eventSample};
   }
   button.onclick=inject;
   startButton.onclick=start;

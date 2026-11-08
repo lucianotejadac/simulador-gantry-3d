@@ -198,10 +198,26 @@
       return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate:0};
     }
     const factor=administration.factor;
-    const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time).map(v=>v*factor));draw(target.canvas,values,n);
+    const values=mix(fields(g,n,liveCaches[target.n-1]),instantaneous(time).map(v=>v*factor));
     const expectedRate=values.reduce((a,b)=>a+b,0);
+    const signal=window.GANTRY_LIVE.signal;
+    if(!target.persistence||target.persistence.w!==n||target.persistence.h!==n||target.mag3Administration!==administration){
+      target.persistence=new window.GANTRY_ICRP.Persistence(n,n);target.mag3LiveTime=signal.time;
+      target.mag3Administration=administration;
+    }
+    const dt=Math.min(.25,Math.max(0,signal.time-(target.mag3LiveTime??signal.time)));
+    target.mag3LiveTime=signal.time;
+    target.persistence.expire(signal.time,signal.duration);
+    if(dt>0){
+      const cdf=new Float64Array(values.length);let sum=0;
+      for(let i=0;i<values.length;i++)cdf[i]=sum+=values[i];
+      // Values are counts/s, so this scale gives sum * dt independent events.
+      target.persistence.step({sum,cdf},2000000,dt,signal.time,signal.duration);
+    }
+    draw(target.canvas,signal.mode==='live'?target.persistence.counts:values,n);
     target.info.textContent='DETECTOR '+target.n+' · MAG3 basal · '+Math.round(g.rawAngle)+'° · '+labelTime(time)+' · '+Math.round(expectedRate).toLocaleString('es-CL')+' cuentas/s esperadas';
-    return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate};
+    return {detector:target.n,rawAngle:g.rawAngle,angle:g.rawAngle,study:'mag3',arms:G.arms,crop:g.crop,expectedRate,
+      windowCounts:target.persistence.total,windowSeconds:target.persistence.windowSeconds,eventSample:target.persistence.eventSample};
   }
   button.onclick=inject;
   startButton.onclick=start;

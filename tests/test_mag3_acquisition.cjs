@@ -27,7 +27,7 @@ ${html.split('// IMAGE_FRAMING_BEGIN')[1].split('// IMAGE_FRAMING_END')[0]}
 ${html.slice(html.indexOf('  function setZoom('),html.indexOf('  function setStudy('))}
 const distanceMetrics=()=>({countFactor:1,contrast:1,haloAlpha:0,haloBlur:0,blur:0});
 ${html.slice(html.indexOf('  function mag3Geometry('),html.indexOf("  window.addEventListener('mag3ready'"))}
-window.GANTRY_LIVE={mag3Geometry,recenterFromCanvas,settings:acquisition,setStudy(s){acquisition.study=s;},update(G){window.GANTRY_MAG3.stateChanged(G);}};`,ctx);
+window.GANTRY_LIVE={mag3Geometry,recenterFromCanvas,settings:acquisition,signal:{time:0,duration:.75,mode:'live'},setStudy(s){acquisition.study=s;},update(G){window.GANTRY_MAG3.stateChanged(G);}};`,ctx);
 vm.runInContext(fs.readFileSync(path.join(root,'scripts/mag3_acquisition.js'),'utf8'),ctx);
 function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return (s+.5)/4294967296;};}
 (async()=>{
@@ -84,8 +84,22 @@ function seeded(){let s=145;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;
  assert.equal(s.counts.reduce((a,b)=>a+b,0),s.total);assert(Math.abs(s.total-s.expectedTotal)<7*Math.sqrt(s.expectedTotal));
  await api.inject();assert(api.injected);assert.equal(api.state,null,'Injection must not create an acquisition');
  now=3000;intervals.at(-1)();assert.equal(api.state,null,'Waiting after injection must not record counts');
- const waiting=api.renderHead({n:2,canvas:element('preview'),info:element('info')},window.GANTRY.G);
+ const liveTarget={n:2,canvas:element('preview'),info:element('info')};
+ const waiting=api.renderHead(liveTarget,window.GANTRY.G);
  assert(waiting.expectedRate>0,'Injection activates the live signal without acquisition');
+ for(let i=1;i<=20;i++){
+   window.GANTRY_LIVE.signal.time=i*.1;
+   api.renderHead(liveTarget,window.GANTRY.G);
+ }
+ const persisted=api.renderHead(liveTarget,window.GANTRY.G);
+ assert(persisted.windowSeconds>=.7&&persisted.windowSeconds<=.8,'MAG3 uses its selected live persistence');
+ assert.equal(persisted.eventSample.seconds,2);
+ assert.equal(api.renderHead(liveTarget,window.GANTRY.G).eventSample.counts,persisted.eventSample.counts,'Repaints do not duplicate events');
+ window.GANTRY_LIVE.signal.duration=.25;
+ const shortened=api.renderHead(liveTarget,window.GANTRY.G);
+ assert(shortened.windowSeconds<=.3&&shortened.windowCounts<=persisted.windowCounts,'Shorter persistence expires old counts');
+ assert.equal(shortened.expectedRate,persisted.expectedRate,'Persistence does not change sensitivity');
+ assert.equal(api.state,null,'Live events do not start or save an acquisition');
  assert.equal(api.administration.seconds,3);
  api.start();assert.equal(api.state.time,0);assert.equal(api.state.total,0);assert.equal(api.state.administeredActivity.seconds,3,'Acquisition starts at the elapsed kinetic time, without retroactive counts');
  const panelBefore=elements.get('mag3Acquisition');panelBefore.shadowRoot.getElementById('finish').onclick();

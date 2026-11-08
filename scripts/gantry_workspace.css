@@ -147,3 +147,18 @@
 
 #liveCenterControls{display:flex;flex-wrap:wrap;gap:6px;padding:6px 8px;flex:none}
 #liveCenterControls .live-setting{flex:1;white-space:normal;min-height:30px}
+/* Compact live readouts; technical information stays available on demand. */
+#liveDisplayControls{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;padding:8px 10px;color:#cce9f1;font:12px/1.4 var(--mono);flex:none}
+#liveDisplayControls label{display:flex;justify-content:space-between;gap:6px}
+#liveDisplayControls input{width:100%;min-width:0;margin:0 0 5px;accent-color:#82e3c7}
+#liveCameraDetails{flex:none;color:#a4d9c8;font:11px/1.4 var(--mono);border-bottom:1px solid #344958}
+#liveCameraDetails>summary{cursor:pointer;padding:5px 10px}
+#liveCameraDetails #liveCameraSettings{border:0}
+#gantryLiveMonitors.compact-live-monitors canvas{filter:brightness(var(--live-brightness,1))}
+#gantryLiveMonitors .live-monitor-readout{position:relative;min-width:0;padding:7px 8px;border-top:1px solid #273745;background:#0f1820;color:#cce9f1;font:12px/1.5 var(--mono)}
+#gantryLiveMonitors .live-rate-row{position:relative}
+#gantryLiveMonitors .live-more>summary{cursor:pointer;color:#a4d9c8;font-size:11px;margin-top:3px}
+#gantryLiveMonitors .live-more .live-info{padding:6px 0;border:0;max-height:130px;overflow:auto}
+#gantryLiveMonitors.compact-live-monitors .pixel-panel{display:none}
+#gantryLiveMonitors .live-rate-row>.live-count-comparison{position:absolute;right:0;bottom:calc(100% + 10px);z-index:5;margin:0;padding:2px 5px;border:0;max-width:100%;box-shadow:0 1px 5px #0007}
+#gantryLiveMonitors .live-rate-row>.live-count-comparison>div{max-height:150px;overflow:auto}

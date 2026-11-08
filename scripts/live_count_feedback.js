@@ -75,7 +75,7 @@
     }
   }
   const trackers=[new Tracker(),new Tracker()];
-  function active(){const live=window.GANTRY_LIVE;return !!live&&live.signal.mode==='live'&&live.settings.study!=='mag3';}
+  function active(){const live=window.GANTRY_LIVE;return !!live&&live.signal.mode==='live';}
   function observe(now){
     const live=window.GANTRY_LIVE;
     const context=JSON.stringify([live?.settings.study,live?.signal.mode,window.GANTRY_PATIENT?.id]);
@@ -91,7 +91,8 @@
   const disclosures=new WeakMap();
   function render(host,now){
     observe(now);
-    host.querySelector('.live-count-comparison')?.remove();
+    const display=document.getElementById(host.id.replace('liveInfo','liveRate'))||host;
+    display.querySelector('.live-count-comparison')?.remove();
     if(!active())return false;
     const tracker=trackers[host.id==='liveInfoD1'?0:1],result=tracker.result,pending=tracker.pending;
     // Do not attach random arrows to the continuously changing live count.
@@ -138,8 +139,8 @@
     summary.setAttribute('aria-label',label+(compact.includes('%')?' · '+compact:'')+' · Detalles');
     const content=lines.join('\n');
     if(body.textContent!==content)body.textContent=content;
-    // Immediately below the current total; in normal flow, never over its digits.
-    const br=host.querySelectorAll('br')[1];if(br)br.after(box);else host.append(box);
+    // Anchor beside the compact rate; older layouts keep the inline placement.
+    const br=display===host?host.querySelectorAll('br')[1]:null;if(br)br.after(box);else display.append(box);
     return true;
   }
   window.GANTRY_COUNT_FEEDBACK={changed,render,active,Tracker,compare};

@@ -43,8 +43,9 @@ if 'id="liveCenterControls"' not in html:
     anchor='<div class="live-monitor-grid">'
     html=html.replace(anchor,'<div id="liveCenterControls">'+''.join(buttons)+'</div>\n'+anchor,1)
 html=re.sub(r'(<div class="gantry-live-grid">)\s+(<div class="live-card bone-acq-card">)',r'\1\n            \2',html)
-url = asset((ROOT / 'scripts/gantry_workspace.css').read_bytes(), 'gantry-workspace', 'css')
-block = '<!-- WORKSPACE_LAYOUT_BEGIN -->\n<link rel="stylesheet" href="' + url + '">\n<!-- WORKSPACE_LAYOUT_END -->'
+url = asset((ROOT / 'scripts/gantry_workspace.css').read_text(encoding='utf-8').encode('utf-8'), 'gantry-workspace', 'css')
+controls = asset((ROOT / 'scripts/live_monitor_controls.js').read_text(encoding='utf-8').encode('utf-8'), 'live-monitor-controls', 'js')
+block = '<!-- WORKSPACE_LAYOUT_BEGIN -->\n<link rel="stylesheet" href="' + url + '">\n<script src="' + controls + '"></script>\n<!-- WORKSPACE_LAYOUT_END -->'
 if '<!-- WORKSPACE_LAYOUT_BEGIN -->' in html:
     html = re.sub(r'<!-- WORKSPACE_LAYOUT_BEGIN -->.*?<!-- WORKSPACE_LAYOUT_END -->', lambda _: block, html, flags=re.S)
 else:
