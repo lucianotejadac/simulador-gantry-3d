@@ -54,11 +54,15 @@
       expected:'Cinco páginas: flujo D1, flujo D2, pool con laterales, tardías dirigidas con laterales y cuerpo completo tardío D1/D2. Se comprueba presencia de ambas imágenes de las seis adquisiciones, cobertura de frames y ausencia de solapamientos. Revisa tú la legibilidad y el encuadre.',
       question:'¿Un mosaico de 30 imágenes significa que se adquirieron 30 frames?',answer:'No necesariamente. Una secuencia de 60 frames puede mostrarse sumada de dos en dos. Comprueba los intervalos y que no se omitieron frames.',
       targets:[['Página flexible','mode-flex','flex'],['Encabezado','flex-add-header','flex'],['Agregar imágenes','flex-add-images','flex'],['Ordenar página','flex-arrange','flex']]},
-    {title:'11. Revisar y exportar',text:'Comprueba cada página antes de entregar el trabajo.',
+    {title:'11. Revisar, exportar y comparar protocolos',text:'Comprueba cada página antes de entregar el trabajo. Al final encontrarás cómo habría cambiado el procedimiento para un estudio sólo tardío.',
       actions:['Recorre las páginas: identidad, región, fase, proyección y rótulos legibles; imágenes sin recortes ni superposiciones.','Selecciona cada página y pulsa Exportar PNG. Repite para todas las páginas del caso.','Abre los PNG descargados para comprobar el resultado. Si cambias una página, expórtala de nuevo.','En Herramientas puedes guardar también una copia del proyecto. El PNG corresponde a la página seleccionada.'],
       expected:'Cada página del caso tiene una exportación de su composición actual. La guía detecta la preparación del PNG; comprueba en Descargas que el navegador lo guardó.',
       question:'¿Qué entregarías para demostrar que se completó el protocolo?',answer:'El flujo de ambos detectores, el pool anterior/posterior y lateral, el cuerpo completo tardío y las estáticas tardías anterior/posterior y lateral, identificados y con tiempos coherentes. El cuerpo completo pertenece a la fase tardía; no es una cuarta fase.',
-      targets:[['Exportar PNG','flex-export','flex'],['Herramientas','processingFileMenu','frame']]}
+      targets:[['Exportar PNG','flex-export','flex'],['Herramientas','processingFileMenu','frame']],
+      alternative:{title:'Si el estudio no hubiera sido trifásico',
+        text:'Para una indicación que requiere sólo imágenes óseas tardías, como una evaluación de metástasis, el recorrido habría sido el siguiente:',
+        actions:['Identificación y registro: consultarías la pulsera y la orden igual que antes. Al agregar la primera adquisición, elegirías «Nueva adquisición cuerpo entero» e ingresarías nombre, RUT y «Cintigrama óseo», sin añadir «trifásico». La decisión depende de los antecedentes, no sólo del nombre genérico de la orden.','Radiofármaco y espera: seleccionarías «99mTc-MDP · Óseo», registrarías la dosis administrada y el tiempo desde la inyección. Las imágenes tardías se obtienen habitualmente a las 2–4 h; para practicar aquí, usarías 180 min. En este modo del simulador ese intervalo representa una administración ya realizada. No programarías dinámica de flujo ni imágenes de pool.','Posición: observarías la orientación inicial aleatoria y usarías «Cambiar posición de paciente» si hace falta para dejarlo en supino, cabeza afuera. Declararías esa misma posición en cámara y llevarías la camilla hasta centrar el cráneo bajo los detectores antes del barrido (Z 200 cm). No sería necesario centrar primero los pies para una dinámica.','Adquisición tardía: aplicarías los parámetros docentes del paso 7 —matriz 256 × 1024, zoom 1×, LEHR, 140 keV, ventana 20 %, 10 cm/min y contornos automáticos— y adquirirías cuerpo entero anterior y posterior. Revisarías que ambos detectores incluyan desde el cráneo hasta los pies.','Vistas complementarias: agregarías estáticas dirigidas, incluidas laterales u oblicuas, cuando la indicación o los hallazgos requieran aclarar una región. No se exigen automáticamente todas las tomas de pies de este ejercicio ni laterales de pool. Cada toma conservaría la misma administración y el tiempo transcurrido.','Revisión y página flexible: ajustarías ventana y nivel, comprobarías los datos y agregarías las dos imágenes de cuerpo entero y las vistas complementarias obtenidas. Identificarías sus proyecciones, ordenarías los cuadros y exportarías cada página. No habría páginas de flujo ni de pool.'],
+        takeaway:'Las imágenes tardías muestran la distribución ósea; no permiten recuperar retrospectivamente el flujo y el pool que no se adquirieron. En el caso de Matías se eligió el protocolo trifásico por sus antecedentes: esta comparación final no requiere borrar ni repetir el trabajo realizado.'}}
   ];
   let open=false,minimized=false,step=0,seen={},timer,focusedBefore;
   const changed=new Set();let frameDocument;
@@ -129,6 +133,12 @@
       const note=el('details');note.append(el('summary','Fundamento y valores del ejercicio'));
       note.append(el('p','Ejercicio docente con parámetros propuestos, no una prescripción individual. La guía SNMMI contempla flujo de 30–60 tomas de 1–3 s, pool precoz dentro de 10 min y tardías a las 2–4 h. El caso y su distribución son simulados.'));
       const a=el('a','SNMMI · Bone Scintigraphy 4.0');a.href=source;a.target='_blank';a.rel='noopener noreferrer';note.append(a);body.append(note);
+    }
+    if(s.alternative){
+      const section=el('section');section.id='acquisitionTutorialAlternative';
+      section.append(el('h2',s.alternative.title),el('p',s.alternative.text));
+      const actions=el('ol');for(const text of s.alternative.actions)actions.append(el('li',text));section.append(actions,el('p',s.alternative.takeaway));
+      const reference=el('a','Referencia: SNMMI · Bone Scintigraphy 4.0');reference.href=source;reference.target='_blank';reference.rel='noopener noreferrer';section.append(reference);body.append(section);
     }
     $('acquisitionTutorialStep').value=String(step);$('acquisitionTutorialPrevious').disabled=step===0;
     $('acquisitionTutorialNext').disabled=step===steps.length-1;

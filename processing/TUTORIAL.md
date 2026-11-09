@@ -99,6 +99,16 @@ La entrega propuesta tiene cinco páginas: flujo D1, flujo D2, cuatro imágenes
 del pool (anterior/posterior y laterales), cuatro tardías dirigidas (en el mismo
 orden que el pool) y, por último, cuerpo completo tardío D1/D2.
 
+El paso 11 termina con **Si el estudio no hubiera sido trifásico**, una comparación
+visible con el procedimiento sólo tardío: identificación y primera adquisición de
+cuerpo entero, registro de dosis y tiempo con «99mTc-MDP · Óseo», posicionamiento
+en supino/cabeza afuera, barrido anterior/posterior y vistas complementarias según
+la indicación o los hallazgos. Explica qué imágenes pasarían a Página flexible y
+que no se adquirirían ni presentarían flujo o pool. Se apoya en la guía SNMMI y
+reutiliza los parámetros docentes del paso 7; no convierte las vistas adicionales
+del ejercicio trifásico en requisitos universales. Es una explicación final, no
+una adquisición adicional ni un requisito nuevo para completar los once pasos.
+
 Fundamento de adquisición:
 [SNMMI, Bone Scintigraphy 4.0](https://snmmi.org/common/Uploaded%20files/Web/Clinical%20Practice/Procedure%20Standards/2023/Bone%20Scintigraphy_UPDATED2024.pdf).
 
