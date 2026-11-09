@@ -47,7 +47,7 @@
     document.getElementById('patientRegistrationTitle').textContent=editing?'Modificar datos del paciente y del examen':'Datos del paciente y del examen';
     document.getElementById('patientRegistrationHelp').textContent=editing?'Los cambios se aplicarán a las adquisiciones pendientes y a las nuevas de este paciente. Las imágenes ya adquiridas conservarán sus datos.':'Completa los datos antes de agregar la primera adquisición. Se conservarán para las siguientes adquisiciones de este paciente en la sesión.';
     document.getElementById('patientRegistrationSave').textContent=editing?'Guardar cambios':'Guardar y continuar';
-    document.getElementById('patientRegistrationContext').textContent='Paciente seleccionado: '+(window.GANTRY_PATIENT?.metadata()?.name||'Fantoma ICRP 145');
+    document.getElementById('patientRegistrationContext').textContent='Paciente seleccionado: '+(window.GANTRY_PATIENT?.metadata()?.name||'john');
     document.getElementById('patientRegistrationError').textContent='';
     pending=new Promise(resolve=>{resolvePending=resolve;});dialog.show();document.getElementById('registration-fullName').focus();return pending;
   }

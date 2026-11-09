@@ -8,6 +8,9 @@ from serve_site import serve_site
 ROOT = Path(__file__).resolve().parents[1]
 records = json.loads((ROOT / 'assets/clinical/patient-records.json').read_text(encoding='utf-8'))
 assert len({p['rut'] for p in records['patients'].values()}) == 4
+assert records['patients']['phantom']['label']=='john'
+assert records['patients']['phantom']['givenNames']==['John','Andrés']
+assert records['patients']['phantom']['surnames']==['FANTOMA','COMISION']
 for p in records['patients'].values():
     assert len(p['givenNames']) == len(p['surnames']) == 2
     number, digit = p['rut'].replace('.', '').split('-')
@@ -27,6 +30,7 @@ with serve_site() as url, sync_playwright() as pw:
     assert page.locator('#boneProcessingPane').is_visible()
     assert not page.locator('#acquisitionMenuButton').count()
     assert not page.get_by_role('button',name='Ver pulsera del paciente',exact=True).count()
+    assert page.locator('#gantryPatient option').all_text_contents()==[p['label'] for p in records['patients'].values()]
     page.locator('#boneGantryTab').click()
     assert page.locator('#gantryLive').is_visible()
     page.locator('#boneProcessingTab').click()
@@ -34,6 +38,7 @@ with serve_site() as url, sync_playwright() as pw:
     for patient_id, p in records['patients'].items():
         page.select_option('#gantryPatient', patient_id)
         page.wait_for_function('id=>GANTRY_PATIENT.id===id', arg=patient_id, timeout=60000)
+        assert page.evaluate('GANTRY_PATIENT.metadata().name')==p['label']
         state = page.evaluate('JSON.stringify(GANTRY.G)')
         page.wait_for_timeout(500)
         page.mouse.click(*page.evaluate('GANTRY3D.wristband.placement().screen'))

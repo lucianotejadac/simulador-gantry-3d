@@ -1121,7 +1121,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     if(!['auto','fixed'].includes(c.contours))throw Error('Modo de contornos no válido.');
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());
-    const patientNames={phantom:'Fantoma ICRP 145 · SIMULADO','caso-oseo':'Caso óseo','caso-oseo-2':'Caso óseo 2','caso-oseo-3':'Caso óseo 3'};
+    const patientNames={phantom:'john','caso-oseo':'Matías Ignacio Fuentes Araya','caso-oseo-2':'Nicolás Esteban Paredes Soto','caso-oseo-3':'Ricardo Alberto Molina Contreras'};
     if(value.patient&&Object.hasOwn(patientNames,value.patient.id)){
       c.patient={id:value.patient.id,name:patientNames[value.patient.id]};
       if(value.patient.fullName){const p=registration(value.patient);Object.assign(c.patient,p,{name:p.fullName,caseName:patientNames[value.patient.id]});if(typeof value.patient.registrationId==='string')c.patient.registrationId=value.patient.registrationId;}
@@ -1496,7 +1496,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   function renderFields(config,locked=false){
     const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
     if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
-    $('patient').append(identityField('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO',locked),identityField('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone'],locked),field('Serie','Nueva · '+kindLabel));
+    $('patient').append(identityField('Paciente',config.patient?.name||'john',locked),identityField('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone'],locked),field('Serie','Nueva · '+kindLabel));
     if(config.patient?.fullName)section('series','Datos del paciente y del examen',[
       identityField('Nombre completo',config.patient.fullName,locked),identityField('RUT',config.patient.rut,locked),
       ...(config.patient.birthDate?[field('Fecha de nacimiento',config.patient.birthDate.replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3/$2/$1'))]:[]),identityField('Nombre del examen',config.patient.examName,locked)]);
@@ -1981,7 +1981,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       const batch=data.files.map(check);
       window.GANTRY_PROCESSING_EDITOR?.finish();
       for(const entry of batch){await loadFile(new File([entry.file.bytes],entry.file.name),entry.ds);if(!flex.assets.some(a=>a.uid===entry.file.uid))throw Error('Error al cargar '+entry.file.name);}
-      if(!flex.header){const ds=batch[0].ds;flex.header=Object.fromEntries(Object.entries({patient:value(ds,'00100010')||'Fantoma ICRP 145 · SIMULADO',rut:value(ds,'00100020')||'',date:'',exam:value(ds,'00081030')||'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));}
+      if(!flex.header){const ds=batch[0].ds;flex.header=Object.fromEntries(Object.entries({patient:value(ds,'00100010')||'john',rut:value(ds,'00100020')||'',date:'',exam:value(ds,'00081030')||'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));}
       // Receiving acquisitions only fills the image library. Compose a page
       // exclusively for the explicit "Componer seleccionadas" command.
       if(data.view==='flex'){
@@ -2806,7 +2806,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   });
   window.addEventListener('gantry-flex-exported',()=>{if(exporting){exported.set(exporting.id,exporting.signature);exporting=null;}});
   const menu=$('processingFileMenu'),option=document.createElement('option');
-  option.value='acquisition-tutorial';option.textContent='Tutorial de adquisición · Caso óseo';menu.append(option);
+  option.value='acquisition-tutorial';option.textContent='Tutorial de adquisición · Matías Ignacio Fuentes Araya';menu.append(option);
   menu.addEventListener('change',()=>{
     if(menu.value!=='acquisition-tutorial')return;
     menu.value='';parent.postMessage({type:'GANTRY_TUTORIAL_OPEN',version:1},location.origin);

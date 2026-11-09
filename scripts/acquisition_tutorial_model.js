@@ -26,7 +26,7 @@
     const relevantPages=(v.pages||[]).filter(page=>page.items.some(i=>ids.has(i.acquisitionId)));
     const check=(id,text,done)=>({id,text,done:!!done});
     return [
-      [check('case','Caso óseo seleccionado',s.patientId===caseId),check('band','Pulsera consultada',seen.band),check('folder','Orden médica consultada',seen.folder)],
+      [check('case','Matías Ignacio Fuentes Araya seleccionado',s.patientId===caseId),check('band','Pulsera consultada',seen.band),check('folder','Orden médica consultada',seen.folder)],
       [check('identity','Nombre y RUT coinciden con la pulsera',validIdentity),check('exam','Examen óseo trifásico registrado',normalize(reg?.examName).includes('ose')&&normalize(reg?.examName).includes('trif')),check('draft','Primera adquisición agregada',v.config?.kind==='dynamic'||p.flow.length)],
       [check('prepare','MDP trifásico preparado antes de inyectar',seen.prepared),check('position','Encuadre de ambos pies revisado por ti',seen.position)],
       [check('camera','Cambiaste matriz y zoom o ventana',seen.camera),check('protocol','Restableciste LEHR, 140 keV y ventana de 15–20 %',seen.protocol)],

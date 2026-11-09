@@ -1,7 +1,7 @@
-# Tutorial de adquisición · Caso óseo
+# Tutorial de adquisición · Matías Ignacio Fuentes Araya
 
 Se abre con **Tutorial de adquisición** en la barra principal o desde
-**Examen → Herramientas → Tutorial de adquisición · Caso óseo**.
+**Examen → Herramientas → Tutorial de adquisición · Matías Ignacio Fuentes Araya**.
 
 Recorre identificación y registro (nombre, RUT, examen), preparación del
 radiofármaco y posición, parámetros de cámara, dinámica de flujo, estática
@@ -31,14 +31,14 @@ dentro de Examen sigue disponible.
 
 Todas las órdenes se titulan deliberadamente **cintigrama oseo**. El alumno
 decide según los antecedentes si añade «trifásico» al nombre que registra;
-no se añade automáticamente. El tutorial explica la decisión para Caso óseo.
+no se añade automáticamente. El tutorial explica la decisión para Matías Ignacio Fuentes Araya.
 También enseña giro con arrastre izquierdo, desplazamiento con el derecho,
 zoom con la rueda, gestos táctiles, vistas predefinidas y Vista sala. Estos
 gestos modifican la cámara; el mando mueve la camilla y los detectores.
 
 ## Comprobaciones
 
-- Identidad contrastada con el Caso óseo y examen trifásico registrado.
+- Identidad contrastada con el Matías Ignacio Fuentes Araya y examen trifásico registrado.
 - Consulta de pulsera/orden, edición manual de cámara y revisión visual del
   encuadre (la anatomía completa requiere confirmación del alumno).
 - Imágenes completas con cuentas en ambos detectores, del caso correcto.

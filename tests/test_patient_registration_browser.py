@@ -4,7 +4,7 @@ from playwright.sync_api import sync_playwright
 from serve_site import serve_site
 
 ROOT=Path(__file__).resolve().parents[1]
-person={'fullName':'Daniel Andrés Rojas Medina','rut':'91.000.001-2','examName':'Cintigrafía ósea de control'}
+person={'fullName':'John Andrés FANTOMA COMISION','rut':'91.000.001-2','examName':'Cintigrafía ósea de control'}
 
 with serve_site() as url,sync_playwright() as pw:
     browser=pw.chromium.launch(channel='chrome',headless=True)

@@ -32,7 +32,7 @@
   });
   window.addEventListener('gantry-flex-exported',()=>{if(exporting){exported.set(exporting.id,exporting.signature);exporting=null;}});
   const menu=$('processingFileMenu'),option=document.createElement('option');
-  option.value='acquisition-tutorial';option.textContent='Tutorial de adquisición · Caso óseo';menu.append(option);
+  option.value='acquisition-tutorial';option.textContent='Tutorial de adquisición · Matías Ignacio Fuentes Araya';menu.append(option);
   menu.addEventListener('change',()=>{
     if(menu.value!=='acquisition-tutorial')return;
     menu.value='';parent.postMessage({type:'GANTRY_TUTORIAL_OPEN',version:1},location.origin);

@@ -261,7 +261,7 @@
   function renderFields(config,locked=false){
     const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
     if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
-    $('patient').append(identityField('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO',locked),identityField('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone'],locked),field('Serie','Nueva · '+kindLabel));
+    $('patient').append(identityField('Paciente',config.patient?.name||'john',locked),identityField('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone'],locked),field('Serie','Nueva · '+kindLabel));
     if(config.patient?.fullName)section('series','Datos del paciente y del examen',[
       identityField('Nombre completo',config.patient.fullName,locked),identityField('RUT',config.patient.rut,locked),
       ...(config.patient.birthDate?[field('Fecha de nacimiento',config.patient.birthDate.replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3/$2/$1'))]:[]),identityField('Nombre del examen',config.patient.examName,locked)]);
