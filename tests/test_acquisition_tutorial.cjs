@@ -36,8 +36,17 @@ const records=[flow,pool,poolLateral,late,lateLateral,whole];
 const assets=records.flatMap(r=>[1,2].map(d=>({id:r.id+d,acquisitionId:r.id})));
 const state={patientId:'caso-oseo',identity:{fullName:'Matías Ignacio FANTOMA COMISION',rut:'91.000.002-0'},registration:{fullName:'MATIAS IGNACIO FANTOMA COMISION',rut:'91000002-0',examName:'Cintigrafía ósea trifásica'},seen:{band:true,folder:true,prepared:true,position:true,camera:true,protocol:true},viewer:{records:records.slice(),assets,pages:[{items:assets.map(a=>({asset:a.id,acquisitionId:a.acquisitionId})),overlaps:0,incomplete:0,exported:true}],header:true,seen:{playback:true,analysis:true,display:true}}};
 const done=id=>model.evaluate(state).flat().find(c=>c.id===id).done;
+state.physicalPosition={decubitus:'supine',headFirst:false};
+state.declaredPosition={decubitus:'supine',headFirst:false};
 assert.equal(model.evaluate(state).length,11);
 assert(model.evaluate(state).flat().every(c=>c.done));
+for(const bad of [{decubitus:'supine',headFirst:true},{decubitus:'prone',headFirst:false},undefined]){
+  state.physicalPosition=bad;
+  assert(!done('physicalPosition'));assert(!done('declaredPosition'),'Correct declaration does not reposition the patient');
+  state.physicalPosition={decubitus:'supine',headFirst:false};state.declaredPosition=bad;
+  assert(done('physicalPosition'));assert(!done('declaredPosition'),'The camera declaration must match the physical scan pose');
+  state.declaredPosition={decubitus:'supine',headFirst:false};
+}
 for(const [lateral,id] of [[poolLateral,'poolLateral'],[lateLateral,'delayedLateral']]){
   state.viewer.records=records.filter(r=>r!==lateral);
   assert(!done(id),'Each phase requires its own lateral acquisition');assert(!done('images'));

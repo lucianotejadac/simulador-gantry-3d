@@ -39,6 +39,20 @@ También enseña giro con arrastre izquierdo, desplazamiento con el derecho,
 zoom con la rueda, gestos táctiles, vistas predefinidas y Vista sala. Estos
 gestos modifican la cámara; el mando mueve la camilla y los detectores.
 
+El paso 3 contempla la orientación inicial aleatoria ya existente (cabeza
+adentro o afuera). Antes de inyectar, el alumno observa la escena y usa
+**Cambiar posición de paciente** si necesita dejar la cabeza afuera. Se hace
+con la camilla retirada y espacio libre; si ya está correctamente orientado,
+se conserva la posición. El botón invierte cabeza/pies, no corrige la declaración
+de cámara: el alumno declara **Supino y Cabeza afuera** por separado.
+Se comprueban ambas posiciones. Leer o reabrir la guía no sortea otra posición
+ni mueve al paciente.
+
+Así queda orientado desde el inicio para el barrido posterior, aunque la
+dinámica sólo registra pies y tobillos. Primero se centra esa región con la
+camilla. Para el cuerpo completo tardío se conserva la orientación del paciente
+y se vuelve a centrar el cráneo (Z 200 cm) antes de iniciar el recorrido.
+
 ## Comprobaciones
 
 - Identidad contrastada con la pulsera de Matías Ignacio FANTOMA COMISION y examen trifásico registrado.

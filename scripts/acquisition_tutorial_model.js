@@ -6,6 +6,7 @@
   const forCase=r=>r?.patient?.id===caseId&&r.study==='bone';
   const complete=r=>forCase(r)&&!r.stoppedEarly&&r.heads?.length===2&&r.heads.every(h=>h.done&&h.total>0);
   const seconds=r=>Number(r.administration?.seconds);
+  const scanPose=p=>p?.decubitus==='supine'&&p?.headFirst===false;
   function projectionPair(record,lateral=false){
     const expected=lateral?[90,270]:[0,180];
     const near=(a,b)=>Number.isFinite(a)&&Math.abs(((a-b+540)%360+360)%360-180)<=5;
@@ -41,7 +42,7 @@
     return [
       [check('case','Matías Ignacio FANTOMA COMISION seleccionado',s.patientId===caseId),check('band','Pulsera consultada',seen.band),check('folder','Orden médica consultada',seen.folder)],
       [check('identity','Nombre y RUT coinciden con la pulsera',validIdentity),check('exam','Examen óseo trifásico registrado',normalize(reg?.examName).includes('ose')&&normalize(reg?.examName).includes('trif')),check('draft','Primera adquisición agregada',v.config?.kind==='dynamic'||p.flow.length)],
-      [check('prepare','MDP trifásico preparado antes de inyectar',seen.prepared),check('position','Encuadre de ambos pies revisado por ti',seen.position)],
+      [check('prepare','MDP trifásico preparado antes de inyectar',seen.prepared),check('physicalPosition','Paciente físico en supino y cabeza afuera para el barrido posterior',scanPose(s.physicalPosition)),check('declaredPosition','Cámara declarada en supino y cabeza afuera, igual que el paciente',scanPose(s.physicalPosition)&&scanPose(s.declaredPosition)),check('position','Encuadre de ambos pies revisado por ti',seen.position)],
       [check('camera','Cambiaste matriz y zoom o ventana',seen.camera),check('protocol','Restableciste LEHR, 140 keV y ventana de 15–20 %',seen.protocol)],
       [check('flow','Dinámica completa con señal en ambos detectores, iniciada entre 0 y 10 s',p.flow.length),check('playback','Fotogramas revisados',v.seen?.playback)],
       [check('pool','Pool anterior/posterior completo, iniciado entre 1 y menos de 10 min',pool.length),check('poolLateral','Pool lateral de ambos detectores completo, iniciado entre 1 y menos de 10 min',poolLateral.length)],

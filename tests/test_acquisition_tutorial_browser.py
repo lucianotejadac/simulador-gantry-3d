@@ -7,6 +7,8 @@ ROOT=Path(__file__).resolve().parents[1]
 with serve_site() as url,sync_playwright() as pw:
     browser=pw.chromium.launch(channel='chrome',headless=True)
     page=browser.new_page(viewport={'width':1600,'height':1050},accept_downloads=True)
+    # Exercise one possible random arrival: head-in, with a different declaration.
+    page.add_init_script("window.GANTRY_PATIENT3D={headFirst:true};window.GANTRY_ACQUISITION={decubitus:'prone',headFirst:false};")
     errors=[]
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(url)
@@ -23,7 +25,7 @@ with serve_site() as url,sync_playwright() as pw:
     page.locator('#acquisitionTutorialPanel').wait_for(state='hidden')
     page.select_option('#gantryPatient','caso-oseo')
     page.wait_for_function("GANTRY_PATIENT.id==='caso-oseo'",timeout=60000)
-    page.evaluate("()=>{GANTRY_PATIENT3D.headFirst=false;Object.assign(GANTRY.G,{arms:'down',tableZ:-50,tableH:85,rot:0,detDist1:45,detDist2:45});GANTRY.render();GANTRY3D.view('iso');}")
+    page.evaluate("()=>{Object.assign(GANTRY.G,{arms:'down',tableZ:-50,tableH:85,rot:0,detDist1:45,detDist2:45});GANTRY.render();GANTRY3D.view('sup');}")
     page.wait_for_timeout(500)
     page.mouse.click(*page.evaluate('GANTRY3D.wristband.placement().screen'))
     page.get_by_role('button',name='Cerrar ventana del paciente',exact=True).click()
@@ -42,10 +44,25 @@ with serve_site() as url,sync_playwright() as pw:
     page.wait_for_function("GANTRY_RF.selected==='bone3' && GANTRY_RF.pending()")
     page.select_option('#rfUnit','mCi');page.locator('#rfDose').fill('20');page.locator('#rfDose').press('Tab')
     page.locator('#rfTime').fill('0');page.locator('#rfTime').press('Tab')
-    # Known clear physical placement, identical to the established case browser test.
-    page.evaluate("""()=>{GANTRY_PATIENT3D.headFirst=false;GANTRY_ACQUISITION.headFirst=false;GANTRY_ACQUISITION.decubitus='supine';Object.assign(GANTRY.G,{arms:'down',rot:0,tableZ:25,tableH:85,detDist1:45,detDist2:45});GANTRY.render();}""")
     page.locator('#acquisitionTutorialOpen').click();page.select_option('#acquisitionTutorialStep','2')
+    assert 'orientación inicial es aleatoria' in page.locator('#acquisitionTutorialBody').inner_text()
+    assert page.evaluate('GANTRY_PATIENT3D.headFirst') is True,'Reading the guide must not reposition the patient'
+    assert not page.evaluate("GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot())[2].find(c=>c.id==='physicalPosition').done")
+    page.get_by_role('button',name='Señalar Cambiar posición de paciente',exact=True).click()
+    page.locator('#changePatientPosition.acquisition-tutorial-highlight').wait_for()
+    page.locator('#changePatientPosition').click()
+    assert page.evaluate('GANTRY_PATIENT3D.headFirst') is False
+    assert page.evaluate("GANTRY_ACQUISITION.decubitus")=='prone','Changing the patient must not silently correct the declaration'
+    assert not page.evaluate("GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot())[2].find(c=>c.id==='declaredPosition').done")
+    frame.locator('#tab-camera').click()
+    frame.locator('#gantryDraft-position-decubitus').select_option('supine')
+    frame.locator('#gantryDraft-position-entry').select_option('headOut')
+    page.wait_for_function("GANTRY_ACQUISITION.decubitus==='supine'&&GANTRY_ACQUISITION.headFirst===false")
+    # Move only the table to the feet. The corrected physical orientation remains.
+    page.evaluate("()=>{GANTRY.G.tableZ=25;GANTRY.render();}")
+    page.locator('#acquisitionTutorialOpen').click()
     page.locator('.tutorial-visual-check input').check()
+    assert all(c['done'] for c in page.evaluate('GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot())[2]'))
     page.locator('#acquisitionTutorialMinimize').click()
     frame.locator('#gantryDraft-matrix').select_option('64');frame.locator('#gantryDraft-matrix').select_option('128')
     frame.locator('#gantryDraft-zoom').select_option('1.5');frame.locator('#gantryDraft-zoom').select_option('1')
@@ -122,7 +139,7 @@ with serve_site() as url,sync_playwright() as pw:
         if angle==90:
             lateral=child.evaluate("GANTRY_TUTORIAL_VIEW.snapshot().records.filter(r=>r.acquisition.kind==='static').at(-1)")
             assert page.evaluate('r=>GANTRY_TUTORIAL_MODEL.projectionPair(r,true)',lateral)
-            if phase=='Pool lateral':assert 360<=lateral['administration']['seconds']<600,'Do not rewind the injection clock for lateral pool'
+            if phase=='Pool lateral':assert 360-1e-6<=lateral['administration']['seconds']<600,('Do not rewind the injection clock for lateral pool',lateral['administration']['seconds'])
             else:assert lateral['administration']['seconds']+1e-6>=late['administration']['seconds']+max(h['elapsed'] for h in late['heads']),{'lateralStart':lateral['administration']['seconds'],'anteriorStart':late['administration']['seconds'],'anteriorElapsed':[h['elapsed'] for h in late['heads']]}
         print('OK:',phase,'acquired.',flush=True)
     frame.locator('[aria-controls="analysisPanel"]').click()
@@ -171,5 +188,15 @@ with serve_site() as url,sync_playwright() as pw:
         assert box['x']>=0 and box['x']+box['width']<=width and box['y']>=0 and box['y']+box['height']<=height,box
         page.locator('#acquisitionTutorialMinimize').click()
     assert not errors,errors
+    # The other random arrival is already head-out: reading the guide preserves it.
+    other=browser.new_page()
+    other.add_init_script("window.GANTRY_PATIENT3D={headFirst:false};window.GANTRY_ACQUISITION={decubitus:'supine',headFirst:false};")
+    other.goto(url)
+    other.wait_for_function("window.GANTRY_LIVE?.ready && !document.getElementById('gantryWin').inert",timeout=120000)
+    other.locator('#acquisitionTutorialOpen').click();other.select_option('#acquisitionTutorialStep','2')
+    assert 'Si ya está así, conserva la posición' in other.locator('#acquisitionTutorialBody').inner_text()
+    assert other.evaluate('GANTRY_PATIENT3D.headFirst') is False
+    assert not other.evaluate('GANTRY_BONE_ACQ.active')
+    other.close()
     print('OK: six acquisitions including pool/delayed laterals and late whole-body, five pages, PNGs and responsive guide.',flush=True)
     browser.close()
