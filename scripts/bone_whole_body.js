@@ -8,11 +8,11 @@
   const FIELD_WIDTH_MM=256*REFERENCE_PIXEL_MM;
   function eligibility(G,physical,declared){
     if(G?.setup&&G.setup!=='normal')return {ok:false,reason:'Para el barrido usa la camilla del equipo: selecciona la posición 1 o 6.'};
-    if(!physical||physical.headFirst!==false)return {ok:false,reason:'Coloca al paciente con los pies hacia adentro (Cambiar posición de paciente).'};
-    if(declared?.headFirst!==false)return {ok:false,reason:'En Adquisición, declara Pies adentro / Cabeza afuera.'};
+    if(physical?.decubitus!=='supine'||physical?.headFirst!==false)return {ok:false,reason:'El barrido de cuerpo completo requiere al paciente en supino y con la cabeza afuera (pies adentro). Usa Cambiar posición de paciente; cambiar sólo la posición declarada no mueve al paciente.'};
+    if(declared?.decubitus!=='supine'||declared?.headFirst!==false)return {ok:false,reason:'En Parámetros de cámara, declara Supino y Cabeza afuera, de acuerdo con la posición física del paciente.'};
     if(!Number.isFinite(G?.tableZ))return {ok:false,reason:'Posición de camilla no disponible.'};
     if(G.tableZ<=16)return {ok:false,reason:'La camilla ya alcanzó el final del recorrido hacia los pies.'};
-    return {ok:true,reason:'Inicio en posición actual · detectores automáticos · pies hacia adentro'};
+    return {ok:true,reason:'Supino · cabeza afuera · inicio en posición actual. Para incluir todo el cuerpo, comienza con el cráneo bajo los detectores (Z 200 cm).'};
   }
   function geometry(pose,n,settings={},detector=1){
     const sourcePixelMm=pose.pixelMm||3;
@@ -96,10 +96,14 @@
   }
   let key='',cached=null;
   const detectorFields=[null,null];
+  function physicalPosition(){
+    return {headFirst:window.GANTRY_PATIENT3D?.headFirst,
+      decubitus:(document.getElementById('pos')?.value||'').toLowerCase().startsWith('pron')?'prone':'supine'};
+  }
   function position(){
     const live=window.GANTRY_LIVE;
     if(!window.GANTRY3D?.limits)return {ok:false,reason:'Preparando posicionamiento automático del gantry…'};
-    return eligibility(window.GANTRY?.G,window.GANTRY_PATIENT3D,live?.settings,live?.settings.centers,window.GANTRY?.SCAN);
+    return eligibility(window.GANTRY?.G,physicalPosition(),live?.settings);
   }
   function signature(){
     const G=window.GANTRY.G,s=window.GANTRY_LIVE.settings;
@@ -120,7 +124,7 @@
     const required=safeTargets({...G,rot:scan.targetRot,detectorSeparation:180},scan.endZ,window.GANTRY3D.limits,window.GANTRY.LIM);
     if(contours==='fixed'&&['detDist1','detDist2'].some(k=>G[k]<required[k]-.001))
       throw Error('Distancia fija insuficiente para todo el recorrido. Aleja los detectores: D1 al menos '+required.detDist1.toFixed(1)+' cm y D2 '+required.detDist2.toFixed(1)+' cm del isocentro, o activa los contornos automáticos.');
-    scan.geometrySignature=signature();scan.initialGeometry={...G};
+    scan.geometrySignature=signature();scan.initialGeometry={...G};scan.physicalPosition=physicalPosition();
     return scan;
   }
   function advance(scan,rate,seconds,render=true){

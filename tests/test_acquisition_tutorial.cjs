@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const model=require('../scripts/acquisition_tutorial_model.js');
 const record=(id,kind,seconds)=>({id,patient:{id:'caso-oseo'},study:'bone',acquisition:{kind},administration:{seconds},heads:[{total:2500,done:true},{total:2300,done:true}],dynamic:kind==='dynamic'?{timings:Array(120).fill({})}:undefined});
 const flow=record('flow','dynamic',0),pool=record('pool','static',180),late=record('late','static',10800);
-const whole={...record('whole','whole',10800),scan:{startZ:200,endZ:16,travel:175}};
+const whole={...record('whole','whole',10800),scan:{startZ:200,endZ:16,travel:175,physicalPosition:{decubitus:'supine',headFirst:false}}};
 assert.deepEqual(model.phases([flow,pool,late,whole]),{flow:[flow],pool:[pool],delayed:[late],whole:[whole]});
 for(const bad of [
   {...flow,patient:{id:'phantom'}},{...flow,study:'dmsa'},{...flow,stoppedEarly:true},
@@ -16,13 +16,16 @@ for(const bad of [
   {...whole,administration:{seconds:180}},
   {...whole,administration:{seconds:14401}},
   {...whole,stoppedEarly:true},
+  {...whole,scan:{...whole.scan,physicalPosition:{decubitus:'prone',headFirst:false}}},
+  {...whole,scan:{...whole.scan,physicalPosition:{decubitus:'supine',headFirst:true}}},
+  {...whole,scan:{...whole.scan,physicalPosition:undefined}},
   {...whole,heads:[{done:true,total:100},{done:true,total:0}]},
-  {...whole,scan:{startZ:100,endZ:16,travel:80}},
+  {...whole,scan:{...whole.scan,startZ:100,endZ:16,travel:80}},
   {...whole,scan:undefined},
-  {...whole,scan:{startZ:200,endZ:16,travel:100}}
+  {...whole,scan:{...whole.scan,startZ:200,endZ:16,travel:100}}
 ])assert.equal(model.phases([bad]).whole.length,0,'A partial or early scan must not complete the late whole-body step');
 const assets=[flow,pool,late,whole].flatMap(r=>[1,2].map(d=>({id:r.id+d,acquisitionId:r.id})));
-const state={patientId:'caso-oseo',identity:{fullName:'Matías Ignacio Fuentes Araya',rut:'91.000.002-0'},registration:{fullName:'MATIAS IGNACIO FUENTES ARAYA',rut:'91000002-0',examName:'Cintigrafía ósea trifásica'},seen:{band:true,folder:true,prepared:true,position:true,camera:true,protocol:true},viewer:{records:[flow,pool,late,whole],assets,pages:[{items:assets.map(a=>({asset:a.id,acquisitionId:a.acquisitionId})),overlaps:0,incomplete:0,exported:true}],header:true,seen:{playback:true,analysis:true,display:true}}};
+const state={patientId:'caso-oseo',identity:{fullName:'Matías Ignacio FANTOMA COMISION',rut:'91.000.002-0'},registration:{fullName:'MATIAS IGNACIO FANTOMA COMISION',rut:'91000002-0',examName:'Cintigrafía ósea trifásica'},seen:{band:true,folder:true,prepared:true,position:true,camera:true,protocol:true},viewer:{records:[flow,pool,late,whole],assets,pages:[{items:assets.map(a=>({asset:a.id,acquisitionId:a.acquisitionId})),overlaps:0,incomplete:0,exported:true}],header:true,seen:{playback:true,analysis:true,display:true}}};
 const done=id=>model.evaluate(state).flat().find(c=>c.id===id).done;
 assert.equal(model.evaluate(state).length,11);
 assert(model.evaluate(state).flat().every(c=>c.done));

@@ -29,7 +29,8 @@ function near(a,b){assert(Math.abs(a-b)<1e-6*Math.max(1,Math.abs(b)),`${a} != ${
   // Nonstandard camera settings must survive both entry paths and reach the
   // projection/exposure calculation, not only the saved UI labels.
   const camera={zoom:2,collimator:'HE',energyCenter:97,windowWidth:10,
-    centers:{1:{x:.2,y:.1},2:{x:-.15,y:-.25}},decubitus:'prone'};
+    centers:{1:{x:.2,y:.1},2:{x:-.15,y:-.25}},decubitus:'supine'};
+  assert.throws(()=>fixture(128,200,20,'fixed',{...camera,decubitus:'prone'}),/declara Supino/);
   for(const instant of [false,true]){
     const f=fixture(128,200,20,'fixed',camera),before=JSON.stringify(f.W.GANTRY_LIVE.settings);
     const base=f.api.geometry(f.pose,128),s=f.scan;
@@ -48,7 +49,7 @@ function near(a,b){assert(Math.abs(a-b)<1e-6*Math.max(1,Math.abs(b)),`${a} != ${
       const p=f.projections[j],center=camera.centers[j+1];
       near(p.crop.x+p.crop.w/2,f.pose.width/2+center.x*560/3);
       near(p.crop.y+p.crop.h/2,f.pose.height/2+center.y*560/3);
-      assert(p.flipX,'Declared orientation reaches projection');
+      assert(!p.flipX,'Matching supine orientation reaches projection without a lateral flip');
       near(s.heads[j].elapsed,525);
     }
     if(instant){

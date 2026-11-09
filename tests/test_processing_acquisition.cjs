@@ -17,8 +17,8 @@ const c=vm.createContext({window:w,document,location:{origin:'http://local'},set
 vm.runInContext(fs.readFileSync('scripts/processing_acquisition_config.js','utf8'),c);
 const validate=w.GANTRY_PROCESSING_CONFIG.validate;
 assert.equal(validate(base).target,5);
-assert.equal(validate({...base,patient:{id:'caso-oseo-2'}}).patient.name,'Nicolás Esteban Paredes Soto');
-assert.equal(validate({...base,patient:{id:'caso-oseo-3'}}).patient.name,'Ricardo Alberto Molina Contreras');
+assert.equal(validate({...base,patient:{id:'caso-oseo-2'}}).patient.name,'Nicolás Esteban FANTOMA COMISION');
+assert.equal(validate({...base,patient:{id:'caso-oseo-3'}}).patient.name,'Ricardo Alberto FANTOMA COMISION');
 assert.equal(validate({...base,contours:'fixed'}).contours,'fixed');
 assert.equal(validate(base).contours,'auto');
 assert.throws(()=>validate({...base,contours:'invalid'}),/contornos/);

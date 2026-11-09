@@ -12,6 +12,7 @@
       ...(session.mdpStart?{mdp:{start:structuredClone(session.mdpStart),end:structuredClone(session.mdpEnd||session.mdpStart),limit:!!session.mdpLimit}}:{}),
       ...(session.mibiStart?{mibi:{start:structuredClone(session.mibiStart),end:structuredClone(session.mibiEnd||session.mibiStart),limit:!!session.mibiLimit}}:{}),
       ...(session.mode==='scan'?{scan:{velocity:session.velocity,contours:session.contours||'auto',
+        ...(session.physicalPosition?{physicalPosition:structuredClone(session.physicalPosition)}:{}),
         ...(session.fixedDistances?{fixedDistances:structuredClone(session.fixedDistances)}:{}),
         travel:session.travel,startZ:session.startZ,endZ:session.endZ,phase:session.phase,initialGeometry:structuredClone(session.initialGeometry)}}:{}),
       heads:session.heads.map(h=>({detector:h.detector,total:h.total,elapsed:h.elapsed,done:h.done,counts:h.counts.slice()}))};

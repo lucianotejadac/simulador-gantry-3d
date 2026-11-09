@@ -1,7 +1,7 @@
-# Tutorial de adquisición · Matías Ignacio Fuentes Araya
+# Tutorial de adquisición · Matías Ignacio FANTOMA COMISION
 
 Se abre con **Tutorial de adquisición** en la barra principal o desde
-**Examen → Herramientas → Tutorial de adquisición · Matías Ignacio Fuentes Araya**.
+**Examen → Herramientas → Tutorial de adquisición · Matías Ignacio FANTOMA COMISION**.
 
 Recorre identificación y registro (nombre, RUT, examen), preparación del
 radiofármaco y posición, parámetros de cámara, dinámica de flujo, estática
@@ -33,14 +33,14 @@ dentro de Examen sigue disponible.
 
 Todas las órdenes se titulan deliberadamente **cintigrama oseo**. El alumno
 decide según los antecedentes si añade «trifásico» al nombre que registra;
-no se añade automáticamente. El tutorial explica la decisión para Matías Ignacio Fuentes Araya.
+no se añade automáticamente. El tutorial explica la decisión para Matías Ignacio FANTOMA COMISION.
 También enseña giro con arrastre izquierdo, desplazamiento con el derecho,
 zoom con la rueda, gestos táctiles, vistas predefinidas y Vista sala. Estos
 gestos modifican la cámara; el mando mueve la camilla y los detectores.
 
 ## Comprobaciones
 
-- Identidad contrastada con la pulsera de Matías Ignacio Fuentes Araya y examen trifásico registrado.
+- Identidad contrastada con la pulsera de Matías Ignacio FANTOMA COMISION y examen trifásico registrado.
 - Consulta de pulsera/orden, edición manual de cámara y revisión visual del
   encuadre (la anatomía completa requiere confirmación del alumno).
 - Imágenes completas con cuentas en ambos detectores, del caso correcto.
@@ -49,6 +49,10 @@ gestos modifican la cámara; el mando mueve la camilla y los detectores.
 - Pool: inicio entre 1 y menos de 10 min. Cuerpo completo y estática tardía:
   inicio entre 2 y 4 h. El barrido debe completar el recorrido de cráneo a pies
   (Z inicial ≥ 200 cm, final ≤ 16 cm y recorrido ≥ 175 cm en este modelo).
+  El paciente debe estar físicamente en supino y con la cabeza afuera (pies
+  adentro); la posición declarada debe coincidir. El motor verifica ambos
+  datos antes de iniciar, incluso con adquisición instantánea, y registra la
+  posición física. Cambiar sólo la declaración no reposiciona al paciente.
   Se utilizan metadatos de adquisición, no los rótulos escritos por el alumno.
 - Presencia de ambos detectores de las cuatro adquisiciones en la composición,
   cobertura completa de los frames dinámicos y cuadros sin solapamientos.

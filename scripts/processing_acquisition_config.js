@@ -56,7 +56,7 @@
     if(!['auto','fixed'].includes(c.contours))throw Error('Modo de contornos no válido.');
     if(!Array.isArray(value.names)||value.names.length!==2||value.names.some(n=>typeof n!=='string'||!n.trim()||n.trim().length>80))throw Error('Indica un nombre de hasta 80 caracteres para cada detector.');
     c.names=value.names.map(n=>n.trim());
-    const patientNames={phantom:'john','caso-oseo':'Matías Ignacio Fuentes Araya','caso-oseo-2':'Nicolás Esteban Paredes Soto','caso-oseo-3':'Ricardo Alberto Molina Contreras'};
+    const patientNames={phantom:'john','caso-oseo':'Matías Ignacio FANTOMA COMISION','caso-oseo-2':'Nicolás Esteban FANTOMA COMISION','caso-oseo-3':'Ricardo Alberto FANTOMA COMISION'};
     if(value.patient&&Object.hasOwn(patientNames,value.patient.id)){
       c.patient={id:value.patient.id,name:patientNames[value.patient.id]};
       if(value.patient.fullName){const p=registration(value.patient);Object.assign(c.patient,p,{name:p.fullName,caseName:patientNames[value.patient.id]});if(typeof value.patient.registrationId==='string')c.patient.registrationId=value.patient.registrationId;}

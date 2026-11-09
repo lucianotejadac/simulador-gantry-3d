@@ -44,7 +44,7 @@ with serve_site() as url,sync_playwright() as pw:
     page.mouse.click(*page.evaluate('GANTRY3D.wristband.placement().screen'))
     band.wait_for()
     # The bracelet stays visible while the registration form is filled.
-    for key,value in {'fullName':'Matías Ignacio Fuentes Araya','rut':'91.000.002-0','examName':'Cintigrafía ósea'}.items():
+    for key,value in {'fullName':'Matías Ignacio FANTOMA COMISION','rut':'91.000.002-0','examName':'Cintigrafía ósea'}.items():
         page.locator('#registration-'+key).fill(value)
     page.screenshot(path=str(ROOT.parent/'gantry-registration-bracelet.png'))
     page.locator('#patientRegistrationSave').click()

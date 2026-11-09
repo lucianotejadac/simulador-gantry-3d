@@ -13,6 +13,7 @@ assert records['patients']['phantom']['givenNames']==['John','Andrés']
 assert records['patients']['phantom']['surnames']==['FANTOMA','COMISION']
 for p in records['patients'].values():
     assert len(p['givenNames']) == len(p['surnames']) == 2
+    assert p['surnames']==['FANTOMA','COMISION']
     number, digit = p['rut'].replace('.', '').split('-')
     check = 11 - sum(int(c) * (2 + i % 6) for i, c in enumerate(number[::-1])) % 11
     assert digit == ('0' if check == 11 else 'K' if check == 10 else str(check))

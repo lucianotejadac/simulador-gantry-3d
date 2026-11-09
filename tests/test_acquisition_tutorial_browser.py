@@ -33,7 +33,7 @@ with serve_site() as url,sync_playwright() as pw:
     frame=page.frame_locator('#boneProcessingFrame')
     frame.locator('#processingAcquireMenu').select_option('dynamic')
     page.locator('#patientRegistration').wait_for()
-    for key,value in {'fullName':'Matías Ignacio Fuentes Araya','rut':'91.000.002-0','examName':'Cintigrafía ósea trifásica'}.items():
+    for key,value in {'fullName':'Matías Ignacio FANTOMA COMISION','rut':'91.000.002-0','examName':'Cintigrafía ósea trifásica'}.items():
         page.locator('#registration-'+key).fill(value)
     page.locator('#patientRegistrationSave').click()
     frame.locator('#gantryDraft-matrix').wait_for()
@@ -91,11 +91,25 @@ with serve_site() as url,sync_playwright() as pw:
         frame.locator('#gantryDraft-name1').fill(phase+' · D1');frame.locator('#gantryDraft-name2').fill(phase+' · D2')
         page.wait_for_function('GANTRY_BONE_ACQ.readyForProcessing',timeout=60000)
         count=child.evaluate('GANTRY_TUTORIAL_VIEW.snapshot().records.length')
+        if kind=='whole':
+            # Physical posture must be checked even when the declared position is correct.
+            page.evaluate("()=>{GANTRY_PATIENT3D.headFirst=true;GANTRY.render();}")
+            for action in ['start','instant']:
+                child.evaluate("document.getElementById('status-text').textContent=''")
+                frame.locator('[data-acquire="'+action+'"]').click()
+                child.wait_for_function("document.getElementById('status-text').textContent.includes('requiere al paciente en supino')",timeout=60000)
+                assert not page.evaluate('GANTRY_BONE_ACQ.active')
+                assert child.evaluate('GANTRY_TUTORIAL_VIEW.snapshot().records.length')==count
+                assert page.evaluate('GANTRY.G.tableZ')==200
+                assert page.evaluate('GANTRY_PATIENT3D.headFirst') is True
+            page.evaluate("()=>{GANTRY_PATIENT3D.headFirst=false;GANTRY.render();}")
+            print('OK: normal and instant whole-body reject head-in without moving the patient.',flush=True)
         frame.locator('[data-acquire="instant"]').click()
         child.wait_for_function('n=>GANTRY_TUTORIAL_VIEW.snapshot().records.length===n',arg=count+1,timeout=120000)
         if kind=='whole':
             whole=child.evaluate("GANTRY_TUTORIAL_VIEW.snapshot().records.find(r=>r.acquisition.kind==='whole')")
             assert whole['scan']['startZ']==200 and whole['scan']['travel']>=175
+            assert whole['scan']['physicalPosition']=={'decubitus':'supine','headFirst':False}
             assert whole['heads'][0]['total']>0 and whole['heads'][1]['total']>0
             assert page.evaluate('GANTRY_TUTORIAL_MODEL.phases(GANTRY_ACQUISITION_TUTORIAL.snapshot().viewer.records).whole.length')==1
             assert not page.evaluate('GANTRY_TUTORIAL_MODEL.phases(GANTRY_ACQUISITION_TUTORIAL.snapshot().viewer.records).delayed.length')
