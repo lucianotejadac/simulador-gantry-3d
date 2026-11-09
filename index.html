@@ -546,7 +546,7 @@
 <link rel="preload" href="assets/runtime/exam-safety.11860a58637f7733.js" as="script">
 <link rel="preload" href="assets/runtime/final-preview.547c3960e32b449f.js" as="script">
 <link rel="preload" href="assets/runtime/gantry-positions.b1ea2d559482b07d.js" as="script">
-<link rel="preload" href="assets/runtime/gantry-setups.85ca7f8a091ad28d.js" as="script">
+<link rel="preload" href="assets/runtime/gantry-setups.25803f0926b63d5a.js" as="script">
 <link rel="preload" href="assets/runtime/live-count-feedback.9b705acc41c8d638.js" as="script">
 <link rel="preload" href="assets/runtime/live-monitor-controls.c7592e50cf1b5a68.js" as="script">
 <link rel="preload" href="assets/runtime/mdp-engine.b914e2c3e5f2cba5.js" as="script">
@@ -2748,7 +2748,7 @@ function init(){
   const BODY_L  = 1.75;                  // largo del paciente
   const PAL_HW  = 0.28, PAL_T = 0.05;                  // semiancho y espesor del tablero
   const PAL_FRONT = 0.25;                              // saliente del tablero por delante de los pies
-  const PAL_MIN   = BODY_L + 0.45;                     // tablero = paciente + un margen (es telescópico)
+  const PAL_MIN   = BODY_L + 0.75;                     // incluye desde el inicio el espacio para las manos elevadas
   /* El paciente entra de PIES. La escala Z es EXACTAMENTE su eje craneocaudal:
      Z = SCAN.zBot → las plantas bajo el campo (borde inferior de la imagen)
      Z = SCAN.zTop → el vértex bajo el campo (borde superior de la imagen).
@@ -3249,9 +3249,9 @@ function init(){
     pedestal.scale.y  = Math.max(.05, tableTop - .14);
     pedTop.position.y = tableTop - .095;
     slide.position.set(layout.bedFeet, tableTop, 0);
-    // Reserva de tablero para las manos por encima del cráneo.
+    // El tablero ya incluye la reserva para las manos; la postura no cambia su longitud.
     const armsUp = st.arms === 'up';
-    setPalletLength(Math.max(PAL_MIN + (armsUp ? .30 : 0), (layout.bedFeet + PAL_FRONT) - PAL_TAIL_X));
+    setPalletLength(Math.max(PAL_MIN, (layout.bedFeet + PAL_FRONT) - PAL_TAIL_X));
 
     // El boton de cambio de posicion invierte solo la figura sobre el mismo
     // tramo de camilla: cabeza y pies intercambian extremos sin trasladar G.
@@ -3381,7 +3381,7 @@ function init(){
 </script>
 
 <!-- GANTRY_SETUPS_BEGIN -->
-<script src="assets/runtime/gantry-setups.85ca7f8a091ad28d.js"></script>
+<script src="assets/runtime/gantry-setups.25803f0926b63d5a.js"></script>
 <!-- GANTRY_SETUPS_END -->
 <!-- COLLISION_ENGINE_BEGIN -->
 <script>
@@ -3460,7 +3460,7 @@ function init(){
     const lo=physical.headFirst?slideX-physical.length-xmax:xmin-slideX;
     const hi=physical.headFirst?slideX-physical.length-xmin:xmax-slideX;
     const body=support(candidates(mesh,lo,hi),boxes,p=>project(toWorld(p)));
-    const L=Math.max(2.2+(s.arms==='up'?.3:0),slideX+.25-physical.tail);
+    const L=Math.max(2.5,slideX+.25-physical.tail);
     const table=support(boxTriangles([slideX+.25-L,top-.05,-.28],[slideX+.25,top,.28],'camilla'),boxes,project);
     const distance=s['detDist'+detector]/100;
     for(const hit of [body,table]){

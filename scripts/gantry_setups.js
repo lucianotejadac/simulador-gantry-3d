@@ -33,7 +33,7 @@
     // The equipment bed stays present. Park its pallet outside the detector
     // field for standing patients (and the retired external-stretcher setup).
     const bedFeet=standing||m==='external'?p.feetX0-.25*p.travel:feet;
-    const equipmentTable={min:[Math.min(p.tail,bedFeet+.25-2.2-(s.arms==='up'?.30:0)),top-.05,-.28],max:[bedFeet+.25,top,.28],region:'camilla'};
+    const equipmentTable={min:[Math.min(p.tail,bedFeet+.25-2.5),top-.05,-.28],max:[bedFeet+.25,top,.28],region:'camilla'};
     const table=m==='external'?{min:[-.32,top-.07,feet-p.length-.15],max:[.32,top,feet+.15],region:'camilla externa'}:equipmentTable;
     const bedPosition=turn([feet-p.length/2,top,0]),offset=s.setupPatientOffset||0;
     origin[0]+=offset;bedPosition[0]+=offset;

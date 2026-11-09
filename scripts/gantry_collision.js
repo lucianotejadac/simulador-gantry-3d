@@ -73,7 +73,7 @@
     const lo=physical.headFirst?slideX-physical.length-xmax:xmin-slideX;
     const hi=physical.headFirst?slideX-physical.length-xmin:xmax-slideX;
     const body=support(candidates(mesh,lo,hi),boxes,p=>project(toWorld(p)));
-    const L=Math.max(2.2+(s.arms==='up'?.3:0),slideX+.25-physical.tail);
+    const L=Math.max(2.5,slideX+.25-physical.tail);
     const table=support(boxTriangles([slideX+.25-L,top-.05,-.28],[slideX+.25,top,.28],'camilla'),boxes,project);
     const distance=s['detDist'+detector]/100;
     for(const hit of [body,table]){
