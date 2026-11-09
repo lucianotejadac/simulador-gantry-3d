@@ -1,7 +1,9 @@
 const assert=require('node:assert/strict');
 const model=require('../scripts/acquisition_tutorial_model.js');
-const record=(id,kind,seconds)=>({id,patient:{id:'caso-oseo'},study:'bone',acquisition:{kind},administration:{seconds},heads:[{total:2500,done:true},{total:2300,done:true}],dynamic:kind==='dynamic'?{timings:Array(120).fill({})}:undefined});
+const projection=angles=>({detectors:angles.map(rawAngle=>({rawAngle}))});
+const record=(id,kind,seconds,angles=[0,180])=>({id,patient:{id:'caso-oseo'},study:'bone',acquisition:{kind},administration:{seconds},heads:[{total:2500,done:true},{total:2300,done:true}],processing:{first:projection(angles),last:projection(angles)},dynamic:kind==='dynamic'?{timings:Array(120).fill({})}:undefined});
 const flow=record('flow','dynamic',0),pool=record('pool','static',180),late=record('late','static',10800);
+const poolLateral=record('pool-lateral','static',360,[90,270]),lateLateral=record('late-lateral','static',12000,[270,90]);
 const whole={...record('whole','whole',10800),scan:{startZ:200,endZ:16,travel:175,physicalPosition:{decubitus:'supine',headFirst:false}}};
 assert.deepEqual(model.phases([flow,pool,late,whole]),{flow:[flow],pool:[pool],delayed:[late],whole:[whole]});
 for(const bad of [
@@ -24,11 +26,29 @@ for(const bad of [
   {...whole,scan:undefined},
   {...whole,scan:{...whole.scan,startZ:200,endZ:16,travel:100}}
 ])assert.equal(model.phases([bad]).whole.length,0,'A partial or early scan must not complete the late whole-body step');
-const assets=[flow,pool,late,whole].flatMap(r=>[1,2].map(d=>({id:r.id+d,acquisitionId:r.id})));
-const state={patientId:'caso-oseo',identity:{fullName:'Matías Ignacio FANTOMA COMISION',rut:'91.000.002-0'},registration:{fullName:'MATIAS IGNACIO FANTOMA COMISION',rut:'91000002-0',examName:'Cintigrafía ósea trifásica'},seen:{band:true,folder:true,prepared:true,position:true,camera:true,protocol:true},viewer:{records:[flow,pool,late,whole],assets,pages:[{items:assets.map(a=>({asset:a.id,acquisitionId:a.acquisitionId})),overlaps:0,incomplete:0,exported:true}],header:true,seen:{playback:true,analysis:true,display:true}}};
+assert(model.projectionPair(poolLateral,true));assert(model.projectionPair(lateLateral,true));
+assert(model.projectionPair(record('slightly-off','static',180,[95,275]),true));
+for(const r of [pool,record('oblique','static',180,[60,240]),record('same-side','static',180,[90,90]),
+  {...poolLateral,processing:null},{...poolLateral,processing:{first:projection([90,270]),last:projection([0,180])}},
+  {...pool,acquisition:{kind:'static',names:['Pool lateral','Lateral']}}])assert(!model.projectionPair(r,true));
+assert(!model.projectionPair(poolLateral),'A lateral must not satisfy the anterior/posterior requirement');
+const records=[flow,pool,poolLateral,late,lateLateral,whole];
+const assets=records.flatMap(r=>[1,2].map(d=>({id:r.id+d,acquisitionId:r.id})));
+const state={patientId:'caso-oseo',identity:{fullName:'Matías Ignacio FANTOMA COMISION',rut:'91.000.002-0'},registration:{fullName:'MATIAS IGNACIO FANTOMA COMISION',rut:'91000002-0',examName:'Cintigrafía ósea trifásica'},seen:{band:true,folder:true,prepared:true,position:true,camera:true,protocol:true},viewer:{records:records.slice(),assets,pages:[{items:assets.map(a=>({asset:a.id,acquisitionId:a.acquisitionId})),overlaps:0,incomplete:0,exported:true}],header:true,seen:{playback:true,analysis:true,display:true}}};
 const done=id=>model.evaluate(state).flat().find(c=>c.id===id).done;
 assert.equal(model.evaluate(state).length,11);
 assert(model.evaluate(state).flat().every(c=>c.done));
+for(const [lateral,id] of [[poolLateral,'poolLateral'],[lateLateral,'delayedLateral']]){
+  state.viewer.records=records.filter(r=>r!==lateral);
+  assert(!done(id),'Each phase requires its own lateral acquisition');assert(!done('images'));
+  state.viewer.records=records.slice();
+  const item=state.viewer.pages[0].items.find(i=>i.acquisitionId===lateral.id);
+  state.viewer.pages[0].items=state.viewer.pages[0].items.filter(i=>i!==item);
+  assert(done(id));assert(!done('images'),'Both lateral detectors must also be placed on a flexible page');
+  state.viewer.pages[0].items.splice(state.viewer.pages[0].items.length-2,0,item);
+}
+state.viewer.records=records.map(r=>r===poolLateral?{...r,administration:{seconds:600}}:r);
+assert(!done('poolLateral'),'A lateral outside the pool timing window must not pass');state.viewer.records=records.slice();
 const wholeItem=state.viewer.pages[0].items.pop();
 assert(!done('images'),'Both whole-body detector images must be placed');
 state.viewer.pages[0].items.push(wholeItem);
@@ -47,4 +67,4 @@ assert(done('whole'));
 assert(!done('delayed'),'Whole-body cannot substitute for the directed static');
 assert(!done('images'));
 assert(!model.evaluate({viewer:{},seen:{}}).flat().some(c=>c.done));
-console.log('OK: tutorial checks require late whole-body coverage, directed static, paired images, layout and current exports.');
+console.log('OK: tutorial checks require anterior/posterior and lateral pairs in pool and delayed phases, actual angles, phase timing, complete whole-body, placed images and current exports.');

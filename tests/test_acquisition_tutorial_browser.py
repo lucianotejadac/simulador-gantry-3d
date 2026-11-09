@@ -1,4 +1,4 @@
-"""Real tutorial path: three phases with late whole-body, four pages and exports."""
+"""Real tutorial path: pool/delayed laterals, late whole-body, five pages and exports."""
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 from serve_site import serve_site
@@ -72,7 +72,7 @@ with serve_site() as url,sync_playwright() as pw:
     child.wait_for_function('GANTRY_TUTORIAL_VIEW.snapshot().records.length===1',timeout=60000)
     frame.locator('#dyn-next').click()
     print('OK: dynamic registered and acquired.',flush=True)
-    for phase,kind,minutes,mode,target in [('Pool','static',3,'time','180'),('Cuerpo completo tardío','whole',180,None,None),('Tardía','static',None,'counts','200000')]:
+    for phase,kind,minutes,mode,target,angle in [('Pool','static',3,'time','180',0),('Pool lateral','static',None,'time','180',90),('Cuerpo completo tardío','whole',180,None,None,0),('Tardía','static',None,'counts','200000',0),('Tardía lateral','static',None,'counts','200000',90)]:
         frame.locator('#processingAcquireMenu').select_option(kind)
         frame.locator('#gantryDraft-matrix').wait_for()
         frame.locator('#gantryDraft-matrix').select_option('256')
@@ -80,7 +80,7 @@ with serve_site() as url,sync_playwright() as pw:
         if minutes is not None:
             page.locator('#rfTime').fill(str(minutes));page.locator('#rfTime').press('Tab')
         # Start whole-body at the skull, then return to the feet for directed views.
-        page.evaluate('(z)=>{GANTRY.G.tableZ=z;GANTRY.render();}',200 if kind=='whole' else 25)
+        page.evaluate('([z,rot])=>{Object.assign(GANTRY.G,{tableZ:z,rot,detectorSeparation:180,detDist1:45,detDist2:45});GANTRY.render();}',[200 if kind=='whole' else 25,angle])
         frame.locator('#tab-stop').click()
         if kind=='whole':
             frame.locator('#gantryDraft-velocity').fill('10')
@@ -116,6 +116,14 @@ with serve_site() as url,sync_playwright() as pw:
         elif phase=='Tardía':
             late=child.evaluate("GANTRY_TUTORIAL_VIEW.snapshot().records.filter(r=>r.acquisition.kind==='static').at(-1)")
             assert late['administration']['seconds']>=whole['administration']['seconds']+1050,'Keep the same injection clock after the 175 cm scan at 10 cm/min'
+        if phase in ['Pool','Tardía']:
+            lateral_check='poolLateral' if phase=='Pool' else 'delayedLateral'
+            assert not page.evaluate("id=>GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot()).flat().find(c=>c.id===id).done",lateral_check),'Anterior/posterior alone must not complete the lateral requirement'
+        if angle==90:
+            lateral=child.evaluate("GANTRY_TUTORIAL_VIEW.snapshot().records.filter(r=>r.acquisition.kind==='static').at(-1)")
+            assert page.evaluate('r=>GANTRY_TUTORIAL_MODEL.projectionPair(r,true)',lateral)
+            if phase=='Pool lateral':assert 360<=lateral['administration']['seconds']<600,'Do not rewind the injection clock for lateral pool'
+            else:assert lateral['administration']['seconds']+1e-6>=late['administration']['seconds']+max(h['elapsed'] for h in late['heads']),{'lateralStart':lateral['administration']['seconds'],'anteriorStart':late['administration']['seconds'],'anteriorElapsed':[h['elapsed'] for h in late['heads']]}
         print('OK:',phase,'acquired.',flush=True)
     frame.locator('[aria-controls="analysisPanel"]').click()
     frame.locator('#analysisWindow').fill('200');frame.locator('#analysisWindow').press('Tab')
@@ -128,9 +136,12 @@ with serve_site() as url,sync_playwright() as pw:
     frame.locator('#mode-flex').click()
     child.wait_for_function("document.body.classList.contains('flex-mode')")
     assert child.evaluate('flex.pages.every(p=>p.items.length===0)')
-    # Real picker: flow per detector, pool/directed static views, then paired whole-body.
-    groups=child.evaluate("[flex.assets.filter(a=>a.kind==='dynamic').slice(0,1).map(a=>a.id),flex.assets.filter(a=>a.kind==='dynamic').slice(1,2).map(a=>a.id),flex.assets.filter(a=>a.kind==='static').map(a=>a.id),flex.assets.filter(a=>a.kind==='whole').map(a=>a.id)]")
-    assert list(map(len,groups))==[1,1,4,2],groups
+    # Real picker: flow per detector, four pool views, four delayed views, then whole-body.
+    groups=child.evaluate("""()=>{const records=GANTRY_TUTORIAL_VIEW.snapshot().records;
+      const pool=new Set(records.filter(r=>r.acquisition.kind==='static'&&r.administration.seconds<600).map(r=>r.id));
+      const delayed=new Set(records.filter(r=>r.acquisition.kind==='static'&&r.administration.seconds>=7200).map(r=>r.id));
+      return [flex.assets.filter(a=>a.kind==='dynamic').slice(0,1).map(a=>a.id),flex.assets.filter(a=>a.kind==='dynamic').slice(1,2).map(a=>a.id),flex.assets.filter(a=>pool.has(a.acquisitionId)).map(a=>a.id),flex.assets.filter(a=>delayed.has(a.acquisitionId)).map(a=>a.id),flex.assets.filter(a=>a.kind==='whole').map(a=>a.id)];}""")
+    assert list(map(len,groups))==[1,1,4,4,2],groups
     for i,ids in enumerate(groups):
         if i:frame.locator('#flex-add').click()
         frame.locator('#flex-add-images').click()
@@ -139,7 +150,7 @@ with serve_site() as url,sync_playwright() as pw:
         frame.locator('#flex-arrange').click()
         with page.expect_download() as download:frame.locator('#flex-export').click()
         assert download.value.suggested_filename.endswith('.png')
-        if i==2:
+        if i==3:
             assert not page.evaluate("GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot()).flat().find(c=>c.id==='images').done"),'The whole-body page is still missing'
     checks=page.evaluate('GANTRY_TUTORIAL_MODEL.evaluate(GANTRY_ACQUISITION_TUTORIAL.snapshot())')
     assert all(c['done'] for group in checks for c in group),checks
@@ -150,7 +161,7 @@ with serve_site() as url,sync_playwright() as pw:
     page.locator('#acquisitionTutorialPanel').wait_for()
     page.select_option('#acquisitionTutorialStep','9')
     assert page.locator('#acquisitionTutorialProgress').get_attribute('max')=='11'
-    assert 'Cuatro páginas' in page.locator('#acquisitionTutorialBody').inner_text()
+    assert 'Cinco páginas' in page.locator('#acquisitionTutorialBody').inner_text()
     page.screenshot(path=str(ROOT.parent/'gantry-tutorial-flexible.png'))
     page.locator('#acquisitionTutorialMinimize').click()
     for width,height in [(1600,1000),(1280,900),(700,900)]:
@@ -160,5 +171,5 @@ with serve_site() as url,sync_playwright() as pw:
         assert box['x']>=0 and box['x']+box['width']<=width and box['y']>=0 and box['y']+box['height']<=height,box
         page.locator('#acquisitionTutorialMinimize').click()
     assert not errors,errors
-    print('OK: three phases including full late whole-body, four pages, PNGs and responsive guide.',flush=True)
+    print('OK: six acquisitions including pool/delayed laterals and late whole-body, five pages, PNGs and responsive guide.',flush=True)
     browser.close()

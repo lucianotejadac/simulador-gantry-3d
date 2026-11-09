@@ -4,8 +4,9 @@ Se abre con **Tutorial de adquisición** en la barra principal o desde
 **Examen → Herramientas → Tutorial de adquisición · Matías Ignacio FANTOMA COMISION**.
 
 Recorre identificación y registro (nombre, RUT, examen), preparación del
-radiofármaco y posición, parámetros de cámara, dinámica de flujo, estática
-de pool, cuerpo completo tardío, estática tardía dirigida, revisión, página
+radiofármaco y posición, parámetros de cámara, dinámica de flujo, estáticas
+de pool anterior/posterior y lateral, cuerpo completo tardío, estáticas
+tardías dirigidas anterior/posterior y lateral, revisión, página
 flexible y exportación PNG. Son once pasos; el cuerpo completo forma parte
 de la fase tardía, no constituye una cuarta fase.
 
@@ -54,15 +55,25 @@ gestos modifican la cámara; el mando mueve la camilla y los detectores.
   datos antes de iniciar, incluso con adquisición instantánea, y registra la
   posición física. Cambiar sólo la declaración no reposiciona al paciente.
   Se utilizan metadatos de adquisición, no los rótulos escritos por el alumno.
-- Presencia de ambos detectores de las cuatro adquisiciones en la composición,
+- Pool y tardías dirigidas requieren cada uno dos adquisiciones: anterior/posterior
+  y lateral. Se verifican los ángulos físicos de ambos detectores registrados al
+  inicio y al final: 0°/180° y 90°/270°, respectivamente, con tolerancia de 5°.
+  Escribir «lateral» en el nombre o cambiar la vista de la cámara 3D no cuenta
+  como una proyección lateral. El alumno gira los detectores con el mando y
+  revisa la distancia y el encuadre sin contacto.
+- Presencia de ambos detectores de las seis adquisiciones en la composición,
   cobertura completa de los frames dinámicos y cuadros sin solapamientos.
 - Exportación PNG de cada página del caso. Cambiar su contenido o el
   encabezado invalida la marca de exportación hasta volver a exportarla.
   El navegador debe completar la descarga; el alumno revisa los PNG.
 
-El ejemplo usa 60 × 1 s para flujo, pool a 3 min durante 180 s, cuerpo completo
+El ejemplo usa 60 × 1 s para flujo, pool anterior/posterior a 3 min durante
+180 s y, a continuación, otro pool lateral durante 180 s. Se mantiene el reloj:
+las laterales comienzan aproximadamente a 6 min, sin reiniciar la inyección.
+El cuerpo completo se adquiere
 a 180 min con matriz 256 × 1024, zoom 1×, 10 cm/min y contornos automáticos,
-y una estática tardía dirigida con objetivo de 200.000 cuentas. El barrido
+y después se adquieren dos estáticas tardías dirigidas, anterior/posterior y
+lateral, con objetivo de 200.000 cuentas por detector cada una. El barrido
 empieza en la posición actual: hay que volver al cráneo antes de iniciarlo.
 Se conserva la misma inyección y, para las estáticas dirigidas, el tiempo ya
 transcurrido tras el barrido, sin retroceder el reloj. Son parámetros de práctica en un paciente
@@ -70,8 +81,9 @@ ficticio. La inclusión del cuerpo completo responde al protocolo de este
 tutorial; no se presenta como una obligación universal para toda trifásica.
 La distribución del paciente es un modelo docente.
 
-La entrega propuesta tiene cuatro páginas: flujo D1, flujo D2, las cuatro
-estáticas de pool/tardía dirigida y, por último, cuerpo completo tardío D1/D2.
+La entrega propuesta tiene cinco páginas: flujo D1, flujo D2, cuatro imágenes
+del pool (anterior/posterior y laterales), cuatro tardías dirigidas (en el mismo
+orden que el pool) y, por último, cuerpo completo tardío D1/D2.
 
 Fundamento de adquisición:
 [SNMMI, Bone Scintigraphy 4.0](https://snmmi.org/common/Uploaded%20files/Web/Clinical%20Practice/Procedure%20Standards/2023/Bone%20Scintigraphy_UPDATED2024.pdf).
@@ -101,7 +113,7 @@ python -X utf8 tests/test_tutorial_spotlight_registration_browser.py
 ```
 
 La prueba de navegador usa un contexto aislado, registra el paciente,
-adquiere las tres fases (incluido el cuerpo completo tardío) y compone/exporta
-cuatro páginas usando el motor y
+adquiere las tres fases (incluidos laterales de pool y tardía y cuerpo completo
+tardío) y compone/exporta cinco páginas usando el motor y
 el selector de imágenes reales. También comprueba que leer la guía no
 modifica la cámara ni inicia adquisiciones.
