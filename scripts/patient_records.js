@@ -22,7 +22,7 @@
       if(view==='order'){
         const sheet=el('article',undefined,'patient-record-sheet');sheet.append(el('div','MEDICINA NUCLEAR · ORDEN SIMULADA','patient-record-stamp'),el('h3',p.order.exam));
         definition(sheet,[['Servicio solicitante',p.order.service],['Profesional',p.order.physician],['Fecha relativa',p.order.date]]);
-        for(const [heading,text] of [['Motivo de solicitud',p.order.reason],['Pregunta clínica',p.order.question],['Estudio solicitado',p.order.plan]])sheet.append(el('h4',heading),el('p',text));body.append(sheet);
+        sheet.append(el('h4','Motivo de solicitud'),el('p',p.order.reason));body.append(sheet);
       }else{
         const history=el('section',undefined,'patient-record-sheet');history.append(el('h3','Antecedentes clínicos'));const ul=el('ul');p.history.forEach(t=>ul.append(el('li',t)));history.append(ul);body.append(history);
         for(const exam of p.exams){const article=el('article',undefined,'patient-record-sheet');article.append(el('h3',exam.title),el('p',exam.date+' · respecto del examen simulado','patient-record-date'));
