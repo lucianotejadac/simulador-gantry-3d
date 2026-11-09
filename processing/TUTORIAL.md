@@ -5,7 +5,9 @@ Se abre con **Tutorial de adquisición** en la barra principal o desde
 
 Recorre identificación y registro (nombre, RUT, examen), preparación del
 radiofármaco y posición, parámetros de cámara, dinámica de flujo, estática
-de pool, estática tardía, revisión, página flexible y exportación PNG.
+de pool, cuerpo completo tardío, estática tardía dirigida, revisión, página
+flexible y exportación PNG. Son once pasos; el cuerpo completo forma parte
+de la fase tardía, no constituye una cuarta fase.
 
 La guía no inicia adquisiciones, inyecta, registra datos ni añade imágenes.
 Los botones **Señalar** navegan a los controles y oscurecen el resto de la
@@ -38,23 +40,34 @@ gestos modifican la cámara; el mando mueve la camilla y los detectores.
 
 ## Comprobaciones
 
-- Identidad contrastada con el Matías Ignacio Fuentes Araya y examen trifásico registrado.
+- Identidad contrastada con la pulsera de Matías Ignacio Fuentes Araya y examen trifásico registrado.
 - Consulta de pulsera/orden, edición manual de cámara y revisión visual del
   encuadre (la anatomía completa requiere confirmación del alumno).
 - Imágenes completas con cuentas en ambos detectores, del caso correcto.
 - Flujo: inicio registrado de 0 a 10 s y al menos 30 frames por detector.
   Los 10 s son una tolerancia del ejercicio, no una recomendación clínica.
-- Pool: inicio entre 1 y menos de 10 min. Tardía: inicio entre 2 y 4 h.
+- Pool: inicio entre 1 y menos de 10 min. Cuerpo completo y estática tardía:
+  inicio entre 2 y 4 h. El barrido debe completar el recorrido de cráneo a pies
+  (Z inicial ≥ 200 cm, final ≤ 16 cm y recorrido ≥ 175 cm en este modelo).
   Se utilizan metadatos de adquisición, no los rótulos escritos por el alumno.
-- Presencia de ambos detectores de las tres fases en la composición,
+- Presencia de ambos detectores de las cuatro adquisiciones en la composición,
   cobertura completa de los frames dinámicos y cuadros sin solapamientos.
 - Exportación PNG de cada página del caso. Cambiar su contenido o el
   encabezado invalida la marca de exportación hasta volver a exportarla.
   El navegador debe completar la descarga; el alumno revisa los PNG.
 
-El ejemplo usa 60 × 1 s para flujo, pool a 3 min durante 180 s y tardías
-a 180 min con objetivo de 200.000 cuentas. Son parámetros de práctica en
-un paciente ficticio. La distribución del caso es un modelo docente.
+El ejemplo usa 60 × 1 s para flujo, pool a 3 min durante 180 s, cuerpo completo
+a 180 min con matriz 256 × 1024, zoom 1×, 10 cm/min y contornos automáticos,
+y una estática tardía dirigida con objetivo de 200.000 cuentas. El barrido
+empieza en la posición actual: hay que volver al cráneo antes de iniciarlo.
+Se conserva la misma inyección y, para las estáticas dirigidas, el tiempo ya
+transcurrido tras el barrido, sin retroceder el reloj. Son parámetros de práctica en un paciente
+ficticio. La inclusión del cuerpo completo responde al protocolo de este
+tutorial; no se presenta como una obligación universal para toda trifásica.
+La distribución del paciente es un modelo docente.
+
+La entrega propuesta tiene cuatro páginas: flujo D1, flujo D2, las cuatro
+estáticas de pool/tardía dirigida y, por último, cuerpo completo tardío D1/D2.
 
 Fundamento de adquisición:
 [SNMMI, Bone Scintigraphy 4.0](https://snmmi.org/common/Uploaded%20files/Web/Clinical%20Practice/Procedure%20Standards/2023/Bone%20Scintigraphy_UPDATED2024.pdf).
@@ -84,6 +97,7 @@ python -X utf8 tests/test_tutorial_spotlight_registration_browser.py
 ```
 
 La prueba de navegador usa un contexto aislado, registra el paciente,
-adquiere las tres fases y compone/exporta tres páginas usando el motor y
+adquiere las tres fases (incluido el cuerpo completo tardío) y compone/exporta
+cuatro páginas usando el motor y
 el selector de imágenes reales. También comprueba que leer la guía no
 modifica la cámara ni inicia adquisiciones.
