@@ -14,6 +14,7 @@ for p in records['patients'].values():
     check = 11 - sum(int(c) * (2 + i % 6) for i, c in enumerate(number[::-1])) % 11
     assert digit == ('0' if check == 11 else 'K' if check == 10 else str(check))
     assert p['exams'] and p['order']['question']
+    assert p['order']['exam']=='cintigrama oseo'
 
 with serve_site() as url, sync_playwright() as pw:
     browser = pw.chromium.launch(channel='chrome', headless=True)
@@ -22,11 +23,20 @@ with serve_site() as url, sync_playwright() as pw:
     page.on('pageerror', lambda error: errors.append(str(error)))
     page.goto(url)
     page.wait_for_function("window.GANTRY3D?.patientLoadState==='ready' && window.GANTRY_LIVE?.ready && !document.getElementById('gantryWin').inert", timeout=120000)
+    assert page.locator('#boneProcessingTab').get_attribute('aria-selected')=='true'
+    assert page.locator('#boneProcessingPane').is_visible()
+    assert not page.locator('#acquisitionMenuButton').count()
+    assert not page.get_by_role('button',name='Ver pulsera del paciente',exact=True).count()
+    page.locator('#boneGantryTab').click()
+    assert page.locator('#gantryLive').is_visible()
+    page.locator('#boneProcessingTab').click()
+    page.evaluate("()=>{GANTRY_PATIENT3D.headFirst=false;Object.assign(GANTRY.G,{arms:'down',tableZ:-50,tableH:85,rot:0,detDist1:45,detDist2:45});GANTRY.render();GANTRY3D.view('iso');}")
     for patient_id, p in records['patients'].items():
         page.select_option('#gantryPatient', patient_id)
         page.wait_for_function('id=>GANTRY_PATIENT.id===id', arg=patient_id, timeout=60000)
         state = page.evaluate('JSON.stringify(GANTRY.G)')
-        page.get_by_role('button', name='Ver pulsera del paciente', exact=True).click()
+        page.wait_for_timeout(500)
+        page.mouse.click(*page.evaluate('GANTRY3D.wristband.placement().screen'))
         dialog = page.get_by_role('dialog')
         assert p['rut'] in dialog.inner_text()
         assert ' '.join(p['givenNames']) in dialog.inner_text()
@@ -35,7 +45,6 @@ with serve_site() as url, sync_playwright() as pw:
             page.screenshot(path=str(ROOT.parent / 'gantry-patient-wristband.png'))
         page.keyboard.press('Escape')
         assert not dialog.is_visible()
-        assert page.get_by_role('button', name='Ver pulsera del paciente', exact=True).evaluate('(n)=>document.activeElement===n')
         page.get_by_role('button', name='Abrir carpeta del paciente', exact=True).click()
         assert p['order']['exam'] in dialog.inner_text()
         assert p['rut'] in dialog.inner_text()
@@ -76,6 +85,26 @@ with serve_site() as url, sync_playwright() as pw:
     page.mouse.move(band['screen'][0]+20,band['screen'][1]+20,steps=4)
     page.mouse.up()
     assert not page.get_by_role('dialog').is_visible(), 'Dragging is not a bracelet click'
+    # The tutorial's room gestures change the camera without moving the patient/equipment.
+    page.locator('[data-g3dview="iso"]').click()
+    page.wait_for_timeout(500)
+    geometry=page.evaluate('JSON.stringify(GANTRY.G)')
+    rect=page.locator('#g3dStage').bounding_box()
+    x,y=rect['x']+rect['width']*.65,rect['y']+rect['height']*.72
+    for gesture in ['rotate','pan','zoom']:
+        before=page.evaluate('GANTRY3D.wristband.placement().screen')
+        page.mouse.move(x,y)
+        if gesture=='zoom':page.mouse.wheel(0,-150)
+        else:
+            button='left' if gesture=='rotate' else 'right'
+            page.mouse.down(button=button)
+            page.mouse.move(x+45,y+20,steps=8)
+            page.mouse.up(button=button)
+        page.wait_for_timeout(500)
+        after=page.evaluate('GANTRY3D.wristband.placement().screen')
+        assert math.dist(before,after)>1,(gesture,before,after)
+        assert page.evaluate('JSON.stringify(GANTRY.G)')==geometry
+    page.locator('#roomOverview').click()
     assert not errors, errors
     print('OK: four unique synthetic identities, dossiers, modal keyboard/close, scene picking, four poses, unchanged exam state.')
     browser.close()

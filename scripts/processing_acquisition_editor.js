@@ -255,7 +255,7 @@
       return row;
     });
     section('camera','Posición declarada del paciente',rows);
-    help('camera','Define la orientación de las imágenes, igual que Adquisición → Posición de paciente. No mueve al paciente ni a los detectores.');
+    help('camera','Declara aquí la posición del paciente para orientar las imágenes. No mueve al paciente ni a los detectores.');
     if(!locked)syncPosition(p);
   }
   function renderFields(config,locked=false){

@@ -78,7 +78,7 @@
         if(!studyReady(window.GANTRY_LIVE)){closing=false;return;}
         clearInterval(poll);clearTimeout(timeout);
         finished=true;const app=el('gantryWin');app.inert=false;app.removeAttribute('aria-busy');
-        dialog.close();el(initial?'acquisitionMenuButton':'liveStudy')?.focus({preventScroll:true});
+        dialog.close();el(initial?'boneProcessingTab':'liveStudy')?.focus({preventScroll:true});
         initial=false;
       }));
     }

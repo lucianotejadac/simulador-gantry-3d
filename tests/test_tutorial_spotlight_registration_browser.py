@@ -13,6 +13,8 @@ with serve_site() as url,sync_playwright() as pw:
     page.locator('#acquisitionTutorialOpen').click()
     page.select_option('#acquisitionTutorialStep','0')
     assert 'ahora no necesitas anotarlos' in page.locator('#acquisitionTutorialBody').inner_text()
+    assert 'deliberadamente «cintigrama oseo»' in page.locator('#acquisitionTutorialBody').inner_text()
+    assert 'botón derecho' in page.locator('#acquisitionTutorialBody').inner_text()
     page.get_by_role('button',name='Señalar Paciente',exact=True).click()
     page.locator('#acquisitionTutorialSpotlight').wait_for()
     page.locator('#acquisitionTutorialPanel').wait_for(state='hidden')
@@ -26,12 +28,21 @@ with serve_site() as url,sync_playwright() as pw:
     frame=page.frame_locator('#boneProcessingFrame')
     frame.locator('#processingAcquireMenu').select_option('static')
     page.locator('#patientRegistration').wait_for()
-    page.locator('#registrationViewBand').click()
+    assert not page.locator('#registrationViewBand').count()
+    assert not page.locator('#patientRegistration').evaluate('(n)=>n.matches(":modal")')
+    page.evaluate("()=>{GANTRY_PATIENT3D.headFirst=false;Object.assign(GANTRY.G,{arms:'down',tableZ:-50,tableH:85,rot:0,detDist1:45,detDist2:45});GANTRY.render();GANTRY3D.view('iso');}")
+    page.wait_for_timeout(500)
+    page.mouse.click(*page.evaluate('GANTRY3D.wristband.placement().screen'))
     band=page.locator('#patientBandLayer');band.wait_for()
     def inside(a,b):
         return a['x']>=b['x']-1 and a['y']>=b['y']-1 and a['x']+a['width']<=b['x']+b['width']+1 and a['y']+a['height']<=b['y']+b['height']+1
     assert inside(band.bounding_box(),page.locator('#g3dStage').bounding_box())
     assert 'Matías Ignacio'.upper() in page.locator('.patient-band-label').inner_text().upper()
+    page.keyboard.press('Escape')
+    band.wait_for(state='hidden')
+    assert page.locator('#patientRegistration').is_visible(), 'Closing the wristband must retain the registration'
+    page.mouse.click(*page.evaluate('GANTRY3D.wristband.placement().screen'))
+    band.wait_for()
     # The bracelet stays visible while the registration form is filled.
     for key,value in {'fullName':'Matías Ignacio Fuentes Araya','rut':'91.000.002-0','examName':'Cintigrafía ósea'}.items():
         page.locator('#registration-'+key).fill(value)

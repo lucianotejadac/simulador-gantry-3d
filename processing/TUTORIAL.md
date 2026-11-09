@@ -18,11 +18,23 @@ vuelven a calcular sobre el espacio de trabajo actual. No se restaura un
 examen borrado o una sesión anterior al recargar.
 
 En el paso 1 se revisa la pulsera sin pedir que se anoten sus datos. En el
-paso 2, **Ver pulsera** permite consultarla dentro de la escena 3D mientras
-se completa el formulario. Los botones **▾** junto a la identificación
+paso 2 se vuelve a pulsar la pulsera en la muñeca del paciente 3D mientras
+se completa el formulario de la derecha. No hay botones de pulsera y el
+registro permite seguir navegando por la escena. Los botones **▾** junto a la identificación
 permiten corregir nombre, RUT y examen, tras confirmar la modificación.
 Los cambios alcanzan las adquisiciones pendientes de ese paciente; las
 imágenes ya adquiridas conservan su identificación original.
+
+El simulador abre **Examen** por defecto; mantiene Gantry y Derechos de autor,
+sin el antiguo botón Adquisición de la barra principal. La pestaña Adquisición
+dentro de Examen sigue disponible.
+
+Todas las órdenes se titulan deliberadamente **cintigrama oseo**. El alumno
+decide según los antecedentes si añade «trifásico» al nombre que registra;
+no se añade automáticamente. El tutorial explica la decisión para Caso óseo.
+También enseña giro con arrastre izquierdo, desplazamiento con el derecho,
+zoom con la rueda, gestos táctiles, vistas predefinidas y Vista sala. Estos
+gestos modifican la cámara; el mando mueve la camilla y los detectores.
 
 ## Comprobaciones
 

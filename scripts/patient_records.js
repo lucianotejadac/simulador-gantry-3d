@@ -4,17 +4,7 @@
   const data=window.GANTRY_PATIENT_RECORD_DATA;
   const fullName=p=>[...p.givenNames,...p.surnames].join(' ');
   const current=()=>data.patients[window.GANTRY_PATIENT?.id]||data.patients.phantom;
-  let dialog,body,title,bandLayer,returnFocus,view='band',registrationHost=null;
-  function placeRegistrationBand(){
-    if(!registrationHost)return;
-    const r=document.getElementById('g3dStage').getBoundingClientRect();
-    Object.assign(bandLayer.style,{position:'fixed',inset:'auto',left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
-  }
-  function releaseRegistrationBand(){
-    if(!registrationHost)return;
-    registrationHost=null;bandLayer.removeAttribute('style');document.getElementById('g3dStage').append(bandLayer);
-    window.removeEventListener('resize',placeRegistrationBand);document.removeEventListener('scroll',placeRegistrationBand,true);
-  }
+  let dialog,body,title,bandLayer,returnFocus,view='band';
   function el(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
   function button(text,action,cls){const b=el('button',text,cls);b.type='button';b.onclick=action;return b;}
   function definition(parent,items){const dl=el('dl',undefined,'patient-record-fields');for(const [label,value] of items)dl.append(el('dt',label),el('dd',value));parent.append(dl);}
@@ -54,27 +44,26 @@
     dialog=el('dialog',undefined,'patient-record-dialog');dialog.id='patientRecordDialog';dialog.setAttribute('aria-labelledby','patientRecordTitle');
     const header=el('header');title=el('h2');title.id='patientRecordTitle';const close=button('×',()=>dialog.close(),'patient-record-close');close.setAttribute('aria-label','Cerrar ventana del paciente');header.append(title,close);
     body=el('div',undefined,'patient-record-body');dialog.append(header,body);document.body.append(dialog);
-    dialog.addEventListener('close',()=>{if(dialog.open)return;bandLayer.hidden=true;releaseRegistrationBand();if(returnFocus?.isConnected)returnFocus.focus();});
+    dialog.addEventListener('close',()=>{if(dialog.open)return;bandLayer.hidden=true;if(returnFocus?.isConnected)returnFocus.focus();});
     dialog.addEventListener('click',event=>{if(event.target!==dialog)return;const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();});
-    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!event.defaultPrevented&&dialog.open&&view==='band'&&(registrationHost||!document.querySelector('dialog:modal'))){event.preventDefault();dialog.close();}});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!event.defaultPrevented&&dialog.open&&view==='band'&&!document.querySelector('dialog:modal')){event.preventDefault();dialog.close();}});
     window.addEventListener('gantry-patient-change',()=>{if(dialog.open)render();});
   }
-  function open(next='band',registration=null){
+  function open(next='band'){
     ensureDialog();const band=next==='band';
     if(dialog.open&&band!==(view==='band'))dialog.close();
     view=band?'band':'order';render();
-    if(band&&registration?.open){registrationHost=registration;registration.append(bandLayer);placeRegistrationBand();window.addEventListener('resize',placeRegistrationBand);document.addEventListener('scroll',placeRegistrationBand,true);}
     const host=band?bandLayer:document.body;
     if(dialog.parentNode!==host)host.append(dialog);
     bandLayer.hidden=!band;dialog.setAttribute('aria-modal',String(!band));
     if(!dialog.open){returnFocus=document.activeElement;if(band)dialog.show();else dialog.showModal();}
     dialog.querySelector('.patient-record-close').focus();
+    window.dispatchEvent(new CustomEvent('gantry-patient-record-open',{detail:{patientId:window.GANTRY_PATIENT?.id,view}}));
   }
   function mountControls(panel){
     if(panel.querySelector('.patient-record-actions'))return;
     const actions=el('span',undefined,'patient-record-actions');
-    const band=button('▱ Pulsera',()=>open('band'));band.setAttribute('aria-label','Ver pulsera del paciente');band.title='También puedes pulsar la pulsera en la muñeca del paciente 3D';
-    const folder=button('📁 Carpeta',()=>open('order'));folder.setAttribute('aria-label','Abrir carpeta del paciente');folder.title='Orden médica, antecedentes y exámenes';actions.append(band,folder);panel.querySelector('label').after(actions);
+    const folder=button('📁 Carpeta',()=>open('order'));folder.setAttribute('aria-label','Abrir carpeta del paciente');folder.title='Orden médica, antecedentes y exámenes';actions.append(folder);panel.querySelector('label').after(actions);
   }
-  window.GANTRY_PATIENT_RECORDS={open,mountControls,closeRegistrationBand(){if(registrationHost){dialog.close();releaseRegistrationBand();bandLayer.hidden=true;}},identity:()=>({fullName:fullName(current()),rut:current().rut,record:current().record})};
+  window.GANTRY_PATIENT_RECORDS={open,mountControls,closeBand(){if(dialog?.open&&view==='band')dialog.close();},identity:()=>({fullName:fullName(current()),rut:current().rut,record:current().record})};
 })();

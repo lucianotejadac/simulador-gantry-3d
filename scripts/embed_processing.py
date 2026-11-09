@@ -132,10 +132,10 @@ ui = '''<!-- PROCESSING_UI_BEGIN -->
     </style>
     <section id="boneProcessingPane" hidden aria-label="Examen">
       <div id="boneProcessingToolbar"><strong>Examen</strong>
-        <button id="boneProcessingBack" type="button">Volver a adquisición</button>
+        <button id="boneProcessingBack" type="button">Volver a Gantry</button>
         <button id="boneProcessingRefresh" type="button">Actualizar lista</button>
         <button id="boneProcessingRetry" type="button" hidden>Reintentar carga</button>
-        <span>El proyecto se conserva al volver a adquisición. Guarda el proyecto antes de cerrar o recargar.</span>
+        <span>El proyecto se conserva al volver a Gantry. Guarda el proyecto antes de cerrar o recargar.</span>
       </div>
       <details><summary>Selección manual · las adquisiciones se cargan automáticamente en el menú izquierdo</summary>
         <div id="boneProcessingList" aria-label="Adquisiciones óseas finalizadas"></div>

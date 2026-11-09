@@ -66,7 +66,6 @@
   async function open(){
     if(busy()&&window.GANTRY_LIVE.settings.study!=='bone'){el('boneProcessingNotice').textContent='Finaliza la adquisición del otro estudio antes de entrar a procesamiento.';return;}
     active=true;tools.hidden=false;el('boneProcessingNotice').textContent='';
-    el('acquisitionMenuButton').disabled=true;
     el('gantryLive').hidden=true;el('boneProcessingPane').hidden=false;
     el('boneProcessingTab').setAttribute('aria-selected','true');el('boneGantryTab').setAttribute('aria-selected','false');
     if(!loaded)load();
@@ -76,7 +75,6 @@
   function close(){
     window.GANTRY_PROCESSING_ACQUISITION?.releasePreview?.();
     active=false;tools.hidden=true;tools.open=false;el('boneProcessingPane').hidden=true;el('gantryLive').hidden=false;
-    el('acquisitionMenuButton').disabled=false;
     el('boneProcessingTab').setAttribute('aria-selected','false');el('boneGantryTab').setAttribute('aria-selected','true');
     if(ready)frame.contentWindow.postMessage({type:'GANTRY_PROCESSING_HIDE',version:1},location.origin);
     window.GANTRY_LIVE?.update(window.GANTRY.G);
@@ -130,4 +128,5 @@
   }
   window.GANTRY_PROCESSING={open,close,remember,retake:id=>removeAcquisition(id,true),removeAcquisition,get active(){return active;}};
   window.GANTRY_PROCESSING_ACQUISITION.attach(frame);
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',open,{once:true});else open();
 })();

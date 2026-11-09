@@ -7,7 +7,7 @@
   function build(){
     if(dialog)return;
     const style=document.createElement('style');style.textContent=`
-      #patientRegistration{box-sizing:border-box;width:min(560px,94vw);max-height:92vh;overflow:auto;background:#c0c0c0;color:#161616;border:3px outset #eee;padding:0;font:15px/1.4 Arial}
+      #patientRegistration{position:fixed;inset:60px 14px auto auto;z-index:650;margin:0;box-sizing:border-box;width:min(560px,52vw);max-height:calc(100dvh - 75px);overflow:auto;background:#c0c0c0;color:#161616;border:3px outset #eee;padding:0;font:15px/1.4 Arial;box-shadow:0 8px 30px #0006}
       #patientRegistration::backdrop{background:#081624b8}#patientRegistration header{display:flex;align-items:center;justify-content:space-between;background:#132b50;color:white;padding:10px 12px;gap:20px}
       #patientRegistration h2{font-size:19px;margin:0}#patientRegistrationClose{font:24px/1 Arial;min-width:32px;min-height:30px;cursor:pointer}
       #patientRegistration form{padding:16px 20px}#patientRegistration p{margin:0 0 14px}#patientRegistration label{display:block;margin:12px 0;font-weight:bold}
@@ -17,15 +17,15 @@
       #patientRegistrationError{color:#8c1200;font-weight:bold}#patientRegistrationError:empty{display:none}`;document.head.append(style);
     dialog=document.createElement('dialog');dialog.id='patientRegistration';dialog.setAttribute('aria-labelledby','patientRegistrationTitle');
     dialog.innerHTML=`<header><h2 id="patientRegistrationTitle">Datos del paciente y del examen</h2><button type="button" id="patientRegistrationClose" aria-label="Cancelar registro del paciente">×</button></header>
-      <form novalidate><p id="patientRegistrationContext"></p><p id="patientRegistrationHelp"></p><button type="button" id="registrationViewBand">Ver pulsera</button>
+      <form novalidate><p id="patientRegistrationContext"></p><p id="patientRegistrationHelp"></p><p>Para consultar la identidad, pulsa la pulsera en la muñeca del paciente 3D. Puedes mover la vista mientras completas este formulario.</p>
       <label>Nombre completo<input id="registration-fullName" name="fullName" type="text" required maxlength="64" autocomplete="off"></label>
       <label>RUT<input id="registration-rut" name="rut" type="text" required maxlength="12" placeholder="12.345.678-5" autocomplete="off"></label>
       <label>Nombre del examen<input id="registration-examName" name="examName" type="text" required maxlength="64" autocomplete="off"></label>
       <p id="patientRegistrationError" role="alert"></p><div class="registration-actions"><button type="button" id="patientRegistrationCancel">Cancelar</button><button type="submit" id="patientRegistrationSave">Guardar y continuar</button></div></form>`;
     document.body.append(dialog);form=dialog.querySelector('form');
     for(const key of ['patientRegistrationClose','patientRegistrationCancel'])document.getElementById(key).onclick=()=>dialog.close('cancel');
-    document.getElementById('registrationViewBand').onclick=()=>window.GANTRY_PATIENT_RECORDS?.open('band',dialog);
-    dialog.addEventListener('close',()=>{window.GANTRY_PATIENT_RECORDS?.closeRegistrationBand?.();const resolve=resolvePending;resolvePending=null;pending=null;owner=null;previousFocus?.focus?.();resolve?.(dialog.returnValue==='saved');});
+    dialog.addEventListener('close',()=>{window.GANTRY_PATIENT_RECORDS?.closeBand?.();const resolve=resolvePending;resolvePending=null;pending=null;owner=null;previousFocus?.focus?.();resolve?.(dialog.returnValue==='saved');});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!event.defaultPrevented&&dialog.open&&!document.querySelector('dialog:modal')&&!document.getElementById('patientRecordDialog')?.open){event.preventDefault();dialog.close('cancel');}});
     form.addEventListener('submit',event=>{
       event.preventDefault();
       if(owner!==id()){dialog.close('cancel');return;}
@@ -49,7 +49,7 @@
     document.getElementById('patientRegistrationSave').textContent=editing?'Guardar cambios':'Guardar y continuar';
     document.getElementById('patientRegistrationContext').textContent='Paciente seleccionado: '+(window.GANTRY_PATIENT?.metadata()?.name||'Fantoma ICRP 145');
     document.getElementById('patientRegistrationError').textContent='';
-    pending=new Promise(resolve=>{resolvePending=resolve;});dialog.showModal();document.getElementById('registration-fullName').focus();return pending;
+    pending=new Promise(resolve=>{resolvePending=resolve;});dialog.show();document.getElementById('registration-fullName').focus();return pending;
   }
   function ensure(){return current()?Promise.resolve(true):enter();}
   async function edit(){

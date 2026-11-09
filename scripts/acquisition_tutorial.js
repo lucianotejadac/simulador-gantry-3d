@@ -4,13 +4,13 @@
   const model=window.GANTRY_TUTORIAL_MODEL,$=id=>document.getElementById(id);
   const source='https://snmmi.org/common/Uploaded%20files/Web/Clinical%20Practice/Procedure%20Standards/2023/Bone%20Scintigraphy_UPDATED2024.pdf';
   const steps=[
-    {title:'1. Paciente y orden médica',text:'Vamos a realizar el examen de Caso óseo: estudio trifásico de pies y tobillos. Las imágenes se generarán con tus decisiones en el simulador.',
-      actions:['Selecciona «Caso óseo» en Paciente, debajo de la escena 3D.','Abre Pulsera para revisar la identificación y ciérrala con ×. En el paso 2 volverás a abrirla para ingresar los datos; ahora no necesitas anotarlos.','Abre Carpeta. Lee la orden y los antecedentes: qué región se solicita y qué se quiere investigar.'],
-      expected:'Reconoces la pulsera y la orden de cintigrafía ósea trifásica de pies y tobillos. Los datos se ingresarán en el siguiente paso.',
-      question:'¿Por qué debes consultar la pulsera y la orden antes de agregar adquisiciones?',answer:'La pulsera identifica al paciente; la orden define el examen y la región. El nombre del caso en el selector no sustituye esos datos.',
-      targets:[['Paciente','gantryPatient'],['Pulsera','[aria-label="Ver pulsera del paciente"]'],['Carpeta','[aria-label="Abrir carpeta del paciente"]']]},
+    {title:'1. Paciente y orden médica',text:'Vamos a estudiar los pies y tobillos de Caso óseo. Las imágenes se generarán con tus decisiones en el simulador.',
+      actions:['Selecciona «Caso óseo» en Paciente, debajo de la escena 3D.','Acércate y pulsa directamente la pulsera en la muñeca del paciente 3D; ciérrala con ×. En el paso 2 volverás a pulsar la muñeca para ingresar los datos; ahora no necesitas anotarlos. No hay botón de pulsera.','Abre Carpeta. Lee la orden y los antecedentes: qué región se solicita y qué se quiere investigar.','Todas las órdenes dicen deliberadamente «cintigrama oseo». Ese nombre genérico no determina las fases. Tú debes decidir, según el caso y sus antecedentes, si corresponde añadir «trifásico» al registrar el examen.'],
+      expected:'Reconoces la pulsera y el nombre genérico de la orden. Para este Caso óseo, la duda de compromiso óseo frente a partes blandas se abordará con flujo, pool y tardías: registrarás un cintigrama óseo trifásico.',
+      question:'¿Todas las órdenes de cintigrama óseo implican un estudio trifásico?',answer:'No. La orden mantiene un nombre genérico como parte del ejercicio. Revisa el motivo y los antecedentes para decidir las fases. Aquí se practican las tres; en el caso oncológico se practican imágenes tardías de cuerpo entero y vistas dirigidas. La pulsera identifica al paciente y no decide el protocolo.',
+      targets:[['Paciente','gantryPatient'],['Escena 3D y muñeca','g3dStage'],['Vistas de la sala','gantryViewControls'],['Carpeta','[aria-label="Abrir carpeta del paciente"]']]},
     {title:'2. Ingresar los datos',text:'El registro aparece al agregar la primera adquisición de este paciente. Las siguientes usarán la misma identificación.',
-      actions:['Abre Examen y el menú «Adquirir…». Elige «Nueva adquisición dinámica».','En el formulario pulsa «Ver pulsera» para volver a abrirla en la escena 3D. Copia allí el nombre completo y el RUT.','En Nombre del examen escribe «Cintigrafía ósea trifásica». Pulsa «Guardar y continuar».','Si necesitas corregirlos después, pulsa ▾ junto a Paciente, Estudio o los datos de Información de serie. Confirma «Sí, modificar datos», corrige y guarda.'],
+      actions:['Examen se abre por defecto. En el menú «Adquirir…», elige «Nueva adquisición dinámica».','Con el formulario abierto a la derecha, vuelve a pulsar la pulsera en la muñeca del paciente 3D. Puedes girar o acercar la vista para encontrarla. Copia el nombre completo y el RUT mientras consultas la pulsera.','La orden sólo dice «cintigrama oseo». Tras decidir las fases por los antecedentes de este caso, escribe «Cintigrama óseo trifásico» en Nombre del examen y pulsa «Guardar y continuar». El simulador no añade «trifásico» por ti.','Si necesitas corregirlos después, pulsa ▾ junto a Paciente, Estudio o los datos de Información de serie. Confirma «Sí, modificar datos», corrige y guarda.'],
       expected:'Aparece el primer cuadro de adquisición dinámica en la columna izquierda. El registro pide nombre, RUT y examen.',
       question:'¿Agregar una adquisición ya produce una imagen?',answer:'No. Crea una configuración pendiente; la imagen se obtiene al iniciar la adquisición. El cuadro permanece aunque consultes otro.',
       targets:[['Examen','boneProcessingTab'],['Menú Adquirir','processingAcquireMenu','frame']]},
@@ -104,6 +104,11 @@
     const s=steps[step],body=$('acquisitionTutorialBody');body.replaceChildren();
     body.append(el('h2',s.title),el('p',s.text));
     const list=el('ol');for(const line of s.actions)list.append(el('li',line));body.append(list);
+    if(step===0){
+      const navigation=el('details');navigation.open=true;navigation.append(el('summary','Cómo moverte y navegar por la sala 3D'));
+      const tips=el('ul');for(const text of ['Arrastra con el botón izquierdo sobre la escena para girar alrededor del paciente.','Gira la rueda del ratón para acercarte o alejarte. Arrastra con el botón derecho para desplazar el encuadre lateral o verticalmente.','En pantalla táctil, un dedo gira la vista; dos dedos permiten desplazarla y hacer zoom con un gesto de pinza.','Vista sala recupera la vista general. Los botones 3D, Axial, Lateral y Superior recuperan vistas predefinidas; Mostrar/Ocultar sala cambia la visibilidad de las paredes y el mobiliario.','Estos gestos mueven la cámara, no al paciente ni a los detectores. Para mover el equipo usa el mando CONTROL GANTRY.','Para leer la pulsera, gira y acerca la vista hasta ver la muñeca sin que un detector la tape. Haz un clic breve sobre la pulsera; arrastrar no la abre.'])tips.append(el('li',text));
+      navigation.append(tips);body.append(navigation);
+    }
     const targets=el('div',undefined,'tutorial-locate-buttons');
     for(const [label,id,scope] of s.targets)targets.append(button('Señalar '+label,()=>locate(id,scope)));
     body.append(targets);
@@ -171,8 +176,10 @@
     panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();setMinimized(true);$('acquisitionTutorialOpen').focus();}});
     document.addEventListener('click',event=>{
       if(!open||window.GANTRY_PATIENT?.id!==model.caseId)return;
-      if(event.target.closest('[aria-label="Ver pulsera del paciente"]'))seen.band=true;
       if(event.target.closest('[aria-label="Abrir carpeta del paciente"]'))seen.folder=true;
+    });
+    window.addEventListener('gantry-patient-record-open',event=>{
+      if(open&&event.detail?.patientId===model.caseId&&event.detail.view==='band'){seen.band=true;refresh();}
     });
     window.addEventListener('message',event=>{
       if(event.origin===location.origin&&event.source===frame()?.contentWindow&&event.data?.type==='GANTRY_TUTORIAL_OPEN'&&event.data.version===1)toggle(true);
