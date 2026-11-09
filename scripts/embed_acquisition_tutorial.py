@@ -5,7 +5,7 @@ from externalize_assets import asset
 
 ROOT = Path(__file__).resolve().parents[1]
 js = '\n'.join((ROOT / 'scripts' / name).read_text(encoding='utf-8') for name in
-               ['acquisition_tutorial_model.js', 'acquisition_tutorial.js'])
+               ['acquisition_tutorial_model.js', 'acquisition_tutorial_spotlight.js', 'acquisition_tutorial.js'])
 css = (ROOT / 'scripts/acquisition_tutorial.css').read_bytes()
 block = ('<!-- ACQUISITION_TUTORIAL_BEGIN -->\n<link rel="stylesheet" href="' +
          asset(css, 'acquisition-tutorial', 'css') + '">\n<script src="' +

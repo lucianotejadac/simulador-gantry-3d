@@ -8,11 +8,21 @@ radiofármaco y posición, parámetros de cámara, dinámica de flujo, estática
 de pool, estática tardía, revisión, página flexible y exportación PNG.
 
 La guía no inicia adquisiciones, inyecta, registra datos ni añade imágenes.
-Los botones **Señalar** navegan a los controles y los resaltan. El panel se
-minimiza para dejar trabajar; cerrar o minimizar conserva el paso. El paso
+Los botones **Señalar** navegan a los controles y oscurecen el resto de la
+pantalla. Una flecha con estela animada viaja desde la guía hacia el control
+mientras el panel se minimiza. El foco sigue los controles del iframe al
+desplazarse; desaparece al interactuar o a los ocho segundos. Con movimiento
+reducido, la flecha permanece fija. Cerrar o minimizar conserva el paso. El paso
 de lectura se conserva en `sessionStorage`, pero las comprobaciones se
 vuelven a calcular sobre el espacio de trabajo actual. No se restaura un
 examen borrado o una sesión anterior al recargar.
+
+En el paso 1 se revisa la pulsera sin pedir que se anoten sus datos. En el
+paso 2, **Ver pulsera** permite consultarla dentro de la escena 3D mientras
+se completa el formulario. Los botones **▾** junto a la identificación
+permiten corregir nombre, RUT y examen, tras confirmar la modificación.
+Los cambios alcanzan las adquisiciones pendientes de ese paciente; las
+imágenes ya adquiridas conservan su identificación original.
 
 ## Comprobaciones
 
@@ -39,7 +49,7 @@ Fundamento de adquisición:
 
 ## Mantenimiento
 
-Fuentes: `scripts/acquisition_tutorial.js`, `acquisition_tutorial.css`,
+Fuentes: `scripts/acquisition_tutorial.js`, `acquisition_tutorial_spotlight.js`, `acquisition_tutorial.css`,
 `acquisition_tutorial_model.js` y `processing_tutorial_bridge.js`.
 El puente del visor expone sólo estado de lectura y no copia matrices de
 píxeles al tutorial. Los chequeos puros están separados del panel.
@@ -47,8 +57,10 @@ píxeles al tutorial. Los chequeos puros están separados del panel.
 Empaquetar:
 
 ```powershell
+python scripts/embed_patient_cases.py
 python scripts/embed_processing.py
 python scripts/embed_acquisition_tutorial.py
+python scripts/optimize_loading.py
 ```
 
 Comprobar:
@@ -56,6 +68,7 @@ Comprobar:
 ```powershell
 node tests/test_acquisition_tutorial.cjs
 python -X utf8 tests/test_acquisition_tutorial_browser.py
+python -X utf8 tests/test_tutorial_spotlight_registration_browser.py
 ```
 
 La prueba de navegador usa un contexto aislado, registra el paciente,

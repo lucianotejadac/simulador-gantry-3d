@@ -5,12 +5,12 @@
   const source='https://snmmi.org/common/Uploaded%20files/Web/Clinical%20Practice/Procedure%20Standards/2023/Bone%20Scintigraphy_UPDATED2024.pdf';
   const steps=[
     {title:'1. Paciente y orden médica',text:'Vamos a realizar el examen de Caso óseo: estudio trifásico de pies y tobillos. Las imágenes se generarán con tus decisiones en el simulador.',
-      actions:['Selecciona «Caso óseo» en Paciente, debajo de la escena 3D.','Abre Pulsera y anota el nombre completo y el RUT ficticios. Cierra con ×.','Abre Carpeta. Lee la orden y los antecedentes: qué región se solicita y qué se quiere investigar.'],
-      expected:'Paciente: Matías Ignacio Fuentes Araya · RUT ficticio: 91.000.002-0. Orden de cintigrafía ósea trifásica de pies y tobillos.',
+      actions:['Selecciona «Caso óseo» en Paciente, debajo de la escena 3D.','Abre Pulsera para revisar la identificación y ciérrala con ×. En el paso 2 volverás a abrirla para ingresar los datos; ahora no necesitas anotarlos.','Abre Carpeta. Lee la orden y los antecedentes: qué región se solicita y qué se quiere investigar.'],
+      expected:'Reconoces la pulsera y la orden de cintigrafía ósea trifásica de pies y tobillos. Los datos se ingresarán en el siguiente paso.',
       question:'¿Por qué debes consultar la pulsera y la orden antes de agregar adquisiciones?',answer:'La pulsera identifica al paciente; la orden define el examen y la región. El nombre del caso en el selector no sustituye esos datos.',
       targets:[['Paciente','gantryPatient'],['Pulsera','[aria-label="Ver pulsera del paciente"]'],['Carpeta','[aria-label="Abrir carpeta del paciente"]']]},
     {title:'2. Ingresar los datos',text:'El registro aparece al agregar la primera adquisición de este paciente. Las siguientes usarán la misma identificación.',
-      actions:['Abre Examen y el menú «Adquirir…». Elige «Nueva adquisición dinámica».','Ingresa nombre completo y RUT tal como aparecen en la pulsera.','En Nombre del examen escribe «Cintigrafía ósea trifásica». Pulsa «Guardar y continuar».'],
+      actions:['Abre Examen y el menú «Adquirir…». Elige «Nueva adquisición dinámica».','En el formulario pulsa «Ver pulsera» para volver a abrirla en la escena 3D. Copia allí el nombre completo y el RUT.','En Nombre del examen escribe «Cintigrafía ósea trifásica». Pulsa «Guardar y continuar».','Si necesitas corregirlos después, pulsa ▾ junto a Paciente, Estudio o los datos de Información de serie. Confirma «Sí, modificar datos», corrige y guarda.'],
       expected:'Aparece el primer cuadro de adquisición dinámica en la columna izquierda. El registro pide nombre, RUT y examen.',
       question:'¿Agregar una adquisición ya produce una imagen?',answer:'No. Crea una configuración pendiente; la imagen se obtiene al iniciar la adquisición. El cuadro permanece aunque consultes otro.',
       targets:[['Examen','boneProcessingTab'],['Menú Adquirir','processingAcquireMenu','frame']]},
@@ -55,7 +55,7 @@
       question:'¿Qué entregarías para demostrar que se completaron las tres fases?',answer:'El flujo de ambos detectores y las imágenes de pool y tardías, identificadas y con tiempos coherentes. La composición debe permitir seguir el estudio sin confundir fases.',
       targets:[['Exportar PNG','flex-export','flex'],['Herramientas','processingFileMenu','frame']]}
   ];
-  let open=false,minimized=false,step=0,seen={},timer,highlightTimer,focusedBefore;
+  let open=false,minimized=false,step=0,seen={},timer,focusedBefore;
   const changed=new Set();let frameDocument;
   try{step=Math.max(0,Math.min(steps.length-1,Number(sessionStorage.getItem('gantry-acquisition-tutorial-step'))||0));}catch(_){}
   const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
@@ -125,7 +125,7 @@
     try{sessionStorage.setItem('gantry-acquisition-tutorial-step',String(step));}catch(_){}
   }
   function navigate(delta){step=Math.max(0,Math.min(steps.length-1,step+delta));render();}
-  function clearHighlights(){for(const doc of [document,frameDocument])doc?.querySelectorAll('.acquisition-tutorial-highlight').forEach(n=>n.classList.remove('acquisition-tutorial-highlight'));}
+  function clearHighlights(){window.GANTRY_TUTORIAL_SPOTLIGHT?.hide();for(const doc of [document,frameDocument])doc?.querySelectorAll('.acquisition-tutorial-highlight').forEach(n=>n.classList.remove('acquisition-tutorial-highlight'));}
   async function locate(selector,scope){
     try{
       let doc=document;
@@ -141,12 +141,13 @@
       const target=doc?.querySelector(selector.startsWith('[')?selector:'#'+selector);
       for(let ancestor=target?.parentElement;ancestor;ancestor=ancestor.parentElement)if(ancestor.tagName==='DETAILS')ancestor.open=true;
       if(!target||!target.getClientRects().length){$('acquisitionTutorialMessage').textContent='Abre primero la adquisición o pestaña indicada en este paso. El control aún no está visible.';return;}
-      clearHighlights();target.scrollIntoView({block:'center',inline:'nearest'});target.classList.add('acquisition-tutorial-highlight');
-      target.focus({preventScroll:true});clearTimeout(highlightTimer);highlightTimer=setTimeout(clearHighlights,6000);
-      setMinimized(true);$('acquisitionTutorialCompactText').textContent=steps[step].title+' · Control señalado';
+      clearHighlights();target.scrollIntoView({block:'center',inline:'nearest'});
+      target.focus({preventScroll:true});$('acquisitionTutorialCompactText').textContent=steps[step].title+' · Control señalado';
+      window.GANTRY_TUTORIAL_SPOTLIGHT.show(target,()=>setMinimized(true));
     }catch(_){$('acquisitionTutorialMessage').textContent='Espera a que termine la carga y vuelve a señalar el control.';}
   }
   function setMinimized(value){
+    if(!value)clearHighlights();
     minimized=value;$('acquisitionTutorialPanel').hidden=!open||minimized;$('acquisitionTutorialCompact').hidden=!open||!minimized;
     if(open&&!minimized)$('acquisitionTutorialStep').focus();
   }

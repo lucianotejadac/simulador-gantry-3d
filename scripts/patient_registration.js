@@ -1,7 +1,7 @@
 /* One entered identity per simulated patient in this workspace session. */
 (function(){
   'use strict';
-  const entries=new Map();let dialog,form,pending=null,resolvePending=null,owner=null,previousFocus;
+  const entries=new Map();let dialog,form,pending=null,resolvePending=null,owner=null,previousFocus,confirmation;
   const id=()=>window.GANTRY_PATIENT?.id||'phantom';
   const current=(key=id())=>entries.has(key)?{...entries.get(key)}:null;
   function build(){
@@ -17,14 +17,15 @@
       #patientRegistrationError{color:#8c1200;font-weight:bold}#patientRegistrationError:empty{display:none}`;document.head.append(style);
     dialog=document.createElement('dialog');dialog.id='patientRegistration';dialog.setAttribute('aria-labelledby','patientRegistrationTitle');
     dialog.innerHTML=`<header><h2 id="patientRegistrationTitle">Datos del paciente y del examen</h2><button type="button" id="patientRegistrationClose" aria-label="Cancelar registro del paciente">×</button></header>
-      <form novalidate><p id="patientRegistrationContext"></p><p>Completa los datos antes de agregar la primera adquisición. Se conservarán para las siguientes adquisiciones de este paciente en la sesión.</p>
+      <form novalidate><p id="patientRegistrationContext"></p><p id="patientRegistrationHelp"></p><button type="button" id="registrationViewBand">Ver pulsera</button>
       <label>Nombre completo<input id="registration-fullName" name="fullName" type="text" required maxlength="64" autocomplete="off"></label>
       <label>RUT<input id="registration-rut" name="rut" type="text" required maxlength="12" placeholder="12.345.678-5" autocomplete="off"></label>
       <label>Nombre del examen<input id="registration-examName" name="examName" type="text" required maxlength="64" autocomplete="off"></label>
       <p id="patientRegistrationError" role="alert"></p><div class="registration-actions"><button type="button" id="patientRegistrationCancel">Cancelar</button><button type="submit" id="patientRegistrationSave">Guardar y continuar</button></div></form>`;
     document.body.append(dialog);form=dialog.querySelector('form');
     for(const key of ['patientRegistrationClose','patientRegistrationCancel'])document.getElementById(key).onclick=()=>dialog.close('cancel');
-    dialog.addEventListener('close',()=>{const resolve=resolvePending;resolvePending=null;pending=null;owner=null;previousFocus?.focus?.();resolve?.(dialog.returnValue==='saved');});
+    document.getElementById('registrationViewBand').onclick=()=>window.GANTRY_PATIENT_RECORDS?.open('band',dialog);
+    dialog.addEventListener('close',()=>{window.GANTRY_PATIENT_RECORDS?.closeRegistrationBand?.();const resolve=resolvePending;resolvePending=null;pending=null;owner=null;previousFocus?.focus?.();resolve?.(dialog.returnValue==='saved');});
     form.addEventListener('submit',event=>{
       event.preventDefault();
       if(owner!==id()){dialog.close('cancel');return;}
@@ -39,13 +40,32 @@
     form.addEventListener('input',()=>{document.getElementById('patientRegistrationError').textContent='';});
     window.addEventListener('gantry-patient-change',()=>{if(dialog.open&&owner!==id())dialog.close('cancel');});
   }
-  function ensure(){
-    if(current())return Promise.resolve(true);
+  function enter(editing=false){
     if(pending)return pending;
     build();form.reset();dialog.returnValue='';owner=id();previousFocus=document.activeElement;
+    if(editing)for(const key of ['fullName','rut','examName'])form.elements.namedItem(key).value=current()?.[key]||'';
+    document.getElementById('patientRegistrationTitle').textContent=editing?'Modificar datos del paciente y del examen':'Datos del paciente y del examen';
+    document.getElementById('patientRegistrationHelp').textContent=editing?'Los cambios se aplicarán a las adquisiciones pendientes y a las nuevas de este paciente. Las imágenes ya adquiridas conservarán sus datos.':'Completa los datos antes de agregar la primera adquisición. Se conservarán para las siguientes adquisiciones de este paciente en la sesión.';
+    document.getElementById('patientRegistrationSave').textContent=editing?'Guardar cambios':'Guardar y continuar';
     document.getElementById('patientRegistrationContext').textContent='Paciente seleccionado: '+(window.GANTRY_PATIENT?.metadata()?.name||'Fantoma ICRP 145');
     document.getElementById('patientRegistrationError').textContent='';
     pending=new Promise(resolve=>{resolvePending=resolve;});dialog.showModal();document.getElementById('registration-fullName').focus();return pending;
+  }
+  function ensure(){return current()?Promise.resolve(true):enter();}
+  async function edit(){
+    if(pending||confirmation?.open)return false;
+    const patientId=id();
+    if(!confirmation){
+      confirmation=document.createElement('dialog');confirmation.id='patientRegistrationConfirm';confirmation.setAttribute('aria-labelledby','registrationConfirmTitle');
+      confirmation.style.cssText='max-width:420px;background:#c0c0c0;border:3px outset #eee;color:#111;padding:18px;font:15px/1.5 Arial';
+      confirmation.innerHTML='<h2 id="registrationConfirmTitle">¿Deseas modificar los datos?</h2><p>Podrás corregir el nombre completo, el RUT y el nombre del examen de las adquisiciones pendientes.</p><button type="button" id="registrationEditCancel">Cancelar</button> <button type="button" id="registrationEditConfirm">Sí, modificar datos</button>';
+      document.body.append(confirmation);
+      document.getElementById('registrationEditCancel').onclick=()=>confirmation.close('cancel');
+      document.getElementById('registrationEditConfirm').onclick=()=>confirmation.close('edit');
+    }
+    const confirmed=new Promise(resolve=>confirmation.addEventListener('close',()=>resolve(confirmation.returnValue==='edit'),{once:true}));
+    confirmation.returnValue='';confirmation.showModal();document.getElementById('registrationEditCancel').focus();
+    return await confirmed&&patientId===id()?enter(true):false;
   }
   // Legacy gantry controls follow the same registration rule as the Examen menu.
   document.addEventListener('click',event=>{
@@ -57,5 +77,5 @@
     if(event.target.id!=='boneAcqSetup'||current())return;
     event.preventDefault();event.stopImmediatePropagation();ensure().then(ok=>{if(ok)event.target.requestSubmit();});
   },true);
-  window.GANTRY_PATIENT_REGISTRATION={ensure,current};
+  window.GANTRY_PATIENT_REGISTRATION={ensure,current,edit};
 })();

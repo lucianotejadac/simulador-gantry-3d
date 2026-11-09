@@ -1283,6 +1283,8 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     .draft-image{display:flex;flex-direction:column;min-height:0}.draft-image .scan{background:#000;min-height:120px}
     .draft-image canvas{width:100%;height:100%;object-fit:contain}.draft-counts{font-size:12px;padding:6px;background:#eee}
     .draft-progress{width:100%;height:8px}.draft-help{font-size:12px;line-height:1.4;margin:8px 0}
+    .registration-field-control{display:flex;gap:4px;min-width:0}.registration-field-control input{flex:1;min-width:0!important}
+    .registration-edit{flex:0 0 28px;padding:0!important;min-width:28px;font:17px Arial;color:#000080;cursor:pointer}
   `;document.head.append(style);
   const consoleBar=document.createElement('section');consoleBar.id='acquisitionConsole';
   consoleBar.setAttribute('aria-label','Control de adquisición');
@@ -1359,6 +1361,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       menu.value='';menu.dataset.signature=signature;
     }
     menu.disabled=!!waiting;
+    for(const button of document.querySelectorAll('.registration-edit'))button.disabled=!!waiting||!draft||!!draft.id||running;
     $('consoleState').textContent=(draft||lastId||selectedId?type+' · ':'')+phase;
     for(const button of consoleBar.querySelectorAll('button[data-acquire]')){
       const id=button.dataset.acquire,a=actions.find(a=>a.id===id);
@@ -1447,6 +1450,22 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   }
   function section(host,title,rows){const box=document.createElement('fieldset');box.className='group';const legend=document.createElement('legend');legend.textContent=title;const fields=document.createElement('div');fields.className='fields';fields.append(...rows);box.append(legend,fields);$(host).append(box);}
   function help(host,text){const p=document.createElement('p');p.className='draft-help';p.textContent=text;$(host).append(p);}
+  function identityField(label,value,locked){
+    const row=field(label,value);if(locked)return row;
+    const input=row.querySelector('input'),wrap=document.createElement('span'),button=document.createElement('button');
+    wrap.className='registration-field-control';input.replaceWith(wrap);button.type='button';button.className='registration-edit';button.textContent='▾';
+    button.setAttribute('aria-label','Modificar datos: '+label);button.title='Modificar nombre, RUT y examen';
+    button.onclick=()=>{if(!draft||draft.id||waiting)return;request('GANTRY_REGISTRATION_EDIT',{patientId:draft.config.patient?.id});setMenu();};
+    wrap.append(input,button);return row;
+  }
+  function updatePendingPatient(patient){
+    if(!patient)return;
+    const refresh=draft&&!draft.id&&(patient.id!==draft.config.patient?.id||patient.registrationId!==draft.config.patient?.registrationId);
+    for(const entry of configurations.values())if(entry.config.patient?.id===patient.id)entry.config.patient={...patient};
+    if(refresh){
+      const tab=selectedTab();draft.config.patient={...patient};const config=read(false),id=draft.listId;render(config,false,id);$(tab)?.click();
+    }
+  }
   function syncPosition(p){
     if(p)positionState=p;
     if(!positionState||!draft||draft.id)return;
@@ -1477,10 +1496,10 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   function renderFields(config,locked=false){
     const kindLabel=config.kind==='whole'?'cuerpo entero':config.kind==='dynamic'?'dinámica':'estática';
     if(!locked)$('mode-heading').textContent='Nueva adquisición '+kindLabel+' · SIMULADA';
-    $('patient').append(field('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO'),field('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone']),field('Serie','Nueva · '+kindLabel));
+    $('patient').append(identityField('Paciente',config.patient?.name||'Fantoma ICRP 145 · SIMULADO',locked),identityField('Estudio',config.patient?.examName||window.GANTRY_PROCESSING_CONFIG.programs[config.study||'bone'],locked),field('Serie','Nueva · '+kindLabel));
     if(config.patient?.fullName)section('series','Datos del paciente y del examen',[
-      field('Nombre completo',config.patient.fullName),field('RUT',config.patient.rut),
-      ...(config.patient.birthDate?[field('Fecha de nacimiento',config.patient.birthDate.replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3/$2/$1'))]:[]),field('Nombre del examen',config.patient.examName)]);
+      identityField('Nombre completo',config.patient.fullName,locked),identityField('RUT',config.patient.rut,locked),
+      ...(config.patient.birthDate?[field('Fecha de nacimiento',config.patient.birthDate.replace(/^(\d{4})-(\d{2})-(\d{2})$/,'$3/$2/$1'))]:[]),identityField('Nombre del examen',config.patient.examName,locked)]);
     const range=(min,max,step='any')=>({min:String(min),max:String(max),step});
     section('camera','Parámetros de cámara',[
       input('matrix','Tamaño de matriz',config.matrix,(config.kind==='whole'?[128,256]:[64,128,256,512]).map(n=>[n,config.kind==='whole'?n+' × '+(n*4)+' · cuerpo entero':n+' × '+n])),
@@ -1618,8 +1637,9 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;
     const d=event.data;
     if(d.type==='GANTRY_ADMINISTRATION_ERROR')status(d.error,'error');
+    if(d.type==='GANTRY_ADMINISTRATION_STATE')updatePendingPatient(d.patient);
+    if(d.type==='GANTRY_REGISTRATION_EDITED'&&d.request===waiting){waiting=null;updatePendingPatient(d.patient);setMenu();status(d.changed?'Datos actualizados en las adquisiciones pendientes.':'Datos conservados.');}
     if(d.type==='GANTRY_ADMINISTRATION_STATE'&&draft&&!draft.id){
-      if(d.patient&&(d.patient.id!==draft.config.patient?.id||d.patient.registrationId!==draft.config.patient?.registrationId)){draft.config.patient=d.patient;const config=read(false),id=draft.listId;render(config,false,id);}
       for(const key of ['activityMci','minutes']){
         const node=inputs.get(key);
         if(node&&document.activeElement!==node&&Number.isFinite(d[key])){node.value=String(d[key]);draft.config[key]=d[key];}

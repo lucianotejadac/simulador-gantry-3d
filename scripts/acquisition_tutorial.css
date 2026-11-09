@@ -37,5 +37,8 @@
 #acquisitionTutorialCompact{display:flex;gap:8px;align-items:center;padding:6px;max-width:calc(100vw - 20px);font-size:12px}
 #acquisitionTutorialCompactText{min-width:0}
 .acquisition-tutorial-highlight{outline:3px solid #ffbf00!important;outline-offset:2px;box-shadow:0 0 0 5px #17499b!important}
+#acquisitionTutorialSpotlight{position:fixed;inset:0;width:100vw;height:100dvh;z-index:590;pointer-events:none;overflow:visible}
+#acquisitionTutorialSpotlight>g,#acquisitionTutorialSpotlight>path:last-child{filter:drop-shadow(0 0 5px #ffdc58)}
+#acquisitionTutorialPanel.tutorial-collapsing{transform-origin:top left;pointer-events:none}
 @media(max-width:700px){#acquisitionTutorialPanel{right:8px;bottom:8px}#acquisitionTutorialCompact{right:8px;bottom:8px;flex-wrap:wrap}}
 @media print{#acquisitionTutorialPanel,#acquisitionTutorialCompact,#acquisitionTutorialOpen{display:none!important}}

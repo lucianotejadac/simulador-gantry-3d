@@ -80,9 +80,15 @@
     window.addEventListener('message',async event=>{
       if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.version!==1||!window.GANTRY_PROCESSING.active)return;
       const d=event.data;
-      if(!['GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION','GANTRY_ACQUIRE_RETAKE','GANTRY_ACQUIRE_DELETE','GANTRY_CAMERA_PREVIEW','GANTRY_CAMERA_PREVIEW_END','GANTRY_ADMINISTRATION_UPDATE'].includes(d.type))return;
+      if(!['GANTRY_REGISTRATION_EDIT','GANTRY_ACQUIRE_CONFIG','GANTRY_ACQUIRE_START','GANTRY_ACQUIRE_ACTION','GANTRY_ACQUIRE_POSITION','GANTRY_ACQUIRE_RETAKE','GANTRY_ACQUIRE_DELETE','GANTRY_CAMERA_PREVIEW','GANTRY_CAMERA_PREVIEW_END','GANTRY_ADMINISTRATION_UPDATE'].includes(d.type))return;
       try{
-        if(d.type==='GANTRY_CAMERA_PREVIEW_END'){
+        if(d.type==='GANTRY_REGISTRATION_EDIT'){
+          if(preparing||otherBusy())throw Error('Finaliza la adquisición antes de modificar los datos.');
+          if(d.patientId!==window.GANTRY_PATIENT?.id)throw Error('Selecciona el paciente de esta adquisición antes de modificar sus datos.');
+          preparing=true;
+          try{const changed=await window.GANTRY_PATIENT_REGISTRATION.edit();post({type:'GANTRY_REGISTRATION_EDITED',request:d.request,changed,patient:window.GANTRY_PATIENT.metadata()});}
+          finally{preparing=false;}
+        }else if(d.type==='GANTRY_CAMERA_PREVIEW_END'){
           releasePreview();
         }else if(d.type==='GANTRY_ADMINISTRATION_UPDATE'){
           if(preparing||otherBusy()||window.GANTRY_EXAM?.blocked)throw Error('Finaliza la adquisición antes de cambiar la administración.');

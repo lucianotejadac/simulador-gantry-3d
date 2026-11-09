@@ -20,7 +20,7 @@ with serve_site() as url,sync_playwright() as pw:
     page.locator('#acquisitionTutorialPanel').screenshot(path=str(ROOT.parent/'gantry-tutorial-panel.png'))
     page.get_by_role('button',name='Señalar Paciente',exact=True).click()
     page.locator('#gantryPatient.acquisition-tutorial-highlight').wait_for()
-    assert page.locator('#acquisitionTutorialPanel').is_hidden()
+    page.locator('#acquisitionTutorialPanel').wait_for(state='hidden')
     page.select_option('#gantryPatient','caso-oseo')
     page.wait_for_function("GANTRY_PATIENT.id==='caso-oseo'",timeout=60000)
     page.get_by_role('button',name='Ver pulsera del paciente',exact=True).click()
