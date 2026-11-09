@@ -11,7 +11,7 @@ try{
    id,uid:id,study:'study',series:id,kind,seriesName:id,filename:id,frame:0,meta:{patient:'Simulado',exam:'Prueba',date:'',institution:''},
    data:new Uint32Array(cols*rows).fill(10),cols,rows,spacing:[1,1],projection:'AP',window:20,level:10,mono1:false,duration:1000,sum:cols*rows*10}));
    openFlexible();`);
- $('header-close').click();
+ assert.equal($('header-dialog'),null,'Flexible pages do not prompt for a header');
  const pages=()=>JSON.parse(w.eval('JSON.stringify(flex.pages)'));
  const add=ids=>{
   $('flex-add-images').click();

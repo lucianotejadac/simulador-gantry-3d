@@ -77,14 +77,24 @@ for old, new in {
 }.items():
     assert old in s, old
     s = s.replace(old, new)
-# Header entry can be dismissed without saving in the simulator edition.
+# The simulator already collects identity at the first acquisition. Its page
+# header is automatic; omit the upstream editor, modal and context-menu entry.
+start = s.index('function openHeaderEditor(required=false){')
+end = s.index('function openTextEditor(edit=false){', start)
+s = s[:start] + s[end:]
+start = s.index(" const header=document.createElement('dialog');header.id='header-dialog';")
+end = s.index(" const text=document.createElement('dialog');text.id='text-dialog';", start)
+s = s[:start] + s[end:]
+for old, new in {
+    " if(!flex.header&&!$('header-dialog').open)openHeaderEditor(true);": '',
+    "['header','Agregar encabezado…',openHeaderEditor],": '',
+    ' Clic derecho: agregar encabezado o texto. El texto siempre queda al frente.': ' El encabezado usa automáticamente los datos de la adquisición. Clic derecho: agregar texto.',
+}.items():
+    assert old in s, old
+    s = s.replace(old, new)
 s = s.replace('else ctx.drawImage(rasterFlexible(i),x+w/2-dw/2+i.panX,y+22+innerH/2-dh/2+i.panY,dw,dh);', 'else {const ix=x+w/2-dw/2+i.panX,iy=y+22+innerH/2-dh/2+i.panY;ctx.drawImage(rasterFlexible(i),ix,iy,dw,dh);window.GANTRY_PROCESSING_ANALYSIS.drawFlexibleRois(ctx,i,a,ix,iy,dw,dh);}')
-s = s.replace('flex.headerRequired=required&&!existing;', 'flex.headerRequired=false;')
-s = s.replace("rut:'',date:meta.date||''", "rut:/^\\d{1,2}\\.\\d{3}\\.\\d{3}-[0-9K]$/.test(meta.patientId||'')?meta.patientId:'',date:meta.date||''")
 s = s.replace('id:uid+\':\'+f,uid,study,series,kind:currentMode', "id:uid+':'+f,uid,study,series,acquisitionId:window.GANTRY_FLEX_MEASUREMENTS?.acquisition(dataset),acquisitionDetector:window.GANTRY_FLEX_MEASUREMENTS?.detector(dataset),kind:currentMode")
 s = s.replace('ctx.fillStyle=t.color;const lines=layoutLines(ctx,t);', 'ctx.fillStyle=t.color;if(t.measurementTable){window.GANTRY_FLEX_MEASUREMENTS.draw(ctx,t);if(!exporting&&t.id===flex.selectedText){ctx.strokeStyle="#0000aa";ctx.strokeRect(t.x,t.y,t.w,t.h);}ctx.restore();continue;}const lines=layoutLines(ctx,t);')
-s = s.replace("flex.headerRequired?'Establecer encabezado obligatorio':'Editar encabezado común'", "existing?'Editar encabezado común':'Establecer encabezado'")
-s = s.replace("flex.headerRequired?'Para usar Página flexible, establece primero un encabezado. Se aplicará a todas las páginas.':'Este encabezado es común: los cambios se aplicarán a todas las páginas actuales y nuevas.'", "'Puedes cerrar este cuadro sin completar el encabezado. Si lo aplicas, se usará en todas las páginas.'")
 s = re.sub(r"status\('Versión demo\..*?;", "status('Usa Adquirir para configurar una nueva adquisición en los campos de este visor.');", s)
 s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important}body{padding:0!important}.application-bar .mode{display:none}#processingFileMenu{margin-left:auto;max-width:210px;height:25px;font-size:12px}</style>\n<style>' +
               (ROOT / 'scripts/processing_console.css').read_text(encoding='utf-8') + '</style>\n<script>\n' +
@@ -95,6 +105,7 @@ s = s.replace('</body>', '<style>body>header,#save-advice{display:none!important
               (ROOT / 'scripts/processing_acquisition_editor.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_detector_pair.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_session_list.js').read_text(encoding='utf-8') + '\n' +
+              (ROOT / 'scripts/processing_flexible_header.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_receiver.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/dynamic_correction.js').read_text(encoding='utf-8') + '\n' +
               (ROOT / 'scripts/processing_dynamic_correction.js').read_text(encoding='utf-8') + '\n' +

@@ -27,11 +27,10 @@
   $('flex-measurements-cancel').onclick=()=>dialog.close();
   $('flex-measurements-insert').onclick=()=>{
     const group=groups[Number($('flex-measurements-source').value)],rows=group?rowsFor(group):[];if(!rows.length)return;
-    let p=flexPage();if(!p){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+    let p=flexPage();if(!p||(p.study&&p.study!==group.assets[0].study)){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+    p.study=group.assets[0].study;p.meta=group.assets[0].meta;
     let tableY=PAGE.top+10;
     if($('flex-measurements-images').checked){
-      if(p.study&&p.study!==group.assets[0].study){p=flexNewPage(group.assets[0]);flex.page=p.id;}
-      p.study=group.assets[0].study;p.meta=group.assets[0].meta;
       const measured=group.assets.filter(a=>window.GANTRY_PROCESSING_ANALYSIS.measurementRows(a).length);
       measured.forEach((a,n)=>{const item={id:++flex.serial,asset:a.id,x:24+22*n,y:PAGE.top+22*n,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:!a.mono1};window.GANTRY_PROCESSING_ANALYSIS.prepareFlexible(item,a);boundsFlexible(item);p.items.push(item);});
       p.edited=true;

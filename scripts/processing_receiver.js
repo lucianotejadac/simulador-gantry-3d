@@ -39,7 +39,7 @@
     const assets=pair.map(x=>flex.assets.find(a=>a.uid===x.file.uid));
     if(assets.some(a=>!a))throw Error('El visor no pudo leer una imagen.');
     if(assets.every(a=>flex.pages.some(p=>p.items.some(i=>i.asset===a.id))))return;
-    const empty=flex.pages.find(p=>!p.edited&&!p.items.length&&!p.texts?.length&&!p.header);
+    const empty=flex.pages.find(p=>!p.edited&&!p.items.length&&!p.texts?.length&&!p.study);
     const page=empty||flexNewPage(assets[0]);
     if(empty){page.study=assets[0].study;page.meta=assets[0].meta;page.header=copyFlexHeader(flex.header);}
     for(const a of assets){const offset=page.items.length%8*22,item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:true};window.GANTRY_PROCESSING_ANALYSIS?.prepareFlexible(item,a);boundsFlexible(item);page.items.push(item);}
@@ -57,7 +57,6 @@
       const batch=data.files.map(check);
       window.GANTRY_PROCESSING_EDITOR?.finish();
       for(const entry of batch){await loadFile(new File([entry.file.bytes],entry.file.name),entry.ds);if(!flex.assets.some(a=>a.uid===entry.file.uid))throw Error('Error al cargar '+entry.file.name);}
-      if(!flex.header){const ds=batch[0].ds;flex.header=Object.fromEntries(Object.entries({patient:value(ds,'00100010')||'john',rut:value(ds,'00100020')||'',date:'',exam:value(ds,'00081030')||'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));}
       // Receiving acquisitions only fills the image library. Compose a page
       // exclusively for the explicit "Componer seleccionadas" command.
       if(data.view==='flex'){

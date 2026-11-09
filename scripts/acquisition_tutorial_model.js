@@ -49,7 +49,7 @@
       [check('whole','Cuerpo completo de ambos detectores, de cráneo a pies, con inicio entre 2 y 4 h',p.whole.length)],
       [check('delayed','Tardía dirigida anterior/posterior completa, iniciada entre 2 y 4 h',delayed.length),check('delayedLateral','Tardía lateral de ambos detectores completa, iniciada entre 2 y 4 h',delayedLateral.length)],
       [check('analysis','Visualización / Análisis abierta sobre este caso',v.seen?.analysis),check('display','Ventana, nivel o inversión ajustados',v.seen?.display)],
-      [check('header','Encabezado establecido',v.header),check('images','Ambos detectores de flujo, pool anterior/posterior y lateral, cuerpo completo y tardías anterior/posterior y lateral colocados',[p.flow,pool,poolLateral,p.whole,delayed,delayedLateral].every(hasPhase)),check('layout','Composición revisada: sin cuadros solapados ni dinámica incompleta',relevantPages.length&&!relevantPages.some(page=>page.overlaps||page.incomplete))],
+      [check('header','Encabezado automático con los datos de adquisición',v.header),check('images','Ambos detectores de flujo, pool anterior/posterior y lateral, cuerpo completo y tardías anterior/posterior y lateral colocados',[p.flow,pool,poolLateral,p.whole,delayed,delayedLateral].every(hasPhase)),check('layout','Composición revisada: sin cuadros solapados ni dinámica incompleta',relevantPages.length&&!relevantPages.some(page=>page.overlaps||page.incomplete))],
       [check('export','Todas las páginas del caso exportadas en su versión actual',relevantPages.length&&relevantPages.every(page=>page.exported))]
     ];
   }

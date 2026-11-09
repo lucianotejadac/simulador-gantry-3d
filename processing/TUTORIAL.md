@@ -77,6 +77,10 @@ y se vuelve a centrar el cráneo (Z 200 cm) antes de iniciar el recorrido.
   revisa la distancia y el encuadre sin contacto.
 - Presencia de ambos detectores de las seis adquisiciones en la composición,
   cobertura completa de los frames dinámicos y cuadros sin solapamientos.
+- El encabezado de Página flexible es automático: nombre, RUT y examen del
+  registro inicial, sin otro formulario ni botón para establecerlo. Las páginas
+  vacías siguen el registro; al incorporar imágenes o tablas se usan los datos
+  registrados en su adquisición, también en el PNG exportado.
 - Exportación PNG de cada página del caso. Cambiar su contenido o el
   encabezado invalida la marca de exportación hasta volver a exportarla.
   El navegador debe completar la descarga; el alumno revisa los PNG.

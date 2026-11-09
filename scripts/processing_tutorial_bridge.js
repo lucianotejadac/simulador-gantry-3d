@@ -12,7 +12,7 @@
   };
   const isCase=()=>info(dataset)?.patient?.id==='caso-oseo';
   // Dynamic tiles contain pixel buffers. Compare their composition, not the buffers.
-  const signature=page=>JSON.stringify([flex.header,page.header,page.items,page.texts],(key,value)=>
+  const signature=page=>JSON.stringify([page.header,page.items,page.texts],(key,value)=>
     key==='tiles'?value.map(t=>({id:t.id,label:t.label,sourceFrames:t.sourceFrames})):value);
   let exporting=null;
   document.addEventListener('click',event=>{

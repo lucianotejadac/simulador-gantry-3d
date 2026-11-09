@@ -91,6 +91,7 @@
     const selected=available[Number(el('flex-differential-source').value)],saved=selected&&api.savedResult(selected.acquisitionId);if(!saved)return;
     const asset=flex.assets.find(a=>a.id===saved.assetIds[0]);let page=flexPage();
     if(!page||(page.study&&page.study!==asset.study)){page=flexNewPage(asset);flex.page=page.id;}
+    page.study=asset.study;page.meta=asset.meta;
     const table={id:++flex.serial,x:20,y:PAGE.top+10,w:1160,h:0,size:13,color:'#111111',text:'Función diferencial renal',measurementTable:{type:'differential',...JSON.parse(JSON.stringify(saved))}};
     page.texts.push(table);page.edited=true;flex.selectedText=table.id;flex.selected=null;
     picker.close();refreshFlexible();el('flex-message').textContent='Función diferencial agregada. Puedes trasladar la tabla y exportarla en PNG.';

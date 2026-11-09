@@ -122,6 +122,10 @@ with serve_site() as url,sync_playwright() as pw:
     page.locator('#registration-examName').fill('Control de pies y tobillos')
     page.locator('#patientRegistrationSave').click()
     page.wait_for_function("GANTRY_PATIENT_REGISTRATION.current().examName==='Control de pies y tobillos'")
+    child.wait_for_function("flex.header?.exam.value==='Control de pies y tobillos'")
+    frame.locator('#mode-flex').click()
+    frame.locator('#flex-add').click()
+    assert child.evaluate('flexPage().header.exam.value')=='Control de pies y tobillos'
     assert page.evaluate('GANTRY_BONE_ACQ.processingCurrent().patient')==acquired
     frame.locator('.acquisition-tabs button[data-acquisition-number]').nth(0).click()
     assert frame.locator('#patient input').nth(1).input_value()==acquired['examName']

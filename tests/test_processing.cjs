@@ -98,7 +98,6 @@ print('pydicom: pixel totals, dimensions, duration, dose and registered patient 
  await listeners.message({...event,origin:'http://foreign'});assert.equal(imports.length,0);
  await listeners.message({...event,source:{}});assert.equal(imports.length,0);
  await listeners.message(event);assert.equal(replies.at(-1).images,2);assert.equal(globals.flex.pages.length,0,'Import alone must not compose images');
- assert.equal(globals.flex.header.patient.value,registeredPatient.fullName);assert.equal(globals.flex.header.rut.value,registeredPatient.rut);assert.equal(globals.flex.header.exam.value,registeredPatient.examName);
  await listeners.message({...event,data:{...event.data,view:'acquisition'}});
  assert.deepEqual(selectedModes.at(-1),['static',files[0].uid],'Automatic imports open the acquisition menu, not the flexible page');
  assert.equal(globals.flex.pages.length,0,'Completed acquisitions stay available without filling the flexible page');

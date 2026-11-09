@@ -601,7 +601,7 @@ function arrangeFlexible(p=flexPage()){
 function openFlexible(){
  stopDynamic();flex.visible=true;saveMode();$('acquisition-panel').hidden=true;$('flex-panel').hidden=false;document.body.classList.add('flex-mode');
  document.querySelectorAll('.acquisition-tabs [role=tab]').forEach(b=>b.setAttribute('aria-selected',String(b.id==='mode-flex')));refreshFlexible();
- if(!flex.header&&!$('header-dialog').open)openHeaderEditor(true);
+
 }
 function closeFlexible(){
  if(typeof flex==='undefined')return;flex.visible=false;$('acquisition-panel').hidden=false;$('flex-panel').hidden=true;document.body.classList.remove('flex-mode');updateModeUI();$('mode-flex').setAttribute('aria-selected','false');
@@ -742,16 +742,6 @@ function drawLayoutOverlays(ctx,p,exporting){
  for(const t of p.texts||[]){ctx.save();ctx.beginPath();ctx.rect(0,0,PAGE.w,PAGE.h);ctx.clip();ctx.fillStyle=t.color;if(t.measurementTable){window.GANTRY_FLEX_MEASUREMENTS.draw(ctx,t);if(!exporting&&t.id===flex.selectedText){ctx.strokeStyle="#0000aa";ctx.strokeRect(t.x,t.y,t.w,t.h);}ctx.restore();continue;}const lines=layoutLines(ctx,t);let width=0;lines.forEach((line,n)=>{ctx.fillText(line,t.x,t.y+t.size+n*t.size*1.25);width=Math.max(width,ctx.measureText(line).width);});t.w=Math.max(width,16);t.h=lines.length*t.size*1.25;
  if(!exporting&&t.id===flex.selectedText){ctx.strokeStyle='#0000aa';ctx.setLineDash([4,3]);ctx.strokeRect(t.x-3,t.y,t.w+6,t.h+3);}ctx.restore();}
 }
-function openHeaderEditor(required=false){
- $('flex-context').hidden=true;const p=flexPage(),meta=p?.meta||flex.assets[0]?.meta||{},existing=flex.header||p?.header;
- flex.headerRequired=false;
- const defaults={patient:meta.patient==='Paciente: sin dato'?'':meta.patient||'',rut:/^\d{1,2}\.\d{3}\.\d{3}-[0-9K]$/.test(meta.patientId||'')?meta.patientId:'',date:meta.date||'',exam:meta.exam==='Examen: sin dato'?'':meta.exam||'',institution:meta.institution||''};
- for(const key of Object.keys(defaults)){$('header-'+key).value=existing?.[key].value??defaults[key];$('header-show-'+key).checked=existing?.[key].show??true;}
- $('header-origin').textContent=meta.patientId?'Identificación DICOM: '+meta.patientId+'. Completa el RUT si corresponde.':'Los campos disponibles se toman de las imágenes cargadas; puedes completar los que faltan.';
- $('header-dialog-title').textContent=existing?'Editar encabezado común':'Establecer encabezado';
- $('header-dialog-description').textContent='Puedes cerrar este cuadro sin completar el encabezado. Si lo aplicas, se usará en todas las páginas.';
- $('header-validation').hidden=true;$('header-cancel').hidden=flex.headerRequired;$('header-remove').hidden=true;$('header-dialog').showModal();
-}
 function openTextEditor(edit=false){
  $('flex-context').hidden=true;const t=edit?flexPage().texts.find(t=>t.id===flex.selectedText):null;flex.editText=t?.id??null;
  $('layout-text').value=t?.text||'';$('layout-font').value=t?.size||24;$('layout-color').value=t?.color||'#000000';$('layout-bold').checked=t?.bold||false;
@@ -761,15 +751,8 @@ function initLayoutTools(){
  const sizeLabel=document.createElement('label');sizeLabel.textContent='Tamaño fijo ';const size=document.createElement('select');size.id='flex-size';size.setAttribute('aria-label','Tamaño fijo del cuadro');
  for(const [val,label]of [['','Personalizado'],['256x256','Cuadrado · 256 × 256'],['384x384','Cuadrado · 384 × 384'],['512x512','Cuadrado · 512 × 512'],['256x640','Rectángulo vertical · 256 × 640'],['384x640','Rectángulo vertical · 384 × 640'],['640x384','Rectángulo horizontal · 640 × 384'],['900x500','Rectángulo horizontal · 900 × 500']]){const o=document.createElement('option');o.value=val;o.textContent=label;size.append(o);}sizeLabel.append(size);document.querySelector('.flex-geometry').prepend(sizeLabel);
  size.onchange=()=>{const i=flexItem();if(!i||!size.value)return;[i.w,i.h]=size.value.split('x').map(Number);boundsFlexible(i);flexPage().edited=true;refreshFlexControls();drawFlexible();};
- for(const [id,label,fn]of [['header','Agregar encabezado…',openHeaderEditor],['text','Agregar texto…',()=>openTextEditor()]]){const b=document.createElement('button');b.id='flex-context-'+id;b.setAttribute('role','menuitem');b.textContent=label;b.onclick=fn;$('flex-context').append(b);const alt=b.cloneNode(true);alt.id='flex-add-'+id;alt.removeAttribute('role');alt.onclick=fn;document.querySelector('.flex-actions').append(alt);}
+ for(const [id,label,fn]of [['text','Agregar texto…',()=>openTextEditor()]]){const b=document.createElement('button');b.id='flex-context-'+id;b.setAttribute('role','menuitem');b.textContent=label;b.onclick=fn;$('flex-context').append(b);const alt=b.cloneNode(true);alt.id='flex-add-'+id;alt.removeAttribute('role');alt.onclick=fn;document.querySelector('.flex-actions').append(alt);}
  for(const [id,label,fn]of [['edit','Editar texto',()=>openTextEditor(true)],['remove','Quitar texto',()=>{const p=flexPage();p.texts=p.texts.filter(t=>t.id!==flex.selectedText);flex.selectedText=null;syncLayoutTools();drawFlexible();}]]){const b=document.createElement('button');b.id='flex-text-'+id;b.textContent=label;b.onclick=fn;document.querySelector('.flex-geometry').append(b);}
- const header=document.createElement('dialog');header.id='header-dialog';header.className='layout-dialog';header.setAttribute('aria-labelledby','header-dialog-title');header.innerHTML='<h2 id="header-dialog-title">Establecer encabezado</h2><p id="header-dialog-description">Este encabezado se aplicará a todas las páginas.</p><div id="header-fields"></div><p id="header-origin"></p><p id="header-validation" class="header-validation" role="alert" hidden>Selecciona y completa al menos un dato para establecer el encabezado.</p><div class="layout-dialog-actions"><button id="header-remove" hidden>Quitar encabezado</button><button id="header-cancel">Cancelar</button><button id="header-save">Aplicar encabezado</button></div>';
- document.body.append(header);
- for(const [key,label]of [['patient','Nombre del paciente'],['rut','RUT'],['date','Fecha'],['exam','Nombre del examen'],['institution','Nombre de institución']]){const row=document.createElement('div');row.className='header-edit-row';const l=document.createElement('label'),check=document.createElement('input'),input=document.createElement('input');check.type='checkbox';check.id='header-show-'+key;l.append(check,document.createTextNode(label));input.id='header-'+key;input.type='text';input.maxLength=200;input.setAttribute('aria-label',label);row.append(l,input);$('header-fields').append(row);}
- header.addEventListener('cancel',event=>{if(flex.headerRequired)event.preventDefault();});
- $('header-cancel').onclick=()=>{if(!flex.headerRequired)header.close();};
- $('header-save').onclick=()=>{const h={};for(const key of ['patient','rut','date','exam','institution'])h[key]={show:$('header-show-'+key).checked,value:$('header-'+key).value.trim()};if(!Object.values(h).some(field=>field.show&&field.value)){$('header-validation').hidden=false;const first=['patient','rut','date','exam','institution'].find(key=>h[key].show);$(first?'header-'+first:'header-patient').focus();return;}flex.header=copyFlexHeader(h);for(const page of flex.pages){page.header=copyFlexHeader(h);page.edited=true;}flex.headerRequired=false;header.close();refreshFlexible();};
- $('header-remove').onclick=()=>{};
  const text=document.createElement('dialog');text.id='text-dialog';text.className='layout-dialog';text.setAttribute('aria-labelledby','text-dialog-title');text.innerHTML='<h2 id="text-dialog-title">Agregar texto</h2><label>Texto<textarea id="layout-text" rows="5" maxlength="2000"></textarea></label><div class="layout-dialog-actions"><label>Tamaño <input id="layout-font" type="number" min="10" max="96" value="24"></label><label>Color <input id="layout-color" type="color" value="#000000"></label><label><input id="layout-bold" type="checkbox"> Negrita</label></div><p>El texto queda por encima de imágenes y encabezado. Arrástralo para moverlo; haz doble clic para editarlo.</p><div class="layout-dialog-actions"><button id="text-cancel">Cancelar</button><button id="text-save">Guardar texto</button></div>';document.body.append(text);
  $('text-cancel').onclick=()=>text.close();$('text-save').onclick=()=>{const content=$('layout-text').value.trim();if(!content){$('layout-text').focus();return;}const p=flexPage();let t=p.texts.find(t=>t.id===flex.editText);if(!t){const point=flex.contextPoint||{x:50,y:140};t={id:++flex.serial,x:clamp(point.x,0,PAGE.w-100),y:clamp(point.y,0,PAGE.h-120)};p.texts.push(t);}Object.assign(t,{text:content,size:clamp(Number($('layout-font').value)||24,10,96),color:$('layout-color').value,bold:$('layout-bold').checked});flex.selectedText=t.id;flex.selected=null;text.close();refreshFlexControls();drawFlexible();};
  const canvas=$('flex-canvas'),oldDown=canvas.onpointerdown,oldMove=canvas.onpointermove,oldUp=canvas.onpointerup,oldKey=canvas.onkeydown;
@@ -779,7 +762,7 @@ function initLayoutTools(){
  canvas.onpointermove=e=>{if(!drag){oldMove(e);return;}const pt=flexPoint(e),t=drag.t;t.x=clamp(pt.x-drag.dx,0,PAGE.w-Math.min(t.w,PAGE.w));t.y=clamp(pt.y-drag.dy,0,Math.max(0,PAGE.h-t.h));drawFlexible();};canvas.onpointerup=canvas.onpointercancel=e=>{drag=null;oldUp(e);};
  canvas.ondblclick=e=>{const t=hit(e);if(t){flex.selectedText=t.id;openTextEditor(true);}};
  canvas.onkeydown=e=>{const t=flexPage()?.texts.find(t=>t.id===flex.selectedText);if(!t){oldKey(e);return;}const step=e.shiftKey?10:1;if(e.key==='ArrowLeft')t.x-=step;else if(e.key==='ArrowRight')t.x+=step;else if(e.key==='ArrowUp')t.y-=step;else if(e.key==='ArrowDown')t.y+=step;else return;e.preventDefault();t.x=clamp(t.x,0,PAGE.w-Math.min(t.w,PAGE.w));t.y=clamp(t.y,0,Math.max(0,PAGE.h-t.h));drawFlexible();};
- document.querySelector('.flex-help').append(document.createTextNode(' Clic derecho: agregar encabezado o texto. El texto siempre queda al frente.'));
+ document.querySelector('.flex-help').append(document.createTextNode(' El encabezado usa automáticamente los datos de la adquisición. Clic derecho: agregar texto.'));
  syncLayoutTools();drawFlexible();
 }
 initLayoutTools();
@@ -1026,8 +1009,6 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   body:not(.flex-mode) .layout>.card:first-child{min-height:400px}
   body:not(.flex-mode) .viewer{min-height:650px}
 }
-#header-dialog-title{padding-right:38px}
-#header-dialog .header-close{position:absolute;top:4px;right:5px;width:26px;height:24px;padding:0;min-height:0;font:bold 20px/20px Arial;cursor:pointer}
 </style>
 <script>
 // Integrated simulator edition: export tools, no external image import.
@@ -1054,13 +1035,6 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     else document.getElementById(id)?.click();
   };
   bar.append(menu);
-  const header=document.getElementById('header-dialog');
-  if(!header)return;
-  const close=document.createElement('button');
-  close.id='header-close';close.type='button';close.className='header-close';
-  close.textContent='×';close.title='Cerrar';close.setAttribute('aria-label','Cerrar cuadro de encabezado');
-  close.onclick=()=>header.close();
-  header.append(close);
 })();
 
 /* Shared validation for the viewer's acquisition form and the gantry receiver. */
@@ -1922,6 +1896,41 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   updateModeUI();
 })();
 
+/* Flexible pages reuse registration or the immutable identity of their study. */
+(function(){
+  'use strict';
+  let registrationSeen=false,registeredHeader=null;
+  const text=value=>String(value||'').trim();
+  function header(meta){
+    if(!meta)return null;
+    const patient=meta.patient==='Paciente: sin dato'?'':text(meta.patient);
+    const exam=meta.exam==='Examen: sin dato'?'':text(meta.exam);
+    if(!patient&&!meta.patientId&&!exam)return null;
+    return Object.fromEntries(Object.entries({patient,rut:text(meta.patientId),date:text(meta.date),exam,
+      institution:text(meta.institution)||'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));
+  }
+  function sync(){
+    flex.header=copyFlexHeader(registrationSeen?registeredHeader:header(flex.assets[0]?.meta));
+    // Once images or a result table bind a page to a study, later registration
+    // edits/patient changes must not relabel the already acquired material.
+    for(const page of flex.pages)page.header=header(page.meta)||copyFlexHeader(flex.header);
+  }
+  const refresh=refreshFlexible;
+  refreshFlexible=function(){sync();return refresh.apply(this,arguments);};
+  window.addEventListener('message',event=>{
+    if(event.source!==parent||event.origin!==location.origin||event.data?.version!==1)return;
+    const d=event.data;
+    const patient=['GANTRY_ADMINISTRATION_STATE','GANTRY_REGISTRATION_EDITED'].includes(d.type)?d.patient:
+      d.type==='GANTRY_ACQUIRE_CONFIG'?d.config?.patient:null;
+    if(!patient)return;
+    const next=patient.fullName?header({patient:patient.fullName,patientId:patient.rut,exam:patient.examName,
+      date:new Date().toLocaleDateString('es-CL'),institution:'Simulador gantry'}):null;
+    if(registrationSeen&&JSON.stringify(next)===JSON.stringify(registeredHeader))return;
+    registrationSeen=true;registeredHeader=next;refreshFlexible();
+  });
+  sync();
+})();
+
 /* Appended to the vendored viewer; all viewer APIs remain local to this frame. */
 (function(){
   'use strict';
@@ -1963,7 +1972,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const assets=pair.map(x=>flex.assets.find(a=>a.uid===x.file.uid));
     if(assets.some(a=>!a))throw Error('El visor no pudo leer una imagen.');
     if(assets.every(a=>flex.pages.some(p=>p.items.some(i=>i.asset===a.id))))return;
-    const empty=flex.pages.find(p=>!p.edited&&!p.items.length&&!p.texts?.length&&!p.header);
+    const empty=flex.pages.find(p=>!p.edited&&!p.items.length&&!p.texts?.length&&!p.study);
     const page=empty||flexNewPage(assets[0]);
     if(empty){page.study=assets[0].study;page.meta=assets[0].meta;page.header=copyFlexHeader(flex.header);}
     for(const a of assets){const offset=page.items.length%8*22,item={id:++flex.serial,asset:a.id,x:24+offset,y:PAGE.top+offset,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:true};window.GANTRY_PROCESSING_ANALYSIS?.prepareFlexible(item,a);boundsFlexible(item);page.items.push(item);}
@@ -1981,7 +1990,6 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
       const batch=data.files.map(check);
       window.GANTRY_PROCESSING_EDITOR?.finish();
       for(const entry of batch){await loadFile(new File([entry.file.bytes],entry.file.name),entry.ds);if(!flex.assets.some(a=>a.uid===entry.file.uid))throw Error('Error al cargar '+entry.file.name);}
-      if(!flex.header){const ds=batch[0].ds;flex.header=Object.fromEntries(Object.entries({patient:value(ds,'00100010')||'john',rut:value(ds,'00100020')||'',date:'',exam:value(ds,'00081030')||'Cintigrafía ósea simulada',institution:'Simulador gantry'}).map(([key,value])=>[key,{value,show:!!value}]));}
       // Receiving acquisitions only fills the image library. Compose a page
       // exclusively for the explicit "Componer seleccionadas" command.
       if(data.view==='flex'){
@@ -2592,11 +2600,10 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   $('flex-measurements-cancel').onclick=()=>dialog.close();
   $('flex-measurements-insert').onclick=()=>{
     const group=groups[Number($('flex-measurements-source').value)],rows=group?rowsFor(group):[];if(!rows.length)return;
-    let p=flexPage();if(!p){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+    let p=flexPage();if(!p||(p.study&&p.study!==group.assets[0].study)){p=flexNewPage(group.assets[0]);flex.page=p.id;}
+    p.study=group.assets[0].study;p.meta=group.assets[0].meta;
     let tableY=PAGE.top+10;
     if($('flex-measurements-images').checked){
-      if(p.study&&p.study!==group.assets[0].study){p=flexNewPage(group.assets[0]);flex.page=p.id;}
-      p.study=group.assets[0].study;p.meta=group.assets[0].meta;
       const measured=group.assets.filter(a=>window.GANTRY_PROCESSING_ANALYSIS.measurementRows(a).length);
       measured.forEach((a,n)=>{const item={id:++flex.serial,asset:a.id,x:24+22*n,y:PAGE.top+22*n,w:a.kind==='whole'?160:360,h:a.kind==='whole'?640:360,zoom:1,panX:0,panY:0,window:a.window,level:a.level,invert:!a.mono1};window.GANTRY_PROCESSING_ANALYSIS.prepareFlexible(item,a);boundsFlexible(item);p.items.push(item);});
       p.edited=true;
@@ -2734,6 +2741,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
     const selected=available[Number(el('flex-differential-source').value)],saved=selected&&api.savedResult(selected.acquisitionId);if(!saved)return;
     const asset=flex.assets.find(a=>a.id===saved.assetIds[0]);let page=flexPage();
     if(!page||(page.study&&page.study!==asset.study)){page=flexNewPage(asset);flex.page=page.id;}
+    page.study=asset.study;page.meta=asset.meta;
     const table={id:++flex.serial,x:20,y:PAGE.top+10,w:1160,h:0,size:13,color:'#111111',text:'Función diferencial renal',measurementTable:{type:'differential',...JSON.parse(JSON.stringify(saved))}};
     page.texts.push(table);page.edited=true;flex.selectedText=table.id;flex.selected=null;
     picker.close();refreshFlexible();el('flex-message').textContent='Función diferencial agregada. Puedes trasladar la tabla y exportarla en PNG.';
@@ -2786,7 +2794,7 @@ body:not(.flex-mode) .application-bar span{font-size:12px;padding:5px}
   };
   const isCase=()=>info(dataset)?.patient?.id==='caso-oseo';
   // Dynamic tiles contain pixel buffers. Compare their composition, not the buffers.
-  const signature=page=>JSON.stringify([flex.header,page.header,page.items,page.texts],(key,value)=>
+  const signature=page=>JSON.stringify([page.header,page.items,page.texts],(key,value)=>
     key==='tiles'?value.map(t=>({id:t.id,label:t.label,sourceFrames:t.sourceFrames})):value);
   let exporting=null;
   document.addEventListener('click',event=>{

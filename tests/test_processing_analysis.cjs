@@ -175,7 +175,7 @@ async function load(bytes,name){w.testBytes=w.Uint8Array.from(bytes);await w.eva
  $('roiReset').click();maskHotspot();
  $('analysisWindow').value='33';$('analysisLevel').value='9.5';$('analysisWindow').dispatchEvent(new w.Event('input'));await tick();
  $('roiOriginal').checked=true;$('roiOriginal').dispatchEvent(new w.Event('change'));
- w.openFlexible();$('header-close').click();
+ w.openFlexible();assert.equal($('header-dialog'),null);
  const addUID=uid=>{
   $('flex-add-images').click();
   for(const box of $('flex-picker-list').querySelectorAll('input')){box.checked=box.value.startsWith(uid+':');box.dispatchEvent(new w.Event('change'));}

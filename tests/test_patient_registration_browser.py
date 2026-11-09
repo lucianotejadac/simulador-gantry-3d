@@ -18,6 +18,10 @@ with serve_site() as url,sync_playwright() as pw:
         page.locator('#boneProcessingFrame').wait_for()
         frame=page.frame_locator('#boneProcessingFrame')
         menu=frame.locator('#processingAcquireMenu');menu.wait_for()
+        child=page.locator('#boneProcessingFrame').element_handle().content_frame()
+        frame.locator('#mode-flex').click()
+        assert not frame.locator('#header-dialog, #flex-add-header, #flex-context-header').count()
+        assert child.evaluate('flexPage().header') is None
         menu.select_option(kind)
         dialog=page.locator('#patientRegistration');dialog.wait_for()
         assert dialog.locator('input').count()==3
@@ -45,6 +49,17 @@ with serve_site() as url,sync_playwright() as pw:
         initial=page.evaluate('GANTRY_PATIENT_REGISTRATION.current()')
         assert all(initial[k]==v for k,v in person.items())
         assert 'birthDate' not in initial
+        frame.locator('#mode-flex').click()
+        header=child.evaluate('flexPage().header')
+        assert header['patient']['value']==person['fullName'],header
+        assert header['rut']['value']==person['rut'],header
+        assert header['exam']['value']==person['examName'],header
+        assert header['date']['value'],header
+        assert child.evaluate('flexPage().items.length')==0
+        frame.locator('#flex-add').click()
+        assert child.evaluate('flexPage().header')==header
+        # Return to the pending acquisition; there is no second identity form.
+        frame.locator('.acquisition-tabs [data-acquisition-number="1"]').click()
         frame.locator('#tab-series').click()
         assert frame.locator('#series input[data-label="RUT"]').input_value()==person['rut']
         assert not frame.locator('#series input[data-label="Fecha de nacimiento"]').count()
@@ -64,13 +79,30 @@ with serve_site() as url,sync_playwright() as pw:
             page.wait_for_function('GANTRY_BONE_ACQ.state?.finished',timeout=60000)
             saved=page.evaluate('GANTRY_BONE_ACQ.processingCurrent().patient')
             assert all(saved[k]==v for k,v in person.items()),saved
-            child=page.locator('#boneProcessingFrame').element_handle().content_frame()
             child.wait_for_function("document.body.classList.contains('gantry-acquisition-frozen')",timeout=30000)
             tags=child.evaluate("()=>({name:value(dataset,'00100010'),rut:value(dataset,'00100020'),birth:value(dataset,'00100030'),exam:value(dataset,'00081030')})")
             assert tags==dict(name=person['fullName'],rut=person['rut'],birth='',exam=person['examName']),tags
             assert frame.locator('#patient input').nth(1).input_value()==person['examName']
+            frame.locator('#mode-flex').click()
+            frame.locator('#flex-add-images').click()
+            frame.locator('#flex-pick-all').check()
+            frame.locator('#flex-pick-submit').click()
+            assert child.evaluate('flexPage().items.length')==2
+            recorded=child.evaluate('flexPage().header')
+            assert recorded['patient']['value']==tags['name']
+            assert recorded['rut']['value']==tags['rut']
+            assert recorded['exam']['value']==tags['exam']
+            assert recorded['date']['value']==child.evaluate('flexPage().meta.date')
+            with page.expect_download() as download:
+                frame.locator('#flex-export').click()
+            assert download.value.failure() is None
+            page.screenshot(path=str(ROOT.parent/'gantry-flexible-automatic-header.png'))
             page.select_option('#gantryPatient','caso-oseo-2')
             page.wait_for_function("GANTRY_PATIENT.id==='caso-oseo-2'",timeout=60000)
+            child.wait_for_function('flex.header===null')
+            assert child.evaluate('flexPage().header')==recorded,'Patient changes must not relabel acquired images'
+            frame.locator('#flex-add').click()
+            assert child.evaluate('flexPage().header') is None,'An unregistered patient must not inherit another header'
             menu.select_option('dynamic');dialog.wait_for()
             assert not page.locator('#registration-fullName').input_value()
             page.keyboard.press('Escape');dialog.wait_for(state='hidden')
