@@ -24,7 +24,7 @@
   function render(){
     const node=document.getElementById('gantryPatient');if(!node)return;
     node.value=id;node.disabled=loading||busy();
-    document.getElementById('gantryPatientStatus').textContent=loading?'Cargando paciente…':id==='caso-oseo'?'Patrón trifásico en pie derecho · modelo docente':id==='caso-oseo-2'?'Celulitis de pie y tobillo derechos · modelo docente':id==='caso-oseo-3'?'Oncológico · metástasis osteoblásticas · modelo docente. MDP tardío (2–4 h); cuerpo entero y vistas dirigidas.':'';
+    document.getElementById('gantryPatientStatus').textContent=loading?'Cargando paciente…':'';
   }
   function init(){
     const host=document.getElementById('gantryViewControls');if(!host)return;
